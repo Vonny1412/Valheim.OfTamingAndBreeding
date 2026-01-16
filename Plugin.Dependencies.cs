@@ -10,7 +10,4 @@ namespace OfTamingAndBreeding
 		// once-generated file – use it to declare dependencies
 	}
 
-
-
-
 }
