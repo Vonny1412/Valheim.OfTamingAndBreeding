@@ -2,7 +2,6 @@ using BepInEx;
 
 namespace OfTamingAndBreeding
 {
-    //[BepInDependency("InternalsAPI.Valheim")]
     [BepInDependency(Jotunn.Main.ModGuid)]
     [BepInDependency("com.ValheimModding.YamlDotNetDetector")]
     [BepInDependency("shudnal.Seasons", BepInDependency.DependencyFlags.SoftDependency)]

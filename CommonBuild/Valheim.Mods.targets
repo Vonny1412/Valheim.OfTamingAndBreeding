@@ -8,7 +8,7 @@
 		<StartWorkingDirectory>$(GamePath)</StartWorkingDirectory>
 	</PropertyGroup>
 
-	<!-- Copy to plugins folder [and zip] -->
+	<!-- Copy to plugins folder -->
 	<Target Name="ValheimPostBuild" AfterTargets="PostBuildEvent">
 		<ItemGroup>
 			<AllFiles Include="$(TargetDir)**\*.*" Exclude="$(TargetDir)**\*.pdb" />
@@ -18,19 +18,6 @@
 			SourceFiles="@(AllFiles)"
 			DestinationFolder="$(PluginsPath)\$(CopyToPluginsSubDirectory)\%(RecursiveDir)"
 			></Copy>
-
-
-		
-
-		<!--
-    <Delete Files="$(ProjectDir)\bin\$(TargetName).zip" />
-    <Copy SourceFiles="@(AllFiles)" DestinationFolder="$(TargetDir)..\Release\%(RecursiveDir)"></Copy>
-    <ZipDirectory SourceDirectory="$(TargetDir)..\Release" DestinationFile="$(ProjectDir)\bin\$(TargetName).zip" />
-    -->
-		<!--
-    <RemoveDir Directories="$(TargetDir)..\Debug" />
-    <RemoveDir Directories="$(TargetDir)..\Release" />
-    -->
 	</Target>
 
 	<!-- write BepInPlugin Info -->
@@ -102,9 +89,5 @@ namespace $(RootNamespace)
 		</ItemGroup>
 
 	</Target>
-
-
-
-
 
 </Project>

@@ -26,11 +26,5 @@
 		<UnityPath>$(GamePath)\unstripped_libs</UnityPath>
 		<PluginsPath>$(GamePath)\BepInEx\plugins</PluginsPath>
 	</PropertyGroup>
-	
-	<!--
-	<ItemGroup>
-		<Reference Include="netstandard" />
-	</ItemGroup>
-	-->
 
 </Project>
