@@ -38,6 +38,8 @@ namespace OfTamingAndBreeding.Net
 
             var cacheFileName = Plugin.Configs.CacheFileName.Value;
             var cacheCryptKey = Plugin.Configs.CacheFileCryptKey.Value;
+            cacheFileName = cacheFileName.Replace("{world}", ZNet.instance.GetWorldName());
+            cacheFileName = cacheFileName.Replace("{seed}", ZNet.World.m_seedName);
             Plugin.LogDebug($"[{inFunc1}] Server cache settings: UseCache={Plugin.Configs.UseCache.Value} CacheFileName='{cacheFileName}' KeyLen={(cacheCryptKey?.Length ?? -1)}");
 
             string cacheContent;
@@ -186,6 +188,7 @@ namespace OfTamingAndBreeding.Net
                 else
                 {
                     requestCacheFile = true;
+                    saveCache = false;
                 }
 
                 if (requestCacheFile)

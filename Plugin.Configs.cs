@@ -83,7 +83,7 @@ namespace OfTamingAndBreeding
                 section = "Cache";
 
                 UseCache = Config.Bind<bool>(section, "UseCache", true, new ConfigDescription("", null, isAdminOnly));
-                CacheFileName = Config.Bind<string>(section, "CacheFileName", "MyServer", new ConfigDescription("", null, isAdminOnly));
+                CacheFileName = Config.Bind<string>(section, "CacheFileName", "local-{world}-{seed}", new ConfigDescription("", null, isAdminOnly));
                 CacheFileCryptKey = Config.Bind<string>(section, "CacheFileCryptKey", "MySecretKey", new ConfigDescription("", null, isHidden));
                 CacheFileHash = Config.Bind<string>(section, "CacheFileHash", "", new ConfigDescription("", null, isAdminOnly));
 

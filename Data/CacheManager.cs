@@ -31,10 +31,6 @@ namespace OfTamingAndBreeding.Data
             var cacheYamlFile = GetCacheYamlFile(serverName);
             var cacheCryptedFile = GetCacheCryptedFile(serverName);
 
-            if (Directory.Exists(cachePath))
-                Directory.Delete(cachePath, true);
-            if (File.Exists(cacheYamlFile))
-                File.Delete(cacheYamlFile);
             if (File.Exists(cacheCryptedFile))
                 File.Delete(cacheCryptedFile);
 
@@ -63,10 +59,17 @@ namespace OfTamingAndBreeding.Data
             });
 
             var cacheFilePlain = DataBase.Serialize(cacheFile);
-            File.WriteAllText(cacheYamlFile, cacheFilePlain);
+            //File.WriteAllText(cacheYamlFile, cacheFilePlain);
             var cacheFileCrypted = DeterministicStringCrypto.EncryptToBase64(cacheFilePlain, encryptKey);
             File.WriteAllText(cacheCryptedFile, cacheFileCrypted);
             var hash = ComputeSha256FileHash(cacheCryptedFile);
+
+            /*
+            if (Directory.Exists(cachePath))
+                Directory.Delete(cachePath, true);
+            if (File.Exists(cacheYamlFile))
+                File.Delete(cacheYamlFile);
+            */
 
             return hash;
         }
