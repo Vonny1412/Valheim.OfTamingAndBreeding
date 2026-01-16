@@ -1,0 +1,101 @@
+
+
+
+            /*
+- PrefabName: Lox
+  LevelUpChance: 0.02
+  MaxStars: 3
+- PrefabName: Hen
+  LevelUpChance: 0.03
+  MaxStars: 3
+- PrefabName: Asksvin
+  LevelUpChance: 0.01
+  MaxStars: 3
+            CustomDataByPrefab.Add("Hen", new CustomData()
+            {
+                MonsterAI = new MonsterAIAPI.MonsterAIData
+                {
+                    m_consumeItems = new List<string> {
+                        "CarrotSeeds",
+                        "TurnipSeeds",
+                        "OnionSeeds",
+                        "BeechSeeds",
+                        "BirchSeeds",
+                        "Barley",
+                        "Dandelion",
+                    },
+                    m_consumeRange = 1,
+                    m_consumeSearchRange = 4,
+                    m_consumeSearchInterval = 10,
+                },
+                Tameable = new TameableAPI.TameableData
+                {
+                    m_fedDuration = Minute * 40,
+                    m_tamingTime = Minute * 20,
+                    m_commandable = true,
+                },
+                Procreation = new ProcreationAPI.ProcreationData
+                {
+                    m_totalCheckRange = 10,
+                    m_maxCreatures = 8,
+                    m_partnerCheckRange = 4,
+                    m_requiredLovePoints = 3,
+                    m_pregnancyChance = 0.4f,
+                    m_pregnancyDuration = Hour * 0.5f,
+                },
+                Growup = new GrowupAPI.GrowupData
+                {
+                    m_growTime = Hour * 0.5f,
+                },
+                EggGrow = new EggGrowAPI.EggGrowData
+                {
+                    m_growTime = Hour * 1,
+                    m_requireNearbyFire = true,
+                    m_requireUnderRoof = true,
+                    m_requireCoverPercentige = 0.7f,
+                },
+                EggHatch = new EggHatchAPI.EggHatchData
+                {
+                    m_triggerDistance = 3,
+                    m_chanceToHatch = 0.33f,
+                },
+            });
+
+            CustomDataByPrefab.Add("Asksvin", new CustomData()
+            {
+                MonsterAI = new MonsterAIAPI.MonsterAIData
+                {
+                    m_consumeItems = new List<string> {
+                        "MushroomSmokePuff",
+                        "Vineberry",
+                        "Fiddleheadfern",
+                    },
+                    m_consumeRange = 4,
+                    m_consumeSearchRange = 15,
+                    m_consumeSearchInterval = 10,
+                },
+                Tameable = new TameableAPI.TameableData
+                {
+                    m_fedDuration = Minute * 20,
+                    m_tamingTime = Minute * 60,
+                    m_commandable = true,
+                },
+                Procreation = new ProcreationAPI.ProcreationData
+                {
+                    m_totalCheckRange = 15,
+                    m_maxCreatures = 3,
+                    m_partnerCheckRange = 5,
+                    m_requiredLovePoints = 3,
+                    m_pregnancyChance = 0.25f,
+                    m_pregnancyDuration = Hour * 3,
+                },
+                Growup = new GrowupAPI.GrowupData
+                {
+                    m_growTime = Hour * 3,
+                },
+                EggGrow = null,
+                EggHatch = null,
+            });
+
+            */
+
