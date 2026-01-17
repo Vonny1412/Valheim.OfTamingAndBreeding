@@ -18,7 +18,8 @@ namespace OfTamingAndBreeding.Patches
             if (data != null)
             {
                 // scale the egg once
-                __instance.transform.localScale *= data.Item.scale;
+                __instance.transform.localScale *= data.Item.Scale;
+                // we need to multiply because localScale has already been set to variable scaling according to stuff like quality
             }
         }
     }

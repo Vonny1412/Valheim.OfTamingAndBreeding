@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace OfTamingAndBreeding.Helpers
 {
 
-    internal class StringHelper
+    internal static class StringHelper
     {
 
         public static string FormatRelativeTime(

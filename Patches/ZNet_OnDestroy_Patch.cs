@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using OfTamingAndBreeding.Net;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +14,7 @@ namespace OfTamingAndBreeding.Patches
         static void Prefix()
         {
             Data.DataLoader.ResetData();
+            RPCContext.DestroySession();
         }
     }
 

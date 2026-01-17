@@ -48,15 +48,15 @@ namespace OfTamingAndBreeding.Patches
             var name2 = Utils.GetPrefabName(b.gameObject.name);
 
             // handle stick-to-faction
-            var stickToFaction1 = Contexts.IsEnemyContext.ObjectSticksToFaction(name1);
-            var stickToFaction2 = Contexts.IsEnemyContext.ObjectSticksToFaction(name2);
+            var stickToFaction1 = Contexts.DataContext.ObjectSticksToFaction(name1);
+            var stickToFaction2 = Contexts.DataContext.ObjectSticksToFaction(name2);
             if ((stickToFaction1 || stickToFaction2) && (faction1 == faction2))
             {
                 __result = false;
                 return false;
             }
 
-            var enemyTames1 = Contexts.IsEnemyContext.ObjectAttacksTames(name1);
+            var enemyTames1 = Contexts.DataContext.ObjectCanAttackTames(name1);
             if (enemyTames1 && isTamed2)
             {
                 Contexts.IsEnemyContext.Active = true;

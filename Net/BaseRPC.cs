@@ -15,52 +15,44 @@ namespace OfTamingAndBreeding.Net
         private readonly string _rpcName;
         protected CustomRPC _rpc;
 
-        protected Func<ZPackage, ZPackage, bool> _onServerReceive = null;
-        protected Func<ZPackage, bool> _onClientReceive = null;
+        protected Func<ZPackage, ZPackage, bool> onServerReceiveCB = null;
+        protected Func<ZPackage, bool> onClientReceiveCB = null;
 
-        public void OnServerReceive(Func<ZPackage, ZPackage, bool> cb) => _onServerReceive = cb;
-        public void OnClientReceive(Func<ZPackage, bool> cb) => _onClientReceive = cb;
-
+        public void OnServerReceive(Func<ZPackage, ZPackage, bool> cb) => onServerReceiveCB = cb;
+        public void OnClientReceive(Func<ZPackage, bool> cb) => onClientReceiveCB = cb;
+        
         private bool serverReady = false;
         public void SetServerReady() => serverReady = true;
 
-        public void ResetClientState()
+        public void ResetState(bool clearCallbacks = false)
         {
+            Plugin.LogDebug($"[{nameof(BaseRPC)}:{_rpcName}] {nameof(ResetState)}()");
             serverReady = false;
-            _onServerReceive = null;
-            _onClientReceive = null;
+            if (clearCallbacks)
+            {
+                OnServerReceive(null);
+                OnClientReceive(null);
+            }
         }
 
         public BaseRPC(string rpcName)
         {
             _rpcName = rpcName;
-            // Don't assume Jotunn networking is ready here.
-            TryRegisterRpc();
-        }
-
-        public bool TryRegisterRpc()
-        {
-            if (_rpc != null) return true;
-
-            // Jotunn/Valheim networking might not be ready yet on client startup.
-            if (NetworkManager.Instance == null || ZRoutedRpc.instance == null)
-                return false;
-
-            _rpc = NetworkManager.Instance.AddRPC(_rpcName, _OnServerReceive, _OnClientReceive);
-
-            //if (_rpc != null)
-            //Plugin.Log.LogWarning($"[OTAB] RPC '{_rpcName}' registered");
-            //else
-            //Plugin.Log.LogWarning($"[OTAB] RPC '{_rpcName}' NOT registered (NetworkManager/ZRoutedRpc not ready?)");
-
-            return _rpc != null;
+            _rpc = NetworkManager.Instance.AddRPC(_rpcName, RPCOnServerReceive, RPCOnClientReceive);
+            if (_rpc == null)
+                throw new Exception($"[{_rpcName}] AddRPC returned null");
         }
 
         public void RequestFromServer()
         {
-            if (_rpc == null) return;
+            if (_rpc == null)
+            {
+                Plugin.LogFatal($"[{_rpcName}] RequestFromServer: RPC not registered yet (Network not ready?)");
+                return;
+            }
             _rpc.Initiate();
         }
+
 
         private readonly Dictionary<long, long> _lastRequestTicks = new Dictionary<long, long>();
         private int _antiSpamOps;
@@ -91,7 +83,7 @@ namespace OfTamingAndBreeding.Net
             return true;
         }
 
-        private IEnumerator _OnServerReceive(long sender, ZPackage inPkg)
+        private IEnumerator RPCOnServerReceive(long sender, ZPackage inPkg)
         {
             if (ZNet.instance == null || !ZNet.instance.IsServer())
                 yield break;
@@ -113,9 +105,9 @@ namespace OfTamingAndBreeding.Net
 
             var outPkg = new ZPackage();
 
-            if (_onServerReceive != null)
+            if (onServerReceiveCB != null)
             {
-                if (!_onServerReceive(inPkg, outPkg))
+                if (!onServerReceiveCB(inPkg, outPkg))
                     yield break;
             }
 
@@ -123,14 +115,14 @@ namespace OfTamingAndBreeding.Net
             yield break;
         }
 
-        private IEnumerator _OnClientReceive(long sender, ZPackage inPkg)
+        private IEnumerator RPCOnClientReceive(long sender, ZPackage inPkg)
         {
             if (ZNet.instance != null && ZNet.instance.IsServer())
                 yield break;
 
-            if (_onClientReceive != null)
+            if (onClientReceiveCB != null)
             {
-                if (!_onClientReceive(inPkg))
+                if (!onClientReceiveCB(inPkg))
                     yield break;
             }
 

@@ -15,7 +15,7 @@ namespace OfTamingAndBreeding.Data
         protected static ISerializer serializer;
         static DataBase()
         {
-            deserializer = new DeserializerBuilder().Build();
+            deserializer = new DeserializerBuilder().WithCaseInsensitivePropertyMatching().Build();
             serializer = new SerializerBuilder().Build();
         }
         public static string Serialize<T>(T data)

@@ -23,24 +23,27 @@ namespace OfTamingAndBreeding.Data
         public static string GetCacheCryptedFile(string serverName)
             => Path.Combine(Plugin.CacheDir, $"{serverName}.cache");
 
+        public static string BuildCache(string serverName, string encryptKey, bool writeFiles)
+            => BuildCache(serverName, encryptKey, writeFiles, out string _);
 
-
-        public static string WriteCache(string serverName, string encryptKey)
+        public static string BuildCache(string serverName, string encryptKey, bool writeFiles, out string cacheContent)
         {
-            var cachePath = GetCachePath(serverName);
-            var cacheYamlFile = GetCacheYamlFile(serverName);
+            cacheContent = null;
+
+            var cacheDebugFilesPath = GetCachePath(serverName);
+            var cacheDebugYamlFile = GetCacheYamlFile(serverName);
             var cacheCryptedFile = GetCacheCryptedFile(serverName);
+
+            if (Directory.Exists(cacheDebugFilesPath))
+                Directory.Delete(cacheDebugFilesPath, true);
+
+            if (File.Exists(cacheDebugYamlFile))
+                File.Delete(cacheDebugYamlFile);
 
             if (File.Exists(cacheCryptedFile))
                 File.Delete(cacheCryptedFile);
 
-            var saver = new DataSaver();
-            saver.AddList(Data.Models.Creature.GetAll());
-            saver.AddList(Data.Models.Egg.GetAll());
-            saver.AddList(Data.Models.Offspring.GetAll());
-            saver.WriteFiles(cachePath);
-
-            var cacheFile = new Data.Cache.CacheFile
+            var cacheFile = new Cache.CacheFile
             {
                 ModVersion = Plugin.Version,
                 CacheFileName = Plugin.Configs.CacheFileName.Value,
@@ -48,48 +51,60 @@ namespace OfTamingAndBreeding.Data
             };
 
             DataLoader.IterDataHandlers((dh) => {
-                var dir = dh.GetDirectoryName();
                 var data = new Dictionary<string, string>();
-                foreach (var file in Directory.GetFiles(Path.Combine(cachePath, dir)))
+                foreach (var kv in dh.GetAllYamlData())
                 {
-                    var prefab = Path.GetFileNameWithoutExtension(file);
-                    data.Add(prefab, Base64Encode(File.ReadAllText(file)));
+                    data.Add(kv.Key, Base64Encode(kv.Value));
                 }
-                cacheFile.Data.Add(dir, data);
+                cacheFile.Data.Add(dh.DirectoryName, data);
             });
 
-            var cacheFilePlain = DataBase.Serialize(cacheFile);
-            //File.WriteAllText(cacheYamlFile, cacheFilePlain);
-            var cacheFileCrypted = DeterministicStringCrypto.EncryptToBase64(cacheFilePlain, encryptKey);
-            File.WriteAllText(cacheCryptedFile, cacheFileCrypted);
-            var hash = ComputeSha256FileHash(cacheCryptedFile);
+            string yamlCacheContent = cacheContent = DataBase.Serialize(cacheFile);
+            string cryptedCacheContent = null;
+            if (encryptKey != null)
+            {
+                cryptedCacheContent = cacheContent = DeterministicStringCrypto.EncryptToBase64(cacheContent, encryptKey);
+            }
 
-            /*
-            if (Directory.Exists(cachePath))
-                Directory.Delete(cachePath, true);
-            if (File.Exists(cacheYamlFile))
-                File.Delete(cacheYamlFile);
-            */
+            var hash = ComputeSha256StringHash(cacheContent);
+
+            if (writeFiles && Plugin.Configs.WriteServerCacheDebugFiles.Value == true)
+            {
+                var saver = new DataSaver();
+                saver.AddList(Models.Creature.GetAll());
+                saver.AddList(Models.Egg.GetAll());
+                saver.AddList(Models.Offspring.GetAll());
+                saver.WriteFiles(cacheDebugFilesPath);
+
+                File.WriteAllText(cacheDebugYamlFile, yamlCacheContent);
+
+                if (cryptedCacheContent != null)
+                {
+                    File.WriteAllText(cacheCryptedFile, cryptedCacheContent);
+                }
+            }
 
             return hash;
         }
 
+        /*
         public static bool LoadCacheFromFile(string serverName, string encryptKey)
         {
             var cacheCryptedFile = GetCacheCryptedFile(serverName);
             return LoadCacheFromCrypted(File.ReadAllText(cacheCryptedFile), encryptKey);
         }
+        */
 
         public static bool LoadCacheFromCrypted(string crypted, string encryptKey)
         {
             try
             {
-                var cacheFilePlain = DeterministicStringCrypto.DecryptFromBase64(crypted, encryptKey);
-                var cacheFile = DataBase.Deserialize<Data.Cache.CacheFile>(cacheFilePlain);
+                var cacheFilePlain = encryptKey == null ? crypted : DeterministicStringCrypto.DecryptFromBase64(crypted, encryptKey);
+                var cacheFile = DataBase.Deserialize<Cache.CacheFile>(cacheFilePlain);
                 DataLoader.ResetData();
                 var allokay = true;
                 DataLoader.IterDataHandlers((dh) => {
-                    foreach (var kv in cacheFile.Data[dh.GetDirectoryName()])
+                    foreach (var kv in cacheFile.Data[dh.DirectoryName])
                     {
                         var prefab = kv.Key;
                         var data = Base64Decode(kv.Value);
@@ -118,15 +133,42 @@ namespace OfTamingAndBreeding.Data
             var base64EncodedBytes = System.Convert.FromBase64String(base64EncodedData);
             return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
         }
+
         public static string ComputeSha256FileHash(string filePath)
         {
-            using (var stream = File.OpenRead(filePath))
+            if (string.IsNullOrEmpty(filePath))
+                throw new ArgumentException("filePath is required", nameof(filePath));
+
+            using (var fs = File.OpenRead(filePath))
+            {
+                return ComputeSha256StreamHash(fs);
+            }
+        }
+
+        public static string ComputeSha256StringHash(string content)
+        {
+            if (string.IsNullOrEmpty(content))
+                throw new ArgumentException("content is required", nameof(content));
+
+            using (var ms = new MemoryStream(Encoding.UTF8.GetBytes(content)))
+            {
+                var hash = ComputeSha256StreamHash(ms);
+                return hash;
+            }
+        }
+
+        public static string ComputeSha256StreamHash(Stream stream)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+
             using (var sha = SHA256.Create())
             {
-                byte[] hash = sha.ComputeHash(stream);
+                var hash = sha.ComputeHash(stream);
                 return BytesToHex(hash);
             }
         }
+
         private static string BytesToHex(byte[] bytes)
         {
             var sb = new StringBuilder(bytes.Length * 2);

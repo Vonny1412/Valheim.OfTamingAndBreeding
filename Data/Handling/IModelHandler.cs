@@ -8,8 +8,11 @@ namespace OfTamingAndBreeding.Data.Handling
 {
     interface IModelHandler
     {
-        string GetDirectoryName();
-        string GetModelTypeName();
+        string DirectoryName { get; }
+        string ModelTypeName { get; }
+
+        Dictionary<string, string> GetAllYamlData();
+        int GetLoadedDataCount();
 
         bool LoadFromYaml(string prefabName, string yamlString);
         bool LoadFromFile(string file);

@@ -36,6 +36,7 @@ namespace OfTamingAndBreeding
 
             Configs.Initialize(Config);
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
+            RPCContext.RegisterRPCs();
         }
 
     }

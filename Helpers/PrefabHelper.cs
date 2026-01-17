@@ -8,33 +8,39 @@ using UnityEngine;
 
 namespace OfTamingAndBreeding.Helpers
 {
-    internal class PrefabHelper
+    internal static class PrefabHelper
     {
 
 
-        private static Dictionary<string, ItemDrop> prefabItemDrops = new Dictionary<string, ItemDrop>();
+        private static readonly Dictionary<int, ItemDrop> prefabItemDrops = new Dictionary<int, ItemDrop>();
 
-        internal static ItemDrop GetItemDropByPrefabId(string prefabId)
+        static PrefabHelper()
         {
-            if (prefabItemDrops.TryGetValue(prefabId, out ItemDrop itemDrop))
+            Data.DataLoader.OnDataReset(() => {
+                prefabItemDrops.Clear();
+            });
+        }
+
+        internal static ItemDrop GetItemDropByPrefab(string prefabName)
+        {
+            var hash = prefabName.GetStableHashCode();
+            if (prefabItemDrops.TryGetValue(hash, out ItemDrop itemDrop))
             {
                 return itemDrop;
             }
-            GameObject prefab = ObjectDB.instance.GetItemPrefab(prefabId);
+            GameObject prefab = ObjectDB.instance.GetItemPrefab(prefabName);
             if (prefab == null)
             {
-                Plugin.LogWarning($"Unknown item '{prefabId}' (prefab == null)");
-                prefabItemDrops.Add(prefabId, null);
+                prefabItemDrops.Add(hash, null);
                 return null;
             }
             itemDrop = prefab.GetComponent<ItemDrop>();
             if (itemDrop == null)
             {
-                Plugin.LogWarning($"Unknown item '{prefabId}' (itemDrop == null)");
-                prefabItemDrops.Add(prefabId, null);
+                prefabItemDrops.Add(hash, null);
                 return null;
             }
-            prefabItemDrops.Add(prefabId, itemDrop);
+            prefabItemDrops.Add(hash, itemDrop);
             return itemDrop;
         }
 

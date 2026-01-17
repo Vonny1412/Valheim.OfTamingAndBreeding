@@ -1,4 +1,5 @@
-﻿using System;
+﻿using JetBrains.Annotations;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,10 +8,12 @@ using System.Threading.Tasks;
 namespace OfTamingAndBreeding.Data.Models
 {
 
+    [Serializable]
+    [CanBeNull]
     internal class Creature : DataBase<Creature>
     {
 
-        public static string GetDirectoryName() => "Creatures";
+        public const string DirectoryName = "Creatures";
 
 
         public CharacterAIData Character = null;
@@ -18,74 +21,79 @@ namespace OfTamingAndBreeding.Data.Models
         public TameableData Tameable = null;
         public ProcreationData Procreation = null;
         
-        public class CharacterAIData : SubData.BaseCharacterData
+        public class CharacterAIData : SubData.ICharacterAIData
         {
-            public bool attacksTames = false;
+            public string Group { get; set; } = "";
+            public bool StickToFaction { get; set; } = true;
+            public bool CanAttackTames { get; set; } = false;
         }
 
         public class MonsterAIConsumItemData
         {
-            public string prefab = null;
-            public float fedDurationMultiply = 1f;
+            public string Prefab { get; set; } = null;
+            public float FedDurationMultiply { get; set; } = 1f;
         }
 
         public class MonsterAIData
         {
-            public MonsterAIConsumItemData[] consumeItems = null;
-            public float consumeRange = 1;
-            public float consumeSearchRange = 10;
-            public float consumeSearchInterval = 10;
+            public MonsterAIConsumItemData[] ConsumeItems { get; set; } = null;
+            public float ConsumeRange { get; set; } = 1;
+            public float ConsumeSearchRange { get; set; } = 10;
+            public float ConsumeSearchInterval { get; set; } = 10;
         }
 
         public class TameableData
         {
-            public float fedDuration = 30f;
-            public float tamingTime = 1800f;
-            public bool commandable = false;
+            public float FedDuration { get; set; } = 30f;
+            public float TamingTime { get; set; } = 1800f;
+            public bool Commandable { get; set; } = false;
         }
 
-        public class ProcreationOffspringData : SubData.WeightEntry
+        public class ProcreationOffspringData : SubData.IRandomData
         {
-            public string prefab = null;
-            public bool needPartner = true;
-            public string needPartnerPrefab = null;
-            //public string needFoodPrefab = null;
-            public int maxCreatures = 3;
-            public float levelUpChance = 0;
-            public int maxLevel = 3;
+            public string Prefab { get; set; } = null;
+            public float Weight { get; set; } = 1;
+
+            public bool NeedPartner { get; set; } = true;
+            public string NeedPartnerPrefab { get; set; } = null;
+
+            public int MaxCreatures { get; set; } = 3;
+
+            public float LevelUpChance { get; set; } = 0;
+            public int MaxLevel { get; set; } = 3;
         }
 
-        public class ProcreationPartnerData : SubData.WeightEntry
+        public class ProcreationPartnerData : SubData.IRandomData
         {
-            public string prefab = null;
+            public string Prefab { get; set; } = null;
+            public float Weight { get; set; } = 1;
         }
 
         public class ProcreationData
         {
-            public float updateInterval = 10;
-            public float totalCheckRange = 10;
+            public float UpdateInterval { get; set; } = 10;
+            public float TotalCheckRange { get; set; } = 10;
 
-            public ProcreationPartnerData[] partner = null;
-            public float partnerRecheckSeconds = 60;
-            public float partnerCheckRange = 3;
-            public int requiredLovePoints = 3;
+            public ProcreationPartnerData[] Partner { get; set; } = null;
+            public float PartnerRecheckSeconds { get; set; } = 60;
+            public float PartnerCheckRange { get; set; } = 3;
+            public int RequiredLovePoints { get; set; } = 3;
 
-            public float pregnancyChance = 0.5f;
-            public float pregnancyDuration = 60;
-            public float spawnOffset = 2f;
-            public float spawnOffsetMax = 0;
-            public bool spawnRandomDirection = false;
+            public float PregnancyChance { get; set; } = 0.5f;
+            public float PregnancyDuration { get; set; } = 60;
 
-            public bool procreateWhileSwimming = true;
+            public float SpawnOffset { get; set; } = 2f;
+            public float SpawnOffsetMax { get; set; } = 0;
+            public bool SpawnRandomDirection { get; set; } = false;
 
-            public float extraOffspringChance = 0.0f;
-            public int maxOffspringsPerPregnancy = 0;
+            public bool ProcreateWhileSwimming { get; set; } = true;
 
-            public ProcreationOffspringData[] offspring = null;
+            public float ExtraOffspringChance { get; set; } = 0.0f;
+            public int MaxOffspringsPerPregnancy { get; set; } = 0;
+
+            public ProcreationOffspringData[] Offspring { get; set; } = null;
 
         }
-
-
 
     }
 }

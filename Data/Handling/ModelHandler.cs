@@ -27,7 +27,6 @@ namespace OfTamingAndBreeding.Data.Handling
             {
                 return true;
             }
-            //if ((bool)zns.GetPrefab(prefabName))
             if ((bool)GetPrefab(prefabName))
             {
                 return true;
@@ -53,11 +52,23 @@ namespace OfTamingAndBreeding.Data.Handling
 
     }
 
-    internal abstract class ModelHandler<T> : IModelHandler where T : Data.DataBase<T>
+    internal abstract class ModelHandler<T> : IModelHandler where T : DataBase<T>
     {
+        public abstract string DirectoryName { get; }
 
-        public abstract string GetDirectoryName();
-        public string GetModelTypeName() => typeof(T).Name;
+        public string ModelTypeName => typeof(T).Name;
+
+        public Dictionary<string, string> GetAllYamlData()
+        {
+            var ret = new Dictionary<string, string>();
+            foreach(var kv in DataBase<T>.GetAll())
+            {
+                ret.Add(kv.Key, DataBase<T>.Serialize(kv.Value));
+            }
+            return ret;
+        }
+
+        public int GetLoadedDataCount() => DataBase<T>.GetAll().Count;
 
         public bool LoadFromYaml(string prefabName, string yamlString)
         {
@@ -70,7 +81,7 @@ namespace OfTamingAndBreeding.Data.Handling
             }
             catch(Exception e)
             {
-
+                Plugin.LogFatal($"Failed loading YAML for {typeof(T).Name} '{prefabName}'");
             }
             return false;
         }
@@ -79,32 +90,16 @@ namespace OfTamingAndBreeding.Data.Handling
         {
             var prefabName = Path.GetFileNameWithoutExtension(file);
             Plugin.LogDebug($"Loading {typeof(T).Name} '{prefabName}' from file");
-            try
-            {
-                var yaml = File.ReadAllText(file);
-                LoadFromYaml(prefabName, yaml);
-                return true;
-            }
-            catch(Exception e)
-            {
-                Plugin.LogFatal($"Invalid yaml file: {file}");
-            }
-            return false;
+            var yaml = File.ReadAllText(file);
+            return LoadFromYaml(prefabName, yaml);
         }
-
-
-
-
-
-
-
 
 
 
         public abstract bool ValidateData(ModelHandlerContext ctx, string prefabName, T data);
         public void ValidateAllData(ModelHandlerContext ctx)
         {
-            Plugin.LogInfo($"{nameof(ValidateAllData)}: {typeof(T).Name}");
+            Plugin.LogDebug($"{nameof(ValidateAllData)}: {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
             var keys = all.Keys.ToList();
             foreach (var prefabName in keys)
@@ -122,7 +117,7 @@ namespace OfTamingAndBreeding.Data.Handling
         public abstract bool PreparePrefab(ModelHandlerContext ctx, string prefabName, T data);
         public void PrepareAllPrefabs(ModelHandlerContext ctx)
         {
-            Plugin.LogInfo($"{nameof(PrepareAllPrefabs)}: {typeof(T).Name}");
+            Plugin.LogDebug($"{nameof(PrepareAllPrefabs)}: {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
             var keys = all.Keys.ToList();
             foreach (var prefabName in keys)
@@ -140,7 +135,7 @@ namespace OfTamingAndBreeding.Data.Handling
         public abstract bool ValidatePrefab(ModelHandlerContext ctx, string prefabName, T data);
         public bool ValidateAllPrefabs(ModelHandlerContext ctx)
         {
-            Plugin.LogInfo($"{nameof(ValidateAllPrefabs)}: {typeof(T).Name}");
+            Plugin.LogDebug($"{nameof(ValidateAllPrefabs)}: {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
             var keys = all.Keys.ToList();
             var allOkay = true;
@@ -158,7 +153,7 @@ namespace OfTamingAndBreeding.Data.Handling
 
         public void RegisterAllPrefabs(ModelHandlerContext ctx)
         {
-            Plugin.LogInfo($"{nameof(RegisterAllPrefabs)} {typeof(T).Name}");
+            Plugin.LogDebug($"{nameof(RegisterAllPrefabs)} {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
             var keys = all.Keys.ToList();
             foreach (var prefabName in keys)
@@ -173,7 +168,7 @@ namespace OfTamingAndBreeding.Data.Handling
         public Dictionary<string, string> GetYamlDictFromAll()
         {
             var raw = new Dictionary<string, string>();
-            foreach (var kv in Data.DataBase<T>.GetAll())
+            foreach (var kv in DataBase<T>.GetAll())
             {
                 raw.Add(kv.Key, kv.Value.Serialize());
             }
@@ -190,7 +185,7 @@ namespace OfTamingAndBreeding.Data.Handling
 
         public void ResetData()
         {
-            Data.DataBase<T>.DropAll();
+            DataBase<T>.DropAll();
         }
 
     }

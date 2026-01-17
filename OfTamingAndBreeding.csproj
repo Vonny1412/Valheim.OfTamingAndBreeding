@@ -11,8 +11,8 @@
 	<PropertyGroup>
 		<VersionMajor>1</VersionMajor>
 		<VersionMinor>0</VersionMinor>
-		<VersionPatch>0</VersionPatch>
-		<VersionSuffix>beta.1</VersionSuffix>
+		<VersionPatch>2</VersionPatch>
+		<VersionSuffix>beta</VersionSuffix>
 		<Authors>Yvonne Pautz</Authors>
 		<Product>Of Taming and Breeding</Product>
 	</PropertyGroup>
@@ -30,12 +30,12 @@
 
 	<ItemGroup>
 		<Reference Include="Jotunn">
-		  <HintPath>..\.References\Jotunn.dll</HintPath>
-		  <Private>False</Private>
+			<HintPath>..\.References\Jotunn.dll</HintPath>
+			<Private>False</Private>
 		</Reference>
 		<Reference Include="YamlDotNet">
-		  <HintPath>..\.References\YamlDotNet.dll</HintPath>
-		  <Private>False</Private>
+			<HintPath>..\.References\YamlDotNet.dll</HintPath>
+			<Private>False</Private>
 		</Reference>
 	</ItemGroup>
 

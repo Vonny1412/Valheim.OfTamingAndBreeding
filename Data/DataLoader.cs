@@ -11,7 +11,7 @@ namespace OfTamingAndBreeding.Data
     internal sealed class DataLoader
     {
 
-        private static List<Action> OnResetCallbacks = new List<Action>();
+        private static readonly List<Action> OnResetCallbacks = new List<Action>();
         public static void OnDataReset(Action cb)
             => OnResetCallbacks.Add(cb);
 
@@ -21,12 +21,18 @@ namespace OfTamingAndBreeding.Data
                 new CreatureModelHandler(),
             };
 
+        
         public static void IterDataHandlers(Action<IModelHandler> cb)
         {
             foreach(var dh in dataHandlers)
             {
                 cb(dh);
             }
+        }
+        public static IEnumerable<IModelHandler> IterDataHandlers()
+        {
+            foreach (var dh in dataHandlers)
+                yield return dh;
         }
 
         // NOTE:
@@ -54,8 +60,7 @@ namespace OfTamingAndBreeding.Data
                 var allokay = true;
                 foreach (var dh in dataHandlers)
                 {
-                    var subDir = dh.GetDirectoryName(); // "Creatures" / "Eggs" / "Offsprings"
-                    foreach (var file in EnumerateCategoryFiles(worldRoot, subDir))
+                    foreach (var file in EnumerateCategoryFiles(worldRoot, dh.DirectoryName))
                     {
                         allokay &= dh.LoadFromFile(file);
                     }
@@ -111,6 +116,15 @@ namespace OfTamingAndBreeding.Data
             {
                 dh.RegisterAllPrefabs(ctx);
             }
+            /*
+            if (ZNet.instance.IsServer())
+            {
+                foreach (var dh in dataHandlers)
+                {
+                    Plugin.LogMessage($"Loaded {dh.GetLoadedDataCount()} {dh.ModelTypeName} entries");
+                }
+            }
+            */
         }
 
         public static Dictionary<string, Dictionary<string, string>> GetServerData()
@@ -118,8 +132,7 @@ namespace OfTamingAndBreeding.Data
             var allData = new Dictionary<string, Dictionary<string, string>>();
             foreach (var dh in dataHandlers)
             {
-                var dataTypeName = dh.GetModelTypeName();
-                allData.Add(dataTypeName, dh.GetYamlDictFromAll());
+                allData.Add(dh.DirectoryName, dh.GetYamlDictFromAll());
             }
             return allData;
         }

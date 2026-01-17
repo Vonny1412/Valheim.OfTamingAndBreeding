@@ -1,41 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Text;
 using Jotunn.Managers;
+
 using OfTamingAndBreeding.Data.Models;
-using YamlDotNet.Core;
 
 namespace OfTamingAndBreeding.Data.Handling
 {
-    internal class OffspringModelHandler : ModelHandler<Data.Models.Offspring>
+    internal class OffspringModelHandler : ModelHandler<Offspring>
     {
 
-        public override string GetDirectoryName() => Data.Models.Offspring.GetDirectoryName();
+        public override string DirectoryName => Offspring.DirectoryName;
 
         //------------------------------------------------
         // VALIDATE DATA
         //------------------------------------------------
 
-        public override bool ValidateData(ModelHandlerContext ctx, string offspringName, Data.Models.Offspring data)
+        public override bool ValidateData(ModelHandlerContext ctx, string offspringName, Offspring data)
         {
-            var model = $"{nameof(Models.Offspring)}.{offspringName}";
+            var model = $"{nameof(Offspring)}.{offspringName}";
             var error = false;
 
             if (data.Growup != null)
             {
-                if (data.Growup.grown == null)
+                if (data.Growup.Grown == null)
                 {
-                    data.Growup.grown = new Models.Offspring.GrowupGrownData[] { };
+                    data.Growup.Grown = new Offspring.GrowupGrownData[] { };
                 }
 
-                foreach (var (grownData, i) in data.Growup.grown.Select((value, i) => (value, i)))
+                foreach (var (grownData, i) in data.Growup.Grown.Select((value, i) => (value, i)))
                 {
-                    grownData.weight = Math.Max(0f, grownData.weight);
-                    if (grownData.prefab == null)
+                    grownData.Weight = Math.Max(0f, grownData.Weight);
+                    if (grownData.Prefab == null)
                     {
-                        Plugin.LogError($"{model}.{nameof(data.Growup)}.{nameof(data.Growup.grown)}.{i}.{nameof(grownData.prefab)} is empty");
+                        Plugin.LogError($"{model}.{nameof(data.Growup)}.{nameof(data.Growup.Grown)}.{i}.{nameof(grownData.Prefab)} is empty");
                         error = true;
                     }
                 }
@@ -48,9 +47,9 @@ namespace OfTamingAndBreeding.Data.Handling
         // PREPARE PREFAB
         //------------------------------------------------
 
-        public override bool PreparePrefab(ModelHandlerContext ctx, string offspringName, Data.Models.Offspring data)
+        public override bool PreparePrefab(ModelHandlerContext ctx, string offspringName, Offspring data)
         {
-            var model = $"{nameof(Models.Offspring)}.{offspringName}";
+            var model = $"{nameof(Offspring)}.{offspringName}";
 
             //var offspring = PrefabManager.Instance.GetPrefab(offspringName);
             var offspring = ctx.GetPrefab(offspringName);
@@ -61,17 +60,17 @@ namespace OfTamingAndBreeding.Data.Handling
                     Plugin.LogError($"{model}.{nameof(data.Clone)} missing");
                     return false;
                 }
-                if (data.Clone.from == null)
+                if (data.Clone.From == null)
                 {
-                    Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.from)} missing");
+                    Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)} missing");
                     return false;
                 }
 
                 //var cloneFrom = PrefabManager.Instance.GetPrefab(data.Clone.from);
-                var cloneFrom = ctx.GetPrefab(data.Clone.from);
+                var cloneFrom = ctx.GetPrefab(data.Clone.From);
                 if (!cloneFrom)
                 {
-                    Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.from)} '{data.Clone.from}' not found");
+                    Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)} '{data.Clone.From}' not found");
                     return false;
                 }
 
@@ -87,9 +86,9 @@ namespace OfTamingAndBreeding.Data.Handling
         // VALIDATE PREFAB
         //------------------------------------------------
 
-        public override bool ValidatePrefab(ModelHandlerContext ctx, string offspringName, Data.Models.Offspring data)
+        public override bool ValidatePrefab(ModelHandlerContext ctx, string offspringName, Offspring data)
         {
-            var model = $"{nameof(Models.Offspring)}.{offspringName}";
+            var model = $"{nameof(Offspring)}.{offspringName}";
             var error = false;
 
             var offspring = ctx.GetPrefab(offspringName);
@@ -109,11 +108,11 @@ namespace OfTamingAndBreeding.Data.Handling
 
             if (data.Growup != null)
             {
-                foreach (var (grownData, i) in data.Growup.grown.Select((value, i) => (value, i)))
+                foreach (var (grownData, i) in data.Growup.Grown.Select((value, i) => (value, i)))
                 {
-                    if (!ctx.PrefabExists(grownData.prefab))
+                    if (!ctx.PrefabExists(grownData.Prefab))
                     {
-                        Plugin.LogFatal($"{model}.{nameof(data.Growup)}.{nameof(data.Growup.grown)}.{i}.{nameof(grownData.prefab)} '{grownData.prefab}' not found");
+                        Plugin.LogFatal($"{model}.{nameof(data.Growup)}.{nameof(data.Growup.Grown)}.{i}.{nameof(grownData.Prefab)} '{grownData.Prefab}' not found");
                         error = true;
                     }
                 }
@@ -126,7 +125,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // REGISTER PREFAB
         //------------------------------------------------
 
-        public override void RegisterPrefab(ModelHandlerContext ctx, string offspringName, Data.Models.Offspring data)
+        public override void RegisterPrefab(ModelHandlerContext ctx, string offspringName, Offspring data)
         {
             var model = $"{nameof(Models.Offspring)}.{offspringName}";
 
@@ -152,18 +151,18 @@ namespace OfTamingAndBreeding.Data.Handling
             {
                 Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting Character values");
 
-                offspringCharacter.m_group = data.Character.group;
-                offspringCharacter.m_name = data.Character.name;
+                offspringCharacter.m_group = data.Character.Group;
+                offspringCharacter.m_name = data.Character.Name;
                 if (offspringCharacter.m_name == null)
                 {
                     offspringCharacter.m_name = "Baby";
                 }
                 Plugin.LogDebug($"{model}.{nameof(data.Character)}: Name: {offspringCharacter.m_name}");
 
-                if (data.Character.scale != 1)
+                if (data.Character.Scale != 1)
                 {
-                    Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting custom scaling to {data.Character.scale}");
-                    offspring.transform.localScale = UnityEngine.Vector3.one * data.Character.scale;
+                    Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting custom scaling to {data.Character.Scale}");
+                    offspring.transform.localScale = UnityEngine.Vector3.one * data.Character.Scale;
 
                     // we need to clone the effect prefab to make it scaleable independently from its original effect prefab
                     // but we need to make sure that the original effect prefab only gets cloned once 
@@ -183,15 +182,15 @@ namespace OfTamingAndBreeding.Data.Handling
                             }
                             eff.m_prefab = cloned;
                         }
-                        eff.m_prefab.transform.localScale = UnityEngine.Vector3.one * data.Character.scale;
+                        eff.m_prefab.transform.localScale = UnityEngine.Vector3.one * data.Character.Scale;
                         eff.m_scale = false;
                         eff.m_inheritParentScale = false;
                     }
                 }
 
-                if (data.Character.stickToFaction)
+                if (data.Character.StickToFaction)
                 {
-                    Patches.Contexts.IsEnemyContext.prefabSticksToFaction.Add(offspringName.GetStableHashCode());
+                    Patches.Contexts.DataContext.SetObjectSticksToFaction(offspringName);
                 }
 
             }
@@ -205,24 +204,24 @@ namespace OfTamingAndBreeding.Data.Handling
                 }
 
                 Plugin.LogDebug($"{model}.{nameof(data.Growup)}: Setting Growup values");
-                offspringGrowup.m_growTime = data.Growup.growTime;
-                offspringGrowup.m_inheritTame = data.Growup.inheritTame;
+                offspringGrowup.m_growTime = data.Growup.GrowTime;
+                offspringGrowup.m_inheritTame = data.Growup.InheritTame;
 
-                if (data.Growup.grown.Length == 1)
+                if (data.Growup.Grown.Length == 1)
                 {
-                    offspringGrowup.m_grownPrefab = ctx.GetPrefab(data.Growup.grown[0].prefab);
+                    offspringGrowup.m_grownPrefab = ctx.GetPrefab(data.Growup.Grown[0].Prefab);
                     offspringGrowup.m_altGrownPrefabs = null;
                 }
                 else
                 {
                     offspringGrowup.m_grownPrefab = null;
                     offspringGrowup.m_altGrownPrefabs = new List<Growup.GrownEntry>();
-                    foreach (var grownData in data.Growup.grown)
+                    foreach (var grownData in data.Growup.Grown)
                     {
                         offspringGrowup.m_altGrownPrefabs.Add(new Growup.GrownEntry
                         {
-                            m_prefab = ctx.GetPrefab(grownData.prefab),
-                            m_weight = grownData.weight,
+                            m_prefab = ctx.GetPrefab(grownData.Prefab),
+                            m_weight = grownData.Weight,
                         });
                     }
                 }

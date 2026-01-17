@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
+using OfTamingAndBreeding.Data.Models;
+
 namespace OfTamingAndBreeding.Internals
 {
     
@@ -26,7 +28,7 @@ namespace OfTamingAndBreeding.Internals
         public bool GrowUpdate_Prefix(ZDO zdo)
         {
 
-            var data = Data.Models.Egg.Get(Utils.GetPrefabName(name));
+            var data = Egg.Get(Utils.GetPrefabName(name));
             if (data == null)
             {
                 // no custom handling
@@ -39,8 +41,8 @@ namespace OfTamingAndBreeding.Internals
             var grown = ZNetScene.instance.GetPrefab(grownName);
             if (grown == null)
             {
-                zdo.Set(ZDOVars.s_growStart, 0f);
                 // trigger new choosing
+                zdo.Set(ZDOVars.s_growStart, 0f);
             }
 
             float growStart = zdo.GetFloat(ZDOVars.s_growStart, 0f);
@@ -48,22 +50,22 @@ namespace OfTamingAndBreeding.Internals
             {
 
                 // select new grown
-                var grownEntry = Data.Models.SubData.WeightEntry.GetRandom<Data.Models.Egg.EggGrowGrownData>(data.EggGrow.grown);
-                if (grownEntry == null)
+                var foundRandom = Data.Models.SubData.RandomData.FindRandom<Egg.EggGrowGrownData>(data.EggGrow.Grown, out Egg.EggGrowGrownData grownEntry);
+                if (!foundRandom)
                 {
                     // should not happen but whatever
                     zdo.Set(Plugin.ZDOVars.s_EggBehavior, Plugin.ZDOVars.EggBehavior.Vanilla); // vanilla
                     return false;
                 }
 
-                grownName = grownEntry.prefab;
+                grownName = grownEntry.Prefab;
                 grown = ZNetScene.instance.GetPrefab(grownName);
 
                 zdo.Set(Plugin.ZDOVars.s_eggGrownPrefab, grownName);
-                zdo.Set(Plugin.ZDOVars.s_eggGrownTamed, grownEntry.tamed ? 1 : 0);
-                zdo.Set(Plugin.ZDOVars.s_eggShowHatchEffect, grownEntry.showHatchEffect ? 1 : 0);
+                zdo.Set(Plugin.ZDOVars.s_eggGrownTamed, grownEntry.Tamed ? 1 : 0);
+                zdo.Set(Plugin.ZDOVars.s_eggShowHatchEffect, grownEntry.ShowHatchEffect ? 1 : 0);
 
-                var eggGrownEggData = Data.Models.Egg.Get(grownName);
+                var eggGrownEggData = Egg.Get(grownName);
                 if (eggGrownEggData == null)
                 {
                     zdo.Set(Plugin.ZDOVars.s_EggBehavior, Plugin.ZDOVars.EggBehavior.Vanilla); // vanilla

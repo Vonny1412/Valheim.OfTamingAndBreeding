@@ -1,151 +1,212 @@
-﻿
-using System.IO;
-using System.Collections;
-
-using OfTamingAndBreeding.Data;
+﻿using OfTamingAndBreeding.Data;
 using OfTamingAndBreeding.Helpers;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Net
 {
-    internal class RPCContext
+    internal static class RPCContext
     {
 
-        internal static BaseRPC HandshakeRPC;
-        internal static BaseRPC CacheRPC;
+        private static BaseRPC HandshakeRPC;
+        private static BaseRPC CacheRPC;
 
-        static RPCContext()
-        {
-            DataLoader.OnDataReset(() => {
-                CacheRPC.ResetClientState();
-                HandshakeRPC.ResetClientState();
-            });
-        }
-
-        public static void Init()
+        public static void RegisterRPCs()
         {
             HandshakeRPC = new BaseRPC("OTAB_InitRPC");
             CacheRPC = new BaseRPC("OTAB_CacheRPC");
+            RegisterServerCallbacks();
+            RegisterClientCallbacks();
         }
 
-        public static void InitServer()
+        private static ServerSession serverSession = null;
+        private static ClientSession clientSession = null;
+
+        public static void DestroySession()
         {
-            var inFunc1 = $"{nameof(RPCContext)}.{nameof(RPCContext.InitServer)}";
-            Plugin.LogDebug($"[{inFunc1}] Start");
+            CacheRPC.ResetState();
+            HandshakeRPC.ResetState();
+            serverSession = null;
+            clientSession = null;
+        }
+
+        #region Server
+
+        private class ServerSession
+        {
+            public string CacheFileName = null;
+            public string CacheFileHash = null;
+            public string CacheCryptKey = null;
+            public string CacheContent = null;
+        }
+
+        public static void InitServerSession()
+        {
+            var inFunc1 = $"{nameof(RPCContext)}.{nameof(RPCContext.InitServerSession)}";
+            Plugin.LogMessage($"[{inFunc1}] Start");
 
             DataLoader.LoadDataFromServerFiles();
-            Plugin.LogDebug($"[{inFunc1}] Data counts: Creatures={Data.Models.Creature.GetAll().Count} Offsprings={Data.Models.Offspring.GetAll().Count} Eggs={Data.Models.Egg.GetAll().Count}");
+            Plugin.LogMessage($"[{inFunc1}] Data counts= {string.Join(", ", DataLoader.IterDataHandlers().Select(dh => $"{dh.DirectoryName}:{dh.GetLoadedDataCount()}"))}");
 
-            var cacheFileName = Plugin.Configs.CacheFileName.Value;
-            var cacheCryptKey = Plugin.Configs.CacheFileCryptKey.Value;
-            cacheFileName = cacheFileName.Replace("{world}", ZNet.instance.GetWorldName());
-            cacheFileName = cacheFileName.Replace("{seed}", ZNet.World.m_seedName);
-            Plugin.LogDebug($"[{inFunc1}] Server cache settings: UseCache={Plugin.Configs.UseCache.Value} CacheFileName='{cacheFileName}' KeyLen={(cacheCryptKey?.Length ?? -1)}");
+            serverSession = new ServerSession
+            {
+                CacheFileName = Plugin.Configs.CacheFileName.Value
+                    .Replace("{world}", ZNet.instance.GetWorldName())
+                    .Replace("{seed}", ZNet.World.m_seedName),
 
-            string cacheContent;
+                CacheCryptKey = Plugin.Configs.CacheFileCryptKey.Value
+            };
+            if (serverSession.CacheCryptKey.Trim() == "")
+            {
+                serverSession.CacheCryptKey = null;
+            }
 
-            Plugin.LogDebug($"[{inFunc1}] Cache build: WriteCache #1");
-            var hash1 = CacheManager.WriteCache(cacheFileName, cacheCryptKey);
-            Plugin.LogDebug($"[{inFunc1}] Cache build: LoadCacheFromFile");
-            CacheManager.LoadCacheFromFile(cacheFileName, cacheCryptKey);
-            Plugin.LogDebug($"[{inFunc1}] Cache build: WriteCache #2");
-            var hash2 = CacheManager.WriteCache(cacheFileName, cacheCryptKey);
-            Plugin.LogDebug($"[{inFunc1}] Cache hash1={hash1} hash2={hash2} match={hash1 == hash2}");
+            Plugin.LogMessage($"[{inFunc1}] Server cache settings: WriteClientCacheFile={Plugin.Configs.WriteClientCacheFile.Value} CacheFileName='{serverSession.CacheFileName}' KeyLen={(serverSession.CacheCryptKey?.Length ?? -1)}");
+
+            Plugin.LogMessage($"[{inFunc1}] Cache build: WriteCache #1");
+            var hash1 = CacheManager.BuildCache(serverSession.CacheFileName, serverSession.CacheCryptKey, false, out serverSession.CacheContent);
+            Plugin.LogMessage($"[{inFunc1}] Cache build: LoadCacheFromCrypted");
+            if (!CacheManager.LoadCacheFromCrypted(serverSession.CacheContent, serverSession.CacheCryptKey))
+            {
+                Plugin.LogFatal($"[{inFunc1}] Failed building cache: Cache #1 corrupted");
+                DataLoader.ResetData();
+                DestroySession();
+                return;
+            }
+            Plugin.LogMessage($"[{inFunc1}] Cache build: WriteCache #2");
+            var hash2 = CacheManager.BuildCache(serverSession.CacheFileName, serverSession.CacheCryptKey, true, out serverSession.CacheContent);
+            Plugin.LogMessage($"[{inFunc1}] Cache hash1={hash1} hash2={hash2} match={hash1 == hash2}");
 
             if (hash1 == hash2)
             {
-                Plugin.Configs.CacheFileHash.Value = hash1;
-                cacheContent = File.ReadAllText(CacheManager.GetCacheCryptedFile(cacheFileName));
+                serverSession.CacheFileHash = hash1;
             }
             else
             {
-                Plugin.LogFatal($"[{inFunc1}] Failed building cache file -> abort");
+                Plugin.LogFatal($"[{inFunc1}] Failed building cache: Hashes mismatch");
                 DataLoader.ResetData();
+                DestroySession();
                 return;
             }
+
+        }
+
+        public static void RegisterServerCallbacks()
+        {
 
             HandshakeRPC.OnServerReceive((ZPackage inPkg, ZPackage outPkg) => {
                 var inFunc2 = $"{nameof(HandshakeRPC)}.{nameof(HandshakeRPC.OnServerReceive)}";
 
                 Plugin.LogDebug($"[{inFunc2}] Server received handshake request");
 
-                // policy
+                if (serverSession == null)
+                {
+                    // this method should not be called when cacheContent==null
+                    // but maybe i gonna change that behavior in future release
+                    Plugin.LogDebug($"[{inFunc2}] Server session not initialized");
+                    outPkg.Write(0);
+                }
+                else
+                {
+                    outPkg.Write(1);
 
-                outPkg.Write(Plugin.Configs.RequireFoodDroppedByPlayer.Value);
-                outPkg.Write(Plugin.Configs.ShowEggGrowProgress.Value);
-                outPkg.Write(Plugin.Configs.ShowOffspringGrowProgress.Value);
-                outPkg.Write(Plugin.Configs.ShowTamingProgress.Value);
-                outPkg.Write(Plugin.Configs.HoverProgressPrecision.Value);
+                    // policy
 
-                // cache
+                    outPkg.Write(Plugin.Configs.RequireFoodDroppedByPlayer.Value);
+                    outPkg.Write(Plugin.Configs.ShowEggGrowProgress.Value);
+                    outPkg.Write(Plugin.Configs.ShowOffspringGrowProgress.Value);
+                    outPkg.Write(Plugin.Configs.ShowTamingProgress.Value);
+                    outPkg.Write(Plugin.Configs.HoverProgressPrecision.Value);
 
-                outPkg.Write(Plugin.Configs.UseCache.Value);
-                outPkg.Write(Plugin.Configs.CacheFileName.Value);
-                outPkg.Write(Plugin.Configs.CacheFileHash.Value);
+                    // cache
 
-                var obf = KeyMask.Obfuscate(cacheCryptKey, $"{cacheFileName}|{Plugin.Version}");
-                Plugin.LogDebug($"[{inFunc2}] Responding: UseCache={Plugin.Configs.UseCache.Value} File='{cacheFileName}' Hash='{Plugin.Configs.CacheFileHash.Value}' ObfLen={obf.Length}");
-                outPkg.Write(obf);
+                    outPkg.Write(Plugin.Configs.WriteClientCacheFile.Value);
+                    outPkg.Write(serverSession.CacheFileName);
+                    outPkg.Write(serverSession.CacheFileHash);
 
+                    string obf = null;
+                    if (serverSession.CacheCryptKey != null)
+                    {
+                        obf = KeyMask.Obfuscate(serverSession.CacheCryptKey, $"{serverSession.CacheFileName}|{Plugin.Version}");
+                    }
+                    Plugin.LogMessage($"Handshaking: UseCache={Plugin.Configs.WriteClientCacheFile.Value} File='{serverSession.CacheFileName}' Hash='{serverSession.CacheFileHash}' ObfLen={obf?.Length ?? -1}");
+                    outPkg.Write(obf ?? "");
+
+                }
                 return true;
             });
 
             CacheRPC.OnServerReceive((ZPackage inPkg, ZPackage outPkg) => {
                 var inFunc2 = $"{nameof(CacheRPC)}.{nameof(CacheRPC.OnServerReceive)}";
 
-                Plugin.LogDebug($"[{inFunc2}] Server received request. Sending cacheContentLen={cacheContent?.Length ?? -1}");
-                outPkg.Write(cacheContent);
+                if (serverSession == null)
+                {
+                    // this method should not be called when cacheContent==null
+                    // but maybe i gonna change that behavior in future release
+                    Plugin.LogDebug($"[{inFunc2}] Server session not initialized");
+                    outPkg.Write(0);
+                }
+                else
+                {
+                    outPkg.Write(1);
+
+                    Plugin.LogMessage($"Sending Cache: cacheContentLen={serverSession.CacheContent?.Length ?? -1}");
+                    outPkg.Write(serverSession.CacheContent);
+                }
+
                 return true;
             });
 
             CacheRPC.SetServerReady();
             HandshakeRPC.SetServerReady();
-            Plugin.LogMessage($"[{inFunc1}] Done -> ready for clients");
+            Plugin.LogMessage($"Done -> ready for clients");
         }
 
-        public static void InitClient()
+        #endregion
+
+        #region Client
+
+        private class ClientSession
         {
-            var inFunc1 = $"{nameof(RPCContext)}.{nameof(RPCContext.InitClient)}";
+            public bool UseCache = false;
+            public string CacheFileName = null;
+            public string CacheFileHash = null;
+            public string CacheCryptKey = null;
+        }
+
+        public static void InitClientSession()
+        {
+            var inFunc1 = $"{nameof(RPCContext)}.{nameof(RPCContext.InitClientSession)}";
             Plugin.LogDebug($"[{inFunc1}] Start");
 
-            var saveCache = false;
-            string cacheFileName = null;
-            string cacheFileHash = null;
-            string cacheFileCryptKey = null;
+            clientSession = new ClientSession();
 
-            CacheRPC.OnClientReceive((ZPackage inPkg) => {
-                var inFunc2 = $"{nameof(CacheRPC)}.{nameof(CacheRPC.OnClientReceive)}";
+            Plugin.LogDebug($"[{inFunc1}] Done");
+        }
 
-                Plugin.LogDebug($"[{inFunc2}] Client received response");
-
-                var cacheContent = inPkg.ReadString();
-                Plugin.LogDebug($"[{inFunc2}] contentLen={cacheContent?.Length ?? -1} saveCache={saveCache} file='{cacheFileName}'");
-
-                if (saveCache)
-                {
-                    if (cacheFileName == null)
-                    {
-                        return false; // this dhould not happen Oo
-                    }
-                    var cacheFile = CacheManager.GetCacheCryptedFile(cacheFileName);
-                    Plugin.LogDebug($"[{inFunc2}] Writing cache file '{cacheFile}'");
-                    File.WriteAllText(cacheFile, cacheContent);
-                }
-
-                var success = CacheManager.LoadCacheFromCrypted(cacheContent, cacheFileCryptKey);
-                Plugin.LogMessage($"[{inFunc2}] Loaded data from received cache");
-
-                if (success)
-                {
-                    DataLoader.ValidateAndPreparePrefabs();
-                }
-                return success;
-            });
+        public static void RegisterClientCallbacks()
+        {
 
             HandshakeRPC.OnClientReceive((ZPackage inPkg) => {
                 var inFunc2 = $"{nameof(HandshakeRPC)}.{nameof(HandshakeRPC.OnClientReceive)}";
 
                 Plugin.LogDebug($"[{inFunc2}] Client received response");
+
+                if (clientSession == null)
+                {
+                    Plugin.LogDebug($"[{inFunc2}] Client session not initialized");
+                    return false;
+                }
+
+                var proceed = inPkg.ReadInt();
+                if (proceed == 0)
+                {
+                    Plugin.LogFatal($"[{inFunc2}] Error on server side");
+                    return false;
+                }
 
                 // policy
 
@@ -157,66 +218,109 @@ namespace OfTamingAndBreeding.Net
 
                 // cache
 
-                bool useCache = inPkg.ReadBool();
-                cacheFileName = inPkg.ReadString();
-                cacheFileHash = inPkg.ReadString();
+                clientSession.UseCache = inPkg.ReadBool();
+                clientSession.CacheFileName = inPkg.ReadString();
+                clientSession.CacheFileHash = inPkg.ReadString();
 
                 var obf = inPkg.ReadString();
-                cacheFileCryptKey = KeyMask.Deobfuscate(obf, $"{cacheFileName}|{Plugin.Version}");
-                Plugin.LogDebug($"[{inFunc2}] useCache={useCache} file='{cacheFileName}' hash='{cacheFileHash}' obfLen={obf?.Length ?? -1} keyLen={cacheFileCryptKey?.Length ?? -1} version='{Plugin.Version}'");
+                if (obf.Trim() == "")
+                {
+                    obf = null;
+                }
+
+                clientSession.CacheCryptKey = obf == null ? null : KeyMask.Deobfuscate(obf, $"{clientSession.CacheFileName}|{Plugin.Version}");
+                Plugin.LogDebug($"[{inFunc2}] useCache={clientSession.UseCache} file='{clientSession.CacheFileName}' hash='{clientSession.CacheFileHash}' obfLen={obf?.Length ?? -1} keyLen={clientSession.CacheCryptKey?.Length ?? -1} version='{Plugin.Version}'");
 
                 var requestCacheFile = true;
-                if (useCache)
+                if (clientSession.UseCache)
                 {
-                    saveCache = true;
 
-                    var cacheFilePath = Path.Combine(Plugin.CacheDir, cacheFileName);
+                    var cacheFilePath = CacheManager.GetCacheCryptedFile(clientSession.CacheFileName);
                     if (File.Exists(cacheFilePath))
                     {
                         var hash = CacheManager.ComputeSha256FileHash(cacheFilePath);
-                        if (hash == cacheFileHash)
+                        if (hash == clientSession.CacheFileHash)
                         {
-                            if (CacheManager.LoadCacheFromCrypted(File.ReadAllText(cacheFilePath), cacheFileCryptKey))
+                            if (CacheManager.LoadCacheFromCrypted(File.ReadAllText(cacheFilePath), clientSession.CacheCryptKey))
                             {
-                                Plugin.LogMessage($"[{inFunc2}] Loaded data from existing cache");
                                 requestCacheFile = false;
                                 DataLoader.ValidateAndPreparePrefabs();
+                                Plugin.LogMessage($"Loaded data from existing cache");
                             }
+                        }
+                        else
+                        {
+                            Plugin.LogDebug($"[{inFunc2}] Hash mismatch: {hash} != {clientSession.CacheFileHash} -> request new cache");
                         }
                     }
                 }
                 else
                 {
                     requestCacheFile = true;
-                    saveCache = false;
                 }
 
                 if (requestCacheFile)
                 {
-                    Plugin.LogDebug($"[{inFunc2}] requestCacheFile={requestCacheFile} readCache={useCache} cacheFileName={cacheFileName}");
+                    Plugin.LogDebug($"[{inFunc2}] requestCacheFile={requestCacheFile} UseCache={clientSession.UseCache} cacheFileName={clientSession.CacheFileName}");
                     CacheRPC.RequestFromServer();
-                }
-                else
-                {
-                    Plugin.LogDebug($"[{inFunc2}] Cache accepted locally, no request needed");
                 }
 
                 return true;
             });
 
-            Plugin.LogDebug($"[{inFunc1}] Done");
-        }
+            CacheRPC.OnClientReceive((ZPackage inPkg) => {
+                var inFunc2 = $"{nameof(CacheRPC)}.{nameof(CacheRPC.OnClientReceive)}";
 
-        private static bool handshakeRequested;
+                Plugin.LogDebug($"[{inFunc2}] Client received response");
+
+                if (clientSession == null)
+                {
+                    Plugin.LogDebug($"[{inFunc2}] Client session not initialized");
+                    return false;
+                }
+
+                var proceed = inPkg.ReadInt();
+                if (proceed == 0)
+                {
+                    Plugin.LogFatal($"[{inFunc2}] Error on server side");
+                    return false;
+                }
+
+                var cacheContent = inPkg.ReadString();
+                Plugin.LogDebug($"[{inFunc2}] contentLen={cacheContent?.Length ?? -1} UseCache={clientSession.UseCache} file='{clientSession.CacheFileName}'");
+
+                if (clientSession.UseCache)
+                {
+                    var cacheFile = CacheManager.GetCacheCryptedFile(clientSession.CacheFileName);
+                    Plugin.LogMessage($"Writing cache file to: '{cacheFile}'");
+                    File.WriteAllText(cacheFile, cacheContent);
+                }
+
+                var success = CacheManager.LoadCacheFromCrypted(cacheContent, clientSession.CacheCryptKey);
+
+                if (success)
+                {
+                    DataLoader.ValidateAndPreparePrefabs();
+                    Plugin.LogMessage($"Loaded data from received cache");
+                }
+                else
+                {
+                    Plugin.LogFatal($"Failed loading data from received cache");
+                }
+                return success;
+            });
+
+        }
 
         public static void RequestHandshakeWithServer()
         {
             var inFunc = $"{nameof(RPCContext)}.{nameof(RPCContext.RequestHandshakeWithServer)}";
-            if (handshakeRequested) return;
-            handshakeRequested = true;
+
             Plugin.LogDebug($"[{inFunc}] Requesting handshake from server");
             HandshakeRPC.RequestFromServer();
         }
+
+        #endregion
 
     }
 }

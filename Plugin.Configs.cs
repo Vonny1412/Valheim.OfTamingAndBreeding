@@ -37,10 +37,10 @@ namespace OfTamingAndBreeding
 
             // cache
 
-            public static ConfigEntry<bool> UseCache { get; private set; }
+            public static ConfigEntry<bool> WriteClientCacheFile { get; private set; }
+            public static ConfigEntry<bool> WriteServerCacheDebugFiles { get; private set; }
             public static ConfigEntry<string> CacheFileName { get; private set; }
             public static ConfigEntry<string> CacheFileCryptKey { get; private set; }
-            public static ConfigEntry<string> CacheFileHash { get; private set; }
 
             public static void Initialize(ConfigFile Config)
             {
@@ -82,10 +82,10 @@ namespace OfTamingAndBreeding
 
                 section = "Cache";
 
-                UseCache = Config.Bind<bool>(section, "UseCache", true, new ConfigDescription("", null, isAdminOnly));
+                WriteClientCacheFile = Config.Bind<bool>(section, "WriteClientCacheFile", false, new ConfigDescription("", null, isAdminOnly));
+                WriteServerCacheDebugFiles = Config.Bind<bool>(section, "WriteServerCacheDebugFiles", false, new ConfigDescription("", null, isAdminOnly));
                 CacheFileName = Config.Bind<string>(section, "CacheFileName", "local-{world}-{seed}", new ConfigDescription("", null, isAdminOnly));
                 CacheFileCryptKey = Config.Bind<string>(section, "CacheFileCryptKey", "MySecretKey", new ConfigDescription("", null, isHidden));
-                CacheFileHash = Config.Bind<string>(section, "CacheFileHash", "", new ConfigDescription("", null, isAdminOnly));
 
             }
         }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using JetBrains.Annotations;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,35 +7,41 @@ using System.Threading.Tasks;
 
 namespace OfTamingAndBreeding.Data.Models
 {
+    [Serializable]
+    [CanBeNull]
     internal class Offspring : DataBase<Offspring>
     {
 
-        public static string GetDirectoryName() => "Offsprings";
+        public const string DirectoryName = "Offsprings";
 
         public CloneData Clone = null;
         public CharacterData Character = null;
         public GrowupData Growup = null;
 
-        internal class CloneData : SubData.BaseCloneData
+        internal class CloneData : SubData.ICloneData
         {
+            public string From { get; set; } = null;
         }
 
-        public class CharacterData : SubData.BaseCharacterData
+        public class CharacterData : SubData.ICharacterAIData
         {
-            public string name = null;
-            public float scale = 1;
+            public string Name { get; set; } = null;
+            public float Scale { get; set; } = 1;
+            public string Group { get; set; } = "";
+            public bool StickToFaction { get; set; } = true;
         }
 
-        public class GrowupGrownData : SubData.WeightEntry
+        public class GrowupGrownData : SubData.IRandomData
         {
-            public string prefab = null;
+            public string Prefab { get; set; } = null;
+            public float Weight { get; set; } = 1;
         }
 
         public class GrowupData
         {
-            public float growTime = 1800;
-            public bool inheritTame = true;
-            public GrowupGrownData[] grown = null;
+            public float GrowTime { get; set; } = 1800;
+            public bool InheritTame { get; set; } = true;
+            public GrowupGrownData[] Grown { get; set; } = null;
         }
 
     }

@@ -1,56 +1,68 @@
-﻿using System;
+﻿using JetBrains.Annotations;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace OfTamingAndBreeding.Data.Models
 {
+    [Serializable]
+    [CanBeNull]
     internal class Egg : DataBase<Egg>
     {
 
-        public static string GetDirectoryName() => "Eggs";
+        public const string DirectoryName = "Eggs";
 
         public CloneData Clone = null;
         public ItemData Item = null;
         public EggGrowData EggGrow = null;
 
-        internal class CloneData : SubData.BaseCloneData
+        internal class CloneData : SubData.ICloneData
         {
+            public string From { get; set; } = null;
         }
 
         public class ItemData
         {
-            public string name = null;
-            public string description = null;
-            public float weight = 1;
-            public float scale = 1;
-            public float scaleByQuality = 0;
-            public float scaleWeightByQuality = 0;
-            public int value = 0;
-            public bool teleportable = true;
-            public int maxStackSize = 20;
-            public int[] itemTintRgb = null;
-            public int[] particlesTintRgb = null;
-            public int[] lightsTintRgb = null;
-            public float lightsScale = 1;
-            public bool disableParticles = false;
+            public string Name { get; set; } = null;
+            public string Description { get; set; } = null;
+            public float Weight { get; set; } = 1;
+
+            public float Scale { get; set; } = 1;
+            public float ScaleByQuality { get; set; } = 0;
+            public float ScaleWeightByQuality { get; set; } = 0;
+
+            public int Value { get; set; } = 0;
+            public bool Teleportable { get; set; } = true;
+            public int MaxStackSize { get; set; } = 20;
+
+            public int[] ItemTintRgb { get; set; } = null;
+            public int[] ParticlesTintRgb { get; set; } = null;
+            public int[] LightsTintRgb { get; set; } = null;
+            public float LightsScale { get; set; } = 1;
+            public bool DisableParticles { get; set; } = false;
         }
 
-        public class EggGrowGrownData : SubData.WeightEntry
+        public class EggGrowGrownData : SubData.IRandomData
         {
-            public string prefab = null;
-            public bool tamed = true;
-            public bool showHatchEffect = true;
+            public string Prefab { get; set; } = null;
+            public float Weight { get; set; } = 1;
+
+            public bool Tamed { get; set; } = true;
+
+            public bool ShowHatchEffect { get; set; } = true;
         }
 
         public class EggGrowData
         {
-            public float growTime = 1800;
-            public float updateInterval = 5;
-            public bool requireNearbyFire = true;
-            public bool requireUnderRoof = true;
-            public float requireCoverPercentige = 0.7f;
-            public EggGrowGrownData[] grown = null;
+            public float GrowTime { get; set; } = 1800;
+            public float UpdateInterval { get; set; } = 5;
+
+            public bool RequireNearbyFire { get; set; } = true;
+            public bool RequireUnderRoof { get; set; } = true;
+            public float RequireCoverPercentige { get; set; } = 0.7f;
+
+            public EggGrowGrownData[] Grown { get; set; } = null;
         }
 
     }

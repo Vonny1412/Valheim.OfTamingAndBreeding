@@ -1,29 +1,28 @@
 ﻿using Jotunn.Entities;
 using Jotunn.Managers;
-using OfTamingAndBreeding.Data.Models;
-using OfTamingAndBreeding.Helpers;
-using OfTamingAndBreeding.Patches.Contexts;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using UnityEngine;
+
+using OfTamingAndBreeding.Helpers;
+using OfTamingAndBreeding.Data.Models;
 
 namespace OfTamingAndBreeding.Data.Handling
 {
 
-    internal class EggModelHandler : ModelHandler<Data.Models.Egg>
+    internal class EggModelHandler : ModelHandler<Egg>
     {
 
-        public override string GetDirectoryName() => Data.Models.Egg.GetDirectoryName();
+        public override string DirectoryName => Egg.DirectoryName;
 
         //------------------------------------------------
         // VALIDATE DATA
         //------------------------------------------------
 
-        public override bool ValidateData(ModelHandlerContext ctx, string eggName, Data.Models.Egg data)
+        public override bool ValidateData(ModelHandlerContext ctx, string eggName, Egg data)
         {
-            var model = $"{nameof(Models.Egg)}.{eggName}";
+            var model = $"{nameof(Egg)}.{eggName}";
             var error = false;
 
             if (data.Item == null)
@@ -38,18 +37,18 @@ namespace OfTamingAndBreeding.Data.Handling
                 error = true;
             }
 
-            if (data.EggGrow.grown == null || data.EggGrow.grown.Length == 0)
+            if (data.EggGrow.Grown == null || data.EggGrow.Grown.Length == 0)
             {
-                Plugin.LogError($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.grown)} is null or empty");
+                Plugin.LogError($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.Grown)} is null or empty");
                 error = true;
             }
 
-            foreach (var (grownData, i) in data.EggGrow.grown.Select((value, i) => (value, i)))
+            foreach (var (grownData, i) in data.EggGrow.Grown.Select((value, i) => (value, i)))
             {
-                grownData.weight = Math.Max(0f, grownData.weight);
-                if (grownData.prefab == null)
+                grownData.Weight = Math.Max(0f, grownData.Weight);
+                if (grownData.Prefab == null)
                 {
-                    Plugin.LogError($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.grown)}.{i}.{nameof(grownData.prefab)} is empty");
+                    Plugin.LogError($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.Grown)}.{i}.{nameof(grownData.Prefab)} is empty");
                     error = true;
                 }
             }
@@ -61,9 +60,9 @@ namespace OfTamingAndBreeding.Data.Handling
         // PREPARE PREFAB
         //------------------------------------------------
 
-        public override bool PreparePrefab(ModelHandlerContext ctx, string eggName, Data.Models.Egg data)
+        public override bool PreparePrefab(ModelHandlerContext ctx, string eggName, Egg data)
         {
-            var model = $"{nameof(Models.Egg)}.{eggName}";
+            var model = $"{nameof(Egg)}.{eggName}";
 
             //var egg = PrefabManager.Instance.GetPrefab(eggName);
             var egg = ctx.GetPrefab(eggName);
@@ -74,17 +73,17 @@ namespace OfTamingAndBreeding.Data.Handling
                     Plugin.LogError($"{model}.{nameof(data.Clone)} missing");
                     return false;
                 }
-                if (data.Clone.from == null)
+                if (data.Clone.From == null)
                 {
-                    Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.from)} missing");
+                    Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)} missing");
                     return false;
                 }
 
-                var cloneFrom = ctx.GetPrefab(data.Clone.from);
+                var cloneFrom = ctx.GetPrefab(data.Clone.From);
                 //var cloneFrom = PrefabManager.Instance.GetPrefab(data.Clone.from);
                 if (!cloneFrom)
                 {
-                    Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.from)} '{data.Clone.from}' not found");
+                    Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)} '{data.Clone.From}' not found");
                     return false;
                 }
 
@@ -102,9 +101,9 @@ namespace OfTamingAndBreeding.Data.Handling
         // VALIDATE PREFAB
         //------------------------------------------------
 
-        public override bool ValidatePrefab(ModelHandlerContext ctx, string eggName, Data.Models.Egg data)
+        public override bool ValidatePrefab(ModelHandlerContext ctx, string eggName, Egg data)
         {
-            var model = $"{nameof(Models.Egg)}.{eggName}";
+            var model = $"{nameof(Egg)}.{eggName}";
             var error = false;
 
             var egg = ctx.GetPrefab(eggName);
@@ -122,11 +121,11 @@ namespace OfTamingAndBreeding.Data.Handling
                 }
             }
 
-            foreach (var (grownData, i) in data.EggGrow.grown.Select((value, i) => (value, i)))
+            foreach (var (grownData, i) in data.EggGrow.Grown.Select((value, i) => (value, i)))
             {
-                if (!ctx.PrefabExists(grownData.prefab))
+                if (!ctx.PrefabExists(grownData.Prefab))
                 {
-                    Plugin.LogFatal($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.grown)}.{i}.{nameof(grownData.prefab)} '{grownData.prefab}' not found");
+                    Plugin.LogFatal($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.Grown)}.{i}.{nameof(grownData.Prefab)} '{grownData.Prefab}' not found");
                     error = true;
                 }
             }
@@ -138,9 +137,9 @@ namespace OfTamingAndBreeding.Data.Handling
         // REGISTER PREFAB
         //------------------------------------------------
 
-        public override void RegisterPrefab(ModelHandlerContext ctx, string eggName, Data.Models.Egg data)
+        public override void RegisterPrefab(ModelHandlerContext ctx, string eggName, Egg data)
         {
-            var model = $"{nameof(Models.Egg)}.{eggName}";
+            var model = $"{nameof(Egg)}.{eggName}";
 
             var egg = PrefabManager.Instance.GetPrefab(eggName);
             PrefabManager.Instance.RegisterToZNetScene(egg);
@@ -169,26 +168,26 @@ namespace OfTamingAndBreeding.Data.Handling
             var eggItemData = eggItemDrop.m_itemData;
             var eggItemDataShared = eggItemData.m_shared;
 
-            eggItemDataShared.m_name = data.Item.name;
+            eggItemDataShared.m_name = data.Item.Name;
             if (eggItemDataShared.m_name == null)
             {
                 eggItemDataShared.m_name = "Egg";
             }
             Plugin.LogDebug($"{model}: Item name: {eggItemDataShared.m_name}");
 
-            eggItemDataShared.m_description = data.Item.description;
+            eggItemDataShared.m_description = data.Item.Description;
             if (eggItemDataShared.m_description == null)
             {
                 eggItemDataShared.m_description = "It's an egg";
             }
             Plugin.LogDebug($"{model}: Item description: {eggItemDataShared.m_description}");
 
-            eggItemDataShared.m_weight = data.Item.weight;
-            eggItemDataShared.m_scaleByQuality = data.Item.scaleByQuality;
-            eggItemDataShared.m_scaleWeightByQuality = data.Item.scaleWeightByQuality;
-            eggItemDataShared.m_value = data.Item.value;
-            eggItemDataShared.m_teleportable = data.Item.teleportable;
-            eggItemDataShared.m_maxStackSize = data.Item.maxStackSize;
+            eggItemDataShared.m_weight = data.Item.Weight;
+            eggItemDataShared.m_scaleByQuality = data.Item.ScaleByQuality;
+            eggItemDataShared.m_scaleWeightByQuality = data.Item.ScaleWeightByQuality;
+            eggItemDataShared.m_value = data.Item.Value;
+            eggItemDataShared.m_teleportable = data.Item.Teleportable;
+            eggItemDataShared.m_maxStackSize = data.Item.MaxStackSize;
 
             // defaults
             eggItemDataShared.m_itemType = ItemDrop.ItemData.ItemType.Misc;
@@ -210,21 +209,21 @@ namespace OfTamingAndBreeding.Data.Handling
 
             // multiply = true by default to preserve texture contrast;
             // kept as parameter for possible future advanced tint modes
-            if (TryParseTint(data.Item.itemTintRgb, out Color itemTint))
+            if (TryParseTint(data.Item.ItemTintRgb, out Color itemTint))
             {
                 TintPrefab(eggItemPrefab, itemTint, true);
             }
-            if (TryParseTint(data.Item.lightsTintRgb, out Color lightsTint))
+            if (TryParseTint(data.Item.LightsTintRgb, out Color lightsTint))
             {
                 TintLights(eggItemPrefab, lightsTint, true);
             }
-            if (TryParseTint(data.Item.particlesTintRgb, out Color particlesTint))
+            if (TryParseTint(data.Item.ParticlesTintRgb, out Color particlesTint))
             {
                 TintParticleSystems(eggItemPrefab, particlesTint, true);
             }
-            ScaleLights(eggItemPrefab, data.Item.lightsScale);
+            ScaleLights(eggItemPrefab, data.Item.LightsScale);
 
-            if (TryParseTint(data.Item.itemTintRgb, out Color iconTint))
+            if (TryParseTint(data.Item.ItemTintRgb, out Color iconTint))
             {
                 Plugin.LogDebug($"{model}: Tinting icon");
                 var itemDrop = eggItemPrefab.GetComponent<ItemDrop>();
@@ -245,12 +244,12 @@ namespace OfTamingAndBreeding.Data.Handling
             {
                 eggEggGrow.m_hatchEffect = new EffectList
                 {
-                    m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
+                    m_effectPrefabs = PrefabHelper.GetEffects(new string[] {
                         "fx_chicken_birth",
                     })
                 };
             }
-            if (data.Item.disableParticles)
+            if (data.Item.DisableParticles)
             {
                 foreach (var r in egg.GetComponentsInChildren<ParticleSystemRenderer>(true))
                 {
@@ -259,17 +258,15 @@ namespace OfTamingAndBreeding.Data.Handling
             }
 
             Plugin.LogDebug($"{model}.{nameof(data.EggGrow)}: Setting EggGrow values");
-            eggEggGrow.m_growTime = data.EggGrow.growTime;
-            eggEggGrow.m_updateInterval = data.EggGrow.updateInterval;
-            eggEggGrow.m_requireNearbyFire = data.EggGrow.requireNearbyFire;
-            eggEggGrow.m_requireUnderRoof = data.EggGrow.requireUnderRoof;
-            eggEggGrow.m_requireCoverPercentige = data.EggGrow.requireCoverPercentige;
+            eggEggGrow.m_growTime = data.EggGrow.GrowTime;
+            eggEggGrow.m_updateInterval = data.EggGrow.UpdateInterval;
+            eggEggGrow.m_requireNearbyFire = data.EggGrow.RequireNearbyFire;
+            eggEggGrow.m_requireUnderRoof = data.EggGrow.RequireUnderRoof;
+            eggEggGrow.m_requireCoverPercentige = data.EggGrow.RequireCoverPercentige;
 
             // will be set seperatly
             eggEggGrow.m_tamed = true;
             eggEggGrow.m_grownPrefab = null;
-
-
 
         }
 

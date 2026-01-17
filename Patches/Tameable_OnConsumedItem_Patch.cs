@@ -27,18 +27,18 @@ namespace OfTamingAndBreeding.Patches
                 // handle multiplied fedDuration
                 var prefabName = Utils.GetPrefabName(__instance.gameObject.name);
                 var data = Data.Models.Creature.Get(prefabName);
-                if (data != null && data.Tameable != null && data.MonsterAI != null && data.MonsterAI.consumeItems != null && data.MonsterAI.consumeItems.Length > 0)
+                if (data != null && data.Tameable != null && data.MonsterAI != null && data.MonsterAI.ConsumeItems != null && data.MonsterAI.ConsumeItems.Length > 0)
                 {
-                    var fedDuration = data.Tameable.fedDuration;
-                    foreach (var entry in data.MonsterAI.consumeItems)
+                    var fedDuration = data.Tameable.FedDuration;
+                    foreach (var entry in data.MonsterAI.ConsumeItems)
                     {
-                        if (entry.prefab == itemName)
+                        if (entry.Prefab == itemName)
                         {
-                            fedDuration *= entry.fedDurationMultiply;
+                            fedDuration *= entry.FedDurationMultiply;
                             break;
                         }
                     }
-                    if (fedDuration >= 0) // yes, we also allow 0
+                    if (fedDuration >= 0)
                     {
                         // Intentionally allow 0:
                         // This means the creature will never become fed by this item.

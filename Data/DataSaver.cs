@@ -1,10 +1,11 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.IO;
+using UnityEngine;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
-using UnityEngine;
-using System.CodeDom;
+using static Room;
 
 namespace OfTamingAndBreeding.Data
 {
@@ -15,16 +16,10 @@ namespace OfTamingAndBreeding.Data
         private readonly Dictionary<string, Models.Offspring> _offsprings = new Dictionary<string, Models.Offspring>();
         private readonly Dictionary<string, Models.Egg> _eggs = new Dictionary<string, Models.Egg>();
 
-
-
-
         public DataSaver()
         {
 
         }
-
-
-
 
         public void AddList(Dictionary<string, Models.Creature> data)
         {
@@ -39,25 +34,15 @@ namespace OfTamingAndBreeding.Data
             foreach (var kv in data) _eggs[kv.Key] = kv.Value;
         }
 
-
-
-
-
-
         public void WriteFiles(string toPath)
         {
-            WriteYamlFiles(Path.Combine(toPath, Data.Models.Creature.GetDirectoryName()), _creatures);
-            WriteYamlFiles(Path.Combine(toPath, Data.Models.Offspring.GetDirectoryName()), _offsprings);
-            WriteYamlFiles(Path.Combine(toPath, Data.Models.Egg.GetDirectoryName()), _eggs);
+            WriteYamlFiles(Path.Combine(toPath, Data.Models.Creature.DirectoryName), _creatures);
+            WriteYamlFiles(Path.Combine(toPath, Data.Models.Offspring.DirectoryName), _offsprings);
+            WriteYamlFiles(Path.Combine(toPath, Data.Models.Egg.DirectoryName), _eggs);
             _creatures.Clear();
             _offsprings.Clear();
             _eggs.Clear();
         }
-
-
-
-
-
 
         internal enum ObjectType
         {
@@ -105,13 +90,11 @@ namespace OfTamingAndBreeding.Data
 
         private void SaveAsParent(GameObject parent, string parentName, bool recursive)
         {
-            // Parent-Call soll mindestens "creature" speichern (MonsterAI/Tameable/...)
             _creatures[parentName] = BuildCreatureData(parent);
 
             if (!recursive)
                 return;
 
-            // Optional: Parent -> Procreation -> offspring chain
             var procreation = parent.GetComponent<Procreation>();
             if (procreation == null)
                 return;
@@ -123,43 +106,32 @@ namespace OfTamingAndBreeding.Data
                 return;
             }
 
-            // Speichere Procreation-Daten (inkl. offsprings[]), soweit möglich
             EnsureCreatureHasProcreationData(parentName, procreation, baby);
-
-            // Traversiere ins Baby (recursive)
             AddObject(baby.name, ObjectType.Baby, recursive: true);
         }
 
         private void SaveAsBaby(GameObject babyPrefab, string babyName, bool recursive)
         {
-            // Baby kann Egg ODER Offspring-Creature sein. Wir entscheiden anhand Komponenten.
 
-            // 1) Egg?
             var eggGrow = babyPrefab.GetComponent<EggGrow>();
             var itemDrop = babyPrefab.GetComponent<ItemDrop>();
             if (eggGrow != null && itemDrop != null)
-            //if (itemDrop != null)
             {
-                // EggData speichern
                 _eggs[babyName] = BuildEggData(babyPrefab, eggGrow, itemDrop);
 
-                // Wenn eggGrow ein grownPrefab hat, dann ist "Baby" dahinter eigentlich das grown creature
                 if (eggGrow != null && eggGrow.m_grownPrefab != null)
                 {
                     var grownName = eggGrow.m_grownPrefab.name;
-
-                    // grown creature als Offspring speichern (wenn möglich)
                     AddObject(grownName, ObjectType.Baby, recursive);
-
-                    // und: "parent" speichern, weil Offspring Growup typischerweise auf grownPrefabs (Eltern) zeigt
                     if (recursive)
+                    {
                         SaveParentsFromGrownPrefab(eggGrow.m_grownPrefab);
+                    }
                 }
 
                 return;
             }
 
-            // 2) Offspring creature? (Growup + Character sind ein guter Indikator)
             var growup = babyPrefab.GetComponent<Growup>();
             var character = babyPrefab.GetComponent<Character>();
             if (growup != null && character != null)
@@ -167,15 +139,11 @@ namespace OfTamingAndBreeding.Data
                 _offsprings[babyName] = BuildOffspringData(babyPrefab, growup, character);
 
                 if (recursive)
-                {
-                    // Eltern aus Growup ableiten und als Parent speichern
                     SaveParentsFromGrownPrefab(babyPrefab);
-                }
 
                 return;
             }
 
-            // 3) Fallback: kein bekanntes Baby-Format
             Plugin.LogWarning($"Unknown baby type of '{babyName}'.");
         }
 
@@ -184,7 +152,7 @@ namespace OfTamingAndBreeding.Data
             var itemDrop = itemPrefab.GetComponent<ItemDrop>();
             if (itemDrop != null)
             {
-                // ItemData speichern
+
 
                 // todo: currently we got no model for items!
 
@@ -214,18 +182,18 @@ namespace OfTamingAndBreeding.Data
                     {
                         if (it != null) consumeItems.Add(new Models.Creature.MonsterAIConsumItemData
                         {
-                            prefab = it.name,
-                            fedDurationMultiply = 1f,
+                            Prefab = it.name,
+                            FedDurationMultiply = 1f,
                         });
                     }
                 }
 
                 data.MonsterAI = new Models.Creature.MonsterAIData
                 {
-                    consumeItems = consumeItems.ToArray(),
-                    consumeRange = monsterAI.m_consumeRange,
-                    consumeSearchRange = monsterAI.m_consumeSearchRange,
-                    consumeSearchInterval = monsterAI.m_consumeSearchInterval,
+                    ConsumeItems = consumeItems.ToArray(),
+                    ConsumeRange = monsterAI.m_consumeRange,
+                    ConsumeSearchRange = monsterAI.m_consumeSearchRange,
+                    ConsumeSearchInterval = monsterAI.m_consumeSearchInterval,
                 };
             }
 
@@ -234,9 +202,9 @@ namespace OfTamingAndBreeding.Data
             {
                 data.Tameable = new Models.Creature.TameableData
                 {
-                    fedDuration = tameable.m_fedDuration,
-                    tamingTime = tameable.m_tamingTime,
-                    commandable = tameable.m_commandable,
+                    FedDuration = tameable.m_fedDuration,
+                    TamingTime = tameable.m_tamingTime,
+                    Commandable = tameable.m_commandable,
                 };
             }
 
@@ -245,14 +213,14 @@ namespace OfTamingAndBreeding.Data
             {
                 data.Character = new Models.Creature.CharacterAIData
                 {
-                    group = character.m_group,
-                    stickToFaction = false,
-                    attacksTames = false,
+                    Group = character.m_group,
+                    StickToFaction = false,
+                    CanAttackTames = false,
                 };
             }
 
-            // Procreation wird in EnsureCreatureHasProcreationData(...) gesetzt,
-            // damit wir dort auch den konkreten offspring-Prefab-Name eintragen können.
+            // Procreation is set in EnsureCreatureHasProcreationData(...)
+            // so that we can also enter the specific offspring prefab name there.
 
             return data;
         }
@@ -263,45 +231,45 @@ namespace OfTamingAndBreeding.Data
             if (shared == null)
             {
                 Plugin.LogWarning($"Egg '{eggPrefab.name}' ItemDrop shared data missing.");
-                shared = new ItemDrop.ItemData.SharedData(); // not ideal, aber verhindert NRE
+                shared = new ItemDrop.ItemData.SharedData(); // not ideal
             }
 
             return new Models.Egg
             {
                 Clone = new Models.Egg.CloneData
                 {
-                    from = null,
+                    From = null,
                 },
                 Item = new Models.Egg.ItemData
                 {
-                    name = shared.m_name,
-                    description = shared.m_description,
-                    weight = shared.m_weight,
-                    scale = 1,
-                    scaleByQuality = shared.m_scaleByQuality,
-                    scaleWeightByQuality = shared.m_scaleWeightByQuality,
-                    value = shared.m_value,
-                    teleportable = shared.m_teleportable,
-                    maxStackSize = shared.m_maxStackSize,
-                    itemTintRgb = new int[] { },
-                    lightsTintRgb = new int[] { },
-                    particlesTintRgb = new int[] { },
-                    lightsScale = 1,
-                    disableParticles = false,
+                    Name = shared.m_name,
+                    Description = shared.m_description,
+                    Weight = shared.m_weight,
+                    Scale = 1,
+                    ScaleByQuality = shared.m_scaleByQuality,
+                    ScaleWeightByQuality = shared.m_scaleWeightByQuality,
+                    Value = shared.m_value,
+                    Teleportable = shared.m_teleportable,
+                    MaxStackSize = shared.m_maxStackSize,
+                    ItemTintRgb = new int[] { },
+                    LightsTintRgb = new int[] { },
+                    ParticlesTintRgb = new int[] { },
+                    LightsScale = 1,
+                    DisableParticles = false,
                 },
                 EggGrow = eggGrow == null ? null : new Models.Egg.EggGrowData
                 {
-                    growTime = eggGrow.m_growTime,
-                    updateInterval = eggGrow.m_updateInterval,
-                    requireNearbyFire = eggGrow.m_requireNearbyFire,
-                    requireUnderRoof = eggGrow.m_requireUnderRoof,
-                    requireCoverPercentige = eggGrow.m_requireCoverPercentige,
-                    grown = new Models.Egg.EggGrowGrownData[] {
+                    GrowTime = eggGrow.m_growTime,
+                    UpdateInterval = eggGrow.m_updateInterval,
+                    RequireNearbyFire = eggGrow.m_requireNearbyFire,
+                    RequireUnderRoof = eggGrow.m_requireUnderRoof,
+                    RequireCoverPercentige = eggGrow.m_requireCoverPercentige,
+                    Grown = new Models.Egg.EggGrowGrownData[] {
                         new Models.Egg.EggGrowGrownData
                         {
-                            prefab = eggGrow.m_grownPrefab.name,
-                            tamed = eggGrow.m_tamed,
-                            showHatchEffect = true,
+                            Prefab = eggGrow.m_grownPrefab.name,
+                            Tamed = eggGrow.m_tamed,
+                            ShowHatchEffect = true,
                         }
                     },
                 },
@@ -316,8 +284,8 @@ namespace OfTamingAndBreeding.Data
             {
                 grownEntries.Add(new Models.Offspring.GrowupGrownData
                 {
-                    weight = 1,
-                    prefab = growup.m_grownPrefab.name,
+                    Prefab = growup.m_grownPrefab.name,
+                    Weight = 1,
                 });
             }
             if (growup.m_altGrownPrefabs != null)
@@ -328,8 +296,8 @@ namespace OfTamingAndBreeding.Data
                     //todo: checked if already in list?
                     grownEntries.Add(new Models.Offspring.GrowupGrownData
                     {
-                        weight = entry.m_weight,
-                        prefab = entry.m_prefab.name,
+                        Prefab = entry.m_prefab.name,
+                        Weight = entry.m_weight,
                     });
                 }
             }
@@ -337,20 +305,20 @@ namespace OfTamingAndBreeding.Data
             {
                 Clone = new Models.Offspring.CloneData
                 {
-                    from = null,
+                    From = null,
                 },
                 Character = new Models.Offspring.CharacterData
                 {
-                    name = character.m_name,
-                    scale = 1,
-                    group = character.m_group,
-                    stickToFaction = false,
+                    Name = character.m_name,
+                    Scale = 1,
+                    Group = character.m_group,
+                    StickToFaction = false,
                 },
                 Growup = new Models.Offspring.GrowupData
                 {
-                    growTime = growup.m_growTime,
-                    inheritTame = growup.m_inheritTame,
-                    grown = grownEntries.Count > 0
+                    GrowTime = growup.m_growTime,
+                    InheritTame = growup.m_inheritTame,
+                    Grown = grownEntries.Count > 0
                         ? grownEntries.ToArray()
                         : Array.Empty<Models.Offspring.GrowupGrownData>(),
                 },
@@ -372,40 +340,39 @@ namespace OfTamingAndBreeding.Data
             // Set/Overwrite Procreation
             creature.Procreation = new Models.Creature.ProcreationData
             {
-                updateInterval = procreation.m_updateInterval,
-                totalCheckRange = procreation.m_totalCheckRange,
-                partner = new Models.Creature.ProcreationPartnerData[] {
+                UpdateInterval = procreation.m_updateInterval,
+                TotalCheckRange = procreation.m_totalCheckRange,
+                Partner = new Models.Creature.ProcreationPartnerData[] {
                     new Models.Creature.ProcreationPartnerData {
-                        weight = 1,
-                        prefab = parentName,
+                        Prefab = parentName,
+                        Weight = 1,
                     },
                 },
-                partnerCheckRange = procreation.m_partnerCheckRange,
-                partnerRecheckSeconds = 60,
-                requiredLovePoints = procreation.m_requiredLovePoints,
-                pregnancyChance = procreation.m_pregnancyChance,
-                pregnancyDuration = procreation.m_pregnancyDuration,
-                spawnOffset = procreation.m_spawnOffset,
-                spawnOffsetMax = procreation.m_spawnOffsetMax,
-                spawnRandomDirection = procreation.m_spawnRandomDirection,
+                PartnerCheckRange = procreation.m_partnerCheckRange,
+                PartnerRecheckSeconds = 60,
+                RequiredLovePoints = procreation.m_requiredLovePoints,
+                PregnancyChance = procreation.m_pregnancyChance,
+                PregnancyDuration = procreation.m_pregnancyDuration,
+                SpawnOffset = procreation.m_spawnOffset,
+                SpawnOffsetMax = procreation.m_spawnOffsetMax,
+                SpawnRandomDirection = procreation.m_spawnRandomDirection,
 
-                procreateWhileSwimming = true,
+                ProcreateWhileSwimming = true,
 
-                extraOffspringChance = 0,
-                maxOffspringsPerPregnancy = 1,
+                ExtraOffspringChance = 0,
+                MaxOffspringsPerPregnancy = 1,
 
-                offspring = new[]
+                Offspring = new[]
                 {
                     new Models.Creature.ProcreationOffspringData
                     {
-                        weight = 1,
-                        prefab = babyPrefab != null ? babyPrefab.name : null,
-                        needPartner = true,
-                        needPartnerPrefab = null,
-                        //needFoodPrefab = null,
-                        maxCreatures = procreation.m_maxCreatures,
-                        levelUpChance = 0,
-                        maxLevel = 3,
+                        Prefab = babyPrefab != null ? babyPrefab.name : null,
+                        Weight = 1,
+                        NeedPartner = true,
+                        NeedPartnerPrefab = null,
+                        MaxCreatures = procreation.m_maxCreatures,
+                        LevelUpChance = 0,
+                        MaxLevel = 3,
                     }
                 }
             };
