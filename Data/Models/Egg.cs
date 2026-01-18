@@ -17,11 +17,15 @@ namespace OfTamingAndBreeding.Data.Models
         public ItemData Item = null;
         public EggGrowData EggGrow = null;
 
+        [Serializable]
+        [CanBeNull]
         internal class CloneData : SubData.ICloneData
         {
             public string From { get; set; } = null;
         }
 
+        [Serializable]
+        [CanBeNull]
         public class ItemData
         {
             public string Name { get; set; } = null;
@@ -43,6 +47,8 @@ namespace OfTamingAndBreeding.Data.Models
             public bool DisableParticles { get; set; } = false;
         }
 
+        [Serializable]
+        [CanBeNull]
         public class EggGrowGrownData : SubData.IRandomData
         {
             public string Prefab { get; set; } = null;
@@ -53,6 +59,8 @@ namespace OfTamingAndBreeding.Data.Models
             public bool ShowHatchEffect { get; set; } = true;
         }
 
+        [Serializable]
+        [CanBeNull]
         public class EggGrowData
         {
             public float GrowTime { get; set; } = 1800;

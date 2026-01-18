@@ -41,7 +41,7 @@ namespace OfTamingAndBreeding.Internals
             {
                 return false;
             }
-            if (!Helpers.ZNetHelper.TryGetZDO(m_nview, out ZDO zdo))
+            if (!Utils.ZNetHelper.TryGetZDO(m_nview, out ZDO zdo))
             {
                 return false;
             }
@@ -55,7 +55,7 @@ namespace OfTamingAndBreeding.Internals
             // do not uncomment me, i dont know why but its okay
             */
 
-            var data = Data.Models.Creature.Get(Utils.GetPrefabName(name));
+            var data = Data.Models.Creature.Get(global::Utils.GetPrefabName(name));
             var dataProcreation = data?.Procreation;
             if (dataProcreation == null)
             {
@@ -199,7 +199,7 @@ namespace OfTamingAndBreeding.Internals
             if (m_offspringPrefab == null && m_offspring != null)
             {
                 // handled by other mod or by default?
-                string prefabName = Utils.GetPrefabName(m_offspring);
+                string prefabName = global::Utils.GetPrefabName(m_offspring);
                 m_offspringPrefab = ZNetScene.instance.GetPrefab(prefabName);
             }
 
@@ -339,7 +339,7 @@ if (IsPregnant())
             {
                 return;
             }
-            if (!Helpers.ZNetHelper.TryGetZDO(m_nview, out ZDO zdo))
+            if (!Utils.ZNetHelper.TryGetZDO(m_nview, out ZDO zdo))
             {
                 return;
             }
@@ -417,7 +417,7 @@ if (IsPregnant())
                         DateTime dateTime = new DateTime(@pregnantLong);
                         double secLeft = duration - (ZNet.instance.GetTime() - dateTime).TotalSeconds;
 
-                        text.Add(Helpers.StringHelper.FormatRelativeTime(
+                        text.Add(Utils.StringHelper.FormatRelativeTime(
                             secLeft,
                             labelPositive: L.Localize("$tmt_hover_pregnancy_due"),
                             labelNegative: L.Localize("$tmt_hover_pregnancy_overdue"),

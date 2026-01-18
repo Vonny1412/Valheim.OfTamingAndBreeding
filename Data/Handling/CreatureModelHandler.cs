@@ -4,21 +4,19 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-using OfTamingAndBreeding.Data.Models;
-
 namespace OfTamingAndBreeding.Data.Handling
 {
-    internal class CreatureModelHandler : ModelHandler<Creature>
+    internal class CreatureModelHandler : ModelHandler<Models.Creature>
     {
-        public override string DirectoryName => Creature.DirectoryName;
+        public override string DirectoryName => Models.Creature.DirectoryName;
 
         //------------------------------------------------
         // VALIDATE DATA
         //------------------------------------------------
 
-        public override bool ValidateData(ModelHandlerContext ctx, string creatureName, Creature data)
+        public override bool ValidateData(ModelHandlerContext ctx, string creatureName, Models.Creature data)
         {
-            var model = $"{nameof(Creature)}.{creatureName}";
+            var model = $"{nameof(Models.Creature)}.{creatureName}";
             var error = false;
 
             var characterData = data.Character;
@@ -30,7 +28,7 @@ namespace OfTamingAndBreeding.Data.Handling
             {
                 if (monsterAIData.ConsumeItems == null || monsterAIData.ConsumeItems.Length == 0)
                 {
-                    monsterAIData.ConsumeItems = new Creature.MonsterAIConsumItemData[] { };
+                    monsterAIData.ConsumeItems = new Models.Creature.MonsterAIConsumItemData[] { };
                 }
             }
 
@@ -45,7 +43,7 @@ namespace OfTamingAndBreeding.Data.Handling
 
                 if (procreationData.Partner == null || procreationData.Partner.Length == 0)
                 {
-                    procreationData.Partner = new Creature.ProcreationPartnerData[] {  };
+                    procreationData.Partner = new Models.Creature.ProcreationPartnerData[] {  };
                 }
 
                 foreach (var (partnerData, i) in procreationData.Partner.Select((value, i) => (value, i)))
@@ -82,9 +80,9 @@ namespace OfTamingAndBreeding.Data.Handling
         // PREPARE PREFAB
         //------------------------------------------------
 
-        public override bool PreparePrefab(ModelHandlerContext ctx, string creatureName, Creature data)
+        public override bool PreparePrefab(ModelHandlerContext ctx, string creatureName, Models.Creature data)
         {
-            var model = $"{nameof(Creature)}.{creatureName}";
+            var model = $"{nameof(Models.Creature)}.{creatureName}";
 
             //var creature = ctx.zns.GetPrefab(creatureName);
             var creature = ctx.GetPrefab(creatureName);
@@ -102,9 +100,9 @@ namespace OfTamingAndBreeding.Data.Handling
         // VALIDATE PREFAB
         //------------------------------------------------
 
-        public override bool ValidatePrefab(ModelHandlerContext ctx, string creatureName, Creature data)
+        public override bool ValidatePrefab(ModelHandlerContext ctx, string creatureName, Models.Creature data)
         {
-            var model = $"{nameof(Creature)}.{creatureName}";
+            var model = $"{nameof(Models.Creature)}.{creatureName}";
             var error = false;
 
             var creature = ctx.GetPrefab(creatureName);
@@ -138,7 +136,7 @@ namespace OfTamingAndBreeding.Data.Handling
                     }
                     else
                     {
-                        if (Helpers.PrefabHelper.GetItemDropByPrefab(foodData.Prefab) == null)
+                        if (Utils.PrefabHelper.GetItemDropByPrefab(foodData.Prefab) == null)
                         {
                             Plugin.LogFatal($"{model}.{nameof(data.MonsterAI)}.{nameof(data.MonsterAI.ConsumeItems)}.{i}.{nameof(foodData.Prefab)} '{foodData.Prefab}' has no ItemDrop component");
                             error = true;
@@ -191,9 +189,9 @@ namespace OfTamingAndBreeding.Data.Handling
         // REGISTER PREFAB
         //------------------------------------------------
 
-        public override void RegisterPrefab(ModelHandlerContext ctx, string creatureName, Creature data)
+        public override void RegisterPrefab(ModelHandlerContext ctx, string creatureName, Models.Creature data)
         {
-            var model = $"{nameof(Creature)}.{creatureName}";
+            var model = $"{nameof(Models.Creature)}.{creatureName}";
 
             var creature = PrefabManager.Instance.GetPrefab(creatureName);
             // no need to register, already registered
@@ -210,7 +208,7 @@ namespace OfTamingAndBreeding.Data.Handling
             var tameableData = data.Tameable;
             var procreationData = data.Procreation;
 
-            var idleSoundPrefab = Helpers.PrefabHelper.FindEffectPrefab<BaseAI>(creatureName, "m_idleSound", 0);
+            var idleSoundPrefab = Utils.PrefabHelper.FindEffectPrefab<BaseAI>(creatureName, "m_idleSound", 0);
 
             if (monsterAIData != null)
             {
@@ -226,7 +224,7 @@ namespace OfTamingAndBreeding.Data.Handling
                     monsterAI.m_consumeItems = new List<ItemDrop>();
                     foreach (var entry in monsterAIData.ConsumeItems)
                     {
-                        var itemDrop = Helpers.PrefabHelper.GetItemDropByPrefab(entry.Prefab);
+                        var itemDrop = Utils.PrefabHelper.GetItemDropByPrefab(entry.Prefab);
                         if (itemDrop != null)
                         {
                             monsterAI.m_consumeItems.Add(itemDrop);
@@ -249,7 +247,7 @@ namespace OfTamingAndBreeding.Data.Handling
 
                         foreach (var entry in monsterAIData.ConsumeItems)
                         {
-                            var itemDrop = Helpers.PrefabHelper.GetItemDropByPrefab(entry.Prefab);
+                            var itemDrop = Utils.PrefabHelper.GetItemDropByPrefab(entry.Prefab);
                             if (itemDrop != null)
                             {
                                 prefabAnimalAIAPI.m_consumeItems.Add(itemDrop);
@@ -300,7 +298,7 @@ namespace OfTamingAndBreeding.Data.Handling
                 {
                     tameable.m_sootheEffect = new EffectList
                     {
-                        m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
+                        m_effectPrefabs = Utils.PrefabHelper.GetEffects(new string[] {
                             "vfx_creature_soothed",
                         })
                     };
@@ -309,7 +307,7 @@ namespace OfTamingAndBreeding.Data.Handling
                 {
                     tameable.m_tamedEffect = new EffectList
                     {
-                        m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
+                        m_effectPrefabs = Utils.PrefabHelper.GetEffects(new string[] {
                             "fx_creature_tamed",
                         })
                     };
@@ -318,7 +316,7 @@ namespace OfTamingAndBreeding.Data.Handling
                 {
                     tameable.m_petEffect = new EffectList
                     {
-                        m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
+                        m_effectPrefabs = Utils.PrefabHelper.GetEffects(new string[] {
                             //"vfx_boar_love",
                             "fx_boar_pet",
                             idleSoundPrefab?.name,
@@ -368,7 +366,7 @@ namespace OfTamingAndBreeding.Data.Handling
                 {
                     procreation.m_loveEffects = new EffectList
                     {
-                        m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
+                        m_effectPrefabs = Utils.PrefabHelper.GetEffects(new string[] {
                             idleSoundPrefab?.name,
                             "vfx_boar_love",
                         })
@@ -382,7 +380,7 @@ namespace OfTamingAndBreeding.Data.Handling
                 {
                     procreation.m_birthEffects = new EffectList
                     {
-                        m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
+                        m_effectPrefabs = Utils.PrefabHelper.GetEffects(new string[] {
                             idleSoundPrefab?.name,
                             "vfx_boar_birth",
                         })

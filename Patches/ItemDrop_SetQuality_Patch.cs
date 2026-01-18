@@ -13,7 +13,7 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         static void Postfix(ItemDrop __instance)
         {
-            var prefabName = Utils.GetPrefabName(__instance.gameObject.name);
+            var prefabName = global::Utils.GetPrefabName(__instance.gameObject.name);
             var data = Data.Models.Egg.Get(prefabName);
             if (data != null)
             {

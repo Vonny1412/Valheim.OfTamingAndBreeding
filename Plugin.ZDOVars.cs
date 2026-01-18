@@ -24,10 +24,6 @@ namespace OfTamingAndBreeding
             // used to store current selected fed duration of the tamed/untamed creature because it can vary depending on the item it has consumed, based on our Creature.MonsterAIData
             internal static readonly int s_fedDuration = $"{Plugin.ModGuid}.s_fedDuration".GetStableHashCode();
 
-            // used to store the last consumed item prefab name
-            // because it affects selected offspring
-            //internal static readonly int s_lastConsumedItem = $"{Plugin.ModGuid}.s_lastConsumedItem".GetStableHashCode();
-
             //
             // Creature Procreation
             //
@@ -83,7 +79,7 @@ namespace OfTamingAndBreeding
             // Item
             //
 
-            // used to to a flag on the dropped item if it has been dropped by any player (1=true, 0=false, -1=(default)unknown)
+            // used to store a flag on the dropped item if it has been dropped by any player (1=true, 0=false, -1=(default)unknown)
             public static readonly int s_droppedByAnyPlayer = $"{Plugin.ModGuid}.s_droppedByAnyPlayer".GetStableHashCode();
 
         }

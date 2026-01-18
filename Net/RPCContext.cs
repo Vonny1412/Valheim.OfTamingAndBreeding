@@ -1,5 +1,5 @@
 ﻿using OfTamingAndBreeding.Data;
-using OfTamingAndBreeding.Helpers;
+using OfTamingAndBreeding.Utils;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -43,13 +43,14 @@ namespace OfTamingAndBreeding.Net
             public string CacheContent = null;
         }
 
-        public static void InitServerSession()
+        public static void InitServerSession(bool isLocal)
         {
             var inFunc1 = $"{nameof(RPCContext)}.{nameof(RPCContext.InitServerSession)}";
-            Plugin.LogMessage($"[{inFunc1}] Start");
+            Plugin.LogDebug($"[{inFunc1}] Start");
 
-            DataLoader.LoadDataFromServerFiles();
-            Plugin.LogMessage($"[{inFunc1}] Data counts= {string.Join(", ", DataLoader.IterDataHandlers().Select(dh => $"{dh.DirectoryName}:{dh.GetLoadedDataCount()}"))}");
+            DataLoader.LoadDataFromLocalFiles();
+
+            var writeCacheFiles = Plugin.Configs.WriteServerCacheDebugFiles.Value;
 
             serverSession = new ServerSession
             {
@@ -64,34 +65,46 @@ namespace OfTamingAndBreeding.Net
                 serverSession.CacheCryptKey = null;
             }
 
-            Plugin.LogMessage($"[{inFunc1}] Server cache settings: WriteClientCacheFile={Plugin.Configs.WriteClientCacheFile.Value} CacheFileName='{serverSession.CacheFileName}' KeyLen={(serverSession.CacheCryptKey?.Length ?? -1)}");
-
-            Plugin.LogMessage($"[{inFunc1}] Cache build: WriteCache #1");
-            var hash1 = CacheManager.BuildCache(serverSession.CacheFileName, serverSession.CacheCryptKey, false, out serverSession.CacheContent);
-            Plugin.LogMessage($"[{inFunc1}] Cache build: LoadCacheFromCrypted");
-            if (!CacheManager.LoadCacheFromCrypted(serverSession.CacheContent, serverSession.CacheCryptKey))
+            if (isLocal)
             {
-                Plugin.LogFatal($"[{inFunc1}] Failed building cache: Cache #1 corrupted");
-                DataLoader.ResetData();
-                DestroySession();
-                return;
-            }
-            Plugin.LogMessage($"[{inFunc1}] Cache build: WriteCache #2");
-            var hash2 = CacheManager.BuildCache(serverSession.CacheFileName, serverSession.CacheCryptKey, true, out serverSession.CacheContent);
-            Plugin.LogMessage($"[{inFunc1}] Cache hash1={hash1} hash2={hash2} match={hash1 == hash2}");
-
-            if (hash1 == hash2)
-            {
-                serverSession.CacheFileHash = hash1;
+                if (writeCacheFiles)
+                {
+                    CacheManager.BuildCache(serverSession.CacheFileName, serverSession.CacheCryptKey, true);
+                }
             }
             else
             {
-                Plugin.LogFatal($"[{inFunc1}] Failed building cache: Hashes mismatch");
-                DataLoader.ResetData();
-                DestroySession();
-                return;
+
+                Plugin.LogDebug($"[{inFunc1}] Server cache settings: WriteClientCacheFile={Plugin.Configs.WriteClientCacheFile.Value} CacheFileName='{serverSession.CacheFileName}' KeyLen={(serverSession.CacheCryptKey?.Length ?? -1)}");
+
+                Plugin.LogDebug($"[{inFunc1}] Cache build: WriteCache #1");
+                var hash1 = CacheManager.BuildCache(serverSession.CacheFileName, serverSession.CacheCryptKey, false, out serverSession.CacheContent);
+                Plugin.LogDebug($"[{inFunc1}] Cache build: LoadCacheFromCrypted");
+                if (!CacheManager.LoadCacheFromCrypted(serverSession.CacheContent, serverSession.CacheCryptKey))
+                {
+                    Plugin.LogFatal($"[{inFunc1}] Failed building cache: Cache #1 corrupted");
+                    DataLoader.ResetData();
+                    DestroySession();
+                    return;
+                }
+                Plugin.LogDebug($"[{inFunc1}] Cache build: WriteCache #2");
+                var hash2 = CacheManager.BuildCache(serverSession.CacheFileName, serverSession.CacheCryptKey, writeCacheFiles, out serverSession.CacheContent);
+                Plugin.LogDebug($"[{inFunc1}] Cache hash1={hash1} hash2={hash2} match={hash1 == hash2}");
+
+                if (hash1 == hash2)
+                {
+                    serverSession.CacheFileHash = hash1;
+                }
+                else
+                {
+                    Plugin.LogFatal($"[{inFunc1}] Failed building cache: Hashes mismatch");
+                    DataLoader.ResetData();
+                    DestroySession();
+                }
+
             }
 
+            Plugin.LogDebug($"[{inFunc1}] Done");
         }
 
         public static void RegisterServerCallbacks()

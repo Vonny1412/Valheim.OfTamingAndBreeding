@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using Jotunn;
 using OfTamingAndBreeding.Data;
 using OfTamingAndBreeding.Net;
 using System;
@@ -15,11 +16,11 @@ namespace OfTamingAndBreeding.Patches
     {
         static void Postfix()
         {
+
+
             var zn = ZNet.instance;
-            if (zn.IsServer()) RPCContext.InitServerSession();
+            if (zn.IsServer()) RPCContext.InitServerSession(zn.IsLocalInstance());
             else RPCContext.InitClientSession();
-
-
 
             /*
 

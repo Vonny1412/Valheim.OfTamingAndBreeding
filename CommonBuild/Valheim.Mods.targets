@@ -27,13 +27,13 @@
 		<PropertyGroup>
 			<GeneratedDir>$(ProjectDir)</GeneratedDir>
 			<GeneratedFile>$(GeneratedDir)$(PluginFile).Info.cs</GeneratedFile>
-			
+
 			<BepInPluginInfo>
 using BepInEx%3B
 namespace $(RootNamespace)
 {
 	[BepInPlugin(&quot;$(PluginGUID)&quot;, &quot;$(PluginName)&quot;, &quot;$(Version)&quot;)]
-	public sealed partial class $(PluginClass) : BaseUnityPlugin
+	public sealed partial class $(PluginClass)
 	{
 		// generated file – do not edit
 		public const string Version = &quot;$(Version)&quot;%3B
@@ -43,18 +43,18 @@ namespace $(RootNamespace)
 }
 			</BepInPluginInfo>
 		</PropertyGroup>
-		
+
 		<MakeDir Directories="$(ProjectDir)" />
-		
+
 		<WriteLinesToFile
 		  File="$(GeneratedFile)"
 		  Overwrite="true"
 		  Lines="$(BepInPluginInfo)" />
-		
+
 		<ItemGroup>
 			<Compile Include="$(GeneratedFile)" />
 		</ItemGroup>
-		
+
 	</Target>
 
 	<!-- write BepInPlugin Dependencies Template -->
@@ -63,7 +63,7 @@ namespace $(RootNamespace)
 
 		<PropertyGroup>
 			<GeneratedDir>$(ProjectDir)</GeneratedDir>
-			<GeneratedFile>$(GeneratedDir)$(PluginFile).Dependencies.cs</GeneratedFile>
+			<GeneratedFile>$(GeneratedDir)$(PluginFile).cs</GeneratedFile>
 
 			<BepInPluginDependencies>
 using BepInEx%3B
@@ -71,7 +71,10 @@ namespace $(RootNamespace)
 {
 	public sealed partial class $(PluginClass) : BaseUnityPlugin
 	{
-		// once-generated file – use it to declare dependencies
+		// once-generated file
+		private void Awake()
+		{
+		}
 	}
 }
 			</BepInPluginDependencies>

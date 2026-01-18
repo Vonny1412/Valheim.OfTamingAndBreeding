@@ -4,29 +4,27 @@ using System.Linq;
 using System.Text;
 using Jotunn.Managers;
 
-using OfTamingAndBreeding.Data.Models;
-
 namespace OfTamingAndBreeding.Data.Handling
 {
-    internal class OffspringModelHandler : ModelHandler<Offspring>
+    internal class OffspringModelHandler : ModelHandler<Models.Offspring>
     {
 
-        public override string DirectoryName => Offspring.DirectoryName;
+        public override string DirectoryName => Models.Offspring.DirectoryName;
 
         //------------------------------------------------
         // VALIDATE DATA
         //------------------------------------------------
 
-        public override bool ValidateData(ModelHandlerContext ctx, string offspringName, Offspring data)
+        public override bool ValidateData(ModelHandlerContext ctx, string offspringName, Models.Offspring data)
         {
-            var model = $"{nameof(Offspring)}.{offspringName}";
+            var model = $"{nameof(Models.Offspring)}.{offspringName}";
             var error = false;
 
             if (data.Growup != null)
             {
                 if (data.Growup.Grown == null)
                 {
-                    data.Growup.Grown = new Offspring.GrowupGrownData[] { };
+                    data.Growup.Grown = new Models.Offspring.GrowupGrownData[] { };
                 }
 
                 foreach (var (grownData, i) in data.Growup.Grown.Select((value, i) => (value, i)))
@@ -47,9 +45,9 @@ namespace OfTamingAndBreeding.Data.Handling
         // PREPARE PREFAB
         //------------------------------------------------
 
-        public override bool PreparePrefab(ModelHandlerContext ctx, string offspringName, Offspring data)
+        public override bool PreparePrefab(ModelHandlerContext ctx, string offspringName, Models.Offspring data)
         {
-            var model = $"{nameof(Offspring)}.{offspringName}";
+            var model = $"{nameof(Models.Offspring)}.{offspringName}";
 
             //var offspring = PrefabManager.Instance.GetPrefab(offspringName);
             var offspring = ctx.GetPrefab(offspringName);
@@ -86,9 +84,9 @@ namespace OfTamingAndBreeding.Data.Handling
         // VALIDATE PREFAB
         //------------------------------------------------
 
-        public override bool ValidatePrefab(ModelHandlerContext ctx, string offspringName, Offspring data)
+        public override bool ValidatePrefab(ModelHandlerContext ctx, string offspringName, Models.Offspring data)
         {
-            var model = $"{nameof(Offspring)}.{offspringName}";
+            var model = $"{nameof(Models.Offspring)}.{offspringName}";
             var error = false;
 
             var offspring = ctx.GetPrefab(offspringName);
@@ -125,7 +123,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // REGISTER PREFAB
         //------------------------------------------------
 
-        public override void RegisterPrefab(ModelHandlerContext ctx, string offspringName, Offspring data)
+        public override void RegisterPrefab(ModelHandlerContext ctx, string offspringName, Models.Offspring data)
         {
             var model = $"{nameof(Models.Offspring)}.{offspringName}";
 
@@ -135,12 +133,12 @@ namespace OfTamingAndBreeding.Data.Handling
             var offspringCharacter = offspring.GetComponent<Character>();
             var offspringGrowup = offspring.GetComponent<Growup>();
 
-            Helpers.PrefabHelper.DestroyComponentIfExists<ItemDrop>(offspring);
-            Helpers.PrefabHelper.DestroyComponentIfExists<Procreation>(offspring);
-            Helpers.PrefabHelper.DestroyComponentIfExists<Tameable>(offspring);
-            Helpers.PrefabHelper.DestroyComponentIfExists<CharacterDrop>(offspring);
+            Utils.PrefabHelper.DestroyComponentIfExists<ItemDrop>(offspring);
+            Utils.PrefabHelper.DestroyComponentIfExists<Procreation>(offspring);
+            Utils.PrefabHelper.DestroyComponentIfExists<Tameable>(offspring);
+            Utils.PrefabHelper.DestroyComponentIfExists<CharacterDrop>(offspring);
 
-            Helpers.PrefabHelper.DestroyComponentIfExists<MonsterAI>(offspring);
+            Utils.PrefabHelper.DestroyComponentIfExists<MonsterAI>(offspring);
             if (offspring.GetComponent<AnimalAI>() == null)
             {
                 Plugin.LogDebug($"{model}.{nameof(data.Growup)}: Adding AnimalAI component");

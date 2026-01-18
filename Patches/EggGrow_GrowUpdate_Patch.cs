@@ -15,7 +15,7 @@ namespace OfTamingAndBreeding.Patches
     {
         static bool Prefix(EggGrow __instance)
         {
-            if (!Helpers.ZNetHelper.TryGetZDO(__instance, out ZDO zdo, out ZNetView nview))
+            if (!Utils.ZNetHelper.TryGetZDO(__instance, out ZDO zdo, out ZNetView nview))
             {
                 return true;
             }

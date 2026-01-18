@@ -46,7 +46,7 @@ namespace OfTamingAndBreeding.Data
         
         public static T Get(string prefabName)
         {
-            prefabName = Utils.GetPrefabName(prefabName);
+            prefabName = global::Utils.GetPrefabName(prefabName);
             if (prefabsList.TryGetValue(prefabName, out T data))
             {
                 return data;
@@ -59,7 +59,7 @@ namespace OfTamingAndBreeding.Data
 
         public static T Drop(string prefabName)
         {
-            prefabName = Utils.GetPrefabName(prefabName);
+            prefabName = global::Utils.GetPrefabName(prefabName);
             if (prefabsList.TryGetValue(prefabName, out T data))
             {
                 prefabsList.Remove(prefabName);

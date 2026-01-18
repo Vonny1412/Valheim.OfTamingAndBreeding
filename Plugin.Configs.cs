@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace OfTamingAndBreeding
 {
-    public sealed partial class Plugin : BaseUnityPlugin
+    public sealed partial class Plugin
     {
 
         public class Configs

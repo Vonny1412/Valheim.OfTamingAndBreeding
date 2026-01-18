@@ -6,7 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
-using OfTamingAndBreeding.Helpers;
+using OfTamingAndBreeding.Utils;
 
 namespace OfTamingAndBreeding.Data
 {
@@ -68,7 +68,7 @@ namespace OfTamingAndBreeding.Data
 
             var hash = ComputeSha256StringHash(cacheContent);
 
-            if (writeFiles && Plugin.Configs.WriteServerCacheDebugFiles.Value == true)
+            if (writeFiles)
             {
                 var saver = new DataSaver();
                 saver.AddList(Models.Creature.GetAll());

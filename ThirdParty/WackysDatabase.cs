@@ -1,5 +1,4 @@
-﻿
-using BepInEx.Bootstrap;
+﻿using BepInEx.Bootstrap;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,101 +8,94 @@ using System.Threading.Tasks;
 
 namespace OfTamingAndBreeding.ThirdParty
 {
-
-    internal static class ThirdPartyUtil
+    internal static class ThirdPartyManager
     {
-        public static bool TryGetPluginAssembly(string pluginGuid, out Assembly asm)
+        private static readonly Dictionary<string, Action<string, Assembly>> callbacks = new Dictionary<string, Action<string, Assembly>>();
+
+        public static void RegisterPlugin(string GUID, Action<string, Assembly> cb)
+        {
+            callbacks.Add(GUID, cb);
+        }
+
+        public static void TryGetAssemblies()
+        {
+            foreach(var kv in callbacks)
+            {
+                string guid = kv.Key;
+                Action<string, Assembly> cb = kv.Value;
+                if (TryGetPluginAssembly(guid, out Assembly asm))
+                {
+                    cb(guid, asm);
+                }
+            }
+        }
+
+        public static bool TryGetPluginAssembly(string GUID, out Assembly asm)
         {
             asm = null;
-            if (Chainloader.PluginInfos.TryGetValue(pluginGuid, out var info))
+            if (Chainloader.PluginInfos.TryGetValue(GUID, out var info))
             {
                 asm = info.Instance.GetType().Assembly;
                 return asm != null;
             }
             return false;
         }
-    }
 
-    internal static class ThirdPartyIntegration
-    {
-        public static bool HasWackysDatabase { get; private set; }
-
-        public static void Init()
-        {
-            HasWackysDatabase =
-                BepInEx.Bootstrap.Chainloader.PluginInfos
-                    .ContainsKey("WackyMole.WackysDatabase");
-        }
     }
 
 
-    /*
-     * 
-     * 
-     *  warning: this feature is not implemented yet
-     *  i still dont know if i gonna implement it at all
-     * 
-     * 
-     * 
-     * 
-     * */
 
 
 
 
-    /*
-namespace wackydatabase.Datas
-{
-[Serializable]
-[CanBeNull]
-public class RecipeData
-{
-public string? name; //must have
-public string? clonePrefabName;
-//public string cloneColor;
-public string? craftingStation;
-public int? minStationLevel;
-public int? maxStationLevelCap;
-public string? repairStation;
-public int? amount;
-public bool? disabled;
-public bool? disabledUpgrade;
-public bool? requireOnlyOneIngredient;
-public List<string>? upgrade_reqs = new List<string>(); // Only for upgrades
-public List<string>? reqs = new List<string>(); // must have // First time and upgrades if upgrade_reqs is not set
 
 
-}
 
 
-}
-    */
+
+
 
 
     internal static class WackysDatabaseBridge
     {
-        private const string PluginGuid = "WackyMole.WackysDatabase";
-        private static Assembly _asm;
-        private static Type _recipeDataType;
-        private static MethodInfo _setRecipeData;
+        public const string PluginGuid = "WackyMole.WackysDatabase";
 
-        internal sealed class OtabsRecipeData
+        private static bool registered = false;
+
+        private static Type recipeDataType = null;
+        private static MethodInfo setRecipeData = null;
+
+        public static void Register()
         {
-            public string name;
-            public string clonePrefabName;
-            public string craftingStation;
-            public int? minStationLevel;
-            public int? maxStationLevelCap;
-            public string repairStation;
-            public int? amount;
-            public bool? disabled;
-            public bool? disabledUpgrade;
-            public bool? requireOnlyOneIngredient;
-            public List<string> upgrade_reqs;
-            public List<string> reqs;
+            ThirdPartyManager.RegisterPlugin(PluginGuid, OnRegistered);
         }
 
-        public static void CopyToWacky(object wackyRecipeObj, OtabsRecipeData src)
+        private static void OnRegistered(string guid, Assembly asm)
+        {
+            var _recipeDataType = asm.GetType("wackydatabase.Datas.RecipeData", false);
+            if (_recipeDataType == null) return;
+
+            var _setDataType = asm.GetType("wackydatabase.SetData.SetData", false);
+            if (_setDataType == null) return;
+
+            recipeDataType = _recipeDataType;
+            setRecipeData = _setDataType.GetMethod("SetRecipeData", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            registered = true;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+        // currently unused
+        public static void CopyToWacky(object wackyRecipeObj, Data.Models.Recipe src)
         {
             var t = wackyRecipeObj.GetType();
 
@@ -131,41 +123,42 @@ public List<string>? reqs = new List<string>(); // must have // First time and u
 
 
 
+        /*
 
-
-
-
-        public static bool TryInit()
+        internal static void SetRecipeData(RecipeData data, ObjectDB Instant)
         {
-            if (_setRecipeData != null) return true;
-
-            if (!Chainloader.PluginInfos.TryGetValue(PluginGuid, out var info))
-                return false;
-
-            _asm = info.Instance.GetType().Assembly;
-
-            _recipeDataType = _asm.GetType("wackydatabase.Datas.RecipeData", false);
-            if (_recipeDataType == null) return false;
-
-            var setDataType = _asm.GetType("wackydatabase.SetData.SetData", false);
-            if (setDataType == null) return false;
-
-            //internal static void SetRecipeData(RecipeData data, ObjectDB Instant)
-            _setRecipeData = setDataType.GetMethod(
-                    "SetRecipeData",
-                    BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public
-                );
-
-            return _setRecipeData != null;
+            ...
         }
 
-        public static object CreateRecipeData() => Activator.CreateInstance(_recipeDataType);
+        ...
+        ObjectDB Instant = ObjectDB.instance;
+        ...
 
-        public static void ApplyRecipe(object recipeData, object objectDb)
+        foreach (var data in WMRecipeCust.recipeDatasYml)
         {
-            // static method => target null
-            _setRecipeData.Invoke(null, new[] { recipeData, objectDb });
+            try
+            {
+                SetData.SetRecipeData(data, Instant);
+            }
+            ...
         }
+
+
+        */
+
+
+        public static void ApplyRecipe(Data.Models.Recipe src)
+        {
+            if (!registered)
+            {
+                Plugin.LogFatal($"Cannot register recipe - WackyDB not registered");
+                return;
+            }
+            var wackyRecipe = Activator.CreateInstance(recipeDataType);
+            CopyToWacky(wackyRecipe, src);
+            setRecipeData.Invoke(null, new object[] { wackyRecipe, ObjectDB.instance });
+        }
+
     }
 
 

@@ -1,28 +1,26 @@
 ﻿using Jotunn.Entities;
 using Jotunn.Managers;
+using OfTamingAndBreeding.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-using OfTamingAndBreeding.Helpers;
-using OfTamingAndBreeding.Data.Models;
-
 namespace OfTamingAndBreeding.Data.Handling
 {
 
-    internal class EggModelHandler : ModelHandler<Egg>
+    internal class EggModelHandler : ModelHandler<Models.Egg>
     {
 
-        public override string DirectoryName => Egg.DirectoryName;
+        public override string DirectoryName => Models.Egg.DirectoryName;
 
         //------------------------------------------------
         // VALIDATE DATA
         //------------------------------------------------
 
-        public override bool ValidateData(ModelHandlerContext ctx, string eggName, Egg data)
+        public override bool ValidateData(ModelHandlerContext ctx, string eggName, Models.Egg data)
         {
-            var model = $"{nameof(Egg)}.{eggName}";
+            var model = $"{nameof(Models.Egg)}.{eggName}";
             var error = false;
 
             if (data.Item == null)
@@ -60,9 +58,9 @@ namespace OfTamingAndBreeding.Data.Handling
         // PREPARE PREFAB
         //------------------------------------------------
 
-        public override bool PreparePrefab(ModelHandlerContext ctx, string eggName, Egg data)
+        public override bool PreparePrefab(ModelHandlerContext ctx, string eggName, Models.Egg data)
         {
-            var model = $"{nameof(Egg)}.{eggName}";
+            var model = $"{nameof(Models.Egg)}.{eggName}";
 
             //var egg = PrefabManager.Instance.GetPrefab(eggName);
             var egg = ctx.GetPrefab(eggName);
@@ -101,9 +99,9 @@ namespace OfTamingAndBreeding.Data.Handling
         // VALIDATE PREFAB
         //------------------------------------------------
 
-        public override bool ValidatePrefab(ModelHandlerContext ctx, string eggName, Egg data)
+        public override bool ValidatePrefab(ModelHandlerContext ctx, string eggName, Models.Egg data)
         {
-            var model = $"{nameof(Egg)}.{eggName}";
+            var model = $"{nameof(Models.Egg)}.{eggName}";
             var error = false;
 
             var egg = ctx.GetPrefab(eggName);
@@ -137,12 +135,13 @@ namespace OfTamingAndBreeding.Data.Handling
         // REGISTER PREFAB
         //------------------------------------------------
 
-        public override void RegisterPrefab(ModelHandlerContext ctx, string eggName, Egg data)
+        public override void RegisterPrefab(ModelHandlerContext ctx, string eggName, Models.Egg data)
         {
-            var model = $"{nameof(Egg)}.{eggName}";
+            var model = $"{nameof(Models.Egg)}.{eggName}";
 
             var egg = PrefabManager.Instance.GetPrefab(eggName);
-            PrefabManager.Instance.RegisterToZNetScene(egg);
+            ItemManager.Instance.RegisterItemInObjectDB(egg);
+            //PrefabManager.Instance.RegisterToZNetScene(egg);
 
             var eggItemDrop = egg.GetComponent<ItemDrop>();
             var eggEggGrow = egg.GetComponent<EggGrow>();
@@ -223,6 +222,9 @@ namespace OfTamingAndBreeding.Data.Handling
             }
             ScaleLights(eggItemPrefab, data.Item.LightsScale);
 
+
+
+            
             if (TryParseTint(data.Item.ItemTintRgb, out Color iconTint))
             {
                 Plugin.LogDebug($"{model}: Tinting icon");
@@ -230,21 +232,25 @@ namespace OfTamingAndBreeding.Data.Handling
                 var baseIcon = itemDrop.m_itemData.m_shared.m_icons?.FirstOrDefault();
                 if (baseIcon != null)
                 {
-                    var tinted = IconTint.CreateTintedSprite(baseIcon, iconTint);
+                    var tinted = Utils.IconTint.CreateTintedSprite(baseIcon, iconTint);
                     itemDrop.m_itemData.m_shared.m_icons = new[] { tinted };
                 }
                 else
                 {
-                    // fallback (falls kein icon vorhanden)
+                    // what to do??
                 }
             }
+
+
+
+
 
             Plugin.LogDebug($"{model}: Setting effects");
             if (eggEggGrow.m_hatchEffect == null || eggEggGrow.m_hatchEffect.m_effectPrefabs.Length == 0)
             {
                 eggEggGrow.m_hatchEffect = new EffectList
                 {
-                    m_effectPrefabs = PrefabHelper.GetEffects(new string[] {
+                    m_effectPrefabs = Utils.PrefabHelper.GetEffects(new string[] {
                         "fx_chicken_birth",
                     })
                 };

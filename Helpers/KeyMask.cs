@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 
-namespace OfTamingAndBreeding.Helpers
+namespace OfTamingAndBreeding.Utils
 {
     internal static class KeyMask
     {

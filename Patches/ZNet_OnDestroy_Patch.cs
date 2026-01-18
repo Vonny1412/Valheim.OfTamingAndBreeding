@@ -1,4 +1,6 @@
 ﻿using HarmonyLib;
+using Jotunn;
+using OfTamingAndBreeding.Data;
 using OfTamingAndBreeding.Net;
 using System;
 using System.Collections.Generic;

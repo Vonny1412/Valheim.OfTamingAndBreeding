@@ -14,18 +14,18 @@ namespace OfTamingAndBreeding.Patches
         static bool Prefix(Tameable __instance, ItemDrop item)
         {
 
-            if (!Helpers.ZNetHelper.TryGetZDO(__instance, out ZDO zdo, out ZNetView nview))
+            if (!Utils.ZNetHelper.TryGetZDO(__instance, out ZDO zdo, out ZNetView nview))
             {
                 return true; // i dont care
             }
 
             if (nview.IsOwner())
             {
-                var itemName = Utils.GetPrefabName(item.gameObject.name);
+                var itemName = global::Utils.GetPrefabName(item.gameObject.name);
                 //zdo.Set(Plugin.ZDO.s_lastConsumedItem, itemName);
 
                 // handle multiplied fedDuration
-                var prefabName = Utils.GetPrefabName(__instance.gameObject.name);
+                var prefabName = global::Utils.GetPrefabName(__instance.gameObject.name);
                 var data = Data.Models.Creature.Get(prefabName);
                 if (data != null && data.Tameable != null && data.MonsterAI != null && data.MonsterAI.ConsumeItems != null && data.MonsterAI.ConsumeItems.Length > 0)
                 {

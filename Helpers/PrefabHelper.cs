@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.Helpers
+namespace OfTamingAndBreeding.Utils
 {
     internal static class PrefabHelper
     {

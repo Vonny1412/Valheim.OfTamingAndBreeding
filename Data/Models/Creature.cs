@@ -20,7 +20,9 @@ namespace OfTamingAndBreeding.Data.Models
         public MonsterAIData MonsterAI = null;
         public TameableData Tameable = null;
         public ProcreationData Procreation = null;
-        
+
+        [Serializable]
+        [CanBeNull]
         public class CharacterAIData : SubData.ICharacterAIData
         {
             public string Group { get; set; } = "";
@@ -28,12 +30,16 @@ namespace OfTamingAndBreeding.Data.Models
             public bool CanAttackTames { get; set; } = false;
         }
 
+        [Serializable]
+        [CanBeNull]
         public class MonsterAIConsumItemData
         {
             public string Prefab { get; set; } = null;
             public float FedDurationMultiply { get; set; } = 1f;
         }
 
+        [Serializable]
+        [CanBeNull]
         public class MonsterAIData
         {
             public MonsterAIConsumItemData[] ConsumeItems { get; set; } = null;
@@ -42,6 +48,8 @@ namespace OfTamingAndBreeding.Data.Models
             public float ConsumeSearchInterval { get; set; } = 10;
         }
 
+        [Serializable]
+        [CanBeNull]
         public class TameableData
         {
             public float FedDuration { get; set; } = 30f;
@@ -49,6 +57,8 @@ namespace OfTamingAndBreeding.Data.Models
             public bool Commandable { get; set; } = false;
         }
 
+        [Serializable]
+        [CanBeNull]
         public class ProcreationOffspringData : SubData.IRandomData
         {
             public string Prefab { get; set; } = null;
@@ -63,12 +73,16 @@ namespace OfTamingAndBreeding.Data.Models
             public int MaxLevel { get; set; } = 3;
         }
 
+        [Serializable]
+        [CanBeNull]
         public class ProcreationPartnerData : SubData.IRandomData
         {
             public string Prefab { get; set; } = null;
             public float Weight { get; set; } = 1;
         }
 
+        [Serializable]
+        [CanBeNull]
         public class ProcreationData
         {
             public float UpdateInterval { get; set; } = 10;

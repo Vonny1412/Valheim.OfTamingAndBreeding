@@ -14,7 +14,7 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         static void Postfix(Tameable __instance)
         {
-            if (!Helpers.ZNetHelper.TryGetZDO(__instance, out ZDO zdo))
+            if (!Utils.ZNetHelper.TryGetZDO(__instance, out ZDO zdo))
             {
                 return;
             }

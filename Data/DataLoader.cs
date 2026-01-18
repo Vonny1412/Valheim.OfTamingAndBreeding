@@ -8,7 +8,7 @@ using OfTamingAndBreeding.Data.Handling;
 
 namespace OfTamingAndBreeding.Data
 {
-    internal sealed class DataLoader
+    internal static class DataLoader
     {
 
         private static readonly List<Action> OnResetCallbacks = new List<Action>();
@@ -19,6 +19,7 @@ namespace OfTamingAndBreeding.Data
                 new OffspringModelHandler(),
                 new EggModelHandler(),
                 new CreatureModelHandler(),
+                new RecipeModelHandler(),
             };
 
         
@@ -40,7 +41,7 @@ namespace OfTamingAndBreeding.Data
         // Client YAMLs are ignored once connected to a server.
         // This ensures deterministic breeding/taming behavior in multiplayer.
 
-        public static void LoadDataFromServerFiles()
+        public static void LoadDataFromLocalFiles()
         {
             var zn = ZNet.instance;
             string worldName = zn.GetWorldName();
@@ -74,21 +75,40 @@ namespace OfTamingAndBreeding.Data
 
         private static IEnumerable<string> EnumerateCategoryFiles(string worldRoot, string categoryFolderName)
         {
-            // Find all folders named e.g. "Creatures" anywhere under worldRoot (including direct one)
-            var folders = Directory.EnumerateDirectories(worldRoot, "*", SearchOption.AllDirectories)
-                .Where(d => string.Equals(Path.GetFileName(d), categoryFolderName, StringComparison.OrdinalIgnoreCase))
-                .OrderBy(d => d, StringComparer.OrdinalIgnoreCase);
+            var stack = new Stack<string>();
+            stack.Push(worldRoot);
 
-            // Deterministic file order
-            foreach (var folder in folders)
+            while (stack.Count > 0)
             {
-                foreach (var file in Directory.EnumerateFiles(folder, "*.yml", SearchOption.TopDirectoryOnly)
-                             .OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+                var dir = stack.Pop();
+
+                // Skip subtree if this directory starts with "_" (but allow worldRoot itself)
+                if (!string.Equals(dir, worldRoot, StringComparison.OrdinalIgnoreCase))
                 {
-                    yield return file;
+                    if (Path.GetFileName(dir)?.StartsWith("_", StringComparison.Ordinal) ?? true)
+                        continue;
                 }
+
+                // If this directory IS the category folder, yield its .yml files (top-level only)
+                if (string.Equals(Path.GetFileName(dir), categoryFolderName, StringComparison.OrdinalIgnoreCase))
+                {
+                    foreach (var file in Directory.EnumerateFiles(dir, "*.yml", SearchOption.TopDirectoryOnly)
+                                 .OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+                    {
+                        yield return file;
+                    }
+                    continue;
+                }
+
+                // Descend: push subdirectories in reverse-sorted order so pop() processes them sorted
+                var subDirs = Directory.EnumerateDirectories(dir, "*", SearchOption.TopDirectoryOnly)
+                    .OrderByDescending(d => d, StringComparer.OrdinalIgnoreCase);
+
+                foreach (var sub in subDirs)
+                    stack.Push(sub);
             }
         }
+
 
         public static void ValidateAndPreparePrefabs()
         {
@@ -116,7 +136,6 @@ namespace OfTamingAndBreeding.Data
             {
                 dh.RegisterAllPrefabs(ctx);
             }
-            /*
             if (ZNet.instance.IsServer())
             {
                 foreach (var dh in dataHandlers)
@@ -124,7 +143,6 @@ namespace OfTamingAndBreeding.Data
                     Plugin.LogMessage($"Loaded {dh.GetLoadedDataCount()} {dh.ModelTypeName} entries");
                 }
             }
-            */
         }
 
         public static Dictionary<string, Dictionary<string, string>> GetServerData()

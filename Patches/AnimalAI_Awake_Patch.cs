@@ -14,7 +14,7 @@ namespace OfTamingAndBreeding.Patches
         static void Postfix(AnimalAI __instance)
         {
             // used for making animals tameable
-            var prefabName = Utils.GetPrefabName(__instance.gameObject);
+            var prefabName = global::Utils.GetPrefabName(__instance.gameObject);
             var prefab = ZNetScene.instance.GetPrefab(prefabName);
             if (!prefab) return;
             var prefabAnimalAI = prefab.GetComponent<AnimalAI>();

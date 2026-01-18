@@ -28,7 +28,7 @@ namespace OfTamingAndBreeding.Internals
         public bool GrowUpdate_Prefix(ZDO zdo)
         {
 
-            var data = Egg.Get(Utils.GetPrefabName(name));
+            var data = Egg.Get(global::Utils.GetPrefabName(name));
             if (data == null)
             {
                 // no custom handling
@@ -37,7 +37,7 @@ namespace OfTamingAndBreeding.Internals
             }
 
             var grownName = zdo.GetString(Plugin.ZDOVars.s_eggGrownPrefab, "");
-            grownName = Utils.GetPrefabName(grownName);
+            grownName = global::Utils.GetPrefabName(grownName);
             var grown = ZNetScene.instance.GetPrefab(grownName);
             if (grown == null)
             {

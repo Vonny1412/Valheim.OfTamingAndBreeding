@@ -24,11 +24,11 @@ namespace OfTamingAndBreeding.Patches
                 return true;
             }
 
-            if (!Helpers.ZNetHelper.TryGetZDO(a, out ZDO zdo1, out ZNetView nview1))
+            if (!Utils.ZNetHelper.TryGetZDO(a, out ZDO zdo1, out ZNetView nview1))
             {
                 return true; // i dont care
             }
-            if (!Helpers.ZNetHelper.TryGetZDO(b, out ZDO zdo2, out ZNetView nview2))
+            if (!Utils.ZNetHelper.TryGetZDO(b, out ZDO zdo2, out ZNetView nview2))
             {
                 return true; // i dont care
             }
@@ -44,8 +44,8 @@ namespace OfTamingAndBreeding.Patches
                 return true;
             }
 
-            var name1 = Utils.GetPrefabName(a.gameObject.name);
-            var name2 = Utils.GetPrefabName(b.gameObject.name);
+            var name1 = global::Utils.GetPrefabName(a.gameObject.name);
+            var name2 = global::Utils.GetPrefabName(b.gameObject.name);
 
             // handle stick-to-faction
             var stickToFaction1 = Contexts.DataContext.ObjectSticksToFaction(name1);
