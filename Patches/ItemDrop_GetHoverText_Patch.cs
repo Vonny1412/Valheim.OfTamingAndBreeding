@@ -19,7 +19,7 @@ namespace OfTamingAndBreeding.Patches
 
             var eggGrow = __instance.GetComponent<EggGrow>();
             if (!eggGrow) return;
-            if (!Utils.ZNetHelper.TryGetZDO(__instance, out ZDO zdo)) return;
+            if (!Helpers.ZNetHelper.TryGetZDO(__instance, out ZDO zdo)) return;
 
             string extraText;
 

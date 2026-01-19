@@ -25,9 +25,10 @@ namespace OfTamingAndBreeding.Data.Models
         [CanBeNull]
         public class CharacterAIData : SubData.ICharacterAIData
         {
-            public string Group { get; set; } = "";
+            public string Group { get; set; } = null;
             public bool StickToFaction { get; set; } = true;
             public bool CanAttackTames { get; set; } = false;
+            public bool CanBeAttackedByTames { get; set; } = false;
         }
 
         [Serializable]
@@ -45,16 +46,16 @@ namespace OfTamingAndBreeding.Data.Models
             public MonsterAIConsumItemData[] ConsumeItems { get; set; } = null;
             public float ConsumeRange { get; set; } = 1;
             public float ConsumeSearchRange { get; set; } = 10;
-            public float ConsumeSearchInterval { get; set; } = 10;
+            public float ConsumeSearchInterval { get; set; } = 15;
         }
 
         [Serializable]
         [CanBeNull]
         public class TameableData
         {
-            public float FedDuration { get; set; } = 30f;
-            public float TamingTime { get; set; } = 1800f;
-            public bool Commandable { get; set; } = false;
+            public float FedDuration { get; set; } = 1800f;
+            public float TamingTime { get; set; } = 3600f;
+            public bool Commandable { get; set; } = true;
         }
 
         [Serializable]
@@ -66,8 +67,6 @@ namespace OfTamingAndBreeding.Data.Models
 
             public bool NeedPartner { get; set; } = true;
             public string NeedPartnerPrefab { get; set; } = null;
-
-            public int MaxCreatures { get; set; } = 3;
 
             public float LevelUpChance { get; set; } = 0;
             public int MaxLevel { get; set; } = 3;
@@ -85,7 +84,7 @@ namespace OfTamingAndBreeding.Data.Models
         [CanBeNull]
         public class ProcreationData
         {
-            public float UpdateInterval { get; set; } = 10;
+            public float UpdateInterval { get; set; } = 15;
             public float TotalCheckRange { get; set; } = 10;
 
             public ProcreationPartnerData[] Partner { get; set; } = null;
@@ -93,17 +92,20 @@ namespace OfTamingAndBreeding.Data.Models
             public float PartnerCheckRange { get; set; } = 3;
             public int RequiredLovePoints { get; set; } = 3;
 
-            public float PregnancyChance { get; set; } = 0.5f;
-            public float PregnancyDuration { get; set; } = 60;
+            public float PregnancyChance { get; set; } = 0.33f;
+            public float PregnancyDuration { get; set; } = 1800;
 
-            public float SpawnOffset { get; set; } = 2f;
+            public float SpawnOffset { get; set; } = 1;
             public float SpawnOffsetMax { get; set; } = 0;
             public bool SpawnRandomDirection { get; set; } = false;
 
             public bool ProcreateWhileSwimming { get; set; } = true;
 
+            public int? MaxCreatures { get; set; } = null;
+            public Dictionary<string, int> MaxCreaturesExplicite { get; set; } = null;
+
             public float ExtraOffspringChance { get; set; } = 0.0f;
-            public int MaxOffspringsPerPregnancy { get; set; } = 0;
+            public int MaxOffspringsPerPregnancy { get; set; } = 1;
 
             public ProcreationOffspringData[] Offspring { get; set; } = null;
 

@@ -14,4 +14,3 @@ OfTamingAndBreeding.Internals.API.MonsterAI.cs
 OfTamingAndBreeding.Internals.API.Procreation.cs
 OfTamingAndBreeding.Internals.API.Tameable.cs
 OfTamingAndBreeding.Internals.API.WearNTear.cs
-OfTamingAndBreeding.Internals.API.ZNetScene.cs

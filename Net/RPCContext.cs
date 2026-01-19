@@ -1,5 +1,5 @@
 ﻿using OfTamingAndBreeding.Data;
-using OfTamingAndBreeding.Utils;
+using OfTamingAndBreeding.Helpers;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -48,7 +48,7 @@ namespace OfTamingAndBreeding.Net
             var inFunc1 = $"{nameof(RPCContext)}.{nameof(RPCContext.InitServerSession)}";
             Plugin.LogDebug($"[{inFunc1}] Start");
 
-            DataLoader.LoadDataFromLocalFiles();
+            DataManager.LoadDataFromLocalFiles();
 
             var writeCacheFiles = Plugin.Configs.WriteServerCacheDebugFiles.Value;
 
@@ -83,7 +83,7 @@ namespace OfTamingAndBreeding.Net
                 if (!CacheManager.LoadCacheFromCrypted(serverSession.CacheContent, serverSession.CacheCryptKey))
                 {
                     Plugin.LogFatal($"[{inFunc1}] Failed building cache: Cache #1 corrupted");
-                    DataLoader.ResetData();
+                    DataManager.ResetData();
                     DestroySession();
                     return;
                 }
@@ -98,7 +98,7 @@ namespace OfTamingAndBreeding.Net
                 else
                 {
                     Plugin.LogFatal($"[{inFunc1}] Failed building cache: Hashes mismatch");
-                    DataLoader.ResetData();
+                    DataManager.ResetData();
                     DestroySession();
                 }
 
@@ -175,7 +175,6 @@ namespace OfTamingAndBreeding.Net
 
             CacheRPC.SetServerReady();
             HandshakeRPC.SetServerReady();
-            Plugin.LogMessage($"Done -> ready for clients");
         }
 
         #endregion
@@ -190,7 +189,7 @@ namespace OfTamingAndBreeding.Net
             public string CacheCryptKey = null;
         }
 
-        public static void InitClientSession()
+        public static void InitClientSession(bool isLocal)
         {
             var inFunc1 = $"{nameof(RPCContext)}.{nameof(RPCContext.InitClientSession)}";
             Plugin.LogDebug($"[{inFunc1}] Start");
@@ -257,7 +256,7 @@ namespace OfTamingAndBreeding.Net
                             if (CacheManager.LoadCacheFromCrypted(File.ReadAllText(cacheFilePath), clientSession.CacheCryptKey))
                             {
                                 requestCacheFile = false;
-                                DataLoader.ValidateAndPreparePrefabs();
+                                DataManager.ValidateDataAndRegisterPrefabs();
                                 Plugin.LogMessage($"Loaded data from existing cache");
                             }
                         }
@@ -313,7 +312,7 @@ namespace OfTamingAndBreeding.Net
 
                 if (success)
                 {
-                    DataLoader.ValidateAndPreparePrefabs();
+                    DataManager.ValidateDataAndRegisterPrefabs();
                     Plugin.LogMessage($"Loaded data from received cache");
                 }
                 else

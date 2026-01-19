@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OfTamingAndBreeding.Utils
+namespace OfTamingAndBreeding.Helpers
 {
 
     internal static class StringHelper

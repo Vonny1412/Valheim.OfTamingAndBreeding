@@ -5,70 +5,18 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 using UnityEngine.PlayerLoop;
 
-namespace OfTamingAndBreeding.Data.Handling
+namespace OfTamingAndBreeding.Data.Handling.Base
 {
 
-    public class ModelHandlerContext
+    internal abstract class DataHandler<T> : IDataHandler where T : DataBase<T>
     {
-        public readonly ZNetScene zns;
-        public ModelHandlerContext(ZNetScene zns)
-        {
-            this.zns = zns;
-            cache = new Dictionary<string, UnityEngine.GameObject>();
-        }
 
-        private readonly Dictionary<string, UnityEngine.GameObject> cache;
-
-        public bool PrefabExists(string prefabName, bool requireRegistered = false)
-        {
-            if (!requireRegistered && cache.TryGetValue(prefabName, out _))
-            {
-                return true;
-            }
-            if ((bool)GetPrefab(prefabName))
-            {
-                return true;
-            }
-            return false;
-        }
-
-        public void CachePrefab(string prefabName, UnityEngine.GameObject prefab)
-        {
-            cache[prefabName] = prefab; // overwrite ok
-        }
-
-        public UnityEngine.GameObject GetPrefab(string prefabName)
-        {
-            if (cache.TryGetValue(prefabName, out UnityEngine.GameObject prefab))
-            {
-                return prefab;
-            }
-            prefab = PrefabManager.Instance.GetPrefab(prefabName);
-            if (prefab) return prefab;
-            return zns.GetPrefab(prefabName);
-        }
-
-    }
-
-    internal abstract class ModelHandler<T> : IModelHandler where T : DataBase<T>
-    {
         public abstract string DirectoryName { get; }
 
         public string ModelTypeName => typeof(T).Name;
-
-        public Dictionary<string, string> GetAllYamlData()
-        {
-            var ret = new Dictionary<string, string>();
-            foreach(var kv in DataBase<T>.GetAll())
-            {
-                ret.Add(kv.Key, DataBase<T>.Serialize(kv.Value));
-            }
-            return ret;
-        }
-
-        public int GetLoadedDataCount() => DataBase<T>.GetAll().Count;
 
         public bool LoadFromYaml(string prefabName, string yamlString)
         {
@@ -79,7 +27,7 @@ namespace OfTamingAndBreeding.Data.Handling
                 DataBase<T>.Store(prefabName, data);
                 return true;
             }
-            catch(Exception e)
+            catch (Exception)
             {
                 Plugin.LogFatal($"Failed loading YAML for {typeof(T).Name} '{prefabName}'");
             }
@@ -94,10 +42,34 @@ namespace OfTamingAndBreeding.Data.Handling
             return LoadFromYaml(prefabName, yaml);
         }
 
+        public Dictionary<string, string> GetAllYamlData()
+        {
+            var ret = new Dictionary<string, string>();
+            foreach (var kv in DataBase<T>.GetAll())
+            {
+                var prefabName = kv.Key;
+                var prefabData = kv.Value;
+                var prefabYaml = prefabData.Serialize();
+                ret.Add(prefabName, prefabYaml);
+            }
+            return ret;
+        }
 
+        public int GetLoadedDataCount() => DataBase<T>.GetAll().Count;
 
-        public abstract bool ValidateData(ModelHandlerContext ctx, string prefabName, T data);
-        public void ValidateAllData(ModelHandlerContext ctx)
+        public void ResetData()
+        {
+            DataBase<T>.DropAll();
+        }
+
+        //---------------------
+        // context routine
+        //---------------------
+
+        public abstract void Prepare(DataHandlerContext ctx);
+
+        public abstract bool ValidateData(DataHandlerContext ctx, string prefabName, T data);
+        public void ValidateAllData(DataHandlerContext ctx)
         {
             Plugin.LogDebug($"{nameof(ValidateAllData)}: {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
@@ -114,8 +86,8 @@ namespace OfTamingAndBreeding.Data.Handling
             }
         }
 
-        public abstract bool PreparePrefab(ModelHandlerContext ctx, string prefabName, T data);
-        public void PrepareAllPrefabs(ModelHandlerContext ctx)
+        public abstract bool PreparePrefab(DataHandlerContext ctx, string prefabName, T data);
+        public void PrepareAllPrefabs(DataHandlerContext ctx)
         {
             Plugin.LogDebug($"{nameof(PrepareAllPrefabs)}: {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
@@ -132,8 +104,8 @@ namespace OfTamingAndBreeding.Data.Handling
             }
         }
 
-        public abstract bool ValidatePrefab(ModelHandlerContext ctx, string prefabName, T data);
-        public bool ValidateAllPrefabs(ModelHandlerContext ctx)
+        public abstract bool ValidatePrefab(DataHandlerContext ctx, string prefabName, T data);
+        public bool ValidateAllPrefabs(DataHandlerContext ctx)
         {
             Plugin.LogDebug($"{nameof(ValidateAllPrefabs)}: {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
@@ -149,9 +121,8 @@ namespace OfTamingAndBreeding.Data.Handling
             return allOkay;
         }
 
-        public abstract void RegisterPrefab(ModelHandlerContext ctx, string prefabName, T data);
-
-        public void RegisterAllPrefabs(ModelHandlerContext ctx)
+        public abstract void RegisterPrefab(DataHandlerContext ctx, string prefabName, T data);
+        public void RegisterAllPrefabs(DataHandlerContext ctx)
         {
             Plugin.LogDebug($"{nameof(RegisterAllPrefabs)} {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
@@ -165,27 +136,21 @@ namespace OfTamingAndBreeding.Data.Handling
             }
         }
 
-        public Dictionary<string, string> GetYamlDictFromAll()
-        {
-            var raw = new Dictionary<string, string>();
-            foreach (var kv in DataBase<T>.GetAll())
-            {
-                raw.Add(kv.Key, kv.Value.Serialize());
-            }
-            return raw;
-        }
+        public abstract void Cleanup(DataHandlerContext ctx);
 
-        public void LoadAllFromYamlDict(Dictionary<string, string> entries)
+        public abstract void RestorePrefab(DataHandlerContext ctx, string prefabName, T data);
+        public void RestoreAllPrefabs(DataHandlerContext ctx)
         {
-            foreach (var kv in entries)
+            Plugin.LogDebug($"{nameof(RestoreAllPrefabs)} {typeof(T).Name}");
+            var all = DataBase<T>.GetAll();
+            var keys = all.Keys.ToList();
+            foreach (var prefabName in keys)
             {
-                LoadFromYaml(kv.Key, kv.Value);
+                if (!all.TryGetValue(prefabName, out var data))
+                    continue;
+                Plugin.LogDebug($"{nameof(RestorePrefab)} {typeof(T).Name} '{prefabName}'");
+                RestorePrefab(ctx, prefabName, data);
             }
-        }
-
-        public void ResetData()
-        {
-            DataBase<T>.DropAll();
         }
 
     }

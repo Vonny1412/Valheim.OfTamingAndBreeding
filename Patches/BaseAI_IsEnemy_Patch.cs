@@ -24,11 +24,11 @@ namespace OfTamingAndBreeding.Patches
                 return true;
             }
 
-            if (!Utils.ZNetHelper.TryGetZDO(a, out ZDO zdo1, out ZNetView nview1))
+            if (!Helpers.ZNetHelper.TryGetZDO(a, out ZDO zdo1, out ZNetView nview1))
             {
                 return true; // i dont care
             }
-            if (!Utils.ZNetHelper.TryGetZDO(b, out ZDO zdo2, out ZNetView nview2))
+            if (!Helpers.ZNetHelper.TryGetZDO(b, out ZDO zdo2, out ZNetView nview2))
             {
                 return true; // i dont care
             }
@@ -56,11 +56,23 @@ namespace OfTamingAndBreeding.Patches
                 return false;
             }
 
-            var enemyTames1 = Contexts.DataContext.ObjectCanAttackTames(name1);
-            if (enemyTames1 && isTamed2)
+            if (isTamed1 && isTamed2)
             {
-                Contexts.IsEnemyContext.Active = true;
-                Contexts.IsEnemyContext.TargetInstance = b;
+                var attackTames1 = Contexts.DataContext.ObjectCanAttackTames(name1);
+                if (attackTames1)
+                {
+                    Contexts.IsEnemyContext.Active = true;
+                    Contexts.IsEnemyContext.TargetInstance = b;
+                }
+                else
+                {
+                    var attackedByTames2 = Contexts.DataContext.ObjectCanBeAttackedByTames(name2);
+                    if (attackedByTames2)
+                    {
+                        Contexts.IsEnemyContext.Active = true;
+                        Contexts.IsEnemyContext.TargetInstance = b;
+                    }
+                }
             }
 
             return true; // let valheim decide

@@ -5,32 +5,21 @@ using System.IO;
 using System.Linq;
 
 using OfTamingAndBreeding.Data.Handling;
+using OfTamingAndBreeding.Data.Handling.Base;
 
 namespace OfTamingAndBreeding.Data
 {
-    internal static class DataLoader
+    internal static class DataManager
     {
 
-        private static readonly List<Action> OnResetCallbacks = new List<Action>();
-        public static void OnDataReset(Action cb)
-            => OnResetCallbacks.Add(cb);
+        private static readonly IDataHandler[] dataHandlers = new IDataHandler[] {
+            new OffspringHandler(),
+            new EggHandler(),
+            new CreatureHandler(),
+            new RecipeHandler(),
+        };
 
-        private static readonly IModelHandler[] dataHandlers = new IModelHandler[] {
-                new OffspringModelHandler(),
-                new EggModelHandler(),
-                new CreatureModelHandler(),
-                new RecipeModelHandler(),
-            };
-
-        
-        public static void IterDataHandlers(Action<IModelHandler> cb)
-        {
-            foreach(var dh in dataHandlers)
-            {
-                cb(dh);
-            }
-        }
-        public static IEnumerable<IModelHandler> IterDataHandlers()
+        public static IEnumerable<IDataHandler> IterDataHandlers()
         {
             foreach (var dh in dataHandlers)
                 yield return dh;
@@ -68,7 +57,7 @@ namespace OfTamingAndBreeding.Data
                 }
                 if (allokay)
                 {
-                    ValidateAndPreparePrefabs();
+                    ValidateDataAndRegisterPrefabs();
                 }
             }
         }
@@ -85,7 +74,7 @@ namespace OfTamingAndBreeding.Data
                 // Skip subtree if this directory starts with "_" (but allow worldRoot itself)
                 if (!string.Equals(dir, worldRoot, StringComparison.OrdinalIgnoreCase))
                 {
-                    if (Path.GetFileName(dir)?.StartsWith("_", StringComparison.Ordinal) ?? true)
+                    if (Path.GetFileName(dir).StartsWith("_", StringComparison.Ordinal))
                         continue;
                 }
 
@@ -95,6 +84,9 @@ namespace OfTamingAndBreeding.Data
                     foreach (var file in Directory.EnumerateFiles(dir, "*.yml", SearchOption.TopDirectoryOnly)
                                  .OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
                     {
+                        if (Path.GetFileName(file).StartsWith("_", StringComparison.Ordinal))
+                            continue;
+
                         yield return file;
                     }
                     continue;
@@ -109,18 +101,31 @@ namespace OfTamingAndBreeding.Data
             }
         }
 
+        //---------------------------
+        // context stuff
+        //---------------------------
 
-        public static void ValidateAndPreparePrefabs()
+        private static DataHandlerContext ctx = null;
+
+        public static void ValidateDataAndRegisterPrefabs()
         {
-            var ctx = new ModelHandlerContext(ZNetScene.instance);
+            ctx = new DataHandlerContext(ZNetScene.instance);
+
+            foreach (var dh in dataHandlers)
+            {
+                dh.Prepare(ctx);
+            }
+
             foreach (var dh in dataHandlers)
             {
                 dh.ValidateAllData(ctx);
             }
+
             foreach (var dh in dataHandlers)
             {
                 dh.PrepareAllPrefabs(ctx);
             }
+
             var allOkay = true;
             foreach (var dh in dataHandlers)
             {
@@ -132,10 +137,18 @@ namespace OfTamingAndBreeding.Data
                 ResetData();
                 return;
             }
+
             foreach (var dh in dataHandlers)
             {
                 dh.RegisterAllPrefabs(ctx);
             }
+
+            foreach (var dh in dataHandlers)
+            {
+                dh.Cleanup(ctx);
+            }
+
+            /*
             if (ZNet.instance.IsServer())
             {
                 foreach (var dh in dataHandlers)
@@ -143,28 +156,24 @@ namespace OfTamingAndBreeding.Data
                     Plugin.LogMessage($"Loaded {dh.GetLoadedDataCount()} {dh.ModelTypeName} entries");
                 }
             }
-        }
-
-        public static Dictionary<string, Dictionary<string, string>> GetServerData()
-        {
-            var allData = new Dictionary<string, Dictionary<string, string>>();
-            foreach (var dh in dataHandlers)
-            {
-                allData.Add(dh.DirectoryName, dh.GetYamlDictFromAll());
-            }
-            return allData;
+            */
         }
 
         public static void ResetData()
         {
             foreach (var dh in dataHandlers)
             {
+                dh.RestoreAllPrefabs(ctx);
+            }
+
+            Patches.Contexts.DataContext.Reset();
+
+            foreach (var dh in dataHandlers)
+            {
                 dh.ResetData();
             }
-            foreach (var cb in OnResetCallbacks)
-            {
-                cb();
-            }
+
+            ctx = null;
         }
 
     }

@@ -41,7 +41,7 @@ namespace OfTamingAndBreeding.Internals
             {
                 return false;
             }
-            if (!Utils.ZNetHelper.TryGetZDO(m_nview, out ZDO zdo))
+            if (!Helpers.ZNetHelper.TryGetZDO(m_nview, out ZDO zdo))
             {
                 return false;
             }
@@ -55,6 +55,10 @@ namespace OfTamingAndBreeding.Internals
             // do not uncomment me, i dont know why but its okay
             */
 
+            var myPosition = transform.position;
+            var myPartnerCheckRange = m_partnerCheckRange;
+            var myTotalCheckRange = m_totalCheckRange;
+
             var data = Data.Models.Creature.Get(global::Utils.GetPrefabName(name));
             var dataProcreation = data?.Procreation;
             if (dataProcreation == null)
@@ -66,6 +70,18 @@ namespace OfTamingAndBreeding.Internals
             if (dataProcreation.ProcreateWhileSwimming == false && m_character.IsSwimming())
             {
                 return false;
+            }
+
+            // check for explicite max creatures
+            foreach(var kv in dataProcreation.MaxCreaturesExplicite)
+            {
+                var maxCount = kv.Value;
+                var prefab = ZNetScene.instance.GetPrefab(kv.Key); // valid prefabs already checked
+                int count = SpawnSystem.GetNrOfInstances(prefab, myPosition, myTotalCheckRange);
+                if (count >= maxCount)
+                {
+                    return false;
+                }
             }
 
             int lovePoints = GetLovePoints();
@@ -117,7 +133,7 @@ namespace OfTamingAndBreeding.Internals
                     else
                     {
                         int count = SpawnSystem.GetNrOfInstances(
-                            m_myPrefab, transform.position, m_partnerCheckRange,
+                            m_myPrefab, myPosition, m_partnerCheckRange,
                             eventCreaturesOnly: false,
                             procreationOnly: true);
 
@@ -152,15 +168,12 @@ namespace OfTamingAndBreeding.Internals
 
                 if (!m_myPrefab) //  && loveZero
                 {
-
-                    var searchPosition = transform.position;
-                    var searchRange = m_partnerCheckRange;
                     var foundRandomPartner = RandomData.FindRandom<Creature.ProcreationPartnerData>(dataProcreation.Partner, out Creature.ProcreationPartnerData partnerEntry, entry =>
                     {
                         var prefab = ZNetScene.instance.GetPrefab(entry.Prefab);
                         if (prefab == null) return 0;
                         int count = SpawnSystem.GetNrOfInstances(
-                            prefab, searchPosition, searchRange,
+                            prefab, myPosition, myPartnerCheckRange,
                             eventCreaturesOnly: false,
                             procreationOnly: true);
                         return entry.Weight * count;
@@ -217,7 +230,6 @@ namespace OfTamingAndBreeding.Internals
                     else
                     {
                         zdo.Set(Plugin.ZDOVars.s_offspringPrefab, "");
-                        zdo.Set(Plugin.ZDOVars.s_maxCreatures, 0);
                         zdo.Set(Plugin.ZDOVars.s_needPartner, 1);
                     }
                 }
@@ -253,7 +265,6 @@ namespace OfTamingAndBreeding.Internals
                 m_offspringPrefab = offspring;
 
                 zdo.Set(Plugin.ZDOVars.s_offspringPrefab, offspring.name);
-                zdo.Set(Plugin.ZDOVars.s_maxCreatures, randomOffspring.MaxCreatures);
                 if (randomOffspring.NeedPartner)
                 {
                     zdo.Set(Plugin.ZDOVars.s_needPartner, 1);
@@ -290,7 +301,6 @@ namespace OfTamingAndBreeding.Internals
             }
 
             // at the end refresh some values
-            m_maxCreatures = zdo.GetInt(Plugin.ZDOVars.s_maxCreatures, 0);
             switch(zdo.GetInt(Plugin.ZDOVars.s_needPartner, 1))
             {
                 case 0:
@@ -339,7 +349,7 @@ if (IsPregnant())
             {
                 return;
             }
-            if (!Utils.ZNetHelper.TryGetZDO(m_nview, out ZDO zdo))
+            if (!Helpers.ZNetHelper.TryGetZDO(m_nview, out ZDO zdo))
             {
                 return;
             }
@@ -417,7 +427,7 @@ if (IsPregnant())
                         DateTime dateTime = new DateTime(@pregnantLong);
                         double secLeft = duration - (ZNet.instance.GetTime() - dateTime).TotalSeconds;
 
-                        text.Add(Utils.StringHelper.FormatRelativeTime(
+                        text.Add(Helpers.StringHelper.FormatRelativeTime(
                             secLeft,
                             labelPositive: L.Localize("$tmt_hover_pregnancy_due"),
                             labelNegative: L.Localize("$tmt_hover_pregnancy_overdue"),

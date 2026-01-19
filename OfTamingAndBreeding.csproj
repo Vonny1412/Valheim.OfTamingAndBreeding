@@ -11,7 +11,7 @@
 	<PropertyGroup>
 		<VersionMajor>1</VersionMajor>
 		<VersionMinor>0</VersionMinor>
-		<VersionPatch>3</VersionPatch>
+		<VersionPatch>4</VersionPatch>
 		<VersionSuffix>beta</VersionSuffix>
 		<Authors>Yvonne Pautz</Authors>
 		<Product>Of Taming and Breeding</Product>
@@ -27,6 +27,10 @@
 	<PropertyGroup>
 		<CopyToPluginsSubDirectory>Vonny1412.OfTamingAndBreeding</CopyToPluginsSubDirectory>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <Compile Include="Data\DataSaver.cs.txt" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<Reference Include="Jotunn">

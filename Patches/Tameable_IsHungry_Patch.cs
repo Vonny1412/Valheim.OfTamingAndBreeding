@@ -15,7 +15,7 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         static bool Prefix(Tameable __instance)
         {
-            if (!Utils.ZNetHelper.TryGetZDO(__instance, out ZDO zdo))
+            if (!Helpers.ZNetHelper.TryGetZDO(__instance, out ZDO zdo))
             {
                 return false;
             }

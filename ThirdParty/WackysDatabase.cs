@@ -83,18 +83,8 @@ namespace OfTamingAndBreeding.ThirdParty
             registered = true;
         }
 
+        public static bool IsRegistered() => registered;
 
-
-
-
-
-
-
-
-
-
-
-        // currently unused
         public static void CopyToWacky(object wackyRecipeObj, Data.Models.Recipe src)
         {
             var t = wackyRecipeObj.GetType();
@@ -121,7 +111,17 @@ namespace OfTamingAndBreeding.ThirdParty
             f.SetValue(obj, value);
         }
 
-
+        public static void ApplyRecipe(Data.Models.Recipe src)
+        {
+            if (!registered)
+            {
+                Plugin.LogFatal($"Cannot register recipe - WackyDB not registered");
+                return;
+            }
+            var wackyRecipe = Activator.CreateInstance(recipeDataType);
+            CopyToWacky(wackyRecipe, src);
+            setRecipeData.Invoke(null, new object[] { wackyRecipe, ObjectDB.instance });
+        }
 
         /*
 
@@ -146,25 +146,6 @@ namespace OfTamingAndBreeding.ThirdParty
 
         */
 
-
-        public static void ApplyRecipe(Data.Models.Recipe src)
-        {
-            if (!registered)
-            {
-                Plugin.LogFatal($"Cannot register recipe - WackyDB not registered");
-                return;
-            }
-            var wackyRecipe = Activator.CreateInstance(recipeDataType);
-            CopyToWacky(wackyRecipe, src);
-            setRecipeData.Invoke(null, new object[] { wackyRecipe, ObjectDB.instance });
-        }
-
     }
-
-
-
-
-
-
 
 }

@@ -31,10 +31,6 @@ namespace OfTamingAndBreeding
             // counter for offsprings of current pregnancy
             public static readonly int s_offspringCounter = $"{Plugin.ModGuid}.s_offspringCounter".GetStableHashCode();
 
-            // used to store current max offsprings count
-            // because it can vary depending on randomly chosen offspring from data
-            public static readonly int s_maxCreatures = $"{Plugin.ModGuid}.s_maxCreatures".GetStableHashCode();
-
             // used to store if partner is neccessary for running procreation
             // because it can vary depending on randomly chosen offspring from data
             public static readonly int s_needPartner = $"{Plugin.ModGuid}.s_needPartner".GetStableHashCode();

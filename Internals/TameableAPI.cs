@@ -106,7 +106,7 @@ namespace OfTamingAndBreeding.Internals
                     {
                         secLeft = -m_monsterAI.GetTimeSinceSpawned().TotalSeconds;
                     }
-                    text.Add(Utils.StringHelper.FormatRelativeTime(
+                    text.Add(Helpers.StringHelper.FormatRelativeTime(
                         secLeft,
                         labelPositive: L.Localize("$tmt_hover_fed"),
                         labelNegative: L.Localize("$tmt_hover_starving"),

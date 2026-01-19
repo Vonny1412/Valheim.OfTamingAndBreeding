@@ -15,6 +15,7 @@ namespace OfTamingAndBreeding.Data
         private readonly Dictionary<string, Models.Creature> _creatures = new Dictionary<string, Models.Creature>();
         private readonly Dictionary<string, Models.Offspring> _offsprings = new Dictionary<string, Models.Offspring>();
         private readonly Dictionary<string, Models.Egg> _eggs = new Dictionary<string, Models.Egg>();
+        private readonly Dictionary<string, Models.Recipe> _recipes = new Dictionary<string, Models.Recipe>();
 
         public DataSaver()
         {
@@ -33,16 +34,44 @@ namespace OfTamingAndBreeding.Data
         {
             foreach (var kv in data) _eggs[kv.Key] = kv.Value;
         }
+        public void AddList(Dictionary<string, Models.Recipe> data)
+        {
+            foreach (var kv in data) _recipes[kv.Key] = kv.Value;
+        }
 
         public void WriteFiles(string toPath)
         {
             WriteYamlFiles(Path.Combine(toPath, Data.Models.Creature.DirectoryName), _creatures);
             WriteYamlFiles(Path.Combine(toPath, Data.Models.Offspring.DirectoryName), _offsprings);
             WriteYamlFiles(Path.Combine(toPath, Data.Models.Egg.DirectoryName), _eggs);
+            WriteYamlFiles(Path.Combine(toPath, Data.Models.Recipe.DirectoryName), _recipes);
             _creatures.Clear();
             _offsprings.Clear();
             _eggs.Clear();
+            _recipes.Clear();
         }
+
+        private static void WriteYamlFiles<T>(string folderPath, Dictionary<string, T> items)
+            where T : DataBase<T>
+        {
+            if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+            foreach (var kvp in items)
+            {
+                var yaml = DataBase.Serialize(kvp.Value);
+                File.WriteAllText(Path.Combine(folderPath, $"{kvp.Key}.yml"), yaml);
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
 
         internal enum ObjectType
         {
@@ -248,6 +277,7 @@ namespace OfTamingAndBreeding.Data
                     Scale = 1,
                     ScaleByQuality = shared.m_scaleByQuality,
                     ScaleWeightByQuality = shared.m_scaleWeightByQuality,
+                    MaxQuality = shared.m_maxQuality,
                     Value = shared.m_value,
                     Teleportable = shared.m_teleportable,
                     MaxStackSize = shared.m_maxStackSize,
@@ -359,6 +389,7 @@ namespace OfTamingAndBreeding.Data
 
                 ProcreateWhileSwimming = true,
 
+                MaxCreatures = procreation.m_maxCreatures,
                 ExtraOffspringChance = 0,
                 MaxOffspringsPerPregnancy = 1,
 
@@ -370,7 +401,6 @@ namespace OfTamingAndBreeding.Data
                         Weight = 1,
                         NeedPartner = true,
                         NeedPartnerPrefab = null,
-                        MaxCreatures = procreation.m_maxCreatures,
                         LevelUpChance = 0,
                         MaxLevel = 3,
                     }
@@ -408,15 +438,5 @@ namespace OfTamingAndBreeding.Data
                 || _eggs.ContainsKey(prefabName);
         }
 
-        private static void WriteYamlFiles<T>(string folderPath, Dictionary<string, T> items)
-            where T : DataBase<T>
-        {
-            if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
-            foreach (var kvp in items)
-            {
-                var yaml = DataBase.Serialize(kvp.Value);
-                File.WriteAllText(Path.Combine(folderPath, $"{kvp.Key}.yml"), yaml);
-            }
-        }
     }
 }

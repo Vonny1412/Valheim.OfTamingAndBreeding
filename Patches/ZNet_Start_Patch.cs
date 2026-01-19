@@ -19,8 +19,9 @@ namespace OfTamingAndBreeding.Patches
 
 
             var zn = ZNet.instance;
-            if (zn.IsServer()) RPCContext.InitServerSession(zn.IsLocalInstance());
-            else RPCContext.InitClientSession();
+            var isLocal = zn.IsLocalInstance();
+            if (zn.IsServer()) RPCContext.InitServerSession(isLocal);
+            else RPCContext.InitClientSession(isLocal);
 
             /*
 

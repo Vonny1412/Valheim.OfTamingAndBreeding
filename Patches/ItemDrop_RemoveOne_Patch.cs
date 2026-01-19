@@ -17,7 +17,7 @@ namespace OfTamingAndBreeding.Patches
 
             Contexts.ConsumeItemContext.Clear();
 
-            if (!Utils.ZNetHelper.TryGetZDO(__instance, out ZDO zdo))
+            if (!Helpers.ZNetHelper.TryGetZDO(__instance, out ZDO zdo))
             {
                 return;
             }

@@ -14,7 +14,7 @@ namespace OfTamingAndBreeding.Patches
         static bool Prefix(Tameable __instance, ItemDrop item)
         {
 
-            if (!Utils.ZNetHelper.TryGetZDO(__instance, out ZDO zdo, out ZNetView nview))
+            if (!Helpers.ZNetHelper.TryGetZDO(__instance, out ZDO zdo, out ZNetView nview))
             {
                 return true; // i dont care
             }
@@ -29,6 +29,7 @@ namespace OfTamingAndBreeding.Patches
                 var data = Data.Models.Creature.Get(prefabName);
                 if (data != null && data.Tameable != null && data.MonsterAI != null && data.MonsterAI.ConsumeItems != null && data.MonsterAI.ConsumeItems.Length > 0)
                 {
+
                     var fedDuration = data.Tameable.FedDuration;
                     foreach (var entry in data.MonsterAI.ConsumeItems)
                     {

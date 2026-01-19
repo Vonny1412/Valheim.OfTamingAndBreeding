@@ -14,7 +14,7 @@ namespace OfTamingAndBreeding.Patches
         {
             if (!__result) return; // should not happen but whatever
 
-            if (!Utils.ZNetHelper.TryGetZDO(__result, out ZDO zdo, out ZNetView nview))
+            if (!Helpers.ZNetHelper.TryGetZDO(__result, out ZDO zdo, out ZNetView nview))
             {
                 return;
             }

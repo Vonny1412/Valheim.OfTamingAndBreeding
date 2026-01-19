@@ -3,7 +3,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace OfTamingAndBreeding.Utils
+namespace OfTamingAndBreeding.Helpers
 {
     internal static class DeterministicStringCrypto
     {

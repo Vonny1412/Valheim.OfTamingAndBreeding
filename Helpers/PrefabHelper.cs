@@ -6,49 +6,14 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.Utils
+namespace OfTamingAndBreeding.Helpers
 {
     internal static class PrefabHelper
     {
 
 
-        private static readonly Dictionary<int, ItemDrop> prefabItemDrops = new Dictionary<int, ItemDrop>();
 
-        static PrefabHelper()
-        {
-            Data.DataLoader.OnDataReset(() => {
-                prefabItemDrops.Clear();
-            });
-        }
 
-        internal static ItemDrop GetItemDropByPrefab(string prefabName)
-        {
-            var hash = prefabName.GetStableHashCode();
-            if (prefabItemDrops.TryGetValue(hash, out ItemDrop itemDrop))
-            {
-                return itemDrop;
-            }
-            GameObject prefab = ObjectDB.instance.GetItemPrefab(prefabName);
-            if (prefab == null)
-            {
-                prefabItemDrops.Add(hash, null);
-                return null;
-            }
-            itemDrop = prefab.GetComponent<ItemDrop>();
-            if (itemDrop == null)
-            {
-                prefabItemDrops.Add(hash, null);
-                return null;
-            }
-            prefabItemDrops.Add(hash, itemDrop);
-            return itemDrop;
-        }
-
-        internal static void DestroyComponentIfExists<T>(GameObject obj) where T : UnityEngine.Object
-        {
-            T c = obj.GetComponent<T>();
-            if (c != null) UnityEngine.Object.DestroyImmediate(c);
-        }
 
         public static EffectList.EffectData GetEffect(string prefabName)
             => new EffectList.EffectData

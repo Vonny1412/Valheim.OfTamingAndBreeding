@@ -6,7 +6,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
-using OfTamingAndBreeding.Utils;
+using OfTamingAndBreeding.Helpers;
 
 namespace OfTamingAndBreeding.Data
 {
@@ -50,14 +50,23 @@ namespace OfTamingAndBreeding.Data
                 Data = new Dictionary<string, Dictionary<string, string>>()
             };
 
-            DataLoader.IterDataHandlers((dh) => {
+
+            foreach(var dh in DataManager.IterDataHandlers())
+            {
+                var writeToDir = Path.Combine(cacheDebugFilesPath, dh.DirectoryName);
                 var data = new Dictionary<string, string>();
                 foreach (var kv in dh.GetAllYamlData())
                 {
-                    data.Add(kv.Key, Base64Encode(kv.Value));
+                    var prefabName = kv.Key;
+                    var prefabYaml = kv.Value;
+                    data.Add(prefabName, Base64Encode(prefabYaml));
+                    if (writeFiles)
+                    {
+                        File.WriteAllText(Path.Combine(writeToDir, $"{prefabName}.yml"), prefabYaml);
+                    }
                 }
                 cacheFile.Data.Add(dh.DirectoryName, data);
-            });
+            }
 
             string yamlCacheContent = cacheContent = DataBase.Serialize(cacheFile);
             string cryptedCacheContent = null;
@@ -66,24 +75,16 @@ namespace OfTamingAndBreeding.Data
                 cryptedCacheContent = cacheContent = DeterministicStringCrypto.EncryptToBase64(cacheContent, encryptKey);
             }
 
-            var hash = ComputeSha256StringHash(cacheContent);
-
             if (writeFiles)
             {
-                var saver = new DataSaver();
-                saver.AddList(Models.Creature.GetAll());
-                saver.AddList(Models.Egg.GetAll());
-                saver.AddList(Models.Offspring.GetAll());
-                saver.WriteFiles(cacheDebugFilesPath);
-
                 File.WriteAllText(cacheDebugYamlFile, yamlCacheContent);
-
                 if (cryptedCacheContent != null)
                 {
                     File.WriteAllText(cacheCryptedFile, cryptedCacheContent);
                 }
             }
 
+            var hash = ComputeSha256StringHash(cacheContent);
             return hash;
         }
 
@@ -101,16 +102,17 @@ namespace OfTamingAndBreeding.Data
             {
                 var cacheFilePlain = encryptKey == null ? crypted : DeterministicStringCrypto.DecryptFromBase64(crypted, encryptKey);
                 var cacheFile = DataBase.Deserialize<Cache.CacheFile>(cacheFilePlain);
-                DataLoader.ResetData();
+                DataManager.ResetData();
                 var allokay = true;
-                DataLoader.IterDataHandlers((dh) => {
+                foreach(var dh in DataManager.IterDataHandlers())
+                {
                     foreach (var kv in cacheFile.Data[dh.DirectoryName])
                     {
                         var prefab = kv.Key;
                         var data = Base64Decode(kv.Value);
                         allokay &= dh.LoadFromYaml(prefab, data);
                     }
-                });
+                }
                 return allokay;
             }
             catch (Exception e)

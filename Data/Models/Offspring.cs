@@ -30,9 +30,9 @@ namespace OfTamingAndBreeding.Data.Models
         public class CharacterData : SubData.ICharacterAIData
         {
             public string Name { get; set; } = null;
-            public float Scale { get; set; } = 1;
-            public string Group { get; set; } = "";
+            public string Group { get; set; } = null;
             public bool StickToFaction { get; set; } = true;
+            public float Scale { get; set; } = 1;
         }
 
         [Serializable]

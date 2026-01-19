@@ -30,15 +30,17 @@ namespace OfTamingAndBreeding.Data.Models
         {
             public string Name { get; set; } = null;
             public string Description { get; set; } = null;
-            public float Weight { get; set; } = 1;
+            public string ItemType { get; set; } = null;
+            public float? Weight { get; set; } = null;
 
-            public float Scale { get; set; } = 1;
-            public float ScaleByQuality { get; set; } = 0;
-            public float ScaleWeightByQuality { get; set; } = 0;
+            public float? Scale { get; set; } = null;
+            public float? ScaleByQuality { get; set; } = null;
+            public float? ScaleWeightByQuality { get; set; } = null;
 
-            public int Value { get; set; } = 0;
-            public bool Teleportable { get; set; } = true;
-            public int MaxStackSize { get; set; } = 20;
+            public int? MaxQuality { get; set; } = null;
+            public int? Value { get; set; } = null;
+            public bool? Teleportable { get; set; } = null;
+            public int? MaxStackSize { get; set; } = null;
 
             public int[] ItemTintRgb { get; set; } = null;
             public int[] ParticlesTintRgb { get; set; } = null;
@@ -53,9 +55,7 @@ namespace OfTamingAndBreeding.Data.Models
         {
             public string Prefab { get; set; } = null;
             public float Weight { get; set; } = 1;
-
             public bool Tamed { get; set; } = true;
-
             public bool ShowHatchEffect { get; set; } = true;
         }
 
@@ -64,7 +64,7 @@ namespace OfTamingAndBreeding.Data.Models
         public class EggGrowData
         {
             public float GrowTime { get; set; } = 1800;
-            public float UpdateInterval { get; set; } = 5;
+            public float UpdateInterval { get; set; } = 15f;
 
             public bool RequireNearbyFire { get; set; } = true;
             public bool RequireUnderRoof { get; set; } = true;
