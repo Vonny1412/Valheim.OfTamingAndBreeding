@@ -46,13 +46,14 @@ namespace OfTamingAndBreeding.Patches
                         // that way we can keep using taming system and can have items that do not trigger taming/procreation (like the original bjorn-behaviour)
 
                         __instance.m_fedDuration = fedDuration;
-                        zdo.Set(Plugin.ZDOVars.s_fedDuration, fedDuration);
+                        if (zdo.GetFloat(Plugin.ZDOVars.z_fedDuration, -1) != fedDuration)
+                            zdo.Set(Plugin.ZDOVars.z_fedDuration, fedDuration);
                     }
                 }
             }
             else
             {
-                var fedDuration = zdo.GetFloat(Plugin.ZDOVars.s_fedDuration, -1);
+                var fedDuration = zdo.GetFloat(Plugin.ZDOVars.z_fedDuration, -1);
                 if (fedDuration >= 0) // yes, we also allow 0
                 {
                     __instance.m_fedDuration = fedDuration;
@@ -81,7 +82,7 @@ namespace OfTamingAndBreeding.Patches
                         var item_zdo = item_nview.GetZDO();
                         if (item_zdo != null)
                         {
-                            droppedByAnyPlayer = item_zdo.GetInt(Plugin.ZDOVars.s_droppedByAnyPlayer, 0);
+                            droppedByAnyPlayer = item_zdo.GetInt(Plugin.ZDOVars.z_droppedByAnyPlayer, 0);
                         }
                     }
                 }

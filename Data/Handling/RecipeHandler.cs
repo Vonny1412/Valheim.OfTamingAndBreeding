@@ -12,6 +12,8 @@ namespace OfTamingAndBreeding.Data.Handling
     {
         public override string DirectoryName => Models.Recipe.DirectoryName;
 
+        public override string GetDataKey(string filePath) => null;
+
         public override void Prepare(DataHandlerContext ctx)
         {
 

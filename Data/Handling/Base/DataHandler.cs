@@ -1,4 +1,5 @@
-﻿using Jotunn.Managers;
+﻿using JetBrains.Annotations;
+using Jotunn.Managers;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,12 +19,16 @@ namespace OfTamingAndBreeding.Data.Handling.Base
 
         public string ModelTypeName => typeof(T).Name;
 
-        public bool LoadFromYaml(string prefabName, string yamlString)
+        public abstract string GetDataKey(string fileName);
+
+        //public Dictionary<string, T> GetAllData() => DataBase<T>.GetAll();
+
+        public bool LoadFromYaml(string prefabName, string yamlText)
         {
             try
             {
                 Plugin.LogDebug($"Loading {typeof(T).Name} '{prefabName}' from YAML");
-                var data = DataBase<T>.Deserialize(yamlString);
+                var data = DataBase<T>.Deserialize(yamlText);
                 DataBase<T>.Store(prefabName, data);
                 return true;
             }
@@ -36,10 +41,15 @@ namespace OfTamingAndBreeding.Data.Handling.Base
 
         public bool LoadFromFile(string file)
         {
-            var prefabName = Path.GetFileNameWithoutExtension(file);
-            Plugin.LogDebug($"Loading {typeof(T).Name} '{prefabName}' from file");
-            var yaml = File.ReadAllText(file);
-            return LoadFromYaml(prefabName, yaml);
+            var fileName = Path.GetFileNameWithoutExtension(file);
+            var yamlText = File.ReadAllText(file);
+            var fileNameParsed = GetDataKey(file);
+            if (fileNameParsed != null)
+            {
+                // file name => prefab name => data key
+                fileName = fileNameParsed;
+            }
+            return LoadFromYaml(fileName, yamlText);
         }
 
         public Dictionary<string, string> GetAllYamlData()

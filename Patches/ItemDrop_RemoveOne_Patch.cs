@@ -22,7 +22,7 @@ namespace OfTamingAndBreeding.Patches
                 return;
             }
 
-            Contexts.ConsumeItemContext.lastItemDroppedByAnyPlayer = zdo.GetInt(Plugin.ZDOVars.s_droppedByAnyPlayer, 0);
+            Contexts.ConsumeItemContext.lastItemDroppedByAnyPlayer = zdo.GetInt(Plugin.ZDOVars.z_droppedByAnyPlayer, 0);
             Contexts.ConsumeItemContext.LastItemInstanceId = __instance.GetInstanceID();
             Contexts.ConsumeItemContext.HasValue = true;
         }

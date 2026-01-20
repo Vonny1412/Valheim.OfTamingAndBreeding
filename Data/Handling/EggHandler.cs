@@ -16,6 +16,9 @@ namespace OfTamingAndBreeding.Data.Handling
 
         public override string DirectoryName => Models.Egg.DirectoryName;
 
+        public override string GetDataKey(string filePath) => null;
+
+
         //------------------------------------------------
         // PREPARE
         //------------------------------------------------

@@ -17,6 +17,9 @@ namespace OfTamingAndBreeding.Data.Handling
     {
         public override string DirectoryName => Models.Creature.DirectoryName;
 
+        public override string GetDataKey(string filePath) => null;
+
+
         //------------------------------------------------
         // PREPARE
         //------------------------------------------------
@@ -62,19 +65,25 @@ namespace OfTamingAndBreeding.Data.Handling
                     procreationData.MaxCreaturesExplicite = new Dictionary<string, int>();
                 }
 
-                if (procreationData.Partner == null)
+                if (procreationData.Partner == null || procreationData.Partner.Length == 0)
                 {
-                    // for no-partner procreation
-                    procreationData.Partner = new Models.Creature.ProcreationPartnerData[] { };
+                    Plugin.LogError(
+                        $"{model}.{nameof(data.Procreation)}.{nameof(procreationData.Partner)} is null or empty. " +
+                        "For no-partner procreation, this list must at least contain the creature's own prefab, " +
+                        "because it is considered its own partner."
+                    );
+                    error = true;
                 }
-
-                foreach (var (partnerData, i) in procreationData.Partner.Select((value, i) => (value, i)))
+                else
                 {
-                    partnerData.Weight = Math.Max(0f, partnerData.Weight);
-                    if (partnerData.Prefab == null)
+                    foreach (var (partnerData, i) in procreationData.Partner.Select((value, i) => (value, i)))
                     {
-                        Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(procreationData.Partner)}.{i}.{nameof(partnerData.Prefab)} is empty");
-                        error = true;
+                        partnerData.Weight = Math.Max(0f, partnerData.Weight);
+                        if (partnerData.Prefab == null)
+                        {
+                            Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(procreationData.Partner)}.{i}.{nameof(partnerData.Prefab)} is empty");
+                            error = true;
+                        }
                     }
                 }
 

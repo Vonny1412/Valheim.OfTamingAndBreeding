@@ -19,7 +19,7 @@ namespace OfTamingAndBreeding.Patches
             api.OriginalMinOffspringLevel.SaveValue();
             __state = true;
 
-            return api.Procreate_Prefix();
+            return api.Procreate_Prefix(); // this patch is overwriting the original behavior with our own system
         }
 
         [HarmonyPriority(Priority.First)]

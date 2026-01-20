@@ -48,5 +48,46 @@ namespace OfTamingAndBreeding.Helpers
             => TryGetZDO(c ? c.gameObject : null, out zdo, out ZNetView _);
 
 
+
+        // about unsafe overloads:
+        // Use only if 'cur' is a cached snapshot of the same ZDO key from earlier in this tick.
+        // Avoids an extra zdo.GetX() call.
+
+        public static int SetInt(ZDO zdo, int key, int value)
+        {
+            if (zdo.GetInt(key, int.MinValue) != value) zdo.Set(key, value);
+            return value;
+        }
+
+        public static int SetInt(ZDO zdo, int key, int value, int cur) // unsafe! use with care
+        {
+            if (cur != value) zdo.Set(key, value);
+            return value;
+        }
+
+        public static long SetLong(ZDO zdo, int key, long value)
+        {
+            if (zdo.GetLong(key, long.MinValue) != value) zdo.Set(key, value);
+            return value;
+        }
+
+        public static long SetLong(ZDO zdo, int key, long value, long cur) // unsafe! use with care
+        {
+            if (cur != value) zdo.Set(key, value);
+            return value;
+        }
+
+        public static string SetString(ZDO zdo, int key, string value)
+        {
+            if (zdo.GetString(key, null) != value) zdo.Set(key, value);
+            return value;
+        }
+
+        public static string SetString(ZDO zdo, int key, string value, string cur) // unsafe! use with care
+        {
+            if (cur != value) zdo.Set(key, value);
+            return value;
+        }
+
     }
 }

@@ -22,7 +22,7 @@ namespace OfTamingAndBreeding.Patches
             // we are checking the same like in Tameable_IsHungry_Patch
             // the zdo val is getting set here: Tameable_OnConsumedItem_Patch
             // set custom fed duration
-            var fedDuration = zdo.GetFloat(Plugin.ZDOVars.s_fedDuration, -1);
+            var fedDuration = zdo.GetFloat(Plugin.ZDOVars.z_fedDuration, -1);
             if (fedDuration >= 0) // yes, we do allow 0, too
             {
                 __instance.m_fedDuration = fedDuration;

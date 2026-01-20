@@ -128,8 +128,8 @@ namespace OfTamingAndBreeding.Data.Handling.Base
 
                 cb(backup, current);
 
-                UnityEngine.Object.DestroyImmediate(backup);
-                backups.Remove(prefabName);
+                //UnityEngine.Object.DestroyImmediate(backup);
+                //backups.Remove(prefabName);
 
                 return current;
             }

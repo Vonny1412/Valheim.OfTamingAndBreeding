@@ -22,7 +22,9 @@ namespace OfTamingAndBreeding.Patches
             // this is used to prevent creatures consume items not dropped by player
             if (nview.IsOwner())
             {
-                zdo.Set(Plugin.ZDOVars.s_droppedByAnyPlayer, Contexts.DropItemContext.DroppedByPlayer);
+                var val = Contexts.DropItemContext.DroppedByPlayer;
+                if (zdo.GetInt(Plugin.ZDOVars.z_droppedByAnyPlayer, 0) != val)
+                    zdo.Set(Plugin.ZDOVars.z_droppedByAnyPlayer, val);
             }
 
         }

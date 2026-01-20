@@ -54,6 +54,7 @@ namespace OfTamingAndBreeding.Data
             foreach(var dh in DataManager.IterDataHandlers())
             {
                 var writeToDir = Path.Combine(cacheDebugFilesPath, dh.DirectoryName);
+                Directory.CreateDirectory(writeToDir);
                 var data = new Dictionary<string, string>();
                 foreach (var kv in dh.GetAllYamlData())
                 {

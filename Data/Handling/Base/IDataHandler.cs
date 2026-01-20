@@ -1,4 +1,5 @@
-﻿using System;
+﻿using JetBrains.Annotations;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +11,9 @@ namespace OfTamingAndBreeding.Data.Handling.Base
     {
         string DirectoryName { get; }
         string ModelTypeName { get; }
+
+        string GetDataKey(string fileName);
+
 
         bool LoadFromYaml(string prefabName, string yamlString);
         bool LoadFromFile(string file);

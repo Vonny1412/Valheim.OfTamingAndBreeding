@@ -13,6 +13,7 @@ namespace OfTamingAndBreeding.Data
     {
 
         private static readonly IDataHandler[] dataHandlers = new IDataHandler[] {
+            new TranslationHandler(),
             new OffspringHandler(),
             new EggHandler(),
             new CreatureHandler(),
