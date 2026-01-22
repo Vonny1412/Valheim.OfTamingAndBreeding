@@ -1,3 +1,5 @@
+![Of Taming and Breeding](_Assets/otab-logo.png)
+
 # Of Taming and Breeding (OTAB)
 
 **Of Taming and Breeding (OTAB)** is a mod for **Valheim** that provides a
