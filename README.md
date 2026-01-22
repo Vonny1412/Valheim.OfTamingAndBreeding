@@ -225,7 +225,6 @@ OTAB clearly separates responsibilities:
 ### Client
 
 * Receives cached data
-* Does not load YAML
 * Cannot influence logic
 * Displays synced translations
 
@@ -244,7 +243,6 @@ OTAB uses a **custom encrypted cache system**:
 
 * Server generates cache per world
 * Clients load from cache only
-* No runtime YAML parsing on clients
 * No directory watching
 * No file system polling
 
@@ -275,9 +273,9 @@ Why?
 
 Because predictable behavior beats convenience when running a real server.
 
-If something changes:
-→ restart
-→ everything is consistent again
+If something changes:  
+→ restart  
+→ everything is consistent again  
 
 ---
 
