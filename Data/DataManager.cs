@@ -35,7 +35,7 @@ namespace OfTamingAndBreeding.Data
         {
             var zn = ZNet.instance;
             string worldName = zn.GetWorldName();
-            Plugin.LogMessage($"Loading Data for world: '{worldName}'");
+            Plugin.LogInfo($"Loading Data for world: '{worldName}'");
 
             // pick world root (worldName or fallback)
             string worldRoot = Path.Combine(Plugin.ServerDataDir, worldName);
@@ -44,7 +44,7 @@ namespace OfTamingAndBreeding.Data
 
             if (!Directory.Exists(worldRoot))
             {
-                Plugin.LogMessage($"No data directory found for world '{worldName}' (or default).");
+                Plugin.LogWarning($"No data directory found for world '{worldName}' (or default).");
             }
             else
             {
@@ -149,15 +149,15 @@ namespace OfTamingAndBreeding.Data
                 dh.Cleanup(ctx);
             }
 
-            /*
+            
             if (ZNet.instance.IsServer())
             {
                 foreach (var dh in dataHandlers)
                 {
-                    Plugin.LogMessage($"Loaded {dh.GetLoadedDataCount()} {dh.ModelTypeName} entries");
+                    Plugin.LogInfo($"Loaded {dh.GetLoadedDataCount()} {dh.ModelTypeName} entries");
                 }
             }
-            */
+            
         }
 
         public static void ResetData()

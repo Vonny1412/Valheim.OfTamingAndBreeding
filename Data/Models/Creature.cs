@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using OfTamingAndBreeding.Data.Models.SubData;
 namespace OfTamingAndBreeding.Data.Models
 {
 
@@ -15,6 +16,7 @@ namespace OfTamingAndBreeding.Data.Models
 
         public const string DirectoryName = "Creatures";
 
+        public ComponentsData Components = new ComponentsData();
 
         public CharacterAIData Character = null;
         public MonsterAIData MonsterAI = null;
@@ -23,12 +25,22 @@ namespace OfTamingAndBreeding.Data.Models
 
         [Serializable]
         [CanBeNull]
-        public class CharacterAIData : SubData.ICharacterAIData
+        public class ComponentsData
+        {
+            public ComponentBehavior Character { get; set; } = ComponentBehavior.Patch; // cannot be removed
+            public ComponentBehavior MonsterAI { get; set; } = ComponentBehavior.Patch; // cannot be removed
+            public ComponentBehavior Tameable { get; set; } = ComponentBehavior.Inherit;
+            public ComponentBehavior Procreation { get; set; } = ComponentBehavior.Inherit;
+        }
+
+        [Serializable]
+        [CanBeNull]
+        public class CharacterAIData : ICharacterAIData
         {
             public string Group { get; set; } = null;
-            public bool StickToFaction { get; set; } = true;
-            public bool CanAttackTames { get; set; } = false;
-            public bool CanBeAttackedByTames { get; set; } = false;
+            public bool StickToFaction { get; set; } = true; // OTAB feature
+            public bool CanAttackTames { get; set; } = false; // OTAB feature
+            public bool CanBeAttackedByTames { get; set; } = false; // OTAB feature
         }
 
         [Serializable]
@@ -36,7 +48,7 @@ namespace OfTamingAndBreeding.Data.Models
         public class MonsterAIConsumItemData
         {
             public string Prefab { get; set; } = null;
-            public float FedDurationMultiply { get; set; } = 1f;
+            public float FedDurationMultiply { get; set; } = 1f; // OTAB feature
         }
 
         [Serializable]
@@ -44,37 +56,37 @@ namespace OfTamingAndBreeding.Data.Models
         public class MonsterAIData
         {
             public MonsterAIConsumItemData[] ConsumeItems { get; set; } = null;
-            public float ConsumeRange { get; set; } = 1;
-            public float ConsumeSearchRange { get; set; } = 10;
-            public float ConsumeSearchInterval { get; set; } = 15;
+            public float? ConsumeRange { get; set; } = null;
+            public float? ConsumeSearchRange { get; set; } = null;
+            public float? ConsumeSearchInterval { get; set; } = null;
         }
 
         [Serializable]
         [CanBeNull]
         public class TameableData
         {
-            public float FedDuration { get; set; } = 1800f;
-            public float TamingTime { get; set; } = 3600f;
-            public bool Commandable { get; set; } = true;
+            public float? FedDuration { get; set; } = null;
+            public float? TamingTime { get; set; } = null;
+            public bool? Commandable { get; set; } = null;
         }
 
         [Serializable]
         [CanBeNull]
-        public class ProcreationOffspringData : SubData.IRandomData
+        public class ProcreationOffspringData : IRandomData
         {
             public string Prefab { get; set; } = null;
             public float Weight { get; set; } = 1;
 
-            public bool NeedPartner { get; set; } = true;
-            public string NeedPartnerPrefab { get; set; } = null;
+            public bool NeedPartner { get; set; } = true; // true = vanilla
+            public string NeedPartnerPrefab { get; set; } = null; // OTAB feature
 
-            public float LevelUpChance { get; set; } = 0;
-            public int MaxLevel { get; set; } = 3;
+            public float LevelUpChance { get; set; } = 0; // OTAB feature
+            public int MaxLevel { get; set; } = 3; // valheim default
         }
 
         [Serializable]
         [CanBeNull]
-        public class ProcreationPartnerData : SubData.IRandomData
+        public class ProcreationPartnerData : IRandomData
         {
             public string Prefab { get; set; } = null;
             public float Weight { get; set; } = 1;
@@ -84,28 +96,28 @@ namespace OfTamingAndBreeding.Data.Models
         [CanBeNull]
         public class ProcreationData
         {
-            public float UpdateInterval { get; set; } = 15;
-            public float TotalCheckRange { get; set; } = 10;
+            public float? UpdateInterval { get; set; } = null;
+            public float? TotalCheckRange { get; set; } = null;
 
             public ProcreationPartnerData[] Partner { get; set; } = null;
-            public float PartnerRecheckSeconds { get; set; } = 60;
-            public float PartnerCheckRange { get; set; } = 3;
-            public int RequiredLovePoints { get; set; } = 3;
+            public float PartnerRecheckSeconds { get; set; } = 60; // OTAB feature
+            public float? PartnerCheckRange { get; set; } = null;
+            public int? RequiredLovePoints { get; set; } = null;
 
-            public float PregnancyChance { get; set; } = 0.33f;
-            public float PregnancyDuration { get; set; } = 1800;
+            public float? PregnancyChance { get; set; } = null;
+            public float? PregnancyDuration { get; set; } = null;
 
-            public float SpawnOffset { get; set; } = 1;
-            public float SpawnOffsetMax { get; set; } = 0;
-            public bool SpawnRandomDirection { get; set; } = false;
+            public float? SpawnOffset { get; set; } = null;
+            public float? SpawnOffsetMax { get; set; } = null;
+            public bool? SpawnRandomDirection { get; set; } = null;
 
-            public bool ProcreateWhileSwimming { get; set; } = true;
+            public bool ProcreateWhileSwimming { get; set; } = true; // OTAB feature
 
             public int? MaxCreatures { get; set; } = null;
-            public Dictionary<string, int> MaxCreaturesExplicite { get; set; } = null;
+            public List<string> MaxCreaturesCountPrefabs { get; set; } = null; // OTAB feature
 
-            public float ExtraOffspringChance { get; set; } = 0.0f;
-            public int MaxOffspringsPerPregnancy { get; set; } = 1;
+            public float ExtraOffspringChance { get; set; } = 0.0f; // OTAB feature
+            public int MaxOffspringsPerPregnancy { get; set; } = 1; // OTAB feature
 
             public ProcreationOffspringData[] Offspring { get; set; } = null;
 

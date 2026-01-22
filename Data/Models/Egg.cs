@@ -1,4 +1,5 @@
 ﻿using JetBrains.Annotations;
+using OfTamingAndBreeding.Data.Models.SubData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,14 +15,24 @@ namespace OfTamingAndBreeding.Data.Models
         public const string DirectoryName = "Eggs";
 
         public CloneData Clone = null;
+        public ComponentsData Components = new ComponentsData();
+
         public ItemData Item = null;
         public EggGrowData EggGrow = null;
 
         [Serializable]
         [CanBeNull]
-        internal class CloneData : SubData.ICloneData
+        internal class CloneData : ICloneData
         {
             public string From { get; set; } = null;
+        }
+
+        [Serializable]
+        [CanBeNull]
+        public class ComponentsData
+        {
+            public ComponentBehavior Item { get; set; } = ComponentBehavior.Patch; // cannot be removed
+            public ComponentBehavior EggGrow { get; set; } = ComponentBehavior.Patch; // cannot be removed
         }
 
         [Serializable]
@@ -42,9 +53,9 @@ namespace OfTamingAndBreeding.Data.Models
             public bool? Teleportable { get; set; } = null;
             public int? MaxStackSize { get; set; } = null;
 
-            public int[] ItemTintRgb { get; set; } = null;
-            public int[] ParticlesTintRgb { get; set; } = null;
-            public int[] LightsTintRgb { get; set; } = null;
+            public string ItemTintRgb { get; set; } = null;
+            public string ParticlesTintRgb { get; set; } = null;
+            public string LightsTintRgb { get; set; } = null;
             public float LightsScale { get; set; } = 1;
             public bool DisableParticles { get; set; } = false;
         }
@@ -63,12 +74,12 @@ namespace OfTamingAndBreeding.Data.Models
         [CanBeNull]
         public class EggGrowData
         {
-            public float GrowTime { get; set; } = 1800;
-            public float UpdateInterval { get; set; } = 15f;
+            public float? GrowTime { get; set; } = null;
+            public float? UpdateInterval { get; set; } = null;
 
-            public bool RequireNearbyFire { get; set; } = true;
-            public bool RequireUnderRoof { get; set; } = true;
-            public float RequireCoverPercentige { get; set; } = 0.7f;
+            public bool? RequireNearbyFire { get; set; } = null;
+            public bool? RequireUnderRoof { get; set; } = null;
+            public float? RequireCoverPercentige { get; set; } = null;
 
             public EggGrowGrownData[] Grown { get; set; } = null;
         }

@@ -62,13 +62,15 @@ namespace OfTamingAndBreeding.Data.Handling.Base
             return eggCustom.ItemPrefab;
         }
 
-        private readonly Dictionary<string, GameObject> backups = new Dictionary<string, GameObject>();
+        private static readonly Dictionary<string, GameObject> backups = new Dictionary<string, GameObject>();
+        private static readonly HashSet<string> clonedNames = new HashSet<string>();
+
         private readonly Dictionary<string, HashSet<Type>> addedComponents = new Dictionary<string, HashSet<Type>>();
-        private readonly HashSet<string> clonedNames = new HashSet<string>();
 
         public void MakeBackup(string prefabName, GameObject original)
         {
             if (backups.ContainsKey(prefabName)) return;
+            if (clonedNames.Contains(prefabName)) return; // is clone. this happens when re-joining a world because the clone is cached inside jotunn
             var backupName = $"OTAB_BACKUP_{prefabName}";
             var backup = PrefabManager.Instance.GetPrefab(backupName);
             if (!backup)
@@ -104,7 +106,7 @@ namespace OfTamingAndBreeding.Data.Handling.Base
             var isClone = clonedNames.Contains(prefabName);
             if (isClone)
             {
-                PrefabManager.Instance.DestroyPrefab(prefabName);
+                //PrefabManager.Instance.DestroyPrefab(prefabName);
                 return null;
             }
             else
@@ -128,6 +130,7 @@ namespace OfTamingAndBreeding.Data.Handling.Base
 
                 cb(backup, current);
 
+                // NEVER clear the backups! use it as our own cache!
                 //UnityEngine.Object.DestroyImmediate(backup);
                 //backups.Remove(prefabName);
 

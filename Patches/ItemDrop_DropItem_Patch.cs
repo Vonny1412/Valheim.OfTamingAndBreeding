@@ -19,7 +19,7 @@ namespace OfTamingAndBreeding.Patches
                 return;
             }
 
-            // this is used to prevent creatures consume items not dropped by player
+
             if (nview.IsOwner())
             {
                 var val = Contexts.DropItemContext.DroppedByPlayer;

@@ -28,12 +28,20 @@ namespace OfTamingAndBreeding.Patches
             {
                 if (tameable && Plugin.Configs.ShowTamingProgress.Value)
                 {
-                    var remainingTime = Internals.API.Tameable.__IAPI_GetRemainingTime_Invoker1.Invoke(tameable, new object[] { });
-                    if (remainingTime < tameable.m_tamingTime)
+                    if (Helpers.ZNetHelper.TryGetZDO(tameable, out ZDO zdo))
                     {
-                        var percent = (float)(int)((1f - Mathf.Clamp01(remainingTime / tameable.m_tamingTime)) * 100f * precision) / precision;
-                        string percentText = percent.ToString($"F{decimals}", System.Globalization.CultureInfo.InvariantCulture);
-                        __result += Localization.instance.Localize($" ({percentText}%)");
+                        var remainingTime = zdo.GetFloat(ZDOVars.s_tameTimeLeft, tameable.m_tamingTime);
+                        if (remainingTime < tameable.m_tamingTime)
+                        {
+                            var percent = (float)(int)((1f - Mathf.Clamp01(remainingTime / tameable.m_tamingTime)) * 100f * precision) / precision;
+                            string percentText = percent.ToString($"F{decimals}", System.Globalization.CultureInfo.InvariantCulture);
+                            __result += Localization.instance.Localize($" ({percentText}%)");
+                        }
+                        // hotfix
+                        else if (remainingTime > tameable.m_tamingTime)
+                        {
+                            zdo.Set(ZDOVars.s_tameTimeLeft, tameable.m_tamingTime);
+                        }
                     }
                 }
             }

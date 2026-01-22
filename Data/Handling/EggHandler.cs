@@ -37,34 +37,66 @@ namespace OfTamingAndBreeding.Data.Handling
             var model = $"{nameof(Models.Egg)}.{eggName}";
             var error = false;
 
-            if (data.Item == null)
+            switch (data.Components.Item)
             {
-                //Plugin.LogError($"{model}.{nameof(data.Item)} missing");
-                //error = true;
+                case Models.SubData.ComponentBehavior.Remove:
+                    Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.Item)}({nameof(Models.SubData.ComponentBehavior.Remove)}): Component cannot be removed");
+                    break;
+                case Models.SubData.ComponentBehavior.Patch:
+                    if (data.Item == null)
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Item)}({nameof(Models.SubData.ComponentBehavior.Patch)}): Missing component data");
+                        error = true;
+                    }
+                    break;
+                case Models.SubData.ComponentBehavior.Inherit:
+                    if (data.Item != null)
+                    {
+                        Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.Item)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
+                    }
+                    break;
             }
 
-            if (data.EggGrow == null)
+            switch (data.Components.EggGrow)
             {
-                //Plugin.LogError($"{model}.{nameof(data.EggGrow)} missing");
-                //error = true;
+                case Models.SubData.ComponentBehavior.Remove:
+                    Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.EggGrow)}({nameof(Models.SubData.ComponentBehavior.Remove)}): Component cannot be removed");
+                    break;
+                case Models.SubData.ComponentBehavior.Patch:
+                    if (data.EggGrow == null)
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.EggGrow)}({nameof(Models.SubData.ComponentBehavior.Patch)}): Missing component data");
+                        error = true;
+                    }
+                    break;
+                case Models.SubData.ComponentBehavior.Inherit:
+                    if (data.EggGrow != null)
+                    {
+                        Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.EggGrow)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
+                    }
+                    break;
             }
-            else
-            {
 
+            if (data.Item != null && data.Components.Item == Models.SubData.ComponentBehavior.Patch)
+            {
+                // nothing to validate here
+            }
+
+            if (data.EggGrow != null && data.Components.EggGrow == Models.SubData.ComponentBehavior.Patch)
+            {
                 if (data.EggGrow.Grown == null || data.EggGrow.Grown.Length == 0)
                 {
-                    //Plugin.LogError($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.Grown)} is null or empty");
-                    //error = true;
+                    Plugin.LogError($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.Grown)}: List is null or empty");
+                    error = true;
                 }
                 else
                 {
-
                     foreach (var (grownData, i) in data.EggGrow.Grown.Select((value, i) => (value, i)))
                     {
                         grownData.Weight = Math.Max(0f, grownData.Weight);
                         if (grownData.Prefab == null)
                         {
-                            Plugin.LogError($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.Grown)}.{i}.{nameof(grownData.Prefab)} is empty");
+                            Plugin.LogError($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.Grown)}.{i}.{nameof(grownData.Prefab)}: Field is empty");
                             error = true;
                         }
                     }
@@ -135,17 +167,23 @@ namespace OfTamingAndBreeding.Data.Handling
             {
                 if (!egg.GetComponent<ItemDrop>())
                 {
-                    Plugin.LogFatal($"{model}: Prefab has no ItemDrop");
+                    Plugin.LogFatal($"{model}: Prefab has no ItemDrop (Prefab needs to be an item)");
                     error = true;
                 }
             }
 
-            foreach (var (grownData, i) in data.EggGrow.Grown.Select((value, i) => (value, i)))
+            if (data.Components.EggGrow == Models.SubData.ComponentBehavior.Patch)
             {
-                if (!ctx.PrefabExists(grownData.Prefab))
+                if (data.EggGrow.Grown != null)
                 {
-                    Plugin.LogFatal($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.Grown)}.{i}.{nameof(grownData.Prefab)}: '{grownData.Prefab}' not found");
-                    error = true;
+                    foreach (var (grownData, i) in data.EggGrow.Grown.Select((value, i) => (value, i)))
+                    {
+                        if (!ctx.PrefabExists(grownData.Prefab))
+                        {
+                            Plugin.LogFatal($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.Grown)}.{i}.{nameof(grownData.Prefab)}: '{grownData.Prefab}' not found");
+                            error = true;
+                        }
+                    }
                 }
             }
 
@@ -160,154 +198,157 @@ namespace OfTamingAndBreeding.Data.Handling
         {
             var model = $"{nameof(Models.Egg)}.{eggName}";
 
-            var egg = PrefabManager.Instance.GetPrefab(eggName);
+            var egg = ctx.GetPrefab(eggName);
             ItemManager.Instance.RegisterItemInObjectDB(egg);
-
-            var eggItemDrop = egg.GetComponent<ItemDrop>(); // required (checked in ValidatePrefab)
-            var eggEggGrow = ctx.GetOrAddComponent<EggGrow>(eggName, egg);
-
-            /*
-            Plugin.Log.LogMessage($"{eggName}");
-            foreach (var c in egg.GetComponents<Component>())
-            {
-                Plugin.Log.LogInfo($" Component: {c.GetType().FullName}");
-            }
-            */
 
             //
             // set values
             //
 
-            if (data.Item != null) {
-
-                Plugin.LogDebug($"{model}.{nameof(data.Item)}: Setting values");
-
-                var eggItemData = eggItemDrop.m_itemData;
-                var eggItemDataShared = eggItemData.m_shared;
-
-                if (data.Item.Name != null)                 eggItemDataShared.m_name = data.Item.Name;
-                if (data.Item.Description != null)          eggItemDataShared.m_description = data.Item.Description;
-
-                if (data.Item.Weight != null)               eggItemDataShared.m_weight = (float)data.Item.Weight;
-                if (data.Item.ScaleByQuality != null)       eggItemDataShared.m_scaleByQuality = (float)data.Item.ScaleByQuality;
-                if (data.Item.Value != null)                eggItemDataShared.m_value = (int)data.Item.Value;
-
-                if (data.Item.Teleportable != null)         eggItemDataShared.m_teleportable = (bool)data.Item.Teleportable;
-                if (data.Item.MaxStackSize != null)         eggItemDataShared.m_maxStackSize = (int)data.Item.MaxStackSize;
-                if (data.Item.MaxQuality != null)           eggItemDataShared.m_maxQuality = (int)data.Item.MaxQuality;
-
-                if (data.Item.ItemType != null)
+            if (data.Components.Item == Models.SubData.ComponentBehavior.Patch)
+            {
+                if (data.Item != null)
                 {
-                    if (Enum.TryParse<ItemDrop.ItemData.ItemType>(data.Item.ItemType, ignoreCase: true, out var result))
-                    {
-                        eggItemDataShared.m_itemType = result;
-                    }
-                    else
-                    {
-                        //eggItemDataShared.m_itemType = ItemDrop.ItemData.ItemType.Misc;
-                    }
-                }
+                    var eggItemDrop = egg.GetComponent<ItemDrop>(); // required (checked in ValidatePrefab)
+                    Plugin.LogDebug($"{model}.{nameof(data.Item)}: Setting values");
 
-                // defaults
-                eggItemDataShared.m_autoStack = false;
+                    var eggItemData = eggItemDrop.m_itemData;
+                    var eggItemDataShared = eggItemData.m_shared;
 
-                string prefabName = egg.gameObject.name;
-                GameObject eggItemPrefab = ObjectDB.instance.GetItemPrefab(prefabName);
-                if (eggItemPrefab == null)
-                {
-                    // not found? maybe its custom item
-                    var customItem = ItemManager.Instance.GetItem(prefabName);
-                    if (customItem != null)
-                    {
-                        eggItemPrefab = customItem.ItemPrefab;
-                    }
-                }
+                    if (data.Item.Name != null) eggItemDataShared.m_name = data.Item.Name;
+                    if (data.Item.Description != null) eggItemDataShared.m_description = data.Item.Description;
 
-                Plugin.LogDebug($"{model}: Tinting prefab, lights and particles");
+                    if (data.Item.Weight != null) eggItemDataShared.m_weight = (float)data.Item.Weight;
+                    // Scaling will be handled here: ItemDrop_SetQuality_Patch
+                    if (data.Item.ScaleByQuality != null) eggItemDataShared.m_scaleByQuality = (float)data.Item.ScaleByQuality;
+                    if (data.Item.ScaleWeightByQuality != null) eggItemDataShared.m_scaleWeightByQuality = (float)data.Item.ScaleWeightByQuality;
+                    if (data.Item.Value != null) eggItemDataShared.m_value = (int)data.Item.Value;
 
-                // multiply = true by default to preserve texture contrast;
-                // kept as parameter for possible future advanced tint modes
-                if (TintHelper.TryParseTint(data.Item.ItemTintRgb, out Color itemTint))
-                {
-                    TintHelper.TintPrefab(eggItemPrefab, itemTint, true);
+                    if (data.Item.Teleportable != null) eggItemDataShared.m_teleportable = (bool)data.Item.Teleportable;
+                    if (data.Item.MaxStackSize != null) eggItemDataShared.m_maxStackSize = (int)data.Item.MaxStackSize;
+                    if (data.Item.MaxQuality != null) eggItemDataShared.m_maxQuality = (int)data.Item.MaxQuality;
 
-                    Plugin.LogDebug($"{model}: Tinting icon");
-                    var itemDrop = eggItemPrefab.GetComponent<ItemDrop>();
-                    var baseIcon = itemDrop.m_itemData.m_shared.m_icons?.FirstOrDefault();
-                    if (baseIcon != null)
+                    if (data.Item.ItemType != null)
                     {
-                        var tinted = Helpers.TintHelper.CreateTintedSprite(baseIcon, itemTint);
-                        itemDrop.m_itemData.m_shared.m_icons = new[] { tinted };
-                    }
-                    else
-                    {
-                        // just ignore
-                    }
-                }
-                if (TintHelper.TryParseTint(data.Item.LightsTintRgb, out Color lightsTint))
-                {
-                    TintHelper.TintLights(eggItemPrefab, lightsTint, true);
-                }
-                if (TintHelper.TryParseTint(data.Item.ParticlesTintRgb, out Color particlesTint))
-                {
-                    TintHelper.TintParticleSystems(eggItemPrefab, particlesTint, true);
-                }
-                if (data.Item.DisableParticles)
-                {
-                    foreach (var r in egg.GetComponentsInChildren<ParticleSystemRenderer>(true))
-                    {
-                        r.enabled = false;
-                    }
-                }
-
-                // scale lights
-                var lightsScale = data.Item.LightsScale;
-                foreach (var l in eggItemPrefab.GetComponentsInChildren<Light>(true))
-                {
-                    if (lightsScale <= 0f)
-                    {
-                        l.enabled = false;
-                        l.range = 0;
-                        continue;
+                        if (Enum.TryParse<ItemDrop.ItemData.ItemType>(data.Item.ItemType, ignoreCase: true, out var result))
+                        {
+                            eggItemDataShared.m_itemType = result;
+                        }
+                        else
+                        {
+                            //eggItemDataShared.m_itemType = ItemDrop.ItemData.ItemType.Misc;
+                        }
                     }
 
-                    //l.enabled = true;
-                    l.range *= lightsScale;
+                    // defaults
+                    eggItemDataShared.m_autoStack = false;
+                    eggItemDrop.m_autoPickup = false;
+
+                    string prefabName = egg.gameObject.name;
+                    GameObject eggItemPrefab = ObjectDB.instance.GetItemPrefab(prefabName);
+                    if (eggItemPrefab == null)
+                    {
+                        // not found? maybe its custom item
+                        var customItem = ItemManager.Instance.GetItem(prefabName);
+                        if (customItem != null)
+                        {
+                            eggItemPrefab = customItem.ItemPrefab;
+                        }
+                    }
+
+                    Plugin.LogDebug($"{model}: Tinting prefab, lights and particles");
+
+                    // multiply = true by default to preserve texture contrast;
+                    // kept as parameter for possible future advanced tint modes
+                    if (TintHelper.TryParseTint(data.Item.ItemTintRgb, out Color itemTint))
+                    {
+                        TintHelper.TintPrefab(eggItemPrefab, itemTint, true);
+
+                        Plugin.LogDebug($"{model}: Tinting icon");
+                        var itemDrop = eggItemPrefab.GetComponent<ItemDrop>();
+                        var baseIcon = itemDrop.m_itemData.m_shared.m_icons?.FirstOrDefault();
+                        if (baseIcon != null)
+                        {
+                            var tinted = Helpers.TintHelper.CreateTintedSprite(baseIcon, itemTint);
+                            itemDrop.m_itemData.m_shared.m_icons = new[] { tinted };
+                        }
+                        else
+                        {
+                            // just ignore
+                        }
+                    }
+                    if (TintHelper.TryParseTint(data.Item.LightsTintRgb, out Color lightsTint))
+                    {
+                        TintHelper.TintLights(eggItemPrefab, lightsTint, true);
+                    }
+                    if (TintHelper.TryParseTint(data.Item.ParticlesTintRgb, out Color particlesTint))
+                    {
+                        TintHelper.TintParticleSystems(eggItemPrefab, particlesTint, true);
+                    }
+                    if (data.Item.DisableParticles)
+                    {
+                        foreach (var r in egg.GetComponentsInChildren<ParticleSystemRenderer>(true))
+                        {
+                            r.enabled = false;
+                        }
+                    }
+
+                    // scale lights
+                    var lightsScale = data.Item.LightsScale;
+                    foreach (var l in eggItemPrefab.GetComponentsInChildren<Light>(true))
+                    {
+                        if (lightsScale <= 0f)
+                        {
+                            l.enabled = false;
+                            l.range = 0;
+                            continue;
+                        }
+
+                        //l.enabled = true;
+                        l.range *= lightsScale;
+                    }
                 }
             }
-            else
+            else if (data.Components.Item == Models.SubData.ComponentBehavior.Remove)
             {
-                Plugin.LogDebug($"{model}.{nameof(data.Item)}: Skipped");
+                // ignore, cannot be removed
             }
 
-            if (data.EggGrow != null)
+            if (data.Components.EggGrow == Models.SubData.ComponentBehavior.Patch)
             {
-                Plugin.LogDebug($"{model}.{nameof(data.EggGrow)}: Setting values");
-                eggEggGrow.m_growTime = data.EggGrow.GrowTime;
-                eggEggGrow.m_updateInterval = data.EggGrow.UpdateInterval;
-                eggEggGrow.m_requireNearbyFire = data.EggGrow.RequireNearbyFire;
-                eggEggGrow.m_requireUnderRoof = data.EggGrow.RequireUnderRoof;
-                eggEggGrow.m_requireCoverPercentige = data.EggGrow.RequireCoverPercentige;
-            }
-            else
-            {
-                Plugin.LogDebug($"{model}.{nameof(data.EggGrow)}: Skipped");
-            }
+                var eggEggGrow = ctx.GetOrAddComponent<EggGrow>(eggName, egg);
 
-            Plugin.LogDebug($"{model}: Setting effects");
-            if (eggEggGrow.m_hatchEffect == null || eggEggGrow.m_hatchEffect.m_effectPrefabs.Length == 0)
-            {
-                eggEggGrow.m_hatchEffect = new EffectList
+                if (data.EggGrow != null)
                 {
-                    m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
+                    Plugin.LogDebug($"{model}.{nameof(data.EggGrow)}: Setting values");
+
+                    if (data.EggGrow.GrowTime != null) eggEggGrow.m_growTime = (float)data.EggGrow.GrowTime;
+                    if (data.EggGrow.UpdateInterval != null) eggEggGrow.m_updateInterval = (float)data.EggGrow.UpdateInterval;
+                    if (data.EggGrow.RequireNearbyFire != null) eggEggGrow.m_requireNearbyFire = (bool)data.EggGrow.RequireNearbyFire;
+                    if (data.EggGrow.RequireUnderRoof != null) eggEggGrow.m_requireUnderRoof = (bool)data.EggGrow.RequireUnderRoof;
+                    if (data.EggGrow.RequireCoverPercentige != null) eggEggGrow.m_requireCoverPercentige = (float)data.EggGrow.RequireCoverPercentige;
+                }
+
+                Plugin.LogDebug($"{model}: Setting effects");
+                if (eggEggGrow.m_hatchEffect == null || eggEggGrow.m_hatchEffect.m_effectPrefabs.Length == 0)
+                {
+                    eggEggGrow.m_hatchEffect = new EffectList
+                    {
+                        m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
                         "fx_chicken_birth",
                     })
-                };
-            }
+                    };
+                }
 
-            // will be set seperatly
-            eggEggGrow.m_tamed = true;
-            eggEggGrow.m_grownPrefab = null;
+                // will be set seperatly
+                eggEggGrow.m_tamed = true;
+                eggEggGrow.m_grownPrefab = null;
+
+            }
+            else if (data.Components.EggGrow == Models.SubData.ComponentBehavior.Remove)
+            {
+                // ignore, cannot be removed
+            }
 
         }
 

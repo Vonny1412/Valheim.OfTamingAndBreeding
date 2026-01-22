@@ -18,8 +18,11 @@ namespace OfTamingAndBreeding.Internals
         public static bool TryGetAPI(AnimalAI __instance, out AnimalAIAPI api)
             => instances.TryGetValue(__instance, out api);
 
+        private readonly BaseAI _baseAI;
+
         public AnimalAIAPI(AnimalAI __instance) : base(__instance)
         {
+            _baseAI = (BaseAI)__IAPI_GetInstance();
         }
 
         #region MonsterAI-stuff to make animals tameable
@@ -40,9 +43,9 @@ namespace OfTamingAndBreeding.Internals
 
         public bool UpdateConsumeAI(float dt)
         {
-            if ((!IsAlerted()) && UpdateConsumeItem(dt))
+            if (!IsAlerted() && UpdateConsumeItem(dt))
             {
-                return false;
+                return true;
             }
             return true;
         }
@@ -63,7 +66,14 @@ namespace OfTamingAndBreeding.Internals
                     return false;
                 }
 
-                m_consumeTarget = FindClosestConsumableItem(m_consumeSearchRange);
+                if (Plugin.Configs.UseBetterSearchForFood.Value == true)
+                {
+                    m_consumeTarget = Behaviors.ConsumeBehavior.FindClosestConsumableItem(_baseAI, m_consumeSearchRange, CanConsume);
+                }
+                else
+                {
+                    m_consumeTarget = FindClosestConsumableItem(m_consumeSearchRange);
+                }
             }
 
             if ((bool)m_consumeTarget)
@@ -73,10 +83,7 @@ namespace OfTamingAndBreeding.Internals
                     LookAt(m_consumeTarget.transform.position);
                     if (IsLookingAt(m_consumeTarget.transform.position, 20f) && m_consumeTarget.RemoveOne())
                     {
-                        if (m_onConsumedItem != null)
-                        {
-                            m_onConsumedItem(m_consumeTarget);
-                        }
+                        m_onConsumedItem?.Invoke(m_consumeTarget);
 
                         //humanoid.m_consumeItemEffects.Create(base.transform.position, Quaternion.identity);
                         m_animator.SetTrigger("consume");
@@ -130,7 +137,6 @@ namespace OfTamingAndBreeding.Internals
             return null;
         }
         
-
         private bool CanConsume(ItemDrop.ItemData item)
         {
             foreach (ItemDrop consumeItem in m_consumeItems)

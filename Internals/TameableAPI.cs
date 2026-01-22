@@ -18,11 +18,6 @@ namespace OfTamingAndBreeding.Internals
         public static bool TryGetAPI(Tameable __instance, out TameableAPI api)
             => instances.TryGetValue(__instance, out api);
 
-
-
-
-
-
         //public Data.Models.Creature creatureData;
         public float lastCommandTime = 0;
 
@@ -31,15 +26,6 @@ namespace OfTamingAndBreeding.Internals
             //var prefabName = Utils.GetPrefabName(__instance.name);
             //this.creatureData = Data.Models.Creature.Get(prefabName);
         }
-
-
-
-
-
-
-
-
-
 
         #region tameable animals
 
@@ -90,17 +76,15 @@ namespace OfTamingAndBreeding.Internals
 
             var L = Localization.instance;
 
-            if (Plugin.Configs.HoverShowFed.Value)
+            if (Plugin.Configs.HoverShowFedTimer.Value)
             {
-                // currently we do not handly modified fed durations
-                // maybe we gonna implement it later
-                var duration = m_fedDuration;
 
                 var lastFedTimeLong = zDO.GetLong(ZDOVars.s_tameLastFeeding, 0L);
                 DateTime dateTime = new DateTime(lastFedTimeLong);
+                var duration = m_fedDuration;
                 double secLeft = duration - (ZNet.instance.GetTime() - dateTime).TotalSeconds;
 
-                if (Plugin.Configs.HoverShowFedTimer.Value && (secLeft > 0 || Plugin.Configs.HoverShowFedTimerStarving.Value))
+                if (secLeft > 0 || Plugin.Configs.HoverShowFedTimerStarving.Value)
                 {
                     if (lastFedTimeLong == 0)
                     {
@@ -108,19 +92,13 @@ namespace OfTamingAndBreeding.Internals
                     }
                     text.Add(Helpers.StringHelper.FormatRelativeTime(
                         secLeft,
-                        labelPositive: L.Localize("$tmt_hover_fed"),
-                        labelNegative: L.Localize("$tmt_hover_starving"),
-                        labelAltPositive: L.Localize("$tmt_hover_fed_alt"),
-                        labelAltNegative: L.Localize("$tmt_hover_starving_alt"),
+                        labelPositive: L.Localize("$otab_hover_fed"),
+                        labelNegative: L.Localize("$otab_hover_starving"),
+                        labelAltPositive: L.Localize("$otab_hover_fed_alt"),
+                        labelAltNegative: L.Localize("$otab_hover_starving_alt"),
                         colorPositive: Plugin.Configs.HoverColorGood.Value,
                         colorNegative: Plugin.Configs.HoverColorBad.Value
                     ));
-                    /*
-                    if (Plugin.Configs.HoverShowDurations.Value)
-                    {
-                        text.Add(string.Format(L.Localize("$tmt_hover_duration"), Plugin.Configs.HoverColorNormal.Value, duration));
-                    }
-                    */
                 }
             }
 

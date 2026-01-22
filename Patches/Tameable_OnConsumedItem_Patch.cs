@@ -21,39 +21,43 @@ namespace OfTamingAndBreeding.Patches
 
             if (nview.IsOwner())
             {
-                var itemName = global::Utils.GetPrefabName(item.gameObject.name);
+                var itemName = Utils.GetPrefabName(item.gameObject.name);
                 //zdo.Set(Plugin.ZDO.s_lastConsumedItem, itemName);
 
                 // handle multiplied fedDuration
-                var prefabName = global::Utils.GetPrefabName(__instance.gameObject.name);
+                var prefabName = Utils.GetPrefabName(__instance.gameObject.name);
                 var data = Data.Models.Creature.Get(prefabName);
                 if (data != null && data.Tameable != null && data.MonsterAI != null && data.MonsterAI.ConsumeItems != null && data.MonsterAI.ConsumeItems.Length > 0)
                 {
-
-                    var fedDuration = data.Tameable.FedDuration;
-                    foreach (var entry in data.MonsterAI.ConsumeItems)
+                    // the value is pre cached for faster access
+                    // no need to search inside database
+                    if (Contexts.DataContext.GetObjectFedDuration(prefabName, out float fedDuration))
                     {
-                        if (entry.Prefab == itemName)
+                        foreach (var entry in data.MonsterAI.ConsumeItems)
                         {
-                            fedDuration *= entry.FedDurationMultiply;
-                            break;
+                            if (entry.Prefab == itemName) 
+                            {
+                                fedDuration *= entry.FedDurationMultiply;
+                                // what if the same prefab exists multiple times in list?
+                                // just keep going, maybe one day we gonna expand the feature with more options or values
+                                //break;
+                            }
                         }
-                    }
-                    if (fedDuration >= 0)
-                    {
-                        // Intentionally allow 0:
-                        // This means the creature will never become fed by this item.
-                        // that way we can keep using taming system and can have items that do not trigger taming/procreation (like the original bjorn-behaviour)
+                        if (fedDuration >= 0)
+                        {
+                            // Intentionally allow 0:
+                            // This means the creature will never become fed by this item.
+                            // that way we can keep using taming system and can have items that do not trigger taming/procreation (like the original bjorn-behaviour)
 
-                        __instance.m_fedDuration = fedDuration;
-                        if (zdo.GetFloat(Plugin.ZDOVars.z_fedDuration, -1) != fedDuration)
-                            zdo.Set(Plugin.ZDOVars.z_fedDuration, fedDuration);
+                            __instance.m_fedDuration = fedDuration;
+                            Helpers.ZNetHelper.SetFloat(zdo, Plugin.ZDOVars.z_fedDuration, fedDuration);
+                        }
                     }
                 }
             }
             else
             {
-                var fedDuration = zdo.GetFloat(Plugin.ZDOVars.z_fedDuration, -1);
+                var fedDuration = zdo.GetFloat(Plugin.ZDOVars.z_fedDuration, 0);
                 if (fedDuration >= 0) // yes, we also allow 0
                 {
                     __instance.m_fedDuration = fedDuration;

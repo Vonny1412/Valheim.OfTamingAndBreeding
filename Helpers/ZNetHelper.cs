@@ -89,5 +89,17 @@ namespace OfTamingAndBreeding.Helpers
             return value;
         }
 
+        public static float SetFloat(ZDO zdo, int key, float value)
+        {
+            if (zdo.GetFloat(key, 0f) != value) zdo.Set(key, value);
+            return value;
+        }
+
+        public static float SetFloat(ZDO zdo, int key, float value, float cur) // unsafe! use with care
+        {
+            if (cur != value) zdo.Set(key, value);
+            return value;
+        }
+
     }
 }

@@ -1,4 +1,5 @@
-﻿using Jotunn.Managers;
+﻿using HarmonyLib;
+using Jotunn.Managers;
 using OfTamingAndBreeding.Data.Handling.Base;
 using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Helpers;
@@ -38,68 +39,142 @@ namespace OfTamingAndBreeding.Data.Handling
             var model = $"{nameof(Models.Creature)}.{creatureName}";
             var error = false;
 
-            var characterData = data.Character;
-            var monsterAIData = data.MonsterAI;
-            var tameableData = data.Tameable;
-            var procreationData = data.Procreation;
-
-            if (monsterAIData != null)
+            switch (data.Components.Character)
             {
-                if (monsterAIData.ConsumeItems == null)
+                case Models.SubData.ComponentBehavior.Remove:
+                    Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.Character)}({nameof(Models.SubData.ComponentBehavior.Remove)}): Component cannot be removed");
+                    break;
+                case Models.SubData.ComponentBehavior.Patch:
+                    if (data.Character == null)
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Character)}({nameof(Models.SubData.ComponentBehavior.Patch)}): Missing component data");
+                        error = true;
+                    }
+                    break;
+                case Models.SubData.ComponentBehavior.Inherit:
+                    if (data.Character != null)
+                    {
+                        Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.Character)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
+                    }
+                    break;
+            }
+
+            switch (data.Components.MonsterAI)
+            {
+                case Models.SubData.ComponentBehavior.Remove:
+                    Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}({nameof(Models.SubData.ComponentBehavior.Remove)}): Component cannot be removed");
+                    break;
+                case Models.SubData.ComponentBehavior.Patch:
+                    if (data.MonsterAI == null)
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}({nameof(Models.SubData.ComponentBehavior.Patch)}): Missing component data");
+                        error = true;
+                    }
+                    break;
+                case Models.SubData.ComponentBehavior.Inherit:
+                    if (data.MonsterAI != null)
+                    {
+                        Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
+                    }
+                    break;
+            }
+
+            switch (data.Components.Tameable)
+            {
+                case Models.SubData.ComponentBehavior.Patch:
+                    if (data.Tameable == null)
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Tameable)}({nameof(Models.SubData.ComponentBehavior.Patch)}): Missing component data");
+                        error = true;   
+                    }
+                    break;
+                case Models.SubData.ComponentBehavior.Inherit:
+                    if (data.Tameable != null)
+                    {
+                        Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.Tameable)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
+                    }
+                    break;
+            }
+
+            switch (data.Components.Procreation)
+            {
+                case Models.SubData.ComponentBehavior.Patch:
+                    if (data.Procreation == null)
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Procreation)}({nameof(Models.SubData.ComponentBehavior.Patch)}): Missing component data");
+                        error = true;
+                    }
+                    break;
+                case Models.SubData.ComponentBehavior.Inherit:
+                    if (data.Procreation != null)
+                    {
+                        Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.Procreation)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
+                    }
+                    break;
+            }
+
+            if (data.Character != null && data.Components.Character == Models.SubData.ComponentBehavior.Patch)
+            {
+                // nothing to validate here
+            }
+
+            if (data.MonsterAI != null && data.Components.MonsterAI == Models.SubData.ComponentBehavior.Patch)
+            {
+                if (data.MonsterAI.ConsumeItems == null)
                 {
-                    //monsterAIData.ConsumeItems = new Models.Creature.MonsterAIConsumItemData[] { };
+                    // null = keep original
+                    // empty list = clear: wont eat anything
                 }
             }
 
-            if (procreationData != null)
+            if (data.Tameable != null && data.Components.Tameable == Models.SubData.ComponentBehavior.Patch)
+            {
+                // nothing to validate here
+            }
+
+            if (data.Procreation != null && data.Components.Procreation == Models.SubData.ComponentBehavior.Patch)
             {
 
-                if (tameableData == null)
+                if (data.Tameable == null)
                 {
-                    Plugin.LogError($"{model}.{nameof(data.Procreation)} requires {nameof(data.Tameable)}");
-                    error = true;
+                    // we gonna check this in prefab validation
                 }
 
-                if (procreationData.MaxCreaturesExplicite == null)
+                if (data.Procreation.MaxCreaturesCountPrefabs == null)
                 {
-                    procreationData.MaxCreaturesExplicite = new Dictionary<string, int>();
+                    // if == null then this feature is just disabled
                 }
 
-                if (procreationData.Partner == null || procreationData.Partner.Length == 0)
+                if (data.Procreation.Partner == null || data.Procreation.Partner.Length == 0)
                 {
-                    Plugin.LogError(
-                        $"{model}.{nameof(data.Procreation)}.{nameof(procreationData.Partner)} is null or empty. " +
-                        "For no-partner procreation, this list must at least contain the creature's own prefab, " +
-                        "because it is considered its own partner."
-                    );
-                    error = true;
+                    data.Procreation.Partner = null; // just clean it up
                 }
                 else
                 {
-                    foreach (var (partnerData, i) in procreationData.Partner.Select((value, i) => (value, i)))
+                    foreach (var (partnerData, i) in data.Procreation.Partner.Select((value, i) => (value, i)))
                     {
                         partnerData.Weight = Math.Max(0f, partnerData.Weight);
                         if (partnerData.Prefab == null)
                         {
-                            Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(procreationData.Partner)}.{i}.{nameof(partnerData.Prefab)} is empty");
+                            Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Partner)}.{i}.{nameof(partnerData.Prefab)}: Field is empty");
                             error = true;
                         }
                     }
                 }
 
-                if (procreationData.Offspring == null || procreationData.Offspring.Length == 0)
+                if (data.Procreation.Offspring == null || data.Procreation.Offspring.Length == 0)
                 {
-                    Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(procreationData.Offspring)} is null or empty");
+                    Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}: Field is null or empty");
                     error = true;
                 }
                 else
                 {
-                    foreach (var (offspringData, i) in procreationData.Offspring.Select((value, i) => (value, i)))
+                    foreach (var (offspringData, i) in data.Procreation.Offspring.Select((value, i) => (value, i)))
                     {
                         offspringData.Weight = Math.Max(0f, offspringData.Weight);
                         if (offspringData.Prefab == null)
                         {
-                            Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(procreationData.Offspring)}.{i}.{nameof(offspringData.Prefab)} is empty");
+                            Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.Prefab)}: Field is empty");
                             error = true;
                         }
                     }
@@ -148,19 +223,32 @@ namespace OfTamingAndBreeding.Data.Handling
             }
             else
             {
+
                 if (!creature.GetComponent<MonsterAI>() && !creature.GetComponent<AnimalAI>())
                 {
                     Plugin.LogError($"{model}: Prefab has no supported AI");
                     error = true;
                 }
+
                 if (!creature.GetComponent<Character>())
                 {
                     Plugin.LogError($"{model}: Prefab has no Character");
                     error = true;
                 }
+
+                var hasProcreation = (bool)creature.GetComponent<Procreation>();
+                var hasTameable = (bool)creature.GetComponent<Tameable>();
+                bool wantProcreationActive = data.Components.Procreation == Models.SubData.ComponentBehavior.Patch || (hasProcreation && data.Components.Procreation != Models.SubData.ComponentBehavior.Remove);
+                bool wantTameableActive = data.Components.Tameable != Models.SubData.ComponentBehavior.Remove && (hasTameable || data.Components.Tameable == Models.SubData.ComponentBehavior.Patch);
+                if (wantProcreationActive && !wantTameableActive)
+                {
+                    Plugin.LogWarning($"{model}.{nameof(data.Procreation)}: Component requires {nameof(data.Tameable)}");
+                    //error = true;
+                }
+
             }
 
-            if (data.MonsterAI != null)
+            if (data.MonsterAI != null && data.Components.MonsterAI == Models.SubData.ComponentBehavior.Patch)
             {
                 if (data.MonsterAI.ConsumeItems != null)
                 {
@@ -183,15 +271,18 @@ namespace OfTamingAndBreeding.Data.Handling
                 }
             }
 
-            if (data.Procreation != null)
+            if (data.Procreation != null && data.Components.Procreation == Models.SubData.ComponentBehavior.Patch)
             {
 
-                foreach (var (partnerData, i) in data.Procreation.Partner.Select((value, i) => (value, i)))
+                if (data.Procreation.Partner != null)
                 {
-                    if (!ctx.PrefabExists(partnerData.Prefab))
+                    foreach (var (partnerData, i) in data.Procreation.Partner.Select((value, i) => (value, i)))
                     {
-                        Plugin.LogFatal($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Partner)}.{i}.{nameof(partnerData.Prefab)}: '{partnerData.Prefab}' not found");
-                        error = true;
+                        if (!ctx.PrefabExists(partnerData.Prefab))
+                        {
+                            Plugin.LogFatal($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Partner)}.{i}.{nameof(partnerData.Prefab)}: '{partnerData.Prefab}' not found");
+                            error = true;
+                        }
                     }
                 }
 
@@ -219,12 +310,15 @@ namespace OfTamingAndBreeding.Data.Handling
                     }
                 }
 
-                foreach (var (kv, i) in data.Procreation.MaxCreaturesExplicite.Select((value, i) => (value, i)))
+                if (data.Procreation.MaxCreaturesCountPrefabs != null)
                 {
-                    if (!ctx.PrefabExists(kv.Key))
+                    foreach (var (prefabName, i) in data.Procreation.MaxCreaturesCountPrefabs.Select((value, i) => (value, i)))
                     {
-                        Plugin.LogFatal($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.MaxCreaturesExplicite)}.{i}: '{kv.Key}' not found");
-                        error = true;
+                        if (!ctx.PrefabExists(prefabName))
+                        {
+                            Plugin.LogFatal($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.MaxCreaturesCountPrefabs)}.{i}: '{prefabName}' not found");
+                            error = true;
+                        }
                     }
                 }
                 
@@ -241,183 +335,204 @@ namespace OfTamingAndBreeding.Data.Handling
         public override void RegisterPrefab(DataHandlerContext ctx, string creatureName, Models.Creature data)
         {
             var model = $"{nameof(Models.Creature)}.{creatureName}";
-
             var creature = ctx.GetPrefab(creatureName);
-            // no need to register, already registered
-
-            var monsterAI = creature.GetComponent<MonsterAI>();
-            var animalAI = creature.GetComponent<AnimalAI>();
-            var character = creature.GetComponent<Character>();
-
-            var characterData = data.Character;
-            var monsterAIData = data.MonsterAI;
-            var tameableData = data.Tameable;
-            var procreationData = data.Procreation;
 
             var idleSoundPrefab = Helpers.PrefabHelper.FindEffectPrefab<BaseAI>(creatureName, "m_idleSound", 0);
 
-            if (monsterAIData != null)
+            if (data.Components.Character == Models.SubData.ComponentBehavior.Patch)
             {
-
-                if (monsterAI != null)
+                var character = creature.GetComponent<Character>();
+                if (data.Character != null)
                 {
-
-                    Plugin.LogDebug($"{model}.{nameof(data.MonsterAI)}: Setting MonsterAI values");
-
-                    monsterAI.m_consumeRange = monsterAIData.ConsumeRange;
-                    monsterAI.m_consumeSearchRange = monsterAIData.ConsumeSearchRange;
-                    monsterAI.m_consumeSearchInterval = monsterAIData.ConsumeSearchInterval;
-                    if (monsterAIData.ConsumeItems != null)
-                    {
-                        monsterAI.m_consumeItems = new List<ItemDrop>();
-                        foreach (var entry in monsterAIData.ConsumeItems)
-                        {
-                            var itemDrop = GetItemDropByPrefab(entry.Prefab);
-                            if (itemDrop != null)
-                            {
-                                monsterAI.m_consumeItems.Add(itemDrop);
-                            }
-                        }
-                    }
+                    Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting Character values");
+                    if (data.Character.Group != null) character.m_group = data.Character.Group;
+                    if (data.Character.StickToFaction) Patches.Contexts.DataContext.SetObjectSticksToFaction(creatureName);
+                    if (data.Character.CanAttackTames) Patches.Contexts.DataContext.SetObjectCanAttackTames(creatureName);
+                    if (data.Character.CanBeAttackedByTames) Patches.Contexts.DataContext.SetObjectCanBeAttackedByTames(creatureName);
                 }
-                else
+            }
+            else if (data.Components.Character == Models.SubData.ComponentBehavior.Remove)
+            {
+                // ignore, cannot be removed
+            }
+
+            if (data.Components.MonsterAI == Models.SubData.ComponentBehavior.Patch)
+            {
+                if (data.MonsterAI != null)
                 {
-                    // we need to make fake MonsterAI
-                    if (animalAI != null)
+                    var monsterAI = creature.GetComponent<MonsterAI>();
+                    var animalAI = creature.GetComponent<AnimalAI>();
+
+                    if (monsterAI != null)
                     {
-                        Plugin.LogDebug($"{model}.{nameof(data.MonsterAI)}: Setting AnimalAIAPI values");
 
-                        var prefabAnimalAIAPI = Internals.AnimalAIAPI.GetOrCreate(animalAI);
+                        Plugin.LogDebug($"{model}.{nameof(data.MonsterAI)}: Setting MonsterAI values");
 
-                        prefabAnimalAIAPI.m_consumeRange = monsterAIData.ConsumeRange;
-                        prefabAnimalAIAPI.m_consumeSearchRange = monsterAIData.ConsumeSearchRange;
-                        prefabAnimalAIAPI.m_consumeSearchInterval = monsterAIData.ConsumeSearchInterval;
-                        if (monsterAIData.ConsumeItems != null)
+                        if (data.MonsterAI.ConsumeRange != null) monsterAI.m_consumeRange = (float)data.MonsterAI.ConsumeRange;
+                        if (data.MonsterAI.ConsumeSearchRange != null) monsterAI.m_consumeSearchRange = (float)data.MonsterAI.ConsumeSearchRange;
+                        if (data.MonsterAI.ConsumeSearchInterval != null) monsterAI.m_consumeSearchInterval = (float)data.MonsterAI.ConsumeSearchInterval;
+
+                        if (data.MonsterAI.ConsumeItems != null)
                         {
-                            prefabAnimalAIAPI.m_consumeItems = new List<ItemDrop>();
-                            foreach (var entry in monsterAIData.ConsumeItems)
+                            monsterAI.m_consumeItems = new List<ItemDrop>();
+                            foreach (var entry in data.MonsterAI.ConsumeItems)
                             {
                                 var itemDrop = GetItemDropByPrefab(entry.Prefab);
                                 if (itemDrop != null)
                                 {
-                                    prefabAnimalAIAPI.m_consumeItems.Add(itemDrop);
+                                    monsterAI.m_consumeItems.Add(itemDrop);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // we need to make pseudo MonsterAI
+                        if (animalAI != null)
+                        {
+                            Plugin.LogDebug($"{model}.{nameof(data.MonsterAI)}: Setting AnimalAIAPI values");
+
+                            var prefabAnimalAIAPI = Internals.AnimalAIAPI.GetOrCreate(animalAI);
+
+                            if (data.MonsterAI.ConsumeRange != null) prefabAnimalAIAPI.m_consumeRange = (float)data.MonsterAI.ConsumeRange;
+                            if (data.MonsterAI.ConsumeSearchRange != null) prefabAnimalAIAPI.m_consumeSearchRange = (float)data.MonsterAI.ConsumeSearchRange;
+                            if (data.MonsterAI.ConsumeSearchInterval != null) prefabAnimalAIAPI.m_consumeSearchInterval = (float)data.MonsterAI.ConsumeSearchInterval;
+
+                            if (data.MonsterAI.ConsumeItems != null)
+                            {
+                                prefabAnimalAIAPI.m_consumeItems = new List<ItemDrop>();
+                                foreach (var entry in data.MonsterAI.ConsumeItems)
+                                {
+                                    var itemDrop = GetItemDropByPrefab(entry.Prefab);
+                                    if (itemDrop != null)
+                                    {
+                                        prefabAnimalAIAPI.m_consumeItems.Add(itemDrop);
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-
-            if (characterData != null)
+            else if (data.Components.MonsterAI == Models.SubData.ComponentBehavior.Remove)
             {
-
-                if (characterData.Group != null) character.m_group = characterData.Group;
-                
-                if (data.Character.StickToFaction) Patches.Contexts.DataContext.SetObjectSticksToFaction(creatureName);
-                if (data.Character.CanAttackTames) Patches.Contexts.DataContext.SetObjectCanAttackTames(creatureName);
-                if (data.Character.CanBeAttackedByTames) Patches.Contexts.DataContext.SetObjectCanBeAttackedByTames(creatureName);
-                
+                // ignore, cannot be removed
             }
 
-            if (tameableData != null)
+
+            if (data.Components.Tameable == Models.SubData.ComponentBehavior.Patch)
             {
-                var tameable = ctx.GetOrAddComponent<Tameable>(creatureName, creature);
-                var pet = ctx.GetOrAddComponent<Pet>(creatureName, creature);
-                Plugin.LogDebug($"{model}.{nameof(data.Tameable)}: Setting Tameable values");
-
-                tameable.m_fedDuration = tameableData.FedDuration;
-                tameable.m_tamingTime = tameableData.TamingTime;
-                tameable.m_commandable = tameableData.Commandable;
-
-                Plugin.LogDebug($"{model}.{nameof(data.Tameable)}: Setting effects");
-                if (tameable.m_sootheEffect.m_effectPrefabs.Length == 0)
+                if (data.Tameable != null)
                 {
-                    tameable.m_sootheEffect = new EffectList
+                    var tameable = ctx.GetOrAddComponent<Tameable>(creatureName, creature);
+                    var pet = ctx.GetOrAddComponent<Pet>(creatureName, creature); // aso neccessary
+                    Plugin.LogDebug($"{model}.{nameof(data.Tameable)}: Setting Tameable values");
+
+                    if (data.Tameable.FedDuration != null) tameable.m_fedDuration = (float)data.Tameable.FedDuration; // this is just a fallback, see below
+                    if (data.Tameable.TamingTime != null) tameable.m_tamingTime = (float)data.Tameable.TamingTime;
+                    if (data.Tameable.Commandable != null) tameable.m_commandable = (bool)data.Tameable.Commandable;
+
+                    if (data.Tameable.FedDuration != null) // fed duration can vary depending on consumed food. need to cache the original value
                     {
-                        m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
+                        Patches.Contexts.DataContext.SetObjectFedDuration(creatureName, (float)data.Tameable.FedDuration);
+                    }
+
+                    Plugin.LogDebug($"{model}.{nameof(data.Tameable)}: Setting effects");
+                    if (tameable.m_sootheEffect.m_effectPrefabs.Length == 0)
+                    {
+                        tameable.m_sootheEffect = new EffectList
+                        {
+                            m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
                             "vfx_creature_soothed",
                         })
-                    };
-                }
-                if (tameable.m_tamedEffect.m_effectPrefabs.Length == 0)
-                {
-                    tameable.m_tamedEffect = new EffectList
+                        };
+                    }
+                    if (tameable.m_tamedEffect.m_effectPrefabs.Length == 0)
                     {
-                        m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
+                        tameable.m_tamedEffect = new EffectList
+                        {
+                            m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
                             "fx_creature_tamed",
                         })
-                    };
-                }
-                if (tameable.m_petEffect.m_effectPrefabs.Length == 0)
-                {
-                    tameable.m_petEffect = new EffectList
+                        };
+                    }
+                    if (tameable.m_petEffect.m_effectPrefabs.Length == 0)
                     {
-                        m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
+                        tameable.m_petEffect = new EffectList
+                        {
+                            m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
                             "fx_boar_pet",
                             idleSoundPrefab?.name,
                         })
-                    };
+                        };
+                    }
                 }
-                
             }
-            else
+            else if (data.Components.Tameable == Models.SubData.ComponentBehavior.Remove)
             {
                 Plugin.LogDebug($"{model}.{nameof(Tameable)}: Removing Tameable component (if exist)");
                 ctx.DestroyComponentIfExists<Tameable>(creatureName, creature);
             }
 
-            if (procreationData != null)
+            if (data.Components.Procreation == Models.SubData.ComponentBehavior.Patch)
             {
-                var procreation = ctx.GetOrAddComponent<Procreation>(creatureName, creature);
-                Plugin.LogDebug($"{model}.{nameof(data.Procreation)}: Setting Procreation values");
-
-                procreation.m_updateInterval = (float)procreationData.UpdateInterval;
-                procreation.m_totalCheckRange = (float)procreationData.TotalCheckRange;
-                procreation.m_partnerCheckRange = (float)procreationData.PartnerCheckRange;
-                procreation.m_requiredLovePoints = (int)procreationData.RequiredLovePoints;
-                procreation.m_pregnancyChance = (float)procreationData.PregnancyChance;
-                procreation.m_pregnancyDuration = (float)procreationData.PregnancyDuration;
-                procreation.m_spawnOffset = (float)procreationData.SpawnOffset;
-                procreation.m_spawnOffsetMax = (float)procreationData.SpawnOffsetMax;
-                procreation.m_spawnRandomDirection = (bool)procreationData.SpawnRandomDirection;
-                procreation.m_maxCreatures = (int)procreationData.MaxCreatures;
-
-                // sibling chance will be handled in ProcreationAPI
-                //procreationData.siblingChance = Mathf.Clamp(procreationData.siblingChance, 0, 1);
-
-                Plugin.LogDebug($"{model}.{nameof(data.Procreation)}: Setting effects");
-
-                if (procreation.m_loveEffects.m_effectPrefabs.Length == 0)
+                if (data.Procreation != null)
                 {
-                    procreation.m_loveEffects = new EffectList
+                    var procreation = ctx.GetOrAddComponent<Procreation>(creatureName, creature);
+                    Plugin.LogDebug($"{model}.{nameof(data.Procreation)}: Setting Procreation values");
+
+                    if (data.Procreation.UpdateInterval != null) procreation.m_updateInterval = (float)data.Procreation.UpdateInterval;
+                    if (data.Procreation.TotalCheckRange != null) procreation.m_totalCheckRange = (float)data.Procreation.TotalCheckRange;
+
+                    if (data.Procreation.PartnerCheckRange != null) procreation.m_partnerCheckRange = (float)data.Procreation.PartnerCheckRange;
+                    if (data.Procreation.RequiredLovePoints != null) procreation.m_requiredLovePoints = (int)data.Procreation.RequiredLovePoints;
+
+                    if (data.Procreation.PregnancyChance != null) procreation.m_pregnancyChance = (float)data.Procreation.PregnancyChance;
+                    if (data.Procreation.PregnancyDuration != null) procreation.m_pregnancyDuration = (float)data.Procreation.PregnancyDuration;
+
+                    if (data.Procreation.SpawnOffset != null) procreation.m_spawnOffset = (float)data.Procreation.SpawnOffset;
+                    if (data.Procreation.SpawnOffsetMax != null) procreation.m_spawnOffsetMax = (float)data.Procreation.SpawnOffsetMax;
+                    if (data.Procreation.SpawnRandomDirection != null) procreation.m_spawnRandomDirection = (bool)data.Procreation.SpawnRandomDirection;
+
+                    if (data.Procreation.MaxCreatures != null) procreation.m_maxCreatures = (int)data.Procreation.MaxCreatures;
+
+                    // sibling chance will be handled in ProcreationAPI
+                    //procreationData.siblingChance = Mathf.Clamp(procreationData.siblingChance, 0, 1);
+
+                    Plugin.LogDebug($"{model}.{nameof(data.Procreation)}: Setting effects");
+
+                    if (procreation.m_loveEffects.m_effectPrefabs.Length == 0)
                     {
-                        m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
+                        procreation.m_loveEffects = new EffectList
+                        {
+                            m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
                             idleSoundPrefab?.name,
                             "vfx_boar_love",
                         })
-                    };
+                        };
 
-                    procreation.m_loveEffects.m_effectPrefabs[1].m_scale = true;
-                    procreation.m_loveEffects.m_effectPrefabs[1].m_prefab.transform.localScale = Vector3.one * 0.5f;
+                        procreation.m_loveEffects.m_effectPrefabs[1].m_scale = true;
+                        procreation.m_loveEffects.m_effectPrefabs[1].m_prefab.transform.localScale = Vector3.one * 0.5f;
 
-                }
-                if (procreation.m_birthEffects.m_effectPrefabs.Length == 0)
-                {
-                    procreation.m_birthEffects = new EffectList
+                    }
+                    if (procreation.m_birthEffects.m_effectPrefabs.Length == 0)
                     {
-                        m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
+                        procreation.m_birthEffects = new EffectList
+                        {
+                            m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
                             idleSoundPrefab?.name,
                             "vfx_boar_birth",
                         })
-                    };
+                        };
+                    }
+
+                    // will be handled via ProcreationAPI
+                    procreation.m_offspring = null;
+                    procreation.m_seperatePartner = null;
+
                 }
-
-                // will be handled via ProcreationAPI
-                procreation.m_offspring = null;
-                procreation.m_seperatePartner = null;
-
             }
-            else
+            else if (data.Components.Procreation == Models.SubData.ComponentBehavior.Remove)
             {
                 Plugin.LogDebug($"{model}.{nameof(Procreation)}: Removing Procreation component (if exist)");
                 ctx.DestroyComponentIfExists<Procreation>(creatureName, creature);

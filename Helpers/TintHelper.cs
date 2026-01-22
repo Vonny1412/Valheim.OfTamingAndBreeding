@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,22 +11,87 @@ namespace OfTamingAndBreeding.Helpers
     internal static class TintHelper
     {
 
-        public static bool TryParseTint(int[] src, out Color color)
+        public static bool TryParseTint(string src, out Color color)
         {
             color = default;
 
-            if (src == null || (src.Length != 3 && src.Length != 4))
+            if (string.IsNullOrWhiteSpace(src))
                 return false;
 
-            color = new Color(
-                Mathf.Clamp01(src[0] / 255f),
-                Mathf.Clamp01(src[1] / 255f),
-                Mathf.Clamp01(src[2] / 255f),
-                src.Length == 4 ? Mathf.Clamp01(src[3] / 255f) : 1f
-            );
+            src = src.Trim();
 
+            if (src[0] == '#')
+            {
+                string hex = src.Substring(1);
+
+                if (hex.Length != 6 && hex.Length != 8)
+                    return false;
+
+                if (!TryParseHexByte(hex, 0, out byte r) ||
+                    !TryParseHexByte(hex, 2, out byte g) ||
+                    !TryParseHexByte(hex, 4, out byte b))
+                    return false;
+
+                byte a = 255;
+                if (hex.Length == 8)
+                {
+                    if (!TryParseHexByte(hex, 6, out a))
+                        return false;
+                }
+
+                color = new Color(
+                    r / 255f,
+                    g / 255f,
+                    b / 255f,
+                    a / 255f
+                );
+                return true;
+            }
+
+            string[] parts = src.Split(',');
+            if (parts.Length != 3 && parts.Length != 4)
+                return false;
+
+            if (!TryParseByte(parts[0], out byte cr) ||
+                !TryParseByte(parts[1], out byte cg) ||
+                !TryParseByte(parts[2], out byte cb))
+                return false;
+
+            byte ca = 255;
+            if (parts.Length == 4)
+            {
+                if (!TryParseByte(parts[3], out ca))
+                    return false;
+            }
+
+            color = new Color(
+                cr / 255f,
+                cg / 255f,
+                cb / 255f,
+                ca / 255f
+            );
             return true;
         }
+
+        private static bool TryParseHexByte(string s, int index, out byte value)
+        {
+            value = 0;
+            if (index + 2 > s.Length)
+                return false;
+
+            return byte.TryParse(
+                s.Substring(index, 2),
+                System.Globalization.NumberStyles.HexNumber,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out value
+            );
+        }
+
+        private static bool TryParseByte(string s, out byte value)
+        {
+            return byte.TryParse(s.Trim(), out value);
+        }
+
 
         private static Color Multiply(Color baseCol, Color tint)
         {

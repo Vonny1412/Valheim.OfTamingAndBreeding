@@ -1,4 +1,5 @@
 ﻿using JetBrains.Annotations;
+using OfTamingAndBreeding.Data.Models.SubData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,6 +16,8 @@ namespace OfTamingAndBreeding.Data.Models
         public const string DirectoryName = "Offsprings";
 
         public CloneData Clone = null;
+        public ComponentsData Components = new ComponentsData();
+
         public CharacterData Character = null;
         public GrowupData Growup = null;
 
@@ -23,6 +26,14 @@ namespace OfTamingAndBreeding.Data.Models
         internal class CloneData : SubData.ICloneData
         {
             public string From { get; set; } = null;
+        }
+
+        [Serializable]
+        [CanBeNull]
+        public class ComponentsData
+        {
+            public ComponentBehavior Character { get; set; } = ComponentBehavior.Patch; // cannot be removed
+            public ComponentBehavior Growup { get; set; } = ComponentBehavior.Inherit; // yes, its optional
         }
 
         [Serializable]
@@ -47,8 +58,8 @@ namespace OfTamingAndBreeding.Data.Models
         [CanBeNull]
         public class GrowupData
         {
-            public float GrowTime { get; set; } = 1800;
-            public bool InheritTame { get; set; } = true;
+            public float? GrowTime { get; set; } = null;
+            public bool? InheritTame { get; set; } = null;
             public GrowupGrownData[] Grown { get; set; } = null;
         }
 

@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 
 namespace OfTamingAndBreeding.Patches
 {
-
     [HarmonyPatch(typeof(AnimalAI), "Awake")]
     static class AnimalAI_Awake_Patch
     {

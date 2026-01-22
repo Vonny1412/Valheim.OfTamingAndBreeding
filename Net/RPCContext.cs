@@ -128,15 +128,19 @@ namespace OfTamingAndBreeding.Net
 
                     // policy
 
+                    /* let jotunn do the job
                     outPkg.Write(Plugin.Configs.RequireFoodDroppedByPlayer.Value);
                     outPkg.Write(Plugin.Configs.ShowEggGrowProgress.Value);
                     outPkg.Write(Plugin.Configs.ShowOffspringGrowProgress.Value);
                     outPkg.Write(Plugin.Configs.ShowTamingProgress.Value);
                     outPkg.Write(Plugin.Configs.HoverProgressPrecision.Value);
-
+                    outPkg.Write(Plugin.Configs.UseBetterSearchForFood.Value);
+                    outPkg.Write(Plugin.Configs.TamingSlowdownPerStar.Value);
+                    */
+                    
                     // cache
 
-                    outPkg.Write(Plugin.Configs.WriteClientCacheFile.Value);
+                    outPkg.Write(Plugin.Configs.WriteClientCacheFile.Value); // usecache
                     outPkg.Write(serverSession.CacheFileName);
                     outPkg.Write(serverSession.CacheFileHash);
 
@@ -145,7 +149,7 @@ namespace OfTamingAndBreeding.Net
                     {
                         obf = KeyMask.Obfuscate(serverSession.CacheCryptKey, $"{serverSession.CacheFileName}|{Plugin.Version}");
                     }
-                    Plugin.LogMessage($"Handshaking: UseCache={Plugin.Configs.WriteClientCacheFile.Value} File='{serverSession.CacheFileName}' Hash='{serverSession.CacheFileHash}' ObfLen={obf?.Length ?? -1}");
+                    Plugin.LogInfo($"Handshaking: UseCache={Plugin.Configs.WriteClientCacheFile.Value} File='{serverSession.CacheFileName}' Hash='{serverSession.CacheFileHash}' ObfLen={obf?.Length ?? -1}");
                     outPkg.Write(obf ?? "");
 
                 }
@@ -166,7 +170,7 @@ namespace OfTamingAndBreeding.Net
                 {
                     outPkg.Write(1);
 
-                    Plugin.LogMessage($"Sending Cache: cacheContentLen={serverSession.CacheContent?.Length ?? -1}");
+                    Plugin.LogInfo($"Sending Cache: cacheContentLen={serverSession.CacheContent?.Length ?? -1}");
                     outPkg.Write(serverSession.CacheContent);
                 }
 
@@ -222,12 +226,16 @@ namespace OfTamingAndBreeding.Net
 
                 // policy
 
+                /* let jotunn do the job
                 Plugin.Configs.RequireFoodDroppedByPlayer.Value = inPkg.ReadBool();
                 Plugin.Configs.ShowEggGrowProgress.Value = inPkg.ReadBool();
                 Plugin.Configs.ShowOffspringGrowProgress.Value = inPkg.ReadBool();
                 Plugin.Configs.ShowTamingProgress.Value = inPkg.ReadBool();
                 Plugin.Configs.HoverProgressPrecision.Value = inPkg.ReadSingle();
-
+                Plugin.Configs.UseBetterSearchForFood.Value = inPkg.ReadBool();
+                Plugin.Configs.TamingSlowdownPerStar.Value = inPkg.ReadSingle();
+                */
+                
                 // cache
 
                 clientSession.UseCache = inPkg.ReadBool();
@@ -257,7 +265,7 @@ namespace OfTamingAndBreeding.Net
                             {
                                 requestCacheFile = false;
                                 DataManager.ValidateDataAndRegisterPrefabs();
-                                Plugin.LogMessage($"Loaded data from existing cache");
+                                Plugin.LogInfo($"Loaded data from existing cache");
                             }
                         }
                         else
@@ -304,7 +312,7 @@ namespace OfTamingAndBreeding.Net
                 if (clientSession.UseCache)
                 {
                     var cacheFile = CacheManager.GetCacheCryptedFile(clientSession.CacheFileName);
-                    Plugin.LogMessage($"Writing cache file to: '{cacheFile}'");
+                    Plugin.LogInfo($"Writing cache file to: '{cacheFile}'");
                     File.WriteAllText(cacheFile, cacheContent);
                 }
 
@@ -313,7 +321,7 @@ namespace OfTamingAndBreeding.Net
                 if (success)
                 {
                     DataManager.ValidateDataAndRegisterPrefabs();
-                    Plugin.LogMessage($"Loaded data from received cache");
+                    Plugin.LogInfo($"Loaded data from received cache");
                 }
                 else
                 {

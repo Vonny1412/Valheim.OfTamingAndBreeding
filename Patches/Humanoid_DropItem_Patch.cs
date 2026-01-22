@@ -13,7 +13,7 @@ namespace OfTamingAndBreeding.Patches
     {
         static void Prefix(Humanoid __instance)
         {
-            // this is used to prevent creatures consume items not dropped by player
+
             Contexts.DropItemContext.DroppedByPlayer = __instance.IsPlayer() ? 1 : 0;
         }
         static void Finalizer()
