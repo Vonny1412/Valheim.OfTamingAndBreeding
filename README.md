@@ -1,4 +1,4 @@
-![Of Taming and Breeding](_Assets/otab-logo.png)
+![Of Taming and Breeding](_Assets/otab_logo.png)
 
 # Of Taming and Breeding (OTAB)
 
