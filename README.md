@@ -12,15 +12,6 @@ Instead, it gives you the tools to **design intentional, believable creature beh
 
 ---
 
-# Why Of Taming and Breeding (OTAB)?
-
-**Of Taming and Breeding (OTAB)** is not just another “make everything tameable” mod.
-It is a **data-driven creature framework** focused on **control, realism, performance and long-term stability**.
-
-OTAB is designed for players and server admins who want **predictable behavior**, **deep customization**, and **zero magic side-effects**.
-
----
-
 ## Core Philosophy
 
 OTAB is built around a few core principles:
