@@ -60,7 +60,7 @@ Examples:
 
 * A creature that is tameable but **cannot reproduce**
 * A passive offspring that **never becomes an adult**
-* A formerly hostile creature turned into a peaceful animal
+* Egg-like items out of **any** other item even wood
 
 Nothing happens implicitly.
 
