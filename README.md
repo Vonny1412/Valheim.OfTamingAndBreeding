@@ -48,7 +48,7 @@ No recompiling, no guessing, no hidden defaults.
 
 ## Component-Based Creature Control
 
-Unlike most mods, OTAB treats creature behavior as **explicit components**.
+OTAB treats creature behavior as **explicit components**.
 
 For each creature you decide:
 
