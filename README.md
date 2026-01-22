@@ -32,7 +32,7 @@ Everything in OTAB is **opt-in, explicit and traceable**.
 
 OTAB uses **structured YAML files** to define behavior instead of hardcoded rules.
 
-You can fully control:
+You can fully control (related to taming and breeding):
 
 * Creatures
 * Eggs
