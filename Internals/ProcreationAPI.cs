@@ -435,6 +435,9 @@ namespace OfTamingAndBreeding.Internals
                 }
 
                 m_birthEffects.Create(spawned.transform.position, Quaternion.identity);
+
+                // CLLC traits
+                ThirdParty.Mods.CllCBridge.BequeathTraits(m_nview.GetComponent<Character>(), m_seperatePartner, spawned);
             }
             else
             {

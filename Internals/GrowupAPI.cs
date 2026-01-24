@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace OfTamingAndBreeding.Internals
 {
@@ -21,6 +22,33 @@ namespace OfTamingAndBreeding.Internals
         {
         }
 
+        public bool GrowUpdate_Prefix(ZDO zdo)
+        {
+            if (!(m_baseAI.GetTimeSinceSpawned().TotalSeconds > (double)m_growTime))
+            {
+                return false; // like default
+            }
+
+            // vanilla block start
+            Character myCharacter = GetComponent<Character>();
+            GameObject spawned = UnityEngine.Object.Instantiate(GetPrefab(), transform.position, transform.rotation);
+            Character spawnedCharacter = spawned.GetComponent<Character>();
+            if ((bool)myCharacter && (bool)spawnedCharacter)
+            {
+                if (m_inheritTame)
+                {
+                    spawnedCharacter.SetTamed(myCharacter.IsTamed());
+                }
+
+                spawnedCharacter.SetLevel(myCharacter.GetLevel());
+            }
+            // vanilla block end
+
+            ThirdParty.Mods.CllCBridge.PassTraits(zdo, spawned);
+
+            m_nview.Destroy();
+            return false;
+        }
 
     }
 

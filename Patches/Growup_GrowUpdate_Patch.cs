@@ -7,24 +7,22 @@ using System.Threading.Tasks;
 
 namespace OfTamingAndBreeding.Patches
 {
-    /*
     [HarmonyPatch(typeof(Growup), "GrowUpdate")]
     static class Growup_GrowUpdate_Patch
     {
+        [HarmonyPriority(Priority.Last)]
         static bool Prefix(Growup __instance)
         {
-            if (Contexts.DataContext.OffspringCannotGrow(__instance.gameObject.name))
+            if (!Helpers.ZNetHelper.TryGetZDO(__instance, out ZDO zdo, out ZNetView nview) || !nview.IsOwner())
             {
-                return false;
+                return true; // let valheim handle
             }
-            return true;
+
+            var growupAPI = Internals.GrowupAPI.GetOrCreate(__instance);
+            return growupAPI.GrowUpdate_Prefix(zdo);
         }
     }
-    */
-
-
-
-
+    
     /** original method
     private void GrowUpdate()
     {

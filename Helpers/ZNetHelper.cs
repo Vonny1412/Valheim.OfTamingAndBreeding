@@ -28,13 +28,16 @@ namespace OfTamingAndBreeding.Helpers
             if (!obj) return false;
 
             var _nview = obj.GetComponent<ZNetView>();
-            if (!_nview || !_nview.IsValid()) return false;
+            if (!_nview) return false;
             nview = _nview;
 
             var _zdo = nview.GetZDO();
             if (_zdo == null) return false;
+            if (!_zdo.IsValid())
+            {
+                return false;
+            }
             zdo = _zdo;
-
             return true;
         }
 

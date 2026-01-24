@@ -1,89 +1,37 @@
-﻿using BepInEx.Bootstrap;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace OfTamingAndBreeding.ThirdParty
+namespace OfTamingAndBreeding.ThirdParty.Mods
 {
-    internal static class ThirdPartyManager
+
+    internal static class WackyDBBridge
     {
-        private static readonly Dictionary<string, Action<string, Assembly>> callbacks = new Dictionary<string, Action<string, Assembly>>();
+        public const string PluginGUID = "WackyMole.WackysDatabase";
 
-        public static void RegisterPlugin(string GUID, Action<string, Assembly> cb)
-        {
-            callbacks.Add(GUID, cb);
-        }
-
-        public static void TryGetAssemblies()
-        {
-            foreach(var kv in callbacks)
-            {
-                string guid = kv.Key;
-                Action<string, Assembly> cb = kv.Value;
-                if (TryGetPluginAssembly(guid, out Assembly asm))
-                {
-                    cb(guid, asm);
-                }
-            }
-        }
-
-        public static bool TryGetPluginAssembly(string GUID, out Assembly asm)
-        {
-            asm = null;
-            if (Chainloader.PluginInfos.TryGetValue(GUID, out var info))
-            {
-                asm = info.Instance.GetType().Assembly;
-                return asm != null;
-            }
-            return false;
-        }
-
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    internal static class WackysDatabaseBridge
-    {
-        public const string PluginGuid = "WackyMole.WackysDatabase";
-
-        private static bool registered = false;
+        public static bool IsRegistered { get; private set; } = false;
 
         private static Type recipeDataType = null;
         private static MethodInfo setRecipeData = null;
 
-        public static void Register()
+        public class Registrator : ThirdPartyPluginRegistrator
         {
-            ThirdPartyManager.RegisterPlugin(PluginGuid, OnRegistered);
+            public override string PluginGUID => WackyDBBridge.PluginGUID;
+            public override void OnRegistered(string guid, Assembly asm)
+            {
+                var _recipeDataType = asm.GetType("wackydatabase.Datas.RecipeData", false);
+                if (_recipeDataType == null) return;
+
+                var _setDataType = asm.GetType("wackydatabase.SetData.SetData", false);
+                if (_setDataType == null) return;
+
+                recipeDataType = _recipeDataType;
+                setRecipeData = _setDataType.GetMethod("SetRecipeData", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+                IsRegistered = true;
+            }
         }
-
-        private static void OnRegistered(string guid, Assembly asm)
-        {
-            var _recipeDataType = asm.GetType("wackydatabase.Datas.RecipeData", false);
-            if (_recipeDataType == null) return;
-
-            var _setDataType = asm.GetType("wackydatabase.SetData.SetData", false);
-            if (_setDataType == null) return;
-
-            recipeDataType = _recipeDataType;
-            setRecipeData = _setDataType.GetMethod("SetRecipeData", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-            registered = true;
-        }
-
-        public static bool IsRegistered() => registered;
 
         public static void CopyToWacky(object wackyRecipeObj, Data.Models.Recipe src)
         {
@@ -113,7 +61,7 @@ namespace OfTamingAndBreeding.ThirdParty
 
         public static void ApplyRecipe(Data.Models.Recipe src)
         {
-            if (!registered)
+            if (!IsRegistered)
             {
                 Plugin.LogFatal($"Cannot register recipe - WackyDB not registered");
                 return;

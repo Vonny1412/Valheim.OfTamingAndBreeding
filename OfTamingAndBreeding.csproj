@@ -33,6 +33,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Reference Include="CreatureLevelControl">
+		  <HintPath>..\.References\CreatureLevelControl.dll</HintPath>
+		</Reference>
 		<Reference Include="Jotunn">
 			<HintPath>..\.References\Jotunn.dll</HintPath>
 			<Private>False</Private>

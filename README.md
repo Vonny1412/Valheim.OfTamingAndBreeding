@@ -258,6 +258,19 @@ This keeps:
 Performance is not an afterthought.
 It is a core design goal.
 
+### About Encryption
+
+The cache encryption used by OTAB is **not meant as a security feature**.
+
+Its primary purpose is to **discourage casual data inspection and spoilers**, such as:
+* Looking up future offspring
+* Revealing rare outcomes
+* Inspecting hidden mechanics before they naturally occur in gameplay
+
+The data **can still be extracted by determined users**, and OTAB does not attempt to fully prevent this.
+
+Encryption in OTAB is about **preserving discovery and surprise**, not about enforcing secrecy or preventing modding.
+
 ---
 
 ## Zero Runtime Guessing

@@ -49,6 +49,8 @@ namespace OfTamingAndBreeding.Internals.API
             set => __IAPI_m_nview_Invoker.Set(((Growup_Alias)__IAPI_instance), value);
         }
 
+        public static readonly Core.Invokers.TypedMethodInvoker<UnityEngine_GameObject_Alias> __IAPI_GetPrefab_Invoker1 = new Core.Invokers.TypedMethodInvoker<UnityEngine_GameObject_Alias>(typeof(Growup_Alias), "GetPrefab", new Core.Signatures.ParamSig[] { });
+        public UnityEngine_GameObject_Alias GetPrefab() => __IAPI_GetPrefab_Invoker1.Invoke(((Growup_Alias)__IAPI_instance), new object[] { });
 
 
     }

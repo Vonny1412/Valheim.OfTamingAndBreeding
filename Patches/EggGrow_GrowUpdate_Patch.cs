@@ -13,24 +13,23 @@ namespace OfTamingAndBreeding.Patches
     [HarmonyPatch(typeof(EggGrow), "GrowUpdate")]
     static class EggGrow_GrowUpdate_Patch
     {
+        [HarmonyPriority(Priority.Last)]
         static bool Prefix(EggGrow __instance)
         {
-            if (!Helpers.ZNetHelper.TryGetZDO(__instance, out ZDO zdo, out ZNetView nview))
-            {
-                return true;
-            }
-            if (!nview.IsOwner())
+            if (!Helpers.ZNetHelper.TryGetZDO(__instance, out ZDO zdo, out ZNetView nview) || !nview.IsOwner())
             {
                 return true; // let valheim handle
+                             // will return anyway because of this:
+                             //if (!m_nview.IsValid() || !m_nview.IsOwner() || m_item.m_itemData.m_stack > 1)
+                             //{
+                             //    UpdateEffects(num);
+                             //   return;
+                             //}
             }
 
             var eggGrowAPI = Internals.EggGrowAPI.GetOrCreate(__instance);
             return eggGrowAPI.GrowUpdate_Prefix(zdo);
         }
-
-
-
-
 
     }
 

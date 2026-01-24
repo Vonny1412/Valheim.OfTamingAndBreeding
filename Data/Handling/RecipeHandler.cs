@@ -1,5 +1,6 @@
 ﻿using Jotunn.Managers;
 using OfTamingAndBreeding.Data.Handling.Base;
+using OfTamingAndBreeding.ThirdParty.Mods;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,7 +22,7 @@ namespace OfTamingAndBreeding.Data.Handling
 
         public override bool ValidateData(DataHandlerContext ctx, string recipeName, Models.Recipe data)
         {
-            return ThirdParty.WackysDatabaseBridge.IsRegistered();
+            return WackyDBBridge.IsRegistered;
         }
 
         public override bool PreparePrefab(DataHandlerContext ctx, string recipeName, Models.Recipe data)
@@ -36,7 +37,7 @@ namespace OfTamingAndBreeding.Data.Handling
 
         public override void RegisterPrefab(DataHandlerContext ctx, string recipeName, Models.Recipe data)
         {
-            ThirdParty.WackysDatabaseBridge.ApplyRecipe(data);
+            WackyDBBridge.ApplyRecipe(data);
         }
 
         public override void Cleanup(DataHandlerContext ctx)

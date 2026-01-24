@@ -79,6 +79,13 @@ namespace OfTamingAndBreeding
             // used to store a flag on the dropped item if it has been dropped by any player (1=true, 0=false, -1=(default)unknown)
             public static readonly int z_droppedByAnyPlayer = $"{Plugin.ModGuid}.z_droppedByAnyPlayer".GetStableHashCode();
 
+            //
+            // CLLC
+            //
+
+            public static readonly int z_CLLC_Infusion = $"{Plugin.ModGuid}.z_CLLC_Infusion".GetStableHashCode();
+            public static readonly int z_CLLC_Effect = $"{Plugin.ModGuid}.z_CLLC_Effect".GetStableHashCode();
+
         }
     }
 }

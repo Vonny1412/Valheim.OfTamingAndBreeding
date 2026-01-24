@@ -57,6 +57,24 @@ namespace OfTamingAndBreeding
             public static ConfigEntry<string> CacheFileName { get; private set; }
             public static ConfigEntry<string> CacheFileCryptKey { get; private set; }
 
+            // CLLC
+
+            public static ConfigEntry<float> CLLC_Infusion_WeightDirectParent { get; private set; }
+            public static ConfigEntry<float> CLLC_Infusion_WeightCurrentPartner { get; private set; }
+            public static ConfigEntry<float> CLLC_Infusion_WeightAnyNearby { get; private set; }
+            public static ConfigEntry<float> CLLC_Infusion_WeightRandomNew { get; private set; }
+            public static ConfigEntry<float> CLLC_Infusion_WeightNone { get; private set; }
+
+            public static ConfigEntry<float> CLLC_Infusion_SearchRange { get; private set; }
+
+            public static ConfigEntry<float> CLLC_Effect_WeightDirectParent { get; private set; }
+            public static ConfigEntry<float> CLLC_Effect_WeightCurrentPartner { get; private set; }
+            public static ConfigEntry<float> CLLC_Effect_WeightAnyNearby { get; private set; }
+            public static ConfigEntry<float> CLLC_Effect_WeightRandomNew { get; private set; }
+            public static ConfigEntry<float> CLLC_Effect_WeightNone { get; private set; }
+
+            public static ConfigEntry<float> CLLC_Effect_SearchRange { get; private set; }
+
             public static void Initialize(ConfigFile Config)
             {
                 ConfigurationManagerAttributes isAdminOnly = new ConfigurationManagerAttributes
@@ -105,6 +123,26 @@ namespace OfTamingAndBreeding
                 WriteServerCacheDebugFiles = Config.Bind<bool>(section, "WriteServerCacheDebugFiles", true, new ConfigDescription("Writes cleaned-up YAML data and an unencrypted cache file on the server for debugging purposes.", null, isAdminOnly));
                 CacheFileName = Config.Bind<string>(section, "CacheFileName", "local-{world}-{seed}", new ConfigDescription("Template for the cache file name. Supports placeholders like {world} and {seed}. The final name is resolved by the server.", null, isAdminOnly));
                 CacheFileCryptKey = Config.Bind<string>(section, "CacheFileCryptKey", "", new ConfigDescription("Key used to obfuscate the cache file contents. This is NOT secure encryption. Do NOT use real passwords or personal secrets.", null, isHidden));
+
+                section = "CLLC";
+
+                CLLC_Infusion_WeightDirectParent = Config.Bind<float>(section, "CLLC_Infusion_WeightDirectParent", 60, new ConfigDescription("", null, isAdminOnly));
+                CLLC_Infusion_WeightCurrentPartner = Config.Bind<float>(section, "CLLC_Infusion_WeightCurrentPartner", 20, new ConfigDescription("", null, isAdminOnly));
+                CLLC_Infusion_WeightAnyNearby = Config.Bind<float>(section, "CLLC_Infusion_WeightAnyNearby", 10, new ConfigDescription("", null, isAdminOnly));
+                CLLC_Infusion_WeightRandomNew = Config.Bind<float>(section, "CLLC_Infusion_WeightRandomNew", 5, new ConfigDescription("", null, isAdminOnly));
+                CLLC_Infusion_WeightNone = Config.Bind<float>(section, "CLLC_Infusion_WeightNone", 5, new ConfigDescription("", null, isAdminOnly));
+
+                CLLC_Infusion_SearchRange = Config.Bind<float>(section, "CLLC_Infusion_SearchRange", 10, new ConfigDescription("", null, isAdminOnly));
+
+                CLLC_Effect_WeightDirectParent = Config.Bind<float>(section, "CLLC_Effect_WeightDirectParent", 60, new ConfigDescription("", null, isAdminOnly));
+                CLLC_Effect_WeightCurrentPartner = Config.Bind<float>(section, "CLLC_Effect_WeightCurrentPartner", 20, new ConfigDescription("", null, isAdminOnly));
+                CLLC_Effect_WeightAnyNearby = Config.Bind<float>(section, "CLLC_Effect_WeightAnyNearby", 10, new ConfigDescription("", null, isAdminOnly));
+                CLLC_Effect_WeightRandomNew = Config.Bind<float>(section, "CLLC_Effect_WeightRandomNew", 5, new ConfigDescription("", null, isAdminOnly));
+                CLLC_Effect_WeightNone = Config.Bind<float>(section, "CLLC_Effect_WeightNone", 5, new ConfigDescription("", null, isAdminOnly));
+
+                CLLC_Effect_SearchRange = Config.Bind<float>(section, "CLLC_Effect_SearchRange", 10, new ConfigDescription("", null, isAdminOnly));
+
+
 
             }
         }

@@ -15,18 +15,25 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         static bool Prefix(Procreation __instance, ref bool __state)
         {
-            var api = Internals.ProcreationAPI.GetOrCreate(__instance);
-            api.OriginalMinOffspringLevel.SaveValue();
-            __state = true;
-
-            return api.Procreate_Prefix(); // this patch is overwriting the original behavior with our own system
+            try
+            {
+                var api = Internals.ProcreationAPI.GetOrCreate(__instance);
+                api.OriginalMinOffspringLevel.SaveValue();
+                __state = true;
+                return api.Procreate_Prefix(); // override vanilla
+            }
+            catch (Exception ex)
+            {
+                Plugin.LogFatal($"Procreation_Procreate_Patch.Prefix: {ex}");
+                __state = false;
+                return true; // fail-open: allow vanilla + other mods
+            }
         }
 
         [HarmonyPriority(Priority.First)]
         static void Postfix(Procreation __instance, bool __state)
         {
             if (!__state) return;
-
             var api = Internals.ProcreationAPI.GetOrCreate(__instance);
             api.OriginalMinOffspringLevel.RestoreValue();
         }

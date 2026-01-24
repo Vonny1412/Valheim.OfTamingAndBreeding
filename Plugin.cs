@@ -2,6 +2,7 @@
 using BepInEx.Logging;
 using HarmonyLib;
 using Jotunn.Utils;
+using OfTamingAndBreeding.ThirdParty.Mods;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,16 +15,11 @@ namespace OfTamingAndBreeding
     [BepInDependency(Jotunn.Main.ModGuid)]
     [BepInDependency("com.ValheimModding.YamlDotNetDetector")]
 
-    // OTAB can post-register recipes via Wacky by accessing its SetRecipeData() method via Reflections
-    [BepInDependency(ThirdParty.WackysDatabaseBridge.PluginGuid, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(WackyDBBridge.PluginGUID, BepInDependency.DependencyFlags.SoftDependency)] // OTAB can post-register recipes
+    [BepInDependency(CllCBridge.PluginGUID, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("shudnal.Seasons", BepInDependency.DependencyFlags.SoftDependency)] // Seasons mod can alter pregnancy durations on specific seasons
 
-    // Seasons mod can alter pregnancy durations on specific seasons
-    // it seems that the Seasons mod is using prefix-patch on Procreation.Procreate with first priority
-    // anyway... let it load before OTAB
-    [BepInDependency("shudnal.Seasons", BepInDependency.DependencyFlags.SoftDependency)]
-
-    // ensure client has this mod with correct version
-    [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)]
+    [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)] // ensure client has this mod with correct version
 
     public sealed partial class Plugin : BaseUnityPlugin
     {
@@ -52,8 +48,8 @@ namespace OfTamingAndBreeding
             Harmony.CreateAndPatchAll(Assembly.GetExecutingAssembly(), null);
             Net.RPCContext.RegisterRPCs();
 
-            ThirdParty.WackysDatabaseBridge.Register();
-            ThirdParty.ThirdPartyManager.TryGetAssemblies();
+            // make sure to add BepInDependency too!
+            ThirdParty.ThirdPartyManager.RegisterBridges();
 
         }
 
