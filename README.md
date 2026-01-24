@@ -85,6 +85,13 @@ This prevents classic problems like:
 
 Taming always happens **because a player intended it**.
 
+> **Note:**  
+> This setting does **not** prevent animals from eating world food.
+>  
+> Animals will still consume nearby food items, but **eating non player-dropped food will NOT start or progress the fed/taming timer**.
+>  
+> In short: *they eat it, but they don’t get “fed” from it.*
+
 ---
 
 ## Smarter Food Searching (Non-Robotic AI)
