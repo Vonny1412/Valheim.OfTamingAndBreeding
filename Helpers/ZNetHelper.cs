@@ -19,7 +19,9 @@ namespace OfTamingAndBreeding.Helpers
         //
         // Use this instead of GetComponent<ZNetView>() + GetZDO()
         // to avoid rare null / invalid state crashes.
-
+        //
+        // IMPORTANT: no need to check for m_nview.isValid()
+        // because if nview is not valid this method will also return false since zdo relies on nview
         public static bool TryGetZDO(GameObject obj, out ZDO zdo, out ZNetView nview)
         {
             zdo = null;

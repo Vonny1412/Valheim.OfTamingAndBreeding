@@ -18,14 +18,14 @@ namespace OfTamingAndBreeding.Internals
         public static bool TryGetAPI(AnimalAI __instance, out AnimalAIAPI api)
             => instances.TryGetValue(__instance, out api);
 
-        private readonly BaseAI _baseAI;
-
         public AnimalAIAPI(AnimalAI __instance) : base(__instance)
         {
             _baseAI = (BaseAI)__IAPI_GetInstance();
         }
 
         #region MonsterAI-stuff to make animals tameable
+
+        private readonly BaseAI _baseAI;
 
         public List<ItemDrop> m_consumeItems;
 

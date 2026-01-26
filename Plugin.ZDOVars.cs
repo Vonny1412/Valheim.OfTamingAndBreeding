@@ -83,6 +83,7 @@ namespace OfTamingAndBreeding
             // CLLC
             //
 
+            // pass traits: parent [ -> egg(N) ] [ -> offspring ] -> adult
             public static readonly int z_CLLC_Infusion = $"{Plugin.ModGuid}.z_CLLC_Infusion".GetStableHashCode();
             public static readonly int z_CLLC_Effect = $"{Plugin.ModGuid}.z_CLLC_Effect".GetStableHashCode();
 

@@ -12,10 +12,13 @@ namespace OfTamingAndBreeding.Patches
     {
         static void Postfix(Character __instance, ref bool __result)
         {
-            if (!__result) return; // already not tamed
-            if (!Contexts.IsEnemyContext.Active) return;
-            if (__instance != Contexts.IsEnemyContext.TargetInstance) return;
-            __result = false; // temporary untamed
+            if (!__result) return; // not tamed by default
+
+            // we temporarly need to change the original returned value
+            if (Contexts.IsEnemyContext.Active && __instance == Contexts.IsEnemyContext.TargetInstance)
+            {
+                __result = false; // temporary untamed
+            }
         }
     }
     /** original method too long to show here **/

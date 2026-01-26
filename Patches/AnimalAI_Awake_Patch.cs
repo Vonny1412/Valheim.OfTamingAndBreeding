@@ -12,20 +12,21 @@ namespace OfTamingAndBreeding.Patches
     {
         static void Postfix(AnimalAI __instance)
         {
-            // used for making animals tameable
-            var prefabName = global::Utils.GetPrefabName(__instance.gameObject);
+            // we need this because we wanna pass settings from prefab to object
+            var prefabName = Utils.GetPrefabName(__instance.gameObject.name);
             var prefab = ZNetScene.instance.GetPrefab(prefabName);
-            if (!prefab) return;
+            if (!prefab) return; // should not happen but whatever
             var prefabAnimalAI = prefab.GetComponent<AnimalAI>();
-            if (!prefabAnimalAI) return;
+            if (!prefabAnimalAI) return; // should not happen but whatever
 
             // check if animalAIAPI of prefab is stored
             if (!Internals.AnimalAIAPI.TryGetAPI(prefabAnimalAI, out Internals.AnimalAIAPI prefabAnimalAIAPI))
             {
+                // the prefabAnimalAI is not stored -> not an animal we need to handle
                 return;
             }
 
-            var animalAIAPI = Internals.AnimalAIAPI.GetOrCreate(__instance); // register animalAIAPI
+            var animalAIAPI = Internals.AnimalAIAPI.GetOrCreate(__instance); // register api for the animalAI of the object
             // take and set values: prefabAnimalAIAPI -> animalAIAPI
             animalAIAPI.m_consumeRange = prefabAnimalAIAPI.m_consumeRange;
             animalAIAPI.m_consumeSearchRange = prefabAnimalAIAPI.m_consumeSearchRange;

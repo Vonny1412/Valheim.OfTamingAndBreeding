@@ -94,7 +94,7 @@ namespace OfTamingAndBreeding
                 HoverUseIngameTime = Config.Bind<bool>(section, "HoverUseIngameTime", true, new ConfigDescription("Format timers using Valheim in-game time (day length) instead of real time."));
 
                 HoverColorGood = Config.Bind<string>(section, "HoverColorGood", "#00FF00", new ConfigDescription("Color used for positive/healthy hover states (hex color/color name)."));
-                HoverColorNormal = Config.Bind<string>(section, "HoverColorNormal", "#999999", new ConfigDescription("Color used for neutral hover states (hex color/color name)."));
+                HoverColorNormal = Config.Bind<string>(section, "HoverColorNormal", "#EEEEEE", new ConfigDescription("Color used for neutral hover states (hex color/color name)."));
                 HoverColorBad = Config.Bind<string>(section, "HoverColorBad", "#FFA500", new ConfigDescription("Color used for negative/critical hover states (hex color/color name)."));
 
                 section = "Policy";

@@ -15,36 +15,32 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         static void Postfix(Tameable __instance, ref string __result)
         {
-            if (!__instance.IsTamed())
+            var isTamed = __instance.IsTamed();
+
+            if (isTamed && __instance.m_commandable)
             {
-                return;
-            }
-            
-            if (__instance.m_commandable)
-            {
-                // we are using custom behaviour for commanding
-                // key tap = pet
-                // key hold for 1 sec = command
                 var search = Localization.instance.Localize("$hud_pet");
-                // todo: add translation for "Command"
-                var replace = Localization.instance.Localize("$hud_pet\n[<color=yellow><b>$ui_hold $KEY_Use</b></color>] Command");
+                var replace = Localization.instance.Localize("$hud_pet [<color=yellow><b>$ui_hold $KEY_Use</b></color>] Command");
                 __result = __result.Replace(search, replace);
             }
 
-            var text = Internals.TameableAPI.GetOrCreate(__instance).GetFeedingHoverText();
-            if (text.Length > 0)
+            var textLines = new List<string>();
+            textLines.AddRange(Internals.TameableAPI.GetOrCreate(__instance).GetFeedingHoverText());
+
+            if (isTamed)
             {
-                __result += "\n" + text;
-            }
-            var procreation = __instance.GetComponent<Procreation>();
-            if (procreation != null)
-            {
-                text = Internals.ProcreationAPI.GetOrCreate(procreation).GetProcreationHoverText();
-                if (text.Length > 0)
+                var procreation = __instance.GetComponent<Procreation>();
+                if (procreation != null)
                 {
-                    __result += "\n" + text;
+                    textLines.AddRange(Internals.ProcreationAPI.GetOrCreate(procreation).GetProcreationHoverText());
                 }
             }
+
+            if (textLines.Count > 0)
+            {
+                __result += "\n" + string.Join("\n", textLines.Where((string line) => line.Trim() != ""));
+            }
+
         }
     }
 

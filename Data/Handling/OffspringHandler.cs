@@ -225,14 +225,14 @@ namespace OfTamingAndBreeding.Data.Handling
 
                         // we need to clone the effect prefab to make it scaleable independently from its original effect prefab
                         // but we need to make sure that the original effect prefab only gets cloned once 
-                        var prefx = $"{offspringName}_";
+                        var prefix = $"OTAB_{offspringName}_";
                         foreach (var eff in offspringCharacter.m_deathEffects.m_effectPrefabs)
                         {
                             var originalPrefabName = eff.m_prefab.name;
-                            if (!originalPrefabName.StartsWith(prefx))
+                            if (!originalPrefabName.StartsWith(prefix))
                             {
                                 // not cloned yet, try to get it from any cache
-                                var clonedName = $"{prefx}{originalPrefabName}";
+                                var clonedName = $"{prefix}{originalPrefabName}";
                                 var cloned = ctx.GetPrefab(clonedName);
                                 if (!cloned)
                                 {
@@ -242,8 +242,8 @@ namespace OfTamingAndBreeding.Data.Handling
                                 eff.m_prefab = cloned;
                             }
                             eff.m_prefab.transform.localScale = UnityEngine.Vector3.one * setScale;
-                            eff.m_scale = false;
-                            eff.m_inheritParentScale = false;
+                            eff.m_scale = true;
+                            eff.m_inheritParentScale = true;
                         }
 
                     }

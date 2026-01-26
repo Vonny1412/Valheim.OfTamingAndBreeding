@@ -47,13 +47,13 @@ namespace OfTamingAndBreeding.Helpers
             }
 
             if (ts.Days > 0)
-                timeString += String.Format(L.Localize("$otab_hover_timer_days"), color, ts.Days);
+                timeString += String.Format(L.Localize("$otab_hover_time_days"), color, ts.Days);
             if (ts.Hours > 0 || timeString != "")
-                timeString += String.Format(L.Localize("$otab_hover_timer_hours"), color, ts.Hours);
+                timeString += String.Format(L.Localize("$otab_hover_time_hours"), color, ts.Hours);
             if (ts.Minutes > 0 || timeString != "")
-                timeString += String.Format(L.Localize("$otab_hover_timer_minutes"), color, ts.Minutes);
+                timeString += String.Format(L.Localize("$otab_hover_time_minutes"), color, ts.Minutes);
             if (Plugin.Configs.HoverShowSeconds.Value)
-                timeString += String.Format(L.Localize("$otab_hover_timer_seconds"), color, ts.Seconds);
+                timeString += String.Format(L.Localize("$otab_hover_time_seconds"), color, ts.Seconds);
 
 
             return timeString != ""

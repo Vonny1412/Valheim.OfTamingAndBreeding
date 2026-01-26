@@ -13,17 +13,8 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         static void Postfix(ItemDrop __instance)
         {
-            var prefabName = global::Utils.GetPrefabName(__instance.gameObject.name);
-            var data = Data.Models.Egg.Get(prefabName);
-            if (data != null)
-            {
-                // scale the egg once
-                if (data.Item.Scale != null)
-                {
-                    __instance.transform.localScale *= (float)data.Item.Scale;
-                }
-                // we need to multiply because localScale has already been set to variable scaling according to stuff like quality
-            }
+            // we need to multiply because localScale has already been set to variable scaling according to stuff like quality
+            __instance.transform.localScale *= Contexts.DataContext.GetEggScale(Utils.GetPrefabName(__instance.gameObject.name));
         }
     }
 

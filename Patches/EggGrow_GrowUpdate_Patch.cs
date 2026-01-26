@@ -19,7 +19,7 @@ namespace OfTamingAndBreeding.Patches
             if (!Helpers.ZNetHelper.TryGetZDO(__instance, out ZDO zdo, out ZNetView nview) || !nview.IsOwner())
             {
                 return true; // let valheim handle
-                             // will return anyway because of this:
+                             // would return anyway because of this:
                              //if (!m_nview.IsValid() || !m_nview.IsOwner() || m_item.m_itemData.m_stack > 1)
                              //{
                              //    UpdateEffects(num);

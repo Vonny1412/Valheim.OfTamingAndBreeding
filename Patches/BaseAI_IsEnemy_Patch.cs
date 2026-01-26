@@ -44,8 +44,8 @@ namespace OfTamingAndBreeding.Patches
                 return true;
             }
 
-            var name1 = global::Utils.GetPrefabName(a.gameObject.name);
-            var name2 = global::Utils.GetPrefabName(b.gameObject.name);
+            var name1 = Utils.GetPrefabName(a.gameObject.name);
+            var name2 = Utils.GetPrefabName(b.gameObject.name);
 
             // handle stick-to-faction
             var stickToFaction1 = Contexts.DataContext.ObjectSticksToFaction(name1);

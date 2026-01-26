@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using OfTamingAndBreeding.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,12 +20,13 @@ namespace OfTamingAndBreeding.Patches
                 return;
             }
 
-
             if (nview.IsOwner())
             {
+                // hint: we are inside Humanoid_DropItem_Patch
+                // Humanoid.DropItem() is calling: ItemDrop itemDrop = ItemDrop.DropItem(...)
+
                 var val = Contexts.DropItemContext.DroppedByPlayer;
-                if (zdo.GetInt(Plugin.ZDOVars.z_droppedByAnyPlayer, 0) != val)
-                    zdo.Set(Plugin.ZDOVars.z_droppedByAnyPlayer, val);
+                ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_droppedByAnyPlayer, val);
             }
 
         }

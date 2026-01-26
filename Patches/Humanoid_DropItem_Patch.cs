@@ -13,7 +13,7 @@ namespace OfTamingAndBreeding.Patches
     {
         static void Prefix(Humanoid __instance)
         {
-
+            // entry point for RequireFoodDroppedByPlayer-feature
             Contexts.DropItemContext.DroppedByPlayer = __instance.IsPlayer() ? 1 : 0;
         }
         static void Finalizer()

@@ -168,7 +168,7 @@ namespace OfTamingAndBreeding.Internals
                 rotation = Quaternion.Slerp(
                     rotation,
                     UnityEngine.Random.rotation,
-                    0.08f // strength (0..1)
+                    0.08f // maybe add a cinfig field in yaml for that one? hmmm naaaaa... maybe one day
                 );
             }
 

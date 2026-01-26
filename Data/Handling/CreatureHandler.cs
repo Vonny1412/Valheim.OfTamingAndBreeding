@@ -261,7 +261,7 @@ namespace OfTamingAndBreeding.Data.Handling
                         }
                         else
                         {
-                            if (GetItemDropByPrefab(foodData.Prefab) == null)
+                            if (Patches.Contexts.DataContext.GetItemDropByPrefab(foodData.Prefab) == null)
                             {
                                 Plugin.LogFatal($"{model}.{nameof(data.MonsterAI)}.{nameof(data.MonsterAI.ConsumeItems)}.{i}.{nameof(foodData.Prefab)}: '{foodData.Prefab}' has no ItemDrop component");
                                 error = true;
@@ -374,10 +374,14 @@ namespace OfTamingAndBreeding.Data.Handling
 
                         if (data.MonsterAI.ConsumeItems != null)
                         {
+                            data.MonsterAI.ConsumeItems = data.MonsterAI.ConsumeItems
+                                .OrderByDescending(i => i.FedDurationMultiply)
+                                .ToArray();
+
                             monsterAI.m_consumeItems = new List<ItemDrop>();
                             foreach (var entry in data.MonsterAI.ConsumeItems)
                             {
-                                var itemDrop = GetItemDropByPrefab(entry.Prefab);
+                                var itemDrop = Patches.Contexts.DataContext.GetItemDropByPrefab(entry.Prefab);
                                 if (itemDrop != null)
                                 {
                                     monsterAI.m_consumeItems.Add(itemDrop);
@@ -403,7 +407,7 @@ namespace OfTamingAndBreeding.Data.Handling
                                 prefabAnimalAIAPI.m_consumeItems = new List<ItemDrop>();
                                 foreach (var entry in data.MonsterAI.ConsumeItems)
                                 {
-                                    var itemDrop = GetItemDropByPrefab(entry.Prefab);
+                                    var itemDrop = Patches.Contexts.DataContext.GetItemDropByPrefab(entry.Prefab);
                                     if (itemDrop != null)
                                     {
                                         prefabAnimalAIAPI.m_consumeItems.Add(itemDrop);
@@ -546,7 +550,6 @@ namespace OfTamingAndBreeding.Data.Handling
 
         public override void Cleanup(DataHandlerContext ctx)
         {
-            prefabItemDrops.Clear(); // free some memory
         }
 
         //------------------------------------------------
@@ -565,35 +568,6 @@ namespace OfTamingAndBreeding.Data.Handling
                 RestoreHelper.RestoreComponent<Procreation>(backup, current);
 
             });
-        }
-
-        //------------------------------------------------
-        // HELPERS
-        //------------------------------------------------
-
-        private static readonly Dictionary<int, ItemDrop> prefabItemDrops = new Dictionary<int, ItemDrop>();
-
-        private static ItemDrop GetItemDropByPrefab(string prefabName)
-        {
-            var hash = prefabName.GetStableHashCode();
-            if (prefabItemDrops.TryGetValue(hash, out ItemDrop itemDrop))
-            {
-                return itemDrop;
-            }
-            GameObject prefab = ObjectDB.instance.GetItemPrefab(prefabName);
-            if (prefab == null)
-            {
-                prefabItemDrops.Add(hash, null);
-                return null;
-            }
-            itemDrop = prefab.GetComponent<ItemDrop>();
-            if (itemDrop == null)
-            {
-                prefabItemDrops.Add(hash, null);
-                return null;
-            }
-            prefabItemDrops.Add(hash, itemDrop);
-            return itemDrop;
         }
 
     }

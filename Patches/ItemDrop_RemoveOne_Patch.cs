@@ -13,7 +13,9 @@ namespace OfTamingAndBreeding.Patches
     {
         static void Prefix(ItemDrop __instance)
         {
-            // this is used to prevent creatures consume items not dropped by player
+            // used for RequireFoodDroppedByPlayer-feature
+            // because when a creature eats food with a stack size of 1 that item would be destroyed
+            // thats why we need to patch this one to pass the flags to Tameable_OnConsumedItem_Patch
 
             Contexts.ConsumeItemContext.Clear();
 

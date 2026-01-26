@@ -18,7 +18,7 @@ namespace OfTamingAndBreeding.Internals.Behaviors
             public ItemDrop itemDrop { get; set; }
         }
 
-        private static readonly Collider[] colliders = new Collider[128];
+        private static readonly Collider[] colliders = new Collider[128]; // 128 should be enough for now
 
         public static ItemDrop FindClosestConsumableItem(BaseAI baseAI, float maxRange, Func<ItemDrop.ItemData, bool> canConsume)
         {
@@ -55,7 +55,7 @@ namespace OfTamingAndBreeding.Internals.Behaviors
                     continue;
 
                 //float dist = (item.transform.position - pos).sqrMagnitude;
-                float dist = Vector3.Distance(item.transform.position, pos);
+                float dist = Vector3.Distance(item.transform.position, pos); // this costs more performance but z-distance could be important
                 if (dist > maxRange)
                     continue;
 

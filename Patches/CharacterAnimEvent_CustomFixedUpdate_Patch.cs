@@ -22,7 +22,7 @@ namespace OfTamingAndBreeding.Patches
 
             if (Contexts.DataContext.GetObjectAnimationScaling(Utils.GetPrefabName(__instance.gameObject.name), out float scale))
             {
-                animator.speed = scale;
+                animator.speed = scale; // the animations do look nice now!
             }
 
         }

@@ -24,6 +24,7 @@ namespace OfTamingAndBreeding.Internals
 
         public bool GrowUpdate_Prefix(ZDO zdo)
         {
+            // m_baseAI is set on awake. shouldnt be null. if its null, i dont care
             if (!(m_baseAI.GetTimeSinceSpawned().TotalSeconds > (double)m_growTime))
             {
                 return false; // like default

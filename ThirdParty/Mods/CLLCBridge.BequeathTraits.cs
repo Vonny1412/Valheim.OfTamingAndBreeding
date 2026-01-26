@@ -48,6 +48,8 @@ namespace OfTamingAndBreeding.ThirdParty.Mods
                     }
                     else
                     {
+                        // use a switch, maybe we gonna add more features
+                        // if so, create an enum for additional features in Plugin.ZDOVars
                         switch (infusion)
                         {
                             case -1:
@@ -64,6 +66,8 @@ namespace OfTamingAndBreeding.ThirdParty.Mods
                     }
                     else
                     {
+                        // use a switch, maybe we gonna add more features
+                        // if so, create an enum for additional features in Plugin.ZDOVars
                         switch (effect)
                         {
                             case -1:

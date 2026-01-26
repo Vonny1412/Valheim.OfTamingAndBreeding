@@ -491,15 +491,131 @@ namespace OfTamingAndBreeding.Internals
 
 
 
-        public string GetProcreationHoverText()
+
+
+
+
+
+
+        public IReadOnlyList<string> GetProcreationHoverText()
         {
-            ZDO zDO = m_nview.GetZDO();
-            if (zDO == null)
+            var zdo = m_nview?.GetZDO();
+            if (zdo == null)
+                return Array.Empty<string>();
+
+            var returnLines = new List<string>(capacity: 1);
+            var L = Localization.instance;
+
+            if (IsPregnant())
             {
-                return "";
+                AddPregnancyLinesIfEnabled(returnLines, zdo, L);
+                return returnLines; // pregnant -> no lovepoints line
             }
 
-            var text = new List<string>();
+            AddLovePointsLinesIfEnabled(returnLines, L);
+            return returnLines;
+        }
+
+        private void AddPregnancyLinesIfEnabled(List<string> returnLines, ZDO zdo, Localization L)
+        {
+            if (!Plugin.Configs.HoverShowPregnancy.Value)
+                return;
+
+            if (!Plugin.Configs.HoverShowPregnancyTimer.Value)
+            {
+                returnLines.Add(string.Format(
+                    L.Localize("$otab_hover_pregnancy"),
+                    Plugin.Configs.HoverColorGood.Value
+                ));
+                return;
+            }
+
+            long pregnantLong = zdo.GetLong(ZDOVars.s_pregnant, 0L);
+            if (pregnantLong == 0L)
+            {
+                // Shouldn't happen if IsPregnant() is true, but safe fallback
+                returnLines.Add(string.Format(
+                    L.Localize("$otab_hover_pregnancy"),
+                    Plugin.Configs.HoverColorGood.Value
+                ));
+                return;
+            }
+
+            var zTime = ZNet.instance.GetTime();
+            var dateTime = new DateTime(pregnantLong);
+            var duration = RealPregnancyDuration.GetValue();
+            double secLeft = duration - (zTime - dateTime).TotalSeconds;
+
+            returnLines.Add(Helpers.StringHelper.FormatRelativeTime(
+                secLeft,
+                labelPositive: L.Localize("$otab_hover_pregnancy_due"),
+                labelNegative: L.Localize("$otab_hover_pregnancy_overdue"),
+                labelAltPositive: L.Localize("$otab_hover_pregnancy_due_alt"),
+                labelAltNegative: L.Localize("$otab_hover_pregnancy_overdue_alt"),
+                colorPositive: Plugin.Configs.HoverColorGood.Value,
+                colorNegative: Plugin.Configs.HoverColorBad.Value
+            ));
+        }
+
+        private void AddLovePointsLinesIfEnabled(List<string> returnLines, Localization L)
+        {
+            if (!Plugin.Configs.HoverShowLovePoints.Value)
+                return;
+
+            string partnerName = TryGetPartnerName();
+            int lPoints = GetLovePoints();
+
+            var color = lPoints > 0
+                ? Plugin.Configs.HoverColorGood.Value
+                : Plugin.Configs.HoverColorBad.Value;
+
+            if (!string.IsNullOrEmpty(partnerName))
+            {
+                returnLines.Add(string.Format(
+                    L.Localize("$otab_hover_love_points_with_partner"),
+                    color,
+                    lPoints,
+                    m_requiredLovePoints,
+                    L.Localize(partnerName)
+                ));
+            }
+            else
+            {
+                returnLines.Add(string.Format(
+                    L.Localize("$otab_hover_love_points"),
+                    color,
+                    lPoints,
+                    m_requiredLovePoints
+                ));
+            }
+        }
+
+        private string TryGetPartnerName()
+        {
+            if (m_seperatePartner == null)
+                return null;
+
+            var partnerCharacter = m_seperatePartner.GetComponent<Character>();
+            if (partnerCharacter == null)
+                return null;
+
+            return partnerCharacter.m_name;
+        }
+
+
+
+
+
+        /*
+        public IReadOnlyList<string> GetProcreationHoverText()
+        {
+            ZDO zdo = m_nview.GetZDO();
+            if (zdo == null)
+            {
+                return new string[] { };
+            }
+
+            var returnLines = new List<string>();
             var L = Localization.instance;
 
             if (IsPregnant())
@@ -509,12 +625,12 @@ namespace OfTamingAndBreeding.Internals
 
                     if (Plugin.Configs.HoverShowPregnancyTimer.Value)
                     {
-                        long @pregnantLong = zDO.GetLong(ZDOVars.s_pregnant, 0L);
+                        long @pregnantLong = zdo.GetLong(ZDOVars.s_pregnant, 0L);
                         DateTime dateTime = new DateTime(@pregnantLong);
                         var duration = RealPregnancyDuration.GetValue();
                         double secLeft = duration - (ZNet.instance.GetTime() - dateTime).TotalSeconds;
 
-                        text.Add(Helpers.StringHelper.FormatRelativeTime(
+                        returnLines.Add(Helpers.StringHelper.FormatRelativeTime(
                             secLeft,
                             labelPositive: L.Localize("$otab_hover_pregnancy_due"),
                             labelNegative: L.Localize("$otab_hover_pregnancy_overdue"),
@@ -527,7 +643,7 @@ namespace OfTamingAndBreeding.Internals
                     }
                     else
                     {
-                        text.Add(String.Format(L.Localize("$otab_hover_pregnant"), Plugin.Configs.HoverColorGood.Value));
+                        returnLines.Add(String.Format(L.Localize("$otab_hover_pregnant"), Plugin.Configs.HoverColorGood.Value));
                     }
                 }
             }
@@ -550,17 +666,18 @@ namespace OfTamingAndBreeding.Internals
                     var color = lPoints > 0 ? Plugin.Configs.HoverColorGood.Value : Plugin.Configs.HoverColorBad.Value;
                     if (partnerName != null)
                     {
-                        text.Add(String.Format(L.Localize("$otab_hover_lovepoints_withPartner"), color, lPoints, m_requiredLovePoints, L.Localize(partnerName)));
+                        returnLines.Add(String.Format(L.Localize("$otab_hover_lovepoints_withPartner"), color, lPoints, m_requiredLovePoints, L.Localize(partnerName)));
                     }
                     else
                     {
-                        text.Add(String.Format(L.Localize("$otab_hover_lovepoints"), color, lPoints, m_requiredLovePoints));
+                        returnLines.Add(String.Format(L.Localize("$otab_hover_lovepoints"), color, lPoints, m_requiredLovePoints));
                     }
                 }
             }
 
-            return string.Join("\n", text.Where((string line) => line.Trim() != ""));
+            return returnLines;
         }
+        */
 
     }
 

@@ -1,4 +1,5 @@
-﻿using Jotunn.Entities;
+﻿using Jotunn;
+using Jotunn.Entities;
 using Jotunn.Managers;
 using OfTamingAndBreeding.Data.Handling.Base;
 using OfTamingAndBreeding.Data.Models;
@@ -219,7 +220,7 @@ namespace OfTamingAndBreeding.Data.Handling
                     if (data.Item.Description != null) eggItemDataShared.m_description = data.Item.Description;
 
                     if (data.Item.Weight != null) eggItemDataShared.m_weight = (float)data.Item.Weight;
-                    // Scaling will be handled here: ItemDrop_SetQuality_Patch
+                    if (data.Item.Scale != null) Patches.Contexts.DataContext.SetEggScale(eggName, (float)data.Item.Scale);
                     if (data.Item.ScaleByQuality != null) eggItemDataShared.m_scaleByQuality = (float)data.Item.ScaleByQuality;
                     if (data.Item.ScaleWeightByQuality != null) eggItemDataShared.m_scaleWeightByQuality = (float)data.Item.ScaleWeightByQuality;
                     if (data.Item.Value != null) eggItemDataShared.m_value = (int)data.Item.Value;
