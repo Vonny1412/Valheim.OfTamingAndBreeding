@@ -14,7 +14,7 @@ namespace OfTamingAndBreeding.Internals
             = new ConditionalWeakTable<ItemDrop, ItemDropAPI>();
         public static ItemDropAPI GetOrCreate(ItemDrop __instance)
             => instances.GetValue(__instance, (ItemDrop inst) => new ItemDropAPI(inst));
-        public static bool TryGetAPI(ItemDrop __instance, out ItemDropAPI api)
+        public static bool TryGet(ItemDrop __instance, out ItemDropAPI api)
             => instances.TryGetValue(__instance, out api);
 
         public ItemDropAPI(ItemDrop __instance) : base(__instance)

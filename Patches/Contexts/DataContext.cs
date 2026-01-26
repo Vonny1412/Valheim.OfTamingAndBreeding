@@ -43,7 +43,7 @@ namespace OfTamingAndBreeding.Patches.Contexts
         public static bool ObjectCanBeAttackedByTames(string name) => canBeAttackedByTames.Contains(name.GetStableHashCode());
         public static bool GetObjectAnimationScaling(string name, out float scale) => animationScaling.TryGetValue(name.GetStableHashCode(), out scale);
         public static bool GetObjectFedDuration(string name, out float fedDuration) => fedDurations.TryGetValue(name.GetStableHashCode(), out fedDuration);
-        public static float GetEggScale(string name) => fedDurations.TryGetValue(name.GetStableHashCode(), out float scale) ? scale : 1;
+        public static float GetEggScale(string name) => eggScales.TryGetValue(name.GetStableHashCode(), out float scale) ? scale : 1;
 
 
         private static readonly Dictionary<int, ItemDrop> prefabItemDrops = new Dictionary<int, ItemDrop>();

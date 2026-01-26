@@ -16,7 +16,7 @@ namespace OfTamingAndBreeding.Internals
             = new ConditionalWeakTable<MonsterAI, MonsterAIAPI>();
         public static MonsterAIAPI GetOrCreate(MonsterAI __instance)
             => instances.GetValue(__instance, (MonsterAI inst) => new MonsterAIAPI(inst));
-        public static bool TryGetAPI(MonsterAI __instance, out MonsterAIAPI api)
+        public static bool TryGet(MonsterAI __instance, out MonsterAIAPI api)
             => instances.TryGetValue(__instance, out api);
 
         public MonsterAIAPI(MonsterAI __instance) : base(__instance)

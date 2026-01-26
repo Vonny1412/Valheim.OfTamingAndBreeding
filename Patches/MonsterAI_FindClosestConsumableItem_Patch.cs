@@ -17,7 +17,7 @@ namespace OfTamingAndBreeding.Patches
             if (Plugin.Configs.UseBetterSearchForFood.Value == true)
             {
                 bool canConsume(ItemDrop.ItemData itemData) => Internals.API.MonsterAI.__IAPI_CanConsume_Invoker1.Invoke(__instance, new object[] { itemData });
-                __result = Internals.Behaviors.ConsumeBehavior.FindClosestConsumableItem(__instance, __instance.m_consumeSearchRange, canConsume);
+                __result = Internals.Behaviors.ConsumeBehavior.FindNearbyConsumableItem(__instance, __instance.m_consumeSearchRange, canConsume);
                 return false;
             }
             return true;

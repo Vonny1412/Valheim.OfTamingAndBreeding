@@ -31,7 +31,7 @@ namespace OfTamingAndBreeding.Patches
             if (animalAI != null) // the tameable is an animal
             {
                 // check if this animal is an animal that we are handling
-                if (Internals.AnimalAIAPI.TryGetAPI(animalAI, out Internals.AnimalAIAPI animalAIAPI))
+                if (Internals.AnimalAIAPI.TryGet(animalAI, out Internals.AnimalAIAPI animalAIAPI))
                 {
                     // used for making the animal tameable
                     var tameableAPI = Internals.TameableAPI.GetOrCreate(__instance);

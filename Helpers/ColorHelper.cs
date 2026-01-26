@@ -7,29 +7,6 @@ namespace OfTamingAndBreeding.Helpers
 
     public static class ColorHelper
     {
-        // --------- CONFIG ---------
-        // Factor quantization (10000f = 4 decimal places)
-        private const float Quant = 10000f;
-
-        // --------- CACHES ---------
-        // schemeKey -> (qFactor -> "#RRGGBB")
-        private static readonly Dictionary<int, Dictionary<int, string>> schemeCache = new Dictionary<int, Dictionary<int, string>>();
-        // "#RRGGBB" hash -> packed RGB (0xRRGGBB)
-        private static readonly Dictionary<int, int> parsedHexCache = new Dictionary<int, int>();
-
-        private static readonly object cacheLock = new object();
-
-        /// <summary>
-        /// Optional: Clear cache completely (e.g., if user changes config colors).
-        /// </summary>
-        public static void ClearCaches()
-        {
-            lock (cacheLock)
-            {
-                schemeCache.Clear();
-                parsedHexCache.Clear();
-            }
-        }
 
         public static string GetColorBetween(
             string colorBad,
@@ -37,8 +14,7 @@ namespace OfTamingAndBreeding.Helpers
             string colorGood,
             float factor,
             float min,
-            float max,
-            bool useCache = true)
+            float max)
         {
 
             // fast outs
@@ -61,55 +37,7 @@ namespace OfTamingAndBreeding.Helpers
                     return colorBad;
             }
 
-            // normalize factor to t [0..1]
-            float t;
-            if (goodSide)
-            {
-                t = (factor - 1f) / (max - 1f);
-            }
-            else
-            {
-                t = (1f - factor) / (1f - min);
-            }
-            t = Mathf.Clamp01(t);
-
-            // quantize (important for cache stability)
-            int qFactor = Mathf.RoundToInt(t * Quant);      // 0..10000
-            int qMin = Mathf.RoundToInt((1/min) * Quant);
-            int qMax = Mathf.RoundToInt(max * Quant);
-
-            // --------- CACHE LOOKUP ---------
-            if (useCache)
-            {
-                int schemeKey = MakeSchemeKey(colorBad, colorNormal, colorGood, qMin, qMax, goodSide);
-
-                lock (cacheLock)
-                {
-                    if (schemeCache.TryGetValue(schemeKey, out var inner) &&
-                        inner.TryGetValue(qFactor, out var cached))
-                    {
-                        return cached;
-                    }
-                }
-
-                // miss -> compute, then store
-                string computed = ComputeLerpedHex(colorBad, colorNormal, colorGood, qFactor, goodSide);
-
-                lock (cacheLock)
-                {
-                    if (!schemeCache.TryGetValue(schemeKey, out var inner))
-                    {
-                        inner = new Dictionary<int, string>(64);
-                        schemeCache[schemeKey] = inner;
-                    }
-                    inner[qFactor] = computed;
-                }
-
-                return computed;
-            }
-
-            // no-cache path
-            return ComputeLerpedHex(colorBad, colorNormal, colorGood, qFactor, goodSide);
+            return ComputeLerpedHex(colorBad, colorNormal, colorGood, goodSide);
         }
 
         // ---------------------------------------------
@@ -119,16 +47,13 @@ namespace OfTamingAndBreeding.Helpers
             string colorBad,
             string colorNormal,
             string colorGood,
-            int qFactor, // 0..10000
             bool goodSide)
         {
-            float t = qFactor / Quant;
-
-            int packedA = GetPackedRgbCached(colorNormal);
+            int packedA = ParseHexPacked(colorNormal);
 
             int packedB = goodSide
-                ? GetPackedRgbCached(colorGood)
-                : GetPackedRgbCached(colorBad);
+                ? ParseHexPacked(colorGood)
+                : ParseHexPacked(colorBad);
 
             // unpack
             int ar = (packedA >> 16) & 0xFF;
@@ -140,53 +65,16 @@ namespace OfTamingAndBreeding.Helpers
             int bb = packedB & 0xFF;
 
             // lerp bytes
-            int rr = Mathf.Clamp(Mathf.RoundToInt(ar + (br - ar) * t), 0, 255);
-            int rg = Mathf.Clamp(Mathf.RoundToInt(ag + (bg - ag) * t), 0, 255);
-            int rb = Mathf.Clamp(Mathf.RoundToInt(ab + (bb - ab) * t), 0, 255);
+            int rr = Mathf.Clamp(Mathf.RoundToInt(ar + (br - ar)), 0, 255);
+            int rg = Mathf.Clamp(Mathf.RoundToInt(ag + (bg - ag)), 0, 255);
+            int rb = Mathf.Clamp(Mathf.RoundToInt(ab + (bb - ab)), 0, 255);
 
             return $"#{rr:X2}{rg:X2}{rb:X2}";
         }
 
         // ---------------------------------------------
-        // Scheme key
+        // Hex parsing (packed int 0xRRGGBB)
         // ---------------------------------------------
-        private static int MakeSchemeKey(string bad, string normal, string good, int qMin, int qMax, bool goodSide)
-        {
-            unchecked
-            {
-                int h = 17;
-                h = h * 31 + (bad?.GetHashCode() ?? 0);
-                h = h * 31 + (normal?.GetHashCode() ?? 0);
-                h = h * 31 + (good?.GetHashCode() ?? 0);
-                h = h * 31 + qMin;
-                h = h * 31 + qMax;
-                h = h * 31 + (goodSide ? 1 : 0);
-                return h;
-            }
-        }
-
-        // ---------------------------------------------
-        // Hex parsing + cache (packed int 0xRRGGBB)
-        // ---------------------------------------------
-        private static int GetPackedRgbCached(string hex)
-        {
-            int key = hex.GetHashCode();
-
-            lock (cacheLock)
-            {
-                if (parsedHexCache.TryGetValue(key, out int packed))
-                    return packed;
-            }
-
-            int parsed = ParseHexPacked(hex);
-
-            lock (cacheLock)
-            {
-                parsedHexCache[key] = parsed;
-            }
-
-            return parsed;
-        }
 
         private static int ParseHexPacked(string hex)
         {

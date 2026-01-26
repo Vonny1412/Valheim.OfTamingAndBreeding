@@ -15,7 +15,7 @@ namespace OfTamingAndBreeding.Internals
             = new ConditionalWeakTable<Growup, GrowupAPI>();
         public static GrowupAPI GetOrCreate(Growup __instance)
             => instances.GetValue(__instance, (Growup inst) => new GrowupAPI(inst));
-        public static bool TryGetAPI(Growup __instance, out GrowupAPI api)
+        public static bool TryGet(Growup __instance, out GrowupAPI api)
             => instances.TryGetValue(__instance, out api);
 
         public GrowupAPI(Growup __instance) : base(__instance)

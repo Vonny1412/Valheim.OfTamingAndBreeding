@@ -9,7 +9,7 @@ namespace OfTamingAndBreeding.Patches
         static bool Prefix(AnimalAI __instance, float dt)
         {
             // check if this animal is an animal that we are handling
-            if (Internals.AnimalAIAPI.TryGetAPI(__instance, out Internals.AnimalAIAPI api))
+            if (Internals.AnimalAIAPI.TryGet(__instance, out Internals.AnimalAIAPI api))
             {
                 // custom updateAI to make the animal consume items on the ground
                 return api.UpdateConsumeAI(dt);

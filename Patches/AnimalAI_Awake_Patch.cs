@@ -20,7 +20,7 @@ namespace OfTamingAndBreeding.Patches
             if (!prefabAnimalAI) return; // should not happen but whatever
 
             // check if animalAIAPI of prefab is stored
-            if (!Internals.AnimalAIAPI.TryGetAPI(prefabAnimalAI, out Internals.AnimalAIAPI prefabAnimalAIAPI))
+            if (!Internals.AnimalAIAPI.TryGet(prefabAnimalAI, out Internals.AnimalAIAPI prefabAnimalAIAPI))
             {
                 // the prefabAnimalAI is not stored -> not an animal we need to handle
                 return;

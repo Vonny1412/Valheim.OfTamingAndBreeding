@@ -47,7 +47,7 @@ namespace OfTamingAndBreeding.Patches
                         {
                             // Intentionally allow 0:
                             // This means the creature will never become fed by this item.
-                            // that way we can keep using taming system and can have items that do not trigger taming/procreation (like the original bjorn-behaviour)
+                            // that way we can keep using taming system and can have items that do not trigger taming/procreation
 
                             __instance.m_fedDuration = fedDuration;
                             Helpers.ZNetHelper.SetFloat(zdo, Plugin.ZDOVars.z_fedDuration, fedDuration);

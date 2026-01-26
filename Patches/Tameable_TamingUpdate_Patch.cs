@@ -18,7 +18,7 @@ namespace OfTamingAndBreeding.Patches
             // check if this animal is an animal that we are handling
             // this should only get set on Tameable.Awake()
             // if its not set, its not an animal we care about
-            if (tameableAPI.animalAIAPI != null)
+            if (tameableAPI.IsAnimal())
             {
                 // custom Tameable.TamingUpdate()
                 tameableAPI.TamingAnimalUpdate();

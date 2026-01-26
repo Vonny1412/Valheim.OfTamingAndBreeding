@@ -19,7 +19,7 @@ namespace OfTamingAndBreeding.Internals
             = new ConditionalWeakTable<EggGrow, EggGrowAPI>();
         public static EggGrowAPI GetOrCreate(EggGrow __instance)
             => instances.GetValue(__instance, (EggGrow inst) => new EggGrowAPI(inst));
-        public static bool TryGetAPI(EggGrow __instance, out EggGrowAPI api)
+        public static bool TryGet(EggGrow __instance, out EggGrowAPI api)
             => instances.TryGetValue(__instance, out api);
 
         public EggGrowAPI(EggGrow __instance) : base(__instance)
