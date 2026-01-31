@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Jotunn.Managers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -8,17 +9,17 @@ using UnityEngine;
 
 namespace OfTamingAndBreeding.Helpers
 {
-    internal static class PrefabHelper
+    internal static class EffectsHelper
     {
 
 
 
 
 
-        public static EffectList.EffectData GetEffect(string prefabName)
-            => new EffectList.EffectData
+        public static EffectList.EffectData GetEffect(GameObject prefab)
+            => prefab ? new EffectList.EffectData
             {
-                m_prefab = ZNetScene.instance.GetPrefab(prefabName),
+                m_prefab = prefab,
                 m_attach = false,
                 m_childTransform = "",
                 m_enabled = true,
@@ -29,10 +30,32 @@ namespace OfTamingAndBreeding.Helpers
                 m_randomRotation = false,
                 m_scale = false,
                 m_variant = -1,
-            };
+            } : null;
 
-        public static EffectList.EffectData[] GetEffects(string[] prefabNames)
+        public static EffectList.EffectData GetEffect(string prefabName)
+            => GetEffect(PrefabManager.Instance.GetPrefab(prefabName));
+
+        public static EffectList.EffectData[] GetEffectList(string[] prefabNames)
             => prefabNames.Where((n) => n != null).Select(GetEffect).ToArray();
+
+        public static EffectList.EffectData[] GetEffectList(GameObject[] prefabNames)
+            => prefabNames.Where((n) => n != null).Select(GetEffect).ToArray();
+
+        public static GameObject GetVisualOnlyEffect(string prefabName, string cloneName)
+        {
+            var clone = PrefabManager.Instance.GetPrefab(cloneName);
+            if (clone)
+            {
+                return clone;
+            }
+            clone = PrefabManager.Instance.CreateClonedPrefab(cloneName, prefabName);
+            foreach (var zsfx in clone.GetComponentsInChildren<ZSFX>(true)) UnityEngine.Object.Destroy(zsfx);
+            foreach (var a in clone.GetComponentsInChildren<AudioSource>(true)) UnityEngine.Object.Destroy(a);
+            return clone;
+        }
+
+
+
 
         /*
 

@@ -4,9 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static MonoMod.Cil.RuntimeILReferenceBag.FastDelegateInvokers;
-using static OfTamingAndBreeding.Plugin;
 
+using OfTamingAndBreeding.Data.Models.SubData;
 namespace OfTamingAndBreeding.Patches
 {
 
@@ -48,8 +47,8 @@ namespace OfTamingAndBreeding.Patches
             var name2 = Utils.GetPrefabName(b.gameObject.name);
 
             // handle stick-to-faction
-            var stickToFaction1 = Contexts.DataContext.ObjectSticksToFaction(name1);
-            var stickToFaction2 = Contexts.DataContext.ObjectSticksToFaction(name2);
+            var stickToFaction1 = Contexts.DataContext.GetSticksToFaction(name1);
+            var stickToFaction2 = Contexts.DataContext.GetSticksToFaction(name2);
             if ((stickToFaction1 || stickToFaction2) && (faction1 == faction2))
             {
                 __result = false;
@@ -58,19 +57,77 @@ namespace OfTamingAndBreeding.Patches
 
             if (isTamed1 && isTamed2)
             {
-                var attackTames1 = Contexts.DataContext.ObjectCanAttackTames(name1);
-                if (attackTames1)
+                var canAttack = false;
+
+                switch (Contexts.DataContext.GetCanAttackTames(name1))
+                {
+                    case IsEnemyCondition.Never:
+                        canAttack = false;
+                        break;
+                    case IsEnemyCondition.Always:
+                        canAttack = true;
+                        break;
+                    case IsEnemyCondition.WhenHungry:
+                        var tameable1 = a.GetComponent<Tameable>();
+                        if (tameable1 && tameable1.IsHungry())
+                        {
+                            canAttack = true;
+                        }
+                        break;
+                }
+                
+                if (!canAttack)
+                {
+                    switch (Contexts.DataContext.GetCanBeAttackedByTames(name2))
+                    {
+                        case IsEnemyCondition.Never:
+                            canAttack = false;
+                            break;
+                        case IsEnemyCondition.Always:
+                            canAttack = true;
+                            break;
+                        case IsEnemyCondition.WhenHungry:
+                            var tameable2 = b.GetComponent<Tameable>();
+                            if (tameable2 && tameable2.IsHungry())
+                            {
+                                canAttack = true;
+                            }
+                            break;
+                    }
+                }
+
+                if (canAttack)
                 {
                     Contexts.IsEnemyContext.Active = true;
                     Contexts.IsEnemyContext.TargetInstance = b;
                 }
-                else
+
+            }
+            else
+            {
+                if (isTamed1 && b is Player)
                 {
-                    var attackedByTames2 = Contexts.DataContext.ObjectCanBeAttackedByTames(name2);
-                    if (attackedByTames2)
+                    var canAttack = false;
+                    switch (Contexts.DataContext.GetCanAttackPlayer(name1))
                     {
-                        Contexts.IsEnemyContext.Active = true;
-                        Contexts.IsEnemyContext.TargetInstance = b;
+                        case IsEnemyCondition.Never:
+                            canAttack = false;
+                            break;
+                        case IsEnemyCondition.Always:
+                            canAttack = true;
+                            break;
+                        case IsEnemyCondition.WhenHungry:
+                            var tameable1 = a.GetComponent<Tameable>();
+                            if (tameable1.IsHungry())
+                            {
+                                canAttack = true;
+                            }
+                            break;
+                    }
+                    if (canAttack)
+                    {
+                        __result = true;
+                        return false;
                     }
                 }
             }
@@ -78,7 +135,7 @@ namespace OfTamingAndBreeding.Patches
             return true; // let valheim decide
         }
 
-        static void Finalizer()
+        static void Finalizer(Exception __exception)
         {
             Contexts.IsEnemyContext.Depth--;
             if (Contexts.IsEnemyContext.Depth <= 0)
@@ -90,7 +147,7 @@ namespace OfTamingAndBreeding.Patches
         }
 
     }
-    
+
     /** original method
     public static bool IsEnemy(Character a, Character b)
     {

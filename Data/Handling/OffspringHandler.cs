@@ -173,7 +173,7 @@ namespace OfTamingAndBreeding.Data.Handling
                 {
                     if (!ctx.PrefabExists(grownData.Prefab))
                     {
-                        Plugin.LogFatal($"{model}.{nameof(data.Growup)}.{nameof(data.Growup.Grown)}.{i}.{nameof(grownData.Prefab)}: '{grownData.Prefab}' not found");
+                        Plugin.LogError($"{model}.{nameof(data.Growup)}.{nameof(data.Growup.Grown)}.{i}.{nameof(grownData.Prefab)}: '{grownData.Prefab}' not found");
                         error = true;
                     }
                 }
@@ -221,7 +221,7 @@ namespace OfTamingAndBreeding.Data.Handling
                         offspring.transform.localScale = UnityEngine.Vector3.one * setScale;
 
                         Helpers.VfxHelper.ScaleVfx(offspring, setScale); // scale model particles
-                        Patches.Contexts.DataContext.SetObjectAnimationScaling(offspringName, 1f / setScale); // scale animations
+                        Patches.Contexts.DataContext.SetAnimationScaling(offspringName, 1f / setScale); // scale animations
 
                         // we need to clone the effect prefab to make it scaleable independently from its original effect prefab
                         // but we need to make sure that the original effect prefab only gets cloned once 
@@ -229,7 +229,7 @@ namespace OfTamingAndBreeding.Data.Handling
                         foreach (var eff in offspringCharacter.m_deathEffects.m_effectPrefabs)
                         {
                             var originalPrefabName = eff.m_prefab.name;
-                            if (!originalPrefabName.StartsWith(prefix))
+                            if (!originalPrefabName.EndsWith(prefix))
                             {
                                 // not cloned yet, try to get it from any cache
                                 var clonedName = $"{prefix}{originalPrefabName}";
@@ -241,16 +241,16 @@ namespace OfTamingAndBreeding.Data.Handling
                                 }
                                 eff.m_prefab = cloned;
                             }
-                            eff.m_prefab.transform.localScale = UnityEngine.Vector3.one * setScale;
-                            eff.m_scale = true;
-                            eff.m_inheritParentScale = true;
+                            eff.m_prefab.transform.localScale = UnityEngine.Vector3.one * (setScale/2); // i dunno why but /2 is doing the trick!
+                            eff.m_scale = false;
+                            eff.m_inheritParentScale = false;
                         }
 
                     }
 
                     if (data.Character.StickToFaction)
                     {
-                        Patches.Contexts.DataContext.SetObjectSticksToFaction(offspringName);
+                        Patches.Contexts.DataContext.SetSticksToFaction(offspringName);
                     }
 
                 }

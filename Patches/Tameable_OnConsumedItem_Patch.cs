@@ -31,7 +31,7 @@ namespace OfTamingAndBreeding.Patches
                 {
                     // the value is pre cached for faster access
                     // no need to search inside database
-                    if (Contexts.DataContext.GetObjectFedDuration(prefabName, out float fedDuration))
+                    if (Contexts.DataContext.GetFedDuration(prefabName, out float fedDuration))
                     {
                         foreach (var entry in data.MonsterAI.ConsumeItems)
                         {

@@ -23,7 +23,7 @@ namespace OfTamingAndBreeding.Patches
             }
             catch (Exception ex)
             {
-                Plugin.LogFatal($"Procreation_Procreate_Patch.Prefix: {ex}");
+                Plugin.LogError($"Procreation_Procreate_Patch.Prefix: {ex}");
                 return true; // fail-open: allow vanilla + other mods
             }
         }

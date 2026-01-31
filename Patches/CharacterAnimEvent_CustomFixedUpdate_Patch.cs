@@ -20,7 +20,7 @@ namespace OfTamingAndBreeding.Patches
             var animator = __instance.GetComponent<Animator>();
             if (animator == null) return;
 
-            if (Contexts.DataContext.GetObjectAnimationScaling(Utils.GetPrefabName(__instance.gameObject.name), out float scale))
+            if (Contexts.DataContext.GetAnimationScaling(Utils.GetPrefabName(__instance.gameObject.name), out float scale))
             {
                 animator.speed = scale; // the animations do look nice now!
             }

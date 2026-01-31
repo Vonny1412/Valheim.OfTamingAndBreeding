@@ -151,8 +151,8 @@ namespace OfTamingAndBreeding.Internals
                 }
             }
 
-            // partner is selected
-            if (m_seperatePartner != null)
+            // partner is selected and we need a partner
+            if (m_seperatePartner != null && z_needPartner == 1)
             {
                 bool keepPartner;
                 if (__isPregnant)
@@ -200,7 +200,8 @@ namespace OfTamingAndBreeding.Internals
                 }
             }
 
-            if (m_seperatePartner == null && z_needPartner==1) //  && loveZero
+            //if (m_seperatePartner == null && z_needPartner==1)
+            if (m_seperatePartner == null) // always try to find new partner if its still empty
             {
                 if (dataProcreation.Partner != null && dataProcreation.Partner.Length > 0)
                 {
@@ -228,6 +229,10 @@ namespace OfTamingAndBreeding.Internals
                     // no partner, it maybe can only breed with itself?
                 }
             }
+
+            // hint: at this point m_seperatePartner can still be null
+            // next we gonna search for offspring where no partner might be needed afterall
+            // after offspring part and before procreation part we gonna check for z_needPartner == 0 and set m_seperatePartner = m_myPrefab
 
             //------------------------------------------------------
             //-- OFFSPRING
@@ -342,9 +347,11 @@ namespace OfTamingAndBreeding.Internals
                 // because this place is the best one to keep the values up to date
                 m_seperatePartner = m_myPrefab; // we are targeting ourself as partner for the next procreation 
                 z_partnerPrefab = ZNetHelper.SetString(zdo, Plugin.ZDOVars.z_partnerPrefab, m_seperatePartner.name, z_partnerPrefab);
+                // remember: ZNetHelper.SetString will only increase zdo revision if value has been changed
+                // so its okay to call this on every update
             }
 
-            if (m_seperatePartner == null)
+            if (m_seperatePartner == null) // this is not fatal! it just says that no partner is currently nearby
             {
                 // just return false
                 // the creature will surely find a lovly partner one day
@@ -358,6 +365,7 @@ namespace OfTamingAndBreeding.Internals
             // important: 
             // we always use m_seperatePartner as target partner
             // we never use m_myPrefab as target partner
+            // for self-breeding m_seperatePartner has been set to m_myPrefab before
 
             if (__isPregnant)
             {

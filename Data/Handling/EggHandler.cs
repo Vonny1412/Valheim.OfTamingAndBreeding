@@ -168,7 +168,7 @@ namespace OfTamingAndBreeding.Data.Handling
             {
                 if (!egg.GetComponent<ItemDrop>())
                 {
-                    Plugin.LogFatal($"{model}: Prefab has no ItemDrop (Prefab needs to be an item)");
+                    Plugin.LogError($"{model}: Prefab has no ItemDrop (Prefab needs to be an item)");
                     error = true;
                 }
             }
@@ -181,7 +181,7 @@ namespace OfTamingAndBreeding.Data.Handling
                     {
                         if (!ctx.PrefabExists(grownData.Prefab))
                         {
-                            Plugin.LogFatal($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.Grown)}.{i}.{nameof(grownData.Prefab)}: '{grownData.Prefab}' not found");
+                            Plugin.LogError($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.Grown)}.{i}.{nameof(grownData.Prefab)}: '{grownData.Prefab}' not found");
                             error = true;
                         }
                     }
@@ -290,7 +290,8 @@ namespace OfTamingAndBreeding.Data.Handling
                     {
                         foreach (var r in egg.GetComponentsInChildren<ParticleSystemRenderer>(true))
                         {
-                            r.enabled = false;
+                            UnityEngine.Object.DestroyImmediate(r);
+                            //r.enabled = false;
                         }
                     }
 
@@ -328,6 +329,15 @@ namespace OfTamingAndBreeding.Data.Handling
                     if (data.EggGrow.RequireNearbyFire != null) eggEggGrow.m_requireNearbyFire = (bool)data.EggGrow.RequireNearbyFire;
                     if (data.EggGrow.RequireUnderRoof != null) eggEggGrow.m_requireUnderRoof = (bool)data.EggGrow.RequireUnderRoof;
                     if (data.EggGrow.RequireCoverPercentige != null) eggEggGrow.m_requireCoverPercentige = (float)data.EggGrow.RequireCoverPercentige;
+
+                    if (data.EggGrow.RequireAnyBiome != null) Patches.Contexts.DataContext.SetEggNeedsAnyBiome(eggName, data.EggGrow.RequireAnyBiome);
+                    if (data.EggGrow.RequireLiquid != null)
+                    {
+                        var lType = (EnvironmentHelper.LiquidTypeEx)data.EggGrow.RequireLiquid;
+                        var lDepth = data.EggGrow.RequireLiquidDepth ?? 0;
+                        Patches.Contexts.DataContext.SetEggNeedsLiquid(eggName, lType, lDepth);
+                    }
+
                 }
 
                 Plugin.LogDebug($"{model}: Setting effects");
@@ -335,7 +345,7 @@ namespace OfTamingAndBreeding.Data.Handling
                 {
                     eggEggGrow.m_hatchEffect = new EffectList
                     {
-                        m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
+                        m_effectPrefabs = Helpers.EffectsHelper.GetEffectList(new string[] {
                         "fx_chicken_birth",
                     })
                     };
@@ -352,6 +362,22 @@ namespace OfTamingAndBreeding.Data.Handling
             }
 
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         //------------------------------------------------
         // CLEANUP

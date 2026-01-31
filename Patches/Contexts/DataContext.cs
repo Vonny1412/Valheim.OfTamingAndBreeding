@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
+using OfTamingAndBreeding.Data.Models.SubData;
 namespace OfTamingAndBreeding.Patches.Contexts
 {
     internal static class DataContext
@@ -14,36 +15,141 @@ namespace OfTamingAndBreeding.Patches.Contexts
         // the data can be accessed directly using these cached values
         // the values are added to the list when prefabs getting registered (check: Data/Handling/...Handler.cs)
 
+
+
+
+
+
+
+
+
+
+        private static readonly Dictionary<int, IsEnemyCondition> canAttackTames = new Dictionary<int, IsEnemyCondition>();
+        private static readonly Dictionary<int, IsEnemyCondition> canBeAttackedByTames = new Dictionary<int, IsEnemyCondition>();
+        private static readonly Dictionary<int, IsEnemyCondition> canAttackPlayer = new Dictionary<int, IsEnemyCondition>();
+        public static void SetCanAttackTames(string name, IsEnemyCondition cond)
+        {
+            if (cond == IsEnemyCondition.Never) return;
+            canAttackTames[name.GetStableHashCode()] = cond;
+        }
+        public static void SetCanBeAttackedByTames(string name, IsEnemyCondition cond)
+        {
+            if (cond == IsEnemyCondition.Never) return;
+            canBeAttackedByTames[name.GetStableHashCode()] = cond;
+        }
+        public static void SetCanAttackPlayer(string name, IsEnemyCondition cond)
+        {
+            if (cond == IsEnemyCondition.Never) return;
+            canAttackPlayer[name.GetStableHashCode()] = cond;
+        }
+        public static IsEnemyCondition GetCanAttackTames(string name)
+        {
+            if (canAttackTames.TryGetValue(name.GetStableHashCode(), out IsEnemyCondition c))
+            {
+                return c; 
+            }
+            return IsEnemyCondition.Never;
+        }
+        public static IsEnemyCondition GetCanBeAttackedByTames(string name)
+        {
+            if (canBeAttackedByTames.TryGetValue(name.GetStableHashCode(), out IsEnemyCondition c))
+            {
+                return c;
+            }
+            return IsEnemyCondition.Never;
+        }
+        public static IsEnemyCondition GetCanAttackPlayer(string name)
+        {
+            if (canAttackPlayer.TryGetValue(name.GetStableHashCode(), out IsEnemyCondition c))
+            {
+                return c;
+            }
+            return IsEnemyCondition.Never;
+        }
+
+
+
+
         private static readonly HashSet<int> stickToFaction = new HashSet<int>();
-        private static readonly HashSet<int> canAttackTames = new HashSet<int>();
-        private static readonly HashSet<int> canBeAttackedByTames = new HashSet<int>();
-        private static readonly Dictionary<int, float> animationScaling = new Dictionary<int, float>();
+        public static void SetSticksToFaction(string name) => stickToFaction.Add(name.GetStableHashCode());
+        public static bool GetSticksToFaction(string name) => stickToFaction.Contains(name.GetStableHashCode());
+
+
+
+
         private static readonly Dictionary<int, float> fedDurations = new Dictionary<int, float>();
+        public static void SetFedDuration(string name, float fedDuration) => fedDurations[name.GetStableHashCode()] = fedDuration;
+        public static bool GetFedDuration(string name, out float fedDuration) => fedDurations.TryGetValue(name.GetStableHashCode(), out fedDuration);
+
+
+
+        private static readonly Dictionary<int, float> animationScaling = new Dictionary<int, float>();
         private static readonly Dictionary<int, float> eggScales = new Dictionary<int, float>();
+        public static void SetAnimationScaling(string name, float scale) => animationScaling[name.GetStableHashCode()] = scale;
+        public static void SetEggScale(string name, float scale) => eggScales[name.GetStableHashCode()] = scale;
+        public static bool GetAnimationScaling(string name, out float scale) => animationScaling.TryGetValue(name.GetStableHashCode(), out scale);
+        public static float GetEggScale(string name) => eggScales.TryGetValue(name.GetStableHashCode(), out float scale) ? scale : 1;
+
+
+
+
+
+        private static readonly Dictionary<int, Heightmap.Biome> eggNeedsAnyBiome = new Dictionary<int, Heightmap.Biome>();
+        public static void SetEggNeedsAnyBiome(string name, Heightmap.Biome[] biomes)
+        {
+            Heightmap.Biome mask = Heightmap.Biome.None;
+            if (biomes != null)
+                for (int i = 0; i < biomes.Length; ++i) mask |= biomes[i];
+
+            eggNeedsAnyBiome[name.GetStableHashCode()] = mask;
+        }
+        public static Heightmap.Biome GetEggNeedsAnyBiome(string name)
+            => eggNeedsAnyBiome.TryGetValue(name.GetStableHashCode(), out var m) ? m : Heightmap.Biome.None;
+
+
+        public class LiquidInfo
+        {
+            public Helpers.EnvironmentHelper.LiquidTypeEx Type;
+            public float Depth;
+        }
+        private static readonly Dictionary<int, LiquidInfo> eggNeedsLiquid = new Dictionary<int, LiquidInfo>();
+        public static void SetEggNeedsLiquid(string name, Helpers.EnvironmentHelper.LiquidTypeEx type, float depth)
+        {
+            eggNeedsLiquid[name.GetStableHashCode()] = new LiquidInfo
+            {
+                Type = type,
+                Depth = depth
+            };
+        }
+        public static LiquidInfo GetEggNeedsLiquid(string name)
+        {
+            if (eggNeedsLiquid.TryGetValue(name.GetStableHashCode(), out LiquidInfo i))
+            {
+                return i;
+            }
+            return null;
+        }
+
+
+
+
+
+
 
         public static void Reset()
         {
-            stickToFaction.Clear();
             canAttackTames.Clear();
             canBeAttackedByTames.Clear();
-            animationScaling.Clear();
+
+            stickToFaction.Clear();
+
             fedDurations.Clear();
+
+            animationScaling.Clear();
             eggScales.Clear();
+
+            eggNeedsAnyBiome.Clear();
         }
-
-        public static void SetObjectSticksToFaction(string name) => stickToFaction.Add(name.GetStableHashCode());
-        public static void SetObjectCanAttackTames(string name) => canAttackTames.Add(name.GetStableHashCode());
-        public static void SetObjectCanBeAttackedByTames(string name) => canBeAttackedByTames.Add(name.GetStableHashCode());
-        public static void SetObjectAnimationScaling(string name, float scale) => animationScaling[name.GetStableHashCode()] = scale;
-        public static void SetObjectFedDuration(string name, float fedDuration) => fedDurations[name.GetStableHashCode()] = fedDuration;
-        public static void SetEggScale(string name, float scale) => eggScales[name.GetStableHashCode()] = scale;
-
-        public static bool ObjectSticksToFaction(string name) => stickToFaction.Contains(name.GetStableHashCode());
-        public static bool ObjectCanAttackTames(string name) => canAttackTames.Contains(name.GetStableHashCode());
-        public static bool ObjectCanBeAttackedByTames(string name) => canBeAttackedByTames.Contains(name.GetStableHashCode());
-        public static bool GetObjectAnimationScaling(string name, out float scale) => animationScaling.TryGetValue(name.GetStableHashCode(), out scale);
-        public static bool GetObjectFedDuration(string name, out float fedDuration) => fedDurations.TryGetValue(name.GetStableHashCode(), out fedDuration);
-        public static float GetEggScale(string name) => eggScales.TryGetValue(name.GetStableHashCode(), out float scale) ? scale : 1;
 
 
         private static readonly Dictionary<int, ItemDrop> prefabItemDrops = new Dictionary<int, ItemDrop>();

@@ -45,13 +45,13 @@ namespace OfTamingAndBreeding.Patches
                     return false;
                 }
 
-                if (UnityEngine.Time.time - tameableAPI.m_lastPetTime < 0.5f)
+                if (UnityEngine.Time.time - tameableAPI.m_lastPetTime < 0.33f)
                 {
                     __result = true; // delay, but continue
                     return false;
                 }
 
-                if (UnityEngine.Time.time - tameableAPI.lastCommandTime < 1.5f)
+                if (UnityEngine.Time.time - tameableAPI.lastCommandTime < 1.0f)
                 {
                     __result = true; // delay, but continue
                     return false;

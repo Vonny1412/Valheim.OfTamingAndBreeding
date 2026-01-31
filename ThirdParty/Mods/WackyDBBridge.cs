@@ -63,7 +63,7 @@ namespace OfTamingAndBreeding.ThirdParty.Mods
         {
             if (!IsRegistered)
             {
-                Plugin.LogFatal($"Cannot register recipe - WackyDB not registered");
+                Plugin.LogError($"Cannot register recipe - WackyDB not registered");
                 return;
             }
             var wackyRecipe = Activator.CreateInstance(recipeDataType);

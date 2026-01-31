@@ -35,7 +35,13 @@ namespace OfTamingAndBreeding.Internals
                 return false;
             }
 
+
+
             var z_EggBehavior = zdo.GetInt(Plugin.ZDOVars.z_EggBehavior, Plugin.ZDOVars.EggBehavior.Unknown);
+            var z_eggGrownPrefab = zdo.GetString(Plugin.ZDOVars.z_eggGrownPrefab, "");
+            var z_eggGrownTamed = zdo.GetInt(Plugin.ZDOVars.z_eggGrownTamed, 1);
+            var z_eggShowHatchEffect = zdo.GetInt(Plugin.ZDOVars.z_eggShowHatchEffect, 1);
+
 
             if (z_EggBehavior == Plugin.ZDOVars.EggBehavior.Unknown)
             {
@@ -53,12 +59,6 @@ namespace OfTamingAndBreeding.Internals
                 else
                 {
 
-                    var z_eggGrownPrefab = zdo.GetString(Plugin.ZDOVars.z_eggGrownPrefab, "");
-                    var z_eggGrownTamed = zdo.GetInt(Plugin.ZDOVars.z_eggGrownTamed, 1);
-                    var z_eggGrownTamedBool = z_eggGrownTamed == 1;
-                    var z_eggShowHatchEffect = zdo.GetInt(Plugin.ZDOVars.z_eggShowHatchEffect, 1);
-                    var z_eggShowHatchEffectBool = z_eggShowHatchEffect == 1;
-
                     var foundRandom = Data.Models.SubData.RandomData.FindRandom<Egg.EggGrowGrownData>(data.EggGrow.Grown, out Egg.EggGrowGrownData grownEntry);
                     if (!foundRandom) // should not happen but whatever
                     {
@@ -67,13 +67,8 @@ namespace OfTamingAndBreeding.Internals
                     }
 
                     z_eggGrownPrefab = ZNetHelper.SetString(zdo, Plugin.ZDOVars.z_eggGrownPrefab, grownEntry.Prefab, z_eggGrownPrefab);
-                    var grown = ZNetScene.instance.GetPrefab(z_eggGrownPrefab);
-
                     z_eggGrownTamed = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_eggGrownTamed, grownEntry.Tamed ? 1 : 0, z_eggGrownTamed);
-                    z_eggGrownTamedBool = z_eggGrownTamed == 1;
-
                     z_eggShowHatchEffect = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_eggShowHatchEffect, grownEntry.ShowHatchEffect ? 1 : 0, z_eggShowHatchEffect);
-                    z_eggShowHatchEffectBool = z_eggShowHatchEffect == 1;
 
                     var eggGrownEggData = Egg.Get(z_eggGrownPrefab);
                     if (eggGrownEggData == null)
@@ -87,20 +82,24 @@ namespace OfTamingAndBreeding.Internals
                         // its an[other] egg!
                         z_EggBehavior = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_EggBehavior, Plugin.ZDOVars.EggBehavior.Matrjoschka, z_EggBehavior);
                     }
-
-                    // update values
-                    m_grownPrefab = grown;
-                    m_tamed = z_eggGrownTamedBool;
-                    if (m_hatchEffect != null)
-                    {
-                        foreach (var eff in m_hatchEffect.m_effectPrefabs)
-                        {
-                            eff.m_enabled = z_eggShowHatchEffectBool;
-                        }
-                    }
-
                 }
+            }
 
+            // update values
+            m_grownPrefab = ZNetScene.instance.GetPrefab(z_eggGrownPrefab);
+            m_tamed = z_eggGrownTamed == 1;
+            if (m_hatchEffect != null)
+            {
+                foreach (var eff in m_hatchEffect.m_effectPrefabs)
+                {
+                    eff.m_enabled = z_eggShowHatchEffect == 1;
+                }
+            }
+            
+            if (m_grownPrefab == null)
+            {
+                Plugin.LogWarning("Egg m_grownPrefab is null");
+                return false; // should not happen
             }
 
             float num = s_growStart;
@@ -118,6 +117,7 @@ namespace OfTamingAndBreeding.Internals
 
             zdo.Set(ZDOVars.s_growStart, num);
             UpdateEffects(num);
+
 
             if (num > 0f && ZNet.instance.GetTimeSeconds() > (double)(num + m_growTime))
             {

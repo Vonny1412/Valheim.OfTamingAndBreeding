@@ -7,6 +7,7 @@ using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using static Room;
 
+using OfTamingAndBreeding.Data.Models.SubData;
 namespace OfTamingAndBreeding.Data
 {
     internal sealed class DataSaver
@@ -243,8 +244,8 @@ namespace OfTamingAndBreeding.Data
                 data.Character = new Models.Creature.CharacterAIData
                 {
                     Group = character.m_group,
-                    StickToFaction = false,
-                    CanAttackTames = false,
+                    StickToFaction = Condition.Never,
+                    CanAttackTames = Condition.Never,
                 };
             }
 

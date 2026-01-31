@@ -126,18 +126,6 @@ namespace OfTamingAndBreeding.Net
                 {
                     outPkg.Write(1);
 
-                    // policy
-
-                    /* let jotunn do the job
-                    outPkg.Write(Plugin.Configs.RequireFoodDroppedByPlayer.Value);
-                    outPkg.Write(Plugin.Configs.ShowEggGrowProgress.Value);
-                    outPkg.Write(Plugin.Configs.ShowOffspringGrowProgress.Value);
-                    outPkg.Write(Plugin.Configs.ShowTamingProgress.Value);
-                    outPkg.Write(Plugin.Configs.HoverProgressPrecision.Value);
-                    outPkg.Write(Plugin.Configs.UseBetterSearchForFood.Value);
-                    outPkg.Write(Plugin.Configs.TamingSlowdownPerStar.Value);
-                    */
-                    
                     // cache
 
                     outPkg.Write(Plugin.Configs.WriteClientCacheFile.Value); // usecache
@@ -224,18 +212,6 @@ namespace OfTamingAndBreeding.Net
                     return false;
                 }
 
-                // policy
-
-                /* let jotunn do the job
-                Plugin.Configs.RequireFoodDroppedByPlayer.Value = inPkg.ReadBool();
-                Plugin.Configs.ShowEggGrowProgress.Value = inPkg.ReadBool();
-                Plugin.Configs.ShowOffspringGrowProgress.Value = inPkg.ReadBool();
-                Plugin.Configs.ShowTamingProgress.Value = inPkg.ReadBool();
-                Plugin.Configs.HoverProgressPrecision.Value = inPkg.ReadSingle();
-                Plugin.Configs.UseBetterSearchForFood.Value = inPkg.ReadBool();
-                Plugin.Configs.TamingSlowdownPerStar.Value = inPkg.ReadSingle();
-                */
-                
                 // cache
 
                 clientSession.UseCache = inPkg.ReadBool();

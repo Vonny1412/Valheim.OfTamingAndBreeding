@@ -81,6 +81,10 @@ namespace OfTamingAndBreeding.Data.Models
             public bool? RequireUnderRoof { get; set; } = null;
             public float? RequireCoverPercentige { get; set; } = null;
 
+            public Heightmap.Biome[] RequireAnyBiome { get; set; } = null; // OTAB feature
+            public Helpers.EnvironmentHelper.LiquidTypeEx? RequireLiquid { get; set; } = null; // OTAB feature
+            public float? RequireLiquidDepth { get; set; } = null; // OTAB feature
+
             public EggGrowGrownData[] Grown { get; set; } = null;
         }
 

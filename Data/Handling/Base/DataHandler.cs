@@ -1,13 +1,10 @@
-﻿using JetBrains.Annotations;
-using Jotunn.Managers;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using UnityEngine;
-using UnityEngine.PlayerLoop;
+using YamlDotNet.Core;
 
 namespace OfTamingAndBreeding.Data.Handling.Base
 {
@@ -21,8 +18,6 @@ namespace OfTamingAndBreeding.Data.Handling.Base
 
         public abstract string GetDataKey(string fileName);
 
-        //public Dictionary<string, T> GetAllData() => DataBase<T>.GetAll();
-
         public bool LoadFromYaml(string prefabName, string yamlText)
         {
             try
@@ -32,10 +27,15 @@ namespace OfTamingAndBreeding.Data.Handling.Base
                 DataBase<T>.Store(prefabName, data);
                 return true;
             }
-            catch (Exception)
+            catch (YamlException e)
             {
-                Plugin.LogFatal($"Failed loading YAML for {typeof(T).Name} '{prefabName}'");
+                Plugin.LogFatal(Helpers.YamlHelper.FormatException(
+                    e,
+                    yamlText,
+                    $"Failed loading YAML for {typeof(T).Name} '{prefabName}'"
+                ));
             }
+
             return false;
         }
 

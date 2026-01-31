@@ -8,20 +8,30 @@ namespace OfTamingAndBreeding.ThirdParty.Mods
     internal static partial class CllCBridge
     {
 
-        private enum TraitPath
-        {
-            DirectParent,
-            CurrentPartner,
-            AnyNearby,
-            RandomNew,
-            None,
-        }
-
         public static void PassTraits(ZDO fromZdo, GameObject to)
         {
             var infusion = fromZdo.GetInt(Plugin.ZDOVars.z_CLLC_Infusion, 0);
             var effect = fromZdo.GetInt(Plugin.ZDOVars.z_CLLC_Effect, 0);
             ApplyTraits(infusion, effect, to);
+        }
+
+        public static void BequeathTraits(Character directParentCharacter, GameObject currentPartnerPrefab, GameObject spawned)
+        {
+            // Safety / feature gating
+            if (!IsRegistered || !IsEnabled())
+                return;
+
+            if (!spawned)
+                return;
+
+            // If no partner (self-breeding), treat parent as partner prefab
+            if (!currentPartnerPrefab)
+                currentPartnerPrefab = directParentCharacter ? directParentCharacter.gameObject : null;
+
+            // Decide which traits should be inherited (as int enum values; 0 = None)
+            int infusion = DecideInfusion(directParentCharacter, currentPartnerPrefab, spawned.transform.position);
+            int effect = DecideExtraEffect(directParentCharacter, currentPartnerPrefab, spawned.transform.position);
+            ApplyTraits(infusion, effect, spawned);
         }
 
         private static void ApplyTraits(int infusion, int effect, GameObject to)
@@ -79,23 +89,44 @@ namespace OfTamingAndBreeding.ThirdParty.Mods
             }
         }
 
-        public static void BequeathTraits(Character directParentCharacter, GameObject currentPartnerPrefab, GameObject spawned)
+        // ----------------- helpers -------------------
+
+        private sealed class WeightedTraitOption
         {
-            // Safety / feature gating
-            if (!IsRegistered || !IsEnabled())
-                return;
+            public TraitPath Path;
+            public float Weight;
+            public int Value; // 0=None, >0=Trait, -1=RandomNew sentinel
+        }
 
-            if (!spawned)
-                return;
+        private enum TraitPath
+        {
+            DirectParent,
+            CurrentPartner,
+            AnyNearby,
+            RandomNew,
+            None,
+        }
 
-            // If no partner (self-breeding), treat parent as partner prefab
-            if (!currentPartnerPrefab)
-                currentPartnerPrefab = directParentCharacter ? directParentCharacter.gameObject : null;
+        private static TraitPath PickWeightedOption(List<WeightedTraitOption> options)
+        {
+            float sum = 0f;
+            for (int i = 0; i < options.Count; ++i)
+                sum += Mathf.Max(0f, options[i].Weight);
 
-            // Decide which traits should be inherited (as int enum values; 0 = None)
-            int infusion = DecideInfusion(directParentCharacter, currentPartnerPrefab, spawned.transform.position);
-            int effect = DecideExtraEffect(directParentCharacter, currentPartnerPrefab, spawned.transform.position);
-            ApplyTraits(infusion, effect, spawned);
+            if (sum <= 0f)
+                return TraitPath.None;
+
+            float r = UnityEngine.Random.value * sum;
+            float acc = 0f;
+
+            for (int i = 0; i < options.Count; ++i)
+            {
+                acc += Mathf.Max(0f, options[i].Weight);
+                if (r <= acc)
+                    return options[i].Path;
+            }
+
+            return options[options.Count - 1].Path;
         }
 
         private static int DecideInfusion(Character directParent, GameObject partnerPrefab, Vector3 center)
@@ -103,26 +134,79 @@ namespace OfTamingAndBreeding.ThirdParty.Mods
             if (!IsInfusionEnabled())
                 return 0;
 
-            // Build path list from weights (only non-negative weights)
-            var paths = BuildWeightedPaths(
-                wDirect: Plugin.Configs.CLLC_Infusion_WeightDirectParent.Value,
-                wPartner: Plugin.Configs.CLLC_Infusion_WeightCurrentPartner.Value,
-                wAny: Plugin.Configs.CLLC_Infusion_WeightAnyNearby.Value,
-                wRandom: Plugin.Configs.CLLC_Infusion_WeightRandomNew.Value,
-                wNone: Plugin.Configs.CLLC_Infusion_WeightNone.Value
-            );
-
             float range = Plugin.Configs.CLLC_Infusion_SearchRange.Value;
 
-            // Progressive fallback: once a path fails, remove it and try again using only remaining (which are “lower priority”)
-            while (paths.Count > 0)
-            {
-                var chosen = PickWeighted(paths);
-                if (TryResolveInfusion(chosen, directParent, partnerPrefab, center, range, out int infusion))
-                    return infusion;
+            int directValue = 0;
+            if (directParent)
+                directValue = GetInfusion(directParent);
 
-                RemovePath(paths, chosen);
+            int partnerValue = 0;
+            {
+                var ch = FindNearbyCharacterWithTrait(prefabMustMatch: partnerPrefab, center, range, exclude: directParent, traitGetter: GetInfusion);
+                if (ch) partnerValue = GetInfusion(ch);
             }
+
+            int anyValue = 0;
+            {
+                var ch = FindNearbyCharacterWithTrait(prefabMustMatch: null, center, range, exclude: directParent, traitGetter: GetInfusion);
+                if (ch) anyValue = GetInfusion(ch);
+            }
+
+            // Options: Count weights only if Value != 0 (for 1–3)
+            var opts = new List<WeightedTraitOption>(5)
+            {
+                new WeightedTraitOption
+                {
+                    Path = TraitPath.DirectParent,
+                    Value = directValue,
+                    Weight = directValue != 0 ? Plugin.Configs.CLLC_Infusion_WeightDirectParent.Value : 0f
+                },
+                new WeightedTraitOption
+                {
+                    Path = TraitPath.CurrentPartner,
+                    Value = partnerValue,
+                    Weight = partnerValue != 0 ? Plugin.Configs.CLLC_Infusion_WeightCurrentPartner.Value : 0f
+                },
+                new WeightedTraitOption
+                {
+                    Path = TraitPath.AnyNearby,
+                    Value = anyValue,
+                    Weight = anyValue != 0 ? Plugin.Configs.CLLC_Infusion_WeightAnyNearby.Value : 0f
+                },
+                new WeightedTraitOption
+                {
+                    Path = TraitPath.RandomNew,
+                    Value = -1,
+                    Weight = Plugin.Configs.CLLC_Infusion_WeightRandomNew.Value
+                },
+                new WeightedTraitOption
+                {
+                    Path = TraitPath.None,
+                    Value = 0,
+                    Weight = Plugin.Configs.CLLC_Infusion_WeightNone.Value
+                }
+            };
+
+            foreach (var o in opts)
+            {
+                Plugin.LogDebug($"{o.Path}: value={o.Value}, weight={o.Weight}");
+            }
+
+            // If all weights are 0: fallback -> None
+            // (e.g., if RandomNew and None in config are 0 and all traits were 0)
+            bool anyWeight = false;
+            for (int i = 0; i < opts.Count; ++i)
+                anyWeight |= opts[i].Weight > 0f;
+
+            if (!anyWeight)
+                return 0;
+
+            var chosen = PickWeightedOption(opts);
+
+            // Value zurückgeben passend zum chosen path
+            for (int i = 0; i < opts.Count; ++i)
+                if (opts[i].Path == chosen)
+                    return opts[i].Value;
 
             return 0;
         }
@@ -132,129 +216,78 @@ namespace OfTamingAndBreeding.ThirdParty.Mods
             if (!IsExtraEffectEnabled())
                 return 0;
 
-            var paths = BuildWeightedPaths(
-                wDirect: Plugin.Configs.CLLC_Effect_WeightDirectParent.Value,
-                wPartner: Plugin.Configs.CLLC_Effect_WeightCurrentPartner.Value,
-                wAny: Plugin.Configs.CLLC_Effect_WeightAnyNearby.Value,
-                wRandom: Plugin.Configs.CLLC_Effect_WeightRandomNew.Value,
-                wNone: Plugin.Configs.CLLC_Effect_WeightNone.Value
-            );
-
             float range = Plugin.Configs.CLLC_Effect_SearchRange.Value;
 
-            while (paths.Count > 0)
-            {
-                var chosen = PickWeighted(paths);
-                if (TryResolveExtraEffect(chosen, directParent, partnerPrefab, center, range, out int effect))
-                    return effect;
+            int directValue = 0;
+            if (directParent)
+                directValue = GetExtraEffect(directParent);
 
-                RemovePath(paths, chosen);
+            int partnerValue = 0;
+            {
+                var ch = FindNearbyCharacterWithTrait(prefabMustMatch: partnerPrefab, center, range, exclude: directParent, traitGetter: GetExtraEffect);
+                if (ch) partnerValue = GetExtraEffect(ch);
             }
+
+            int anyValue = 0;
+            {
+                var ch = FindNearbyCharacterWithTrait(prefabMustMatch: null, center, range, exclude: directParent, traitGetter: GetExtraEffect);
+                if (ch) anyValue = GetExtraEffect(ch);
+            }
+
+            var opts = new List<WeightedTraitOption>(5)
+            {
+                new WeightedTraitOption
+                {
+                    Path = TraitPath.DirectParent,
+                    Value = directValue,
+                    Weight = directValue != 0 ? Plugin.Configs.CLLC_Effect_WeightDirectParent.Value : 0f
+                },
+                new WeightedTraitOption
+                {
+                    Path = TraitPath.CurrentPartner,
+                    Value = partnerValue,
+                    Weight = partnerValue != 0 ? Plugin.Configs.CLLC_Effect_WeightCurrentPartner.Value : 0f
+                },
+                new WeightedTraitOption
+                {
+                    Path = TraitPath.AnyNearby,
+                    Value = anyValue,
+                    Weight = anyValue != 0 ? Plugin.Configs.CLLC_Effect_WeightAnyNearby.Value : 0f
+                },
+                new WeightedTraitOption
+                {
+                    Path = TraitPath.RandomNew,
+                    Value = -1,
+                    Weight = Plugin.Configs.CLLC_Effect_WeightRandomNew.Value
+                },
+                new WeightedTraitOption
+                {
+                    Path = TraitPath.None,
+                    Value = 0,
+                    Weight = Plugin.Configs.CLLC_Effect_WeightNone.Value
+                }
+            };
+
+            foreach (var o in opts)
+            {
+                Plugin.LogDebug($"{o.Path}: value={o.Value}, weight={o.Weight}");
+            }
+
+            bool anyWeight = false;
+            for (int i = 0; i < opts.Count; ++i)
+                anyWeight |= opts[i].Weight > 0f;
+
+            if (!anyWeight)
+                return 0;
+
+            var chosen = PickWeightedOption(opts);
+
+            for (int i = 0; i < opts.Count; ++i)
+                if (opts[i].Path == chosen)
+                    return opts[i].Value;
 
             return 0;
         }
-
-        // ---------- Resolve paths ----------
-
-        private static bool TryResolveInfusion(
-            TraitPath path,
-            Character directParent,
-            GameObject partnerPrefab,
-            Vector3 center,
-            float range,
-            out int infusion)
-        {
-            infusion = 0;
-
-            switch (path)
-            {
-                case TraitPath.DirectParent:
-                    if (!directParent) return false;
-                    infusion = GetInfusion(directParent);
-                    return infusion != 0;
-
-                case TraitPath.CurrentPartner:
-                    {
-                        var ch = FindNearbyCharacterWithTrait(prefabMustMatch: partnerPrefab, center, range, exclude: directParent, traitGetter: GetInfusion);
-                        if (!ch) return false;
-                        infusion = GetInfusion(ch);
-                        return infusion != 0;
-                    }
-
-                case TraitPath.AnyNearby:
-                    {
-                        var ch = FindNearbyCharacterWithTrait(prefabMustMatch: null, center, range, exclude: directParent, traitGetter: GetInfusion);
-                        if (!ch) return false;
-                        infusion = GetInfusion(ch);
-                        return infusion != 0;
-                    }
-
-                case TraitPath.RandomNew:
-                    // Let CLLC pick a random infusion, but we can only apply it to a Character.
-                    // Here we just return a marker that caller can apply later by SetInfusionRandom if you want.
-                    // Since your pipeline stores "pending int", we need an actual value. So:
-                    // - We generate it on a temporary dummy? No.
-                    // - Better: we apply random later when adult spawns.
-                    // For now: choose 'None' here to keep system deterministic unless you want a different approach.
-                    // If you DO want random now as int, you'd need to re-implement CLLC’s selection logic or read ZDO after calling SetInfusionRandom on a temp.
-                    // Practical compromise: use a special sentinel value in ZDO and interpret it later.
-                    infusion = -1;
-                    return true;
-
-                case TraitPath.None:
-                    infusion = 0;
-                    return true;
-            }
-
-            return false;
-        }
-
-        private static bool TryResolveExtraEffect(
-            TraitPath path,
-            Character directParent,
-            GameObject partnerPrefab,
-            Vector3 center,
-            float range,
-            out int effect)
-        {
-            effect = 0;
-
-            switch (path)
-            {
-                case TraitPath.DirectParent:
-                    if (!directParent) return false;
-                    effect = GetExtraEffect(directParent);
-                    return effect != 0;
-
-                case TraitPath.CurrentPartner:
-                    {
-                        var ch = FindNearbyCharacterWithTrait(prefabMustMatch: partnerPrefab, center, range, exclude: directParent, traitGetter: GetExtraEffect);
-                        if (!ch) return false;
-                        effect = GetExtraEffect(ch);
-                        return effect != 0;
-                    }
-
-                case TraitPath.AnyNearby:
-                    {
-                        var ch = FindNearbyCharacterWithTrait(prefabMustMatch: null, center, range, exclude: directParent, traitGetter: GetExtraEffect);
-                        if (!ch) return false;
-                        effect = GetExtraEffect(ch);
-                        return effect != 0;
-                    }
-
-                case TraitPath.RandomNew:
-                    effect = -1;
-                    return true;
-
-                case TraitPath.None:
-                    effect = 0;
-                    return true;
-            }
-
-            return false;
-        }
-
-        // ---------- Nearby search ----------
 
         private static Character FindNearbyCharacterWithTrait(
             GameObject prefabMustMatch,
@@ -311,66 +344,5 @@ namespace OfTamingAndBreeding.ThirdParty.Mods
             return best;
         }
 
-        // ---------- Weighted path helpers ----------
-
-        private sealed class WeightedPath
-        {
-            public TraitPath Path;
-            public float Weight;
-        }
-
-        private static List<WeightedPath> BuildWeightedPaths(float wDirect, float wPartner, float wAny, float wRandom, float wNone)
-        {
-            var list = new List<WeightedPath>(5);
-
-            void Add(TraitPath p, float w)
-            {
-                if (w <= 0f) return;
-                list.Add(new WeightedPath { Path = p, Weight = w });
-            }
-
-            // Priority order is implicit in the fallback elimination; but we keep all initially.
-            Add(TraitPath.DirectParent, wDirect);
-            Add(TraitPath.CurrentPartner, wPartner);
-            Add(TraitPath.AnyNearby, wAny);
-            Add(TraitPath.RandomNew, wRandom);
-            Add(TraitPath.None, wNone);
-
-            // If everything is <= 0, behave as None
-            if (list.Count == 0)
-                list.Add(new WeightedPath { Path = TraitPath.None, Weight = 1f });
-
-            return list;
-        }
-
-        private static TraitPath PickWeighted(List<WeightedPath> list)
-        {
-            float sum = 0f;
-            for (int i = 0; i < list.Count; i++)
-                sum += Mathf.Max(0f, list[i].Weight);
-
-            if (sum <= 0f)
-                return TraitPath.None;
-
-            float r = UnityEngine.Random.value * sum;
-            float acc = 0f;
-            for (int i = 0; i < list.Count; i++)
-            {
-                acc += Mathf.Max(0f, list[i].Weight);
-                if (r <= acc)
-                    return list[i].Path;
-            }
-
-            return list[list.Count - 1].Path;
-        }
-
-        private static void RemovePath(List<WeightedPath> list, TraitPath path)
-        {
-            for (int i = list.Count - 1; i >= 0; i--)
-            {
-                if (list[i].Path == path)
-                    list.RemoveAt(i);
-            }
-        }
     }
 }

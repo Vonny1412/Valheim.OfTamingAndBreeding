@@ -256,14 +256,14 @@ namespace OfTamingAndBreeding.Data.Handling
                     {
                         if (!ctx.PrefabExists(foodData.Prefab))
                         {
-                            Plugin.LogFatal($"{model}.{nameof(data.MonsterAI)}.{nameof(data.MonsterAI.ConsumeItems)}.{i}.{nameof(foodData.Prefab)}: '{foodData.Prefab}' not found");
+                            Plugin.LogError($"{model}.{nameof(data.MonsterAI)}.{nameof(data.MonsterAI.ConsumeItems)}.{i}.{nameof(foodData.Prefab)}: '{foodData.Prefab}' not found");
                             error = true;
                         }
                         else
                         {
                             if (Patches.Contexts.DataContext.GetItemDropByPrefab(foodData.Prefab) == null)
                             {
-                                Plugin.LogFatal($"{model}.{nameof(data.MonsterAI)}.{nameof(data.MonsterAI.ConsumeItems)}.{i}.{nameof(foodData.Prefab)}: '{foodData.Prefab}' has no ItemDrop component");
+                                Plugin.LogError($"{model}.{nameof(data.MonsterAI)}.{nameof(data.MonsterAI.ConsumeItems)}.{i}.{nameof(foodData.Prefab)}: '{foodData.Prefab}' has no ItemDrop component");
                                 error = true;
                             }
                         }
@@ -280,7 +280,7 @@ namespace OfTamingAndBreeding.Data.Handling
                     {
                         if (!ctx.PrefabExists(partnerData.Prefab))
                         {
-                            Plugin.LogFatal($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Partner)}.{i}.{nameof(partnerData.Prefab)}: '{partnerData.Prefab}' not found");
+                            Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Partner)}.{i}.{nameof(partnerData.Prefab)}: '{partnerData.Prefab}' not found");
                             error = true;
                         }
                     }
@@ -291,7 +291,7 @@ namespace OfTamingAndBreeding.Data.Handling
 
                     if (!ctx.PrefabExists(offspringData.Prefab))
                     {
-                        Plugin.LogFatal($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.Prefab)}: '{offspringData.Prefab}' not found");
+                        Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.Prefab)}: '{offspringData.Prefab}' not found");
                         error = true;
                     }
 
@@ -304,7 +304,7 @@ namespace OfTamingAndBreeding.Data.Handling
                     {
                         if (!ctx.PrefabExists(offspringData.NeedPartnerPrefab))
                         {
-                            Plugin.LogFatal($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.NeedPartnerPrefab)}: '{offspringData.NeedPartnerPrefab}' not found");
+                            Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.NeedPartnerPrefab)}: '{offspringData.NeedPartnerPrefab}' not found");
                             error = true;
                         }
                     }
@@ -316,7 +316,7 @@ namespace OfTamingAndBreeding.Data.Handling
                     {
                         if (!ctx.PrefabExists(prefabName))
                         {
-                            Plugin.LogFatal($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.MaxCreaturesCountPrefabs)}.{i}: '{prefabName}' not found");
+                            Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.MaxCreaturesCountPrefabs)}.{i}: '{prefabName}' not found");
                             error = true;
                         }
                     }
@@ -337,7 +337,7 @@ namespace OfTamingAndBreeding.Data.Handling
             var model = $"{nameof(Models.Creature)}.{creatureName}";
             var creature = ctx.GetPrefab(creatureName);
 
-            var idleSoundPrefab = Helpers.PrefabHelper.FindEffectPrefab<BaseAI>(creatureName, "m_idleSound", 0);
+            var idleSoundPrefab = Helpers.EffectsHelper.FindEffectPrefab<BaseAI>(creatureName, "m_idleSound", 0);
 
             if (data.Components.Character == Models.SubData.ComponentBehavior.Patch)
             {
@@ -346,9 +346,10 @@ namespace OfTamingAndBreeding.Data.Handling
                 {
                     Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting Character values");
                     if (data.Character.Group != null) character.m_group = data.Character.Group;
-                    if (data.Character.StickToFaction) Patches.Contexts.DataContext.SetObjectSticksToFaction(creatureName);
-                    if (data.Character.CanAttackTames) Patches.Contexts.DataContext.SetObjectCanAttackTames(creatureName);
-                    if (data.Character.CanBeAttackedByTames) Patches.Contexts.DataContext.SetObjectCanBeAttackedByTames(creatureName);
+                    if (data.Character.StickToFaction) Patches.Contexts.DataContext.SetSticksToFaction(creatureName);
+                    Patches.Contexts.DataContext.SetCanAttackTames(creatureName, data.Character.CanAttackTames);
+                    Patches.Contexts.DataContext.SetCanBeAttackedByTames(creatureName, data.Character.CanBeAttackedByTames);
+                    Patches.Contexts.DataContext.SetCanAttackPlayer(creatureName, data.Character.CanAttackPlayer);
                 }
             }
             else if (data.Components.Character == Models.SubData.ComponentBehavior.Remove)
@@ -438,7 +439,7 @@ namespace OfTamingAndBreeding.Data.Handling
 
                     if (data.Tameable.FedDuration != null) // fed duration can vary depending on consumed food. need to cache the original value
                     {
-                        Patches.Contexts.DataContext.SetObjectFedDuration(creatureName, (float)data.Tameable.FedDuration);
+                        Patches.Contexts.DataContext.SetFedDuration(creatureName, (float)data.Tameable.FedDuration);
                     }
 
                     Plugin.LogDebug($"{model}.{nameof(data.Tameable)}: Setting effects");
@@ -446,28 +447,28 @@ namespace OfTamingAndBreeding.Data.Handling
                     {
                         tameable.m_sootheEffect = new EffectList
                         {
-                            m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
-                            "vfx_creature_soothed",
-                        })
+                            m_effectPrefabs = Helpers.EffectsHelper.GetEffectList(new string[] {
+                                "vfx_creature_soothed",
+                            })
                         };
                     }
                     if (tameable.m_tamedEffect.m_effectPrefabs.Length == 0)
                     {
                         tameable.m_tamedEffect = new EffectList
                         {
-                            m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
-                            "fx_creature_tamed",
-                        })
+                            m_effectPrefabs = Helpers.EffectsHelper.GetEffectList(new string[] {
+                                "fx_creature_tamed",
+                            })
                         };
                     }
                     if (tameable.m_petEffect.m_effectPrefabs.Length == 0)
                     {
                         tameable.m_petEffect = new EffectList
                         {
-                            m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
-                            "fx_boar_pet",
-                            idleSoundPrefab?.name,
-                        })
+                            m_effectPrefabs = Helpers.EffectsHelper.GetEffectList(new GameObject[] {
+                                EffectsHelper.GetVisualOnlyEffect("fx_boar_pet", "otab_vfx_pet"),
+                                idleSoundPrefab,
+                            })
                         };
                     }
                 }
@@ -509,7 +510,7 @@ namespace OfTamingAndBreeding.Data.Handling
                     {
                         procreation.m_loveEffects = new EffectList
                         {
-                            m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
+                            m_effectPrefabs = Helpers.EffectsHelper.GetEffectList(new string[] {
                             idleSoundPrefab?.name,
                             "vfx_boar_love",
                         })
@@ -523,7 +524,7 @@ namespace OfTamingAndBreeding.Data.Handling
                     {
                         procreation.m_birthEffects = new EffectList
                         {
-                            m_effectPrefabs = Helpers.PrefabHelper.GetEffects(new string[] {
+                            m_effectPrefabs = Helpers.EffectsHelper.GetEffectList(new string[] {
                             idleSoundPrefab?.name,
                             "vfx_boar_birth",
                         })

@@ -39,8 +39,9 @@ namespace OfTamingAndBreeding.Data.Models
         {
             public string Group { get; set; } = null;
             public bool StickToFaction { get; set; } = true; // OTAB feature
-            public bool CanAttackTames { get; set; } = false; // OTAB feature
-            public bool CanBeAttackedByTames { get; set; } = false; // OTAB feature
+            public IsEnemyCondition CanAttackTames { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public IsEnemyCondition CanBeAttackedByTames { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public IsEnemyCondition CanAttackPlayer { get; set; } = IsEnemyCondition.Never; // OTAB feature
         }
 
         [Serializable]
