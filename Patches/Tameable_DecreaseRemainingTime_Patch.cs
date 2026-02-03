@@ -12,20 +12,28 @@ namespace OfTamingAndBreeding.Patches
     static class Tameable_DecreaseRemainingTime_Patch
     {
         [HarmonyPriority(Priority.Last)]
-        static void Prefix(Tameable __instance, ref float time)
+        static bool Prefix(Tameable __instance, ref float time)
         {
+
+            if (__instance.m_tamingTime <= 0)
+            {
+                // taming disabled
+                return false;
+            }
+
             var character = __instance.GetComponent<Character>();
-            if (!character) return;
+            if (character)
+            {
+                int stars = Mathf.Max(0, character.GetLevel() - 1);
+                float slowdown = Plugin.Configs.TamingSlowdownPerStar.Value;
+                float divisor = 1f + (stars * slowdown);
+                if (divisor > 0f) // safety
+                {
+                    time /= divisor;
+                }
+            }
 
-            int stars = Mathf.Max(0, character.GetLevel() - 1);
-
-            float slowdown = Plugin.Configs.TamingSlowdownPerStar.Value;
-            if (slowdown <= 0f || stars == 0) return; // 0 disables, 0★ no change
-
-            float divisor = 1f + (stars * slowdown);
-            if (divisor <= 0f) return; // safety
-
-            time /= divisor;
+            return true;
         }
     }
     /** original method

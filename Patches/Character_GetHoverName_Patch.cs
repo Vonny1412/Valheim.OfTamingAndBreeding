@@ -23,10 +23,9 @@ namespace OfTamingAndBreeding.Patches
             var tameable = __instance.GetComponent<Tameable>(); // wild creature beeing tamed
             var growup = __instance.GetComponent<Growup>(); // offspring growing up
             
-            var isTamed = __instance.IsTamed();
-            if (!isTamed)
+            if (tameable && Plugin.Configs.ShowTamingProgress.Value)
             {
-                if (tameable && Plugin.Configs.ShowTamingProgress.Value)
+                if (__instance.IsTamed() == false && tameable.m_tamingTime > 0) // 0 = disable taming
                 {
                     if (Helpers.ZNetHelper.TryGetZDO(tameable, out ZDO zdo))
                     {
@@ -35,7 +34,7 @@ namespace OfTamingAndBreeding.Patches
                         {
                             var percent = (float)(int)((1f - Mathf.Clamp01(remainingTime / tameable.m_tamingTime)) * 100f * precision) / precision;
                             string percentText = percent.ToString($"F{decimals}", System.Globalization.CultureInfo.InvariantCulture);
-                            __result += Localization.instance.Localize($" ({percentText}%)");
+                            __result += Localization.instance.Localize($" (T:{percentText}%)");
                         }
                         // hotfix
                         else if (remainingTime > tameable.m_tamingTime)
@@ -45,18 +44,16 @@ namespace OfTamingAndBreeding.Patches
                     }
                 }
             }
-            else
+            
+            if (growup && Plugin.Configs.ShowOffspringGrowProgress.Value)
             {
-                if (growup && Plugin.Configs.ShowOffspringGrowProgress.Value)
+                var growupAPI = Internals.GrowupAPI.GetOrCreate(growup);
+                if (growupAPI.m_baseAI != null)
                 {
-                    var growupAPI = Internals.GrowupAPI.GetOrCreate(growup);
-                    if (growupAPI.m_baseAI != null)
-                    {
-                        var remainingTime = growup.m_growTime - (float)growupAPI.m_baseAI.GetTimeSinceSpawned().TotalSeconds;
-                        var percent = (float)(int)((1f - Mathf.Clamp01(remainingTime / growup.m_growTime)) * 100f * precision) / precision;
-                        string percentText = percent.ToString($"F{decimals}", System.Globalization.CultureInfo.InvariantCulture);
-                        __result += Localization.instance.Localize($" ({percentText}%)");
-                    }
+                    var remainingTime = growup.m_growTime - (float)growupAPI.m_baseAI.GetTimeSinceSpawned().TotalSeconds;
+                    var percent = (float)(int)((1f - Mathf.Clamp01(remainingTime / growup.m_growTime)) * 100f * precision) / precision;
+                    string percentText = percent.ToString($"F{decimals}", System.Globalization.CultureInfo.InvariantCulture);
+                    __result += Localization.instance.Localize($" (G:{percentText}%)");
                 }
             }
 

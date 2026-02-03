@@ -55,6 +55,9 @@ namespace OfTamingAndBreeding.Internals
             if (!Plugin.Configs.HoverShowFedTimer.Value)
                 return;
 
+            if (m_fedDuration <= 0)
+                return;
+
             long lastFedTimeLong = zdo.GetLong(ZDOVars.s_tameLastFeeding, 0L);
 
             double secLeft;

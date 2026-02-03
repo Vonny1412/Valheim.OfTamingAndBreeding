@@ -61,7 +61,7 @@ namespace OfTamingAndBreeding.Data.Handling
             switch (data.Components.EggGrow)
             {
                 case Models.SubData.ComponentBehavior.Remove:
-                    Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.EggGrow)}({nameof(Models.SubData.ComponentBehavior.Remove)}): Component cannot be removed");
+                    //Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.EggGrow)}({nameof(Models.SubData.ComponentBehavior.Remove)}): Component cannot be removed");
                     break;
                 case Models.SubData.ComponentBehavior.Patch:
                     if (data.EggGrow == null)
@@ -74,6 +74,26 @@ namespace OfTamingAndBreeding.Data.Handling
                     if (data.EggGrow != null)
                     {
                         Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.EggGrow)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
+                    }
+                    break;
+            }
+
+            switch (data.Components.Floating)
+            {
+                case Models.SubData.ComponentBehavior.Remove:
+                    // can be removed
+                    break;
+                case Models.SubData.ComponentBehavior.Patch:
+                    if (data.Floating == null)
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Floating)}({nameof(Models.SubData.ComponentBehavior.Patch)}): Missing component data");
+                        error = true;
+                    }
+                    break;
+                case Models.SubData.ComponentBehavior.Inherit:
+                    if (data.Floating != null)
+                    {
+                        Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.Floating)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
                     }
                     break;
             }
@@ -358,26 +378,22 @@ namespace OfTamingAndBreeding.Data.Handling
             }
             else if (data.Components.EggGrow == Models.SubData.ComponentBehavior.Remove)
             {
-                // ignore, cannot be removed
+                ctx.DestroyComponentIfExists<EggGrow>(eggName, egg);
             }
 
+            if (data.Components.Floating == Models.SubData.ComponentBehavior.Patch)
+            {
+                var eggFloating = ctx.GetOrAddComponent<Floating>(eggName, egg);
+
+                Plugin.LogDebug($"{model}.{nameof(data.Floating)}: Setting values");
+
+                eggFloating.m_waterLevelOffset = data.Floating.WaterLevelOffset;
+            }
+            else if (data.Components.Floating == Models.SubData.ComponentBehavior.Remove)
+            {
+                ctx.DestroyComponentIfExists<Floating>(eggName, egg);
+            }
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         //------------------------------------------------
         // CLEANUP

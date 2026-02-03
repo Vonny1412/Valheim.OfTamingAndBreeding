@@ -13,13 +13,8 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         static bool Prefix(Growup __instance)
         {
-            if (!Helpers.ZNetHelper.TryGetZDO(__instance, out ZDO zdo, out ZNetView nview) || !nview.IsOwner())
-            {
-                return true; // let valheim handle
-            }
-
             var growupAPI = Internals.GrowupAPI.GetOrCreate(__instance);
-            return growupAPI.GrowUpdate_Prefix(zdo);
+            return growupAPI.GrowUpdate_Prefix();
         }
     }
     

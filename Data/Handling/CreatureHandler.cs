@@ -346,10 +346,11 @@ namespace OfTamingAndBreeding.Data.Handling
                 {
                     Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting Character values");
                     if (data.Character.Group != null) character.m_group = data.Character.Group;
-                    if (data.Character.StickToFaction) Patches.Contexts.DataContext.SetSticksToFaction(creatureName);
-                    Patches.Contexts.DataContext.SetCanAttackTames(creatureName, data.Character.CanAttackTames);
-                    Patches.Contexts.DataContext.SetCanBeAttackedByTames(creatureName, data.Character.CanBeAttackedByTames);
-                    Patches.Contexts.DataContext.SetCanAttackPlayer(creatureName, data.Character.CanAttackPlayer);
+                    if (data.Character.GroupWhenTamed != null) Patches.Contexts.DataContext.SetGroupWhenTamed(creatureName, data.Character.GroupWhenTamed);
+                    if (data.Character.TamesStickToFaction) Patches.Contexts.DataContext.SetSticksToFaction(creatureName);
+                    Patches.Contexts.DataContext.SetCanAttackTames(creatureName, data.Character.TamesCanAttackTames);
+                    Patches.Contexts.DataContext.SetCanBeAttackedByTames(creatureName, data.Character.TamesCanBeAttackedByTames);
+                    Patches.Contexts.DataContext.SetCanAttackPlayer(creatureName, data.Character.TamesCanAttackPlayer);
                 }
             }
             else if (data.Components.Character == Models.SubData.ComponentBehavior.Remove)
@@ -433,13 +434,13 @@ namespace OfTamingAndBreeding.Data.Handling
                     var pet = ctx.GetOrAddComponent<Pet>(creatureName, creature); // aso neccessary
                     Plugin.LogDebug($"{model}.{nameof(data.Tameable)}: Setting Tameable values");
 
-                    if (data.Tameable.FedDuration != null) tameable.m_fedDuration = (float)data.Tameable.FedDuration; // this is just a fallback, see below
                     if (data.Tameable.TamingTime != null) tameable.m_tamingTime = (float)data.Tameable.TamingTime;
                     if (data.Tameable.Commandable != null) tameable.m_commandable = (bool)data.Tameable.Commandable;
-
-                    if (data.Tameable.FedDuration != null) // fed duration can vary depending on consumed food. need to cache the original value
+                    if (data.Tameable.FedDuration != null) tameable.m_fedDuration = (float)data.Tameable.FedDuration;
+                    
+                    if (tameable.m_fedDuration > 0)
                     {
-                        Patches.Contexts.DataContext.SetFedDuration(creatureName, (float)data.Tameable.FedDuration);
+                        Patches.Contexts.DataContext.SetFedDuration(creatureName, tameable.m_fedDuration);
                     }
 
                     Plugin.LogDebug($"{model}.{nameof(data.Tameable)}: Setting effects");

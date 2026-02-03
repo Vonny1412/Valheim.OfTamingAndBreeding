@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OfTamingAndBreeding.Internals.API;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -22,15 +23,26 @@ namespace OfTamingAndBreeding.Internals
         {
         }
 
-        public bool GrowUpdate_Prefix(ZDO zdo)
+        public bool GrowUpdate_Prefix()
         {
+            var __instance = (Growup)__IAPI_instance;
+            if (!Helpers.ZNetHelper.TryGetZDO(__instance, out ZDO zdo, out ZNetView nview) || !nview.IsOwner())
+            {
+                return false;
+            }
             // m_baseAI is set on awake. shouldnt be null. if its null, i dont care
             if (!(m_baseAI.GetTimeSinceSpawned().TotalSeconds > (double)m_growTime))
             {
-                return false; // like default
+                //
+                // still growing
+                //
+                return false;
             }
 
-            // vanilla block start
+            //
+            // ready to grow up
+            //
+
             Character myCharacter = GetComponent<Character>();
             GameObject spawned = UnityEngine.Object.Instantiate(GetPrefab(), transform.position, transform.rotation);
             Character spawnedCharacter = spawned.GetComponent<Character>();
@@ -38,12 +50,63 @@ namespace OfTamingAndBreeding.Internals
             {
                 if (m_inheritTame)
                 {
-                    spawnedCharacter.SetTamed(myCharacter.IsTamed());
-                }
+                    if (myCharacter.IsTamed())
+                    {
+                        spawnedCharacter.SetTamed(true);
+                    }
+                    else
+                    {
+                        Tameable tameable1 = GetComponent<Tameable>();
+                        Tameable tameable2 = spawned.GetComponent<Tameable>();
+                        if ((bool)tameable1 && (bool)tameable2 && Helpers.ZNetHelper.TryGetZDO(spawned, out ZDO zdo2))
+                        {
 
+                            //
+                            // pass taming progress to growup
+                            //
+
+                            var oldTotal = tameable1.m_tamingTime;
+                            var newTotal = tameable2.m_tamingTime;
+
+                            if (oldTotal > 0 && newTotal > 0)
+                            {
+                                var oldLeft = zdo.GetFloat(ZDOVars.s_tameTimeLeft, oldTotal);
+                                oldLeft = Mathf.Clamp(oldLeft, 0f, oldTotal);
+
+                                var progress = (oldTotal <= 0f) ? 0f : 1f - (oldLeft / oldTotal);
+                                progress = Mathf.Clamp01(progress);
+
+                                var newLeft = (newTotal <= 0f) ? 0f : (1f - progress) * newTotal;
+                                Helpers.ZNetHelper.SetFloat(zdo2, ZDOVars.s_tameTimeLeft, newLeft);
+
+                            }
+
+                            //
+                            // pass fed to growup (not procentual)
+                            //
+
+                            var oldFedDuration = tameable1.m_fedDuration;
+                            var newFedDuration = tameable2.m_fedDuration;
+                            if (oldFedDuration > 0 && newFedDuration > 0)
+                            {
+                                var lastFeeding = zdo.GetLong(ZDOVars.s_tameLastFeeding, 0L);
+                                Helpers.ZNetHelper.SetLong(zdo2, ZDOVars.s_tameLastFeeding, lastFeeding);
+                            }
+
+                        }
+                    }
+                }
                 spawnedCharacter.SetLevel(myCharacter.GetLevel());
             }
-            // vanilla block end
+            else
+            {
+                // just in case someone tries this - i'll allow it
+                ItemDrop spawnedItem = spawned.GetComponent<ItemDrop>();
+                if ((bool)spawnedItem)
+                {
+                    spawnedItem.SetQuality(myCharacter.GetLevel());
+                }
+            }
 
             ThirdParty.Mods.CllCBridge.PassTraits(zdo, spawned);
 

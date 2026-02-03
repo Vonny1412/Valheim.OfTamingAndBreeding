@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using OfTamingAndBreeding.Data.Models.SubData;
 namespace OfTamingAndBreeding.Patches
 {
-
     [HarmonyPatch(typeof(BaseAI), "IsEnemy", new[] { typeof(Character), typeof(Character) })]
     static class BaseAI_IsEnemy_Patch
     {
@@ -49,10 +48,23 @@ namespace OfTamingAndBreeding.Patches
             // handle stick-to-faction
             var stickToFaction1 = Contexts.DataContext.GetSticksToFaction(name1);
             var stickToFaction2 = Contexts.DataContext.GetSticksToFaction(name2);
-            if ((stickToFaction1 || stickToFaction2) && (faction1 == faction2))
+            if (isTamed1 && stickToFaction1 || isTamed2 && stickToFaction2)
             {
-                __result = false;
-                return false;
+                if (faction1 == faction2)
+                {
+                    __result = false;
+                    return false;
+                }
+                else if (faction1 == Character.Faction.Undead && faction2 == Character.Faction.Demon)
+                {
+                    __result = false;
+                    return false;
+                }
+                else if (faction1 == Character.Faction.Demon && faction2 == Character.Faction.Undead)
+                {
+                    __result = false;
+                    return false;
+                }
             }
 
             if (isTamed1 && isTamed2)
@@ -105,7 +117,7 @@ namespace OfTamingAndBreeding.Patches
             }
             else
             {
-                if (isTamed1 && b is Player)
+                if (isTamed1 && faction2 == Character.Faction.Players)
                 {
                     var canAttack = false;
                     switch (Contexts.DataContext.GetCanAttackPlayer(name1))

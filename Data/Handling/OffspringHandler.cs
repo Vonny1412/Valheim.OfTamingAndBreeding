@@ -200,6 +200,14 @@ namespace OfTamingAndBreeding.Data.Handling
             ctx.DestroyComponentIfExists<MonsterAI>(offspringName, offspring); // offsprings do not attack
             ctx.GetOrAddComponent<AnimalAI>(offspringName, offspring); // offsprings do act like passive animals
 
+            var footStep = offspring.GetComponent<FootStep>();
+            if ((bool)footStep)
+            {
+                footStep.m_effects.Clear();
+            }
+
+
+
             if (data.Components.Character == Models.SubData.ComponentBehavior.Patch)
             {
                 if (data.Character != null)
@@ -218,10 +226,38 @@ namespace OfTamingAndBreeding.Data.Handling
                         var setScale = data.Character.Scale;
 
                         Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting custom scaling to {setScale}");
+
                         offspring.transform.localScale = UnityEngine.Vector3.one * setScale;
+                        offspringCharacter.m_eye.position = new UnityEngine.Vector3(
+                            offspringCharacter.m_eye.position.x * setScale,
+                            offspringCharacter.m_eye.position.y * setScale,
+                            offspringCharacter.m_eye.position.z * setScale
+                            );
+
+                        offspringCharacter.m_speed *= setScale;
+
+                        //offspringCharacter.m_crouchSpeed *= setScale;
+                        //offspringCharacter.m_walkSpeed *= setScale;
+                        //offspringCharacter.m_runSpeed *= setScale;
+                        //offspringCharacter.m_swimSpeed *= setScale;
+                        //offspringCharacter.m_flySlowSpeed *= setScale;
+                        //offspringCharacter.m_flyFastSpeed *= setScale;
+
+                        offspringCharacter.m_turnSpeed /= setScale;
+                        offspringCharacter.m_runTurnSpeed /= setScale;
+                        offspringCharacter.m_swimTurnSpeed /= setScale;
+                        offspringCharacter.m_flyTurnSpeed /= setScale;
+
+                        var col = offspring.GetComponent<CapsuleCollider>();
+                        if (col)
+                        {
+                            col.height *= setScale;
+                            col.radius *= setScale;
+                            col.center *= setScale;
+                        }
 
                         Helpers.VfxHelper.ScaleVfx(offspring, setScale); // scale model particles
-                        Patches.Contexts.DataContext.SetAnimationScaling(offspringName, 1f / setScale); // scale animations
+                        Patches.Contexts.DataContext.SetAnimationScaling(offspringName, 1/setScale); // scale animations
 
                         // we need to clone the effect prefab to make it scaleable independently from its original effect prefab
                         // but we need to make sure that the original effect prefab only gets cloned once 
@@ -248,7 +284,7 @@ namespace OfTamingAndBreeding.Data.Handling
 
                     }
 
-                    if (data.Character.StickToFaction)
+                    if (data.Character.TamesStickToFaction)
                     {
                         Patches.Contexts.DataContext.SetSticksToFaction(offspringName);
                     }
@@ -270,7 +306,7 @@ namespace OfTamingAndBreeding.Data.Handling
 
                     if (data.Growup.GrowTime != null) offspringGrowup.m_growTime = (float)data.Growup.GrowTime;
                     if (data.Growup.InheritTame != null) offspringGrowup.m_inheritTame = (bool)data.Growup.InheritTame;
-
+                    
                     offspringGrowup.m_grownPrefab = null; // WeakReference never use explicite prefab, always use list - stick to the system
                     offspringGrowup.m_altGrownPrefabs = new List<Growup.GrownEntry>();
                     foreach (var grownData in data.Growup.Grown)

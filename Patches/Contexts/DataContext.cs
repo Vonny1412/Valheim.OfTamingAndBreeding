@@ -24,6 +24,7 @@ namespace OfTamingAndBreeding.Patches.Contexts
 
 
 
+
         private static readonly Dictionary<int, IsEnemyCondition> canAttackTames = new Dictionary<int, IsEnemyCondition>();
         private static readonly Dictionary<int, IsEnemyCondition> canBeAttackedByTames = new Dictionary<int, IsEnemyCondition>();
         private static readonly Dictionary<int, IsEnemyCondition> canAttackPlayer = new Dictionary<int, IsEnemyCondition>();
@@ -73,6 +74,12 @@ namespace OfTamingAndBreeding.Patches.Contexts
         private static readonly HashSet<int> stickToFaction = new HashSet<int>();
         public static void SetSticksToFaction(string name) => stickToFaction.Add(name.GetStableHashCode());
         public static bool GetSticksToFaction(string name) => stickToFaction.Contains(name.GetStableHashCode());
+
+
+
+        private static readonly Dictionary<int, string> groupWhenTamed = new Dictionary<int, string>();
+        public static void SetGroupWhenTamed(string name, string group) => groupWhenTamed[name.GetStableHashCode()] = group;
+        public static bool GetGroupWhenTamed(string name, out string group) => groupWhenTamed.TryGetValue(name.GetStableHashCode(), out group);
 
 
 

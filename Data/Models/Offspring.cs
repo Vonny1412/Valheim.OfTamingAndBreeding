@@ -38,11 +38,11 @@ namespace OfTamingAndBreeding.Data.Models
 
         [Serializable]
         [CanBeNull]
-        public class CharacterData : SubData.ICharacterAIData
+        public class CharacterData
         {
             public string Name { get; set; } = null;
             public string Group { get; set; } = null;
-            public bool StickToFaction { get; set; } = true;
+            public bool TamesStickToFaction { get; set; } = false;
             public float Scale { get; set; } = 1;
         }
 

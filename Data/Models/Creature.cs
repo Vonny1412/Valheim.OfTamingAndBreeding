@@ -35,13 +35,14 @@ namespace OfTamingAndBreeding.Data.Models
 
         [Serializable]
         [CanBeNull]
-        public class CharacterAIData : ICharacterAIData
+        public class CharacterAIData
         {
             public string Group { get; set; } = null;
-            public bool StickToFaction { get; set; } = true; // OTAB feature
-            public IsEnemyCondition CanAttackTames { get; set; } = IsEnemyCondition.Never; // OTAB feature
-            public IsEnemyCondition CanBeAttackedByTames { get; set; } = IsEnemyCondition.Never; // OTAB feature
-            public IsEnemyCondition CanAttackPlayer { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public string GroupWhenTamed { get; set; } = null;
+            public bool TamesStickToFaction { get; set; } = false; // OTAB feature
+            public IsEnemyCondition TamesCanAttackTames { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public IsEnemyCondition TamesCanBeAttackedByTames { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public IsEnemyCondition TamesCanAttackPlayer { get; set; } = IsEnemyCondition.Never; // OTAB feature
         }
 
         [Serializable]
