@@ -1,5 +1,4 @@
-﻿
-using System.Reflection.Emit;
+﻿using System.Reflection.Emit;
 using System.Reflection;
 
 namespace OfTamingAndBreeding.Internals.API.Core.Invokers

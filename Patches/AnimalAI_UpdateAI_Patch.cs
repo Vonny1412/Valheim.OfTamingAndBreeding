@@ -12,7 +12,7 @@ namespace OfTamingAndBreeding.Patches
             if (Internals.AnimalAIAPI.TryGet(__instance, out Internals.AnimalAIAPI api))
             {
                 // custom updateAI to make the animal consume items on the ground
-                return api.UpdateConsumeAI(dt);
+                return api.UpdateCustomAI(dt);
             }
             return true;
         }

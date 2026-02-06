@@ -1,8 +1,6 @@
-
 using Character_Alias = Character;
 using EffectList_Alias = EffectList;
 using Humanoid_Alias = Humanoid;
-using ItemDrop_ItemData_Alias = ItemDrop.ItemData;
 using ItemDrop_Alias = ItemDrop;
 using MonsterAI_Alias = MonsterAI;
 using Piece_Alias = Piece;
@@ -15,9 +13,6 @@ using UnityEngine_Vector3_Alias = UnityEngine.Vector3;
 using ZDOID_Alias = ZDOID;
 using ZNetView_Alias = ZNetView;
 
-using OfTamingAndBreeding.Internals.API.Core;
-using OfTamingAndBreeding.Internals.API.Core.Invokers;
-using OfTamingAndBreeding.Internals.API.Core.Signatures;
 namespace OfTamingAndBreeding.Internals.API
 {
     public partial class Tameable : UnityEngine.MonoBehaviour
@@ -144,54 +139,54 @@ namespace OfTamingAndBreeding.Internals.API
             get => ((Tameable_Alias)__IAPI_instance).m_tameTextGetter;
             set => ((Tameable_Alias)__IAPI_instance).m_tameTextGetter = value;
         }
-        public static readonly FieldMutateInvoker<Character_Alias> __IAPI_m_character_Invoker = new FieldMutateInvoker<Character_Alias>(typeof(Tameable_Alias), "m_character");
+        public static readonly Core.Invokers.FieldMutateInvoker<Character_Alias> __IAPI_m_character_Invoker = new Core.Invokers.FieldMutateInvoker<Character_Alias>(typeof(Tameable_Alias), "m_character");
         public Character_Alias m_character
         {
             get => __IAPI_m_character_Invoker.Get(((Tameable_Alias)__IAPI_instance));
             set => __IAPI_m_character_Invoker.Set(((Tameable_Alias)__IAPI_instance), value);
         }
-        public static readonly FieldMutateInvoker<MonsterAI_Alias> __IAPI_m_monsterAI_Invoker = new FieldMutateInvoker<MonsterAI_Alias>(typeof(Tameable_Alias), "m_monsterAI");
+        public static readonly Core.Invokers.FieldMutateInvoker<MonsterAI_Alias> __IAPI_m_monsterAI_Invoker = new Core.Invokers.FieldMutateInvoker<MonsterAI_Alias>(typeof(Tameable_Alias), "m_monsterAI");
         public MonsterAI_Alias m_monsterAI
         {
             get => __IAPI_m_monsterAI_Invoker.Get(((Tameable_Alias)__IAPI_instance));
             set => __IAPI_m_monsterAI_Invoker.Set(((Tameable_Alias)__IAPI_instance), value);
         }
-        public static readonly FieldMutateInvoker<Piece_Alias> __IAPI_m_piece_Invoker = new FieldMutateInvoker<Piece_Alias>(typeof(Tameable_Alias), "m_piece");
+        public static readonly Core.Invokers.FieldMutateInvoker<Piece_Alias> __IAPI_m_piece_Invoker = new Core.Invokers.FieldMutateInvoker<Piece_Alias>(typeof(Tameable_Alias), "m_piece");
         public Piece_Alias m_piece
         {
             get => __IAPI_m_piece_Invoker.Get(((Tameable_Alias)__IAPI_instance));
             set => __IAPI_m_piece_Invoker.Set(((Tameable_Alias)__IAPI_instance), value);
         }
-        public static readonly FieldMutateInvoker<ZNetView_Alias> __IAPI_m_nview_Invoker = new FieldMutateInvoker<ZNetView_Alias>(typeof(Tameable_Alias), "m_nview");
+        public static readonly Core.Invokers.FieldMutateInvoker<ZNetView_Alias> __IAPI_m_nview_Invoker = new Core.Invokers.FieldMutateInvoker<ZNetView_Alias>(typeof(Tameable_Alias), "m_nview");
         public ZNetView_Alias m_nview
         {
             get => __IAPI_m_nview_Invoker.Get(((Tameable_Alias)__IAPI_instance));
             set => __IAPI_m_nview_Invoker.Set(((Tameable_Alias)__IAPI_instance), value);
         }
-        public static readonly FieldMutateInvoker<float> __IAPI_m_lastPetTime_Invoker = new FieldMutateInvoker<float>(typeof(Tameable_Alias), "m_lastPetTime");
+        public static readonly Core.Invokers.FieldMutateInvoker<float> __IAPI_m_lastPetTime_Invoker = new Core.Invokers.FieldMutateInvoker<float>(typeof(Tameable_Alias), "m_lastPetTime");
         public float m_lastPetTime
         {
             get => __IAPI_m_lastPetTime_Invoker.Get(((Tameable_Alias)__IAPI_instance));
             set => __IAPI_m_lastPetTime_Invoker.Set(((Tameable_Alias)__IAPI_instance), value);
         }
-        public static readonly FieldMutateInvoker<float> __IAPI_m_unsummonTime_Invoker = new FieldMutateInvoker<float>(typeof(Tameable_Alias), "m_unsummonTime");
+        public static readonly Core.Invokers.FieldMutateInvoker<float> __IAPI_m_unsummonTime_Invoker = new Core.Invokers.FieldMutateInvoker<float>(typeof(Tameable_Alias), "m_unsummonTime");
         public float m_unsummonTime
         {
             get => __IAPI_m_unsummonTime_Invoker.Get(((Tameable_Alias)__IAPI_instance));
             set => __IAPI_m_unsummonTime_Invoker.Set(((Tameable_Alias)__IAPI_instance), value);
         }
-        public static readonly FieldMutateInvoker<System.Collections.Generic.List<Player_Alias>> __IAPI_s_nearbyPlayers_Invoker = new FieldMutateInvoker<System.Collections.Generic.List<Player_Alias>>(typeof(Tameable_Alias), "s_nearbyPlayers");
+        public static readonly Core.Invokers.FieldMutateInvoker<System.Collections.Generic.List<Player_Alias>> __IAPI_s_nearbyPlayers_Invoker = new Core.Invokers.FieldMutateInvoker<System.Collections.Generic.List<Player_Alias>>(typeof(Tameable_Alias), "s_nearbyPlayers");
         public static System.Collections.Generic.List<Player_Alias> s_nearbyPlayers
         {
             get => __IAPI_s_nearbyPlayers_Invoker.Get(null);
             set => __IAPI_s_nearbyPlayers_Invoker.Set(null, value);
         }
-        public static readonly ConstFieldInvoker<float> __IAPI_m_playerMaxDistance_Invoker = new ConstFieldInvoker<float>(typeof(Tameable_Alias), "m_playerMaxDistance");
+        public static readonly Core.Invokers.ConstFieldInvoker<float> __IAPI_m_playerMaxDistance_Invoker = new Core.Invokers.ConstFieldInvoker<float>(typeof(Tameable_Alias), "m_playerMaxDistance");
         public static float m_playerMaxDistance
         {
             get => __IAPI_m_playerMaxDistance_Invoker.Get(null);
         }
-        public static readonly ConstFieldInvoker<float> __IAPI_m_tameDeltaTime_Invoker = new ConstFieldInvoker<float>(typeof(Tameable_Alias), "m_tameDeltaTime");
+        public static readonly Core.Invokers.ConstFieldInvoker<float> __IAPI_m_tameDeltaTime_Invoker = new Core.Invokers.ConstFieldInvoker<float>(typeof(Tameable_Alias), "m_tameDeltaTime");
         public static float m_tameDeltaTime
         {
             get => __IAPI_m_tameDeltaTime_Invoker.Get(null);
@@ -200,7 +195,7 @@ namespace OfTamingAndBreeding.Internals.API
 
 
 
-        public static readonly VoidMethodInvoker __IAPI_Tame_Invoker1 = new VoidMethodInvoker(typeof(Tameable_Alias), "Tame", new ParamSig[] { });
+        public static readonly Core.Invokers.VoidMethodInvoker __IAPI_Tame_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(Tameable_Alias), "Tame", new Core.Signatures.ParamSig[] { });
         public void Tame() => __IAPI_Tame_Invoker1.Invoke(((Tameable_Alias)__IAPI_instance), new object[] { });
 
 
@@ -210,18 +205,18 @@ namespace OfTamingAndBreeding.Internals.API
 
 
 
-        public static readonly TypedMethodInvoker<float> __IAPI_GetRemainingTime_Invoker1 = new TypedMethodInvoker<float>(typeof(Tameable_Alias), "GetRemainingTime", new ParamSig[] { });
+        public static readonly Core.Invokers.TypedMethodInvoker<float> __IAPI_GetRemainingTime_Invoker1 = new Core.Invokers.TypedMethodInvoker<float>(typeof(Tameable_Alias), "GetRemainingTime", new Core.Signatures.ParamSig[] { });
         public float GetRemainingTime() => __IAPI_GetRemainingTime_Invoker1.Invoke(((Tameable_Alias)__IAPI_instance), new object[] { });
 
 
 
-        public static readonly VoidMethodInvoker __IAPI_DecreaseRemainingTime_Invoker1 = new VoidMethodInvoker(typeof(Tameable_Alias), "DecreaseRemainingTime", new ParamSig[] { new NonGenericParamSig(typeof(float), false) });
+        public static readonly Core.Invokers.VoidMethodInvoker __IAPI_DecreaseRemainingTime_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(Tameable_Alias), "DecreaseRemainingTime", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(float), false) });
         public void DecreaseRemainingTime(float time) => __IAPI_DecreaseRemainingTime_Invoker1.Invoke(((Tameable_Alias)__IAPI_instance), new object[] { time });
 
 
 
 
-        public static readonly VoidMethodInvoker __IAPI_OnConsumedItem_Invoker1 = new VoidMethodInvoker(typeof(Tameable_Alias), "OnConsumedItem", new ParamSig[] { new NonGenericParamSig(typeof(ItemDrop_Alias), false) });
+        public static readonly Core.Invokers.VoidMethodInvoker __IAPI_OnConsumedItem_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(Tameable_Alias), "OnConsumedItem", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(ItemDrop_Alias), false) });
         public void OnConsumedItem(ItemDrop_Alias item) => __IAPI_OnConsumedItem_Invoker1.Invoke(((Tameable_Alias)__IAPI_instance), new object[] { item });
 
 
@@ -230,7 +225,7 @@ namespace OfTamingAndBreeding.Internals.API
 
 
 
-        public static readonly VoidMethodInvoker __IAPI_SetName_Invoker1 = new VoidMethodInvoker(typeof(Tameable_Alias), "SetName", new ParamSig[] { });
+        public static readonly Core.Invokers.VoidMethodInvoker __IAPI_SetName_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(Tameable_Alias), "SetName", new Core.Signatures.ParamSig[] { });
         public void SetName() => __IAPI_SetName_Invoker1.Invoke(((Tameable_Alias)__IAPI_instance), new object[] { });
 
 
@@ -238,6 +233,14 @@ namespace OfTamingAndBreeding.Internals.API
         public static void TameAllInArea(UnityEngine_Vector3_Alias point, float radius) => Tameable_Alias.TameAllInArea(point, radius);
         public void Command(Humanoid_Alias user, bool message = true) => ((Tameable_Alias)__IAPI_instance).Command(user, message);
 
+
+        public static readonly Core.Invokers.TypedMethodInvoker<Player_Alias> __IAPI_GetPlayer_Invoker1 = new Core.Invokers.TypedMethodInvoker<Player_Alias>(typeof(Tameable_Alias), "GetPlayer", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(ZDOID_Alias), false) });
+        public Player_Alias GetPlayer(ZDOID_Alias characterID) => __IAPI_GetPlayer_Invoker1.Invoke(((Tameable_Alias)__IAPI_instance), new object[] { characterID });
+
+
+
+
+        public string GetHoverName() => ((Tameable_Alias)__IAPI_instance).GetHoverName();
 
 
 

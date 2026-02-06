@@ -23,8 +23,6 @@ namespace OfTamingAndBreeding.Patches.Contexts
 
 
 
-
-
         private static readonly Dictionary<int, IsEnemyCondition> canAttackTames = new Dictionary<int, IsEnemyCondition>();
         private static readonly Dictionary<int, IsEnemyCondition> canBeAttackedByTames = new Dictionary<int, IsEnemyCondition>();
         private static readonly Dictionary<int, IsEnemyCondition> canAttackPlayer = new Dictionary<int, IsEnemyCondition>();
@@ -71,9 +69,25 @@ namespace OfTamingAndBreeding.Patches.Contexts
 
 
 
+        private static readonly HashSet<int> eatingDisabled = new HashSet<int>();
+        public static void SetEatingDisabled(string name) => eatingDisabled.Add(name.GetStableHashCode());
+        public static bool GetEatingDisabled(string name) => eatingDisabled.Contains(name.GetStableHashCode());
+
+
+
+        private static readonly HashSet<int> tamingDisabled = new HashSet<int>();
+        public static void SetTamingDisabled(string name) => tamingDisabled.Add(name.GetStableHashCode());
+        public static bool GetTamingDisabled(string name) => tamingDisabled.Contains(name.GetStableHashCode());
+
+
+
+
+
         private static readonly HashSet<int> stickToFaction = new HashSet<int>();
         public static void SetSticksToFaction(string name) => stickToFaction.Add(name.GetStableHashCode());
         public static bool GetSticksToFaction(string name) => stickToFaction.Contains(name.GetStableHashCode());
+
+
 
 
 
@@ -90,13 +104,15 @@ namespace OfTamingAndBreeding.Patches.Contexts
 
 
 
+
+
+
         private static readonly Dictionary<int, float> animationScaling = new Dictionary<int, float>();
         private static readonly Dictionary<int, float> eggScales = new Dictionary<int, float>();
         public static void SetAnimationScaling(string name, float scale) => animationScaling[name.GetStableHashCode()] = scale;
         public static void SetEggScale(string name, float scale) => eggScales[name.GetStableHashCode()] = scale;
         public static bool GetAnimationScaling(string name, out float scale) => animationScaling.TryGetValue(name.GetStableHashCode(), out scale);
         public static float GetEggScale(string name) => eggScales.TryGetValue(name.GetStableHashCode(), out float scale) ? scale : 1;
-
 
 
 
@@ -139,23 +155,39 @@ namespace OfTamingAndBreeding.Patches.Contexts
 
 
 
+        
 
-
+            
+            
+            
+            
+            
+            
+            
+            
+            
 
 
         public static void Reset()
         {
+            prefabItemDrops.Clear();
+
             canAttackTames.Clear();
             canBeAttackedByTames.Clear();
-
+            canAttackPlayer.Clear();
             stickToFaction.Clear();
 
             fedDurations.Clear();
+            eatingDisabled.Clear();
+            tamingDisabled.Clear();
+
+            groupWhenTamed.Clear();
 
             animationScaling.Clear();
             eggScales.Clear();
 
             eggNeedsAnyBiome.Clear();
+            eggNeedsLiquid.Clear();
         }
 
 

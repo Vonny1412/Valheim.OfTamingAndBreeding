@@ -1,5 +1,4 @@
-﻿
-namespace OfTamingAndBreeding.Internals.API.Core.Signatures
+﻿namespace OfTamingAndBreeding.Internals.API.Core.Signatures
 {
     public class GenericParamSig : CommonParamSig
     {

@@ -4,9 +4,6 @@ using Growup_GrownEntry_Alias = Growup.GrownEntry;
 using Growup_Alias = Growup;
 using ZNetView_Alias = ZNetView;
 
-using OfTamingAndBreeding.Internals.API.Core;
-using OfTamingAndBreeding.Internals.API.Core.Invokers;
-using OfTamingAndBreeding.Internals.API.Core.Signatures;
 namespace OfTamingAndBreeding.Internals.API
 {
     public partial class Growup : UnityEngine.MonoBehaviour
@@ -36,13 +33,13 @@ namespace OfTamingAndBreeding.Internals.API
             set => ((Growup_Alias)__IAPI_instance).m_altGrownPrefabs = value;
         }
 
-        public static readonly FieldMutateInvoker<BaseAI_Alias> __IAPI_m_baseAI_Invoker = new FieldMutateInvoker<BaseAI_Alias>(typeof(Growup_Alias), "m_baseAI");
+        public static readonly Core.Invokers.FieldMutateInvoker<BaseAI_Alias> __IAPI_m_baseAI_Invoker = new Core.Invokers.FieldMutateInvoker<BaseAI_Alias>(typeof(Growup_Alias), "m_baseAI");
         public BaseAI_Alias m_baseAI
         {
             get => __IAPI_m_baseAI_Invoker.Get(((Growup_Alias)__IAPI_instance));
             set => __IAPI_m_baseAI_Invoker.Set(((Growup_Alias)__IAPI_instance), value);
         }
-        public static readonly FieldMutateInvoker<ZNetView_Alias> __IAPI_m_nview_Invoker = new FieldMutateInvoker<ZNetView_Alias>(typeof(Growup_Alias), "m_nview");
+        public static readonly Core.Invokers.FieldMutateInvoker<ZNetView_Alias> __IAPI_m_nview_Invoker = new Core.Invokers.FieldMutateInvoker<ZNetView_Alias>(typeof(Growup_Alias), "m_nview");
         public ZNetView_Alias m_nview
         {
             get => __IAPI_m_nview_Invoker.Get(((Growup_Alias)__IAPI_instance));

@@ -1,16 +1,11 @@
-
 using UnityEngine_Component_Alias = UnityEngine.Component;
 using UnityEngine_GameObject_Alias = UnityEngine.GameObject;
 using UnityEngine_Transform_Alias = UnityEngine.Transform;
 
-using OfTamingAndBreeding.Internals.API.Core;
-using OfTamingAndBreeding.Internals.API.Core.Invokers;
-using OfTamingAndBreeding.Internals.API.Core.Signatures;
 namespace OfTamingAndBreeding.Internals.API.UnityEngine
 {
     public partial class Component : UnityEngine.Object
     {
-
         public Component(UnityEngine_Component_Alias instance) : base(instance)
         {
         }
@@ -28,10 +23,6 @@ namespace OfTamingAndBreeding.Internals.API.UnityEngine
             get => ((UnityEngine_Component_Alias)__IAPI_instance).tag;
             set => ((UnityEngine_Component_Alias)__IAPI_instance).tag = value;
         }
-
-
-
-
 
         public UnityEngine_Component_Alias GetComponent(System.Type type) => ((UnityEngine_Component_Alias)__IAPI_instance).GetComponent(type);
         public static readonly Core.Invokers.VoidMethodInvoker __IAPI_GetComponentFastPath_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(UnityEngine_Component_Alias), "GetComponentFastPath", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(System.Type), false), new Core.Signatures.NonGenericParamSig(typeof(System.IntPtr), false) });

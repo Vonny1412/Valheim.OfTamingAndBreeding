@@ -13,11 +13,14 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         static bool Prefix(Tameable __instance)
         {
-            var tameableAPI = Internals.TameableAPI.GetOrCreate(__instance);
+            var prefabName = Utils.GetPrefabName(__instance.gameObject.name);
+            if (Contexts.DataContext.GetTamingDisabled(prefabName))
+            {
+                // taming completly disabled
+                return false;
+            }
 
-            // check if this animal is an animal that we are handling
-            // this should only get set on Tameable.Awake()
-            // if its not set, its not an animal we care about
+            var tameableAPI = Internals.TameableAPI.GetOrCreate(__instance);
             if (tameableAPI.IsAnimal())
             {
                 // custom Tameable.TamingUpdate()

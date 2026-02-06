@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Reflection;
 
 namespace OfTamingAndBreeding.Internals.API.Core.Signatures

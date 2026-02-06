@@ -1,13 +1,13 @@
-﻿using Jotunn.Managers;
-using OfTamingAndBreeding.Data.Handling.Base;
-using OfTamingAndBreeding.Data.Models;
-using OfTamingAndBreeding.Helpers;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using UnityEngine;
 
+using UnityEngine;
+using Jotunn.Managers;
+
+using OfTamingAndBreeding.Data.Handling.Base;
+using OfTamingAndBreeding.Helpers;
 namespace OfTamingAndBreeding.Data.Handling
 {
     internal class OffspringHandler : DataHandler<Models.Offspring>
@@ -221,7 +221,12 @@ namespace OfTamingAndBreeding.Data.Handling
                     if (data.Character.Name != null) offspringCharacter.m_name = data.Character.Name;
                     if (data.Character.Group != null) offspringCharacter.m_group = data.Character.Group;
 
-                    if (data.Character.Scale != 1)
+                    if (data.Character.TamesStickToFaction)
+                    {
+                        Patches.Contexts.DataContext.SetSticksToFaction(offspringName);
+                    }
+
+                    if (data.Character.Scale != 1 && data.Character.Scale != 0)
                     {
                         var setScale = data.Character.Scale;
 
@@ -236,17 +241,17 @@ namespace OfTamingAndBreeding.Data.Handling
 
                         offspringCharacter.m_speed *= setScale;
 
-                        //offspringCharacter.m_crouchSpeed *= setScale;
-                        //offspringCharacter.m_walkSpeed *= setScale;
-                        //offspringCharacter.m_runSpeed *= setScale;
-                        //offspringCharacter.m_swimSpeed *= setScale;
-                        //offspringCharacter.m_flySlowSpeed *= setScale;
-                        //offspringCharacter.m_flyFastSpeed *= setScale;
+                        offspringCharacter.m_crouchSpeed *= setScale;
+                        offspringCharacter.m_walkSpeed *= setScale;
+                        offspringCharacter.m_runSpeed *= setScale;
+                        offspringCharacter.m_swimSpeed *= setScale;
+                        offspringCharacter.m_flySlowSpeed *= setScale;
+                        offspringCharacter.m_flyFastSpeed *= setScale;
 
-                        offspringCharacter.m_turnSpeed /= setScale;
-                        offspringCharacter.m_runTurnSpeed /= setScale;
-                        offspringCharacter.m_swimTurnSpeed /= setScale;
-                        offspringCharacter.m_flyTurnSpeed /= setScale;
+                        //offspringCharacter.m_turnSpeed /= setScale;
+                        //offspringCharacter.m_runTurnSpeed /= setScale;
+                        //offspringCharacter.m_swimTurnSpeed /= setScale;
+                        //offspringCharacter.m_flyTurnSpeed /= setScale;
 
                         var col = offspring.GetComponent<CapsuleCollider>();
                         if (col)
@@ -256,16 +261,19 @@ namespace OfTamingAndBreeding.Data.Handling
                             col.center *= setScale;
                         }
 
+                        Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting vfx scaling");
                         Helpers.VfxHelper.ScaleVfx(offspring, setScale); // scale model particles
+                        Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting animation scaling");
                         Patches.Contexts.DataContext.SetAnimationScaling(offspringName, 1/setScale); // scale animations
 
                         // we need to clone the effect prefab to make it scaleable independently from its original effect prefab
                         // but we need to make sure that the original effect prefab only gets cloned once 
+                        Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting effects scaling");
                         var prefix = $"OTAB_{offspringName}_";
                         foreach (var eff in offspringCharacter.m_deathEffects.m_effectPrefabs)
                         {
                             var originalPrefabName = eff.m_prefab.name;
-                            if (!originalPrefabName.EndsWith(prefix))
+                            if (!originalPrefabName.StartsWith(prefix))
                             {
                                 // not cloned yet, try to get it from any cache
                                 var clonedName = $"{prefix}{originalPrefabName}";
@@ -282,11 +290,6 @@ namespace OfTamingAndBreeding.Data.Handling
                             eff.m_inheritParentScale = false;
                         }
 
-                    }
-
-                    if (data.Character.TamesStickToFaction)
-                    {
-                        Patches.Contexts.DataContext.SetSticksToFaction(offspringName);
                     }
 
                 }

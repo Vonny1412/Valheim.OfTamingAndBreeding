@@ -1,4 +1,3 @@
-
 using BaseAI_Alias = BaseAI;
 using Character_Alias = Character;
 using EffectList_Alias = EffectList;
@@ -7,9 +6,6 @@ using Procreation_Alias = Procreation;
 using Tameable_Alias = Tameable;
 using ZNetView_Alias = ZNetView;
 
-using OfTamingAndBreeding.Internals.API.Core;
-using OfTamingAndBreeding.Internals.API.Core.Invokers;
-using OfTamingAndBreeding.Internals.API.Core.Signatures;
 namespace OfTamingAndBreeding.Internals.API
 {
     public partial class Procreation : UnityEngine.MonoBehaviour
@@ -104,38 +100,38 @@ namespace OfTamingAndBreeding.Internals.API
         }
 
 
-        public static readonly FieldMutateInvoker<UnityEngine_GameObject_Alias> __IAPI_m_myPrefab_Invoker = new FieldMutateInvoker<UnityEngine_GameObject_Alias>(typeof(Procreation_Alias), "m_myPrefab");
+        public static readonly Core.Invokers.FieldMutateInvoker<UnityEngine_GameObject_Alias> __IAPI_m_myPrefab_Invoker = new Core.Invokers.FieldMutateInvoker<UnityEngine_GameObject_Alias>(typeof(Procreation_Alias), "m_myPrefab");
         public UnityEngine_GameObject_Alias m_myPrefab
         {
             get => __IAPI_m_myPrefab_Invoker.Get(((Procreation_Alias)__IAPI_instance));
             set => __IAPI_m_myPrefab_Invoker.Set(((Procreation_Alias)__IAPI_instance), value);
         }
-        public static readonly FieldMutateInvoker<UnityEngine_GameObject_Alias> __IAPI_m_offspringPrefab_Invoker = new FieldMutateInvoker<UnityEngine_GameObject_Alias>(typeof(Procreation_Alias), "m_offspringPrefab");
+        public static readonly Core.Invokers.FieldMutateInvoker<UnityEngine_GameObject_Alias> __IAPI_m_offspringPrefab_Invoker = new Core.Invokers.FieldMutateInvoker<UnityEngine_GameObject_Alias>(typeof(Procreation_Alias), "m_offspringPrefab");
         public UnityEngine_GameObject_Alias m_offspringPrefab
         {
             get => __IAPI_m_offspringPrefab_Invoker.Get(((Procreation_Alias)__IAPI_instance));
             set => __IAPI_m_offspringPrefab_Invoker.Set(((Procreation_Alias)__IAPI_instance), value);
         }
-        public static readonly FieldMutateInvoker<ZNetView_Alias> __IAPI_m_nview_Invoker = new FieldMutateInvoker<ZNetView_Alias>(typeof(Procreation_Alias), "m_nview");
+        public static readonly Core.Invokers.FieldMutateInvoker<ZNetView_Alias> __IAPI_m_nview_Invoker = new Core.Invokers.FieldMutateInvoker<ZNetView_Alias>(typeof(Procreation_Alias), "m_nview");
         public ZNetView_Alias m_nview
         {
             get => __IAPI_m_nview_Invoker.Get(((Procreation_Alias)__IAPI_instance));
             set => __IAPI_m_nview_Invoker.Set(((Procreation_Alias)__IAPI_instance), value);
         }
 
-        public static readonly FieldMutateInvoker<BaseAI_Alias> __IAPI_m_baseAI_Invoker = new FieldMutateInvoker<BaseAI_Alias>(typeof(Procreation_Alias), "m_baseAI");
+        public static readonly Core.Invokers.FieldMutateInvoker<BaseAI_Alias> __IAPI_m_baseAI_Invoker = new Core.Invokers.FieldMutateInvoker<BaseAI_Alias>(typeof(Procreation_Alias), "m_baseAI");
         public BaseAI_Alias m_baseAI
         {
             get => __IAPI_m_baseAI_Invoker.Get(((Procreation_Alias)__IAPI_instance));
             set => __IAPI_m_baseAI_Invoker.Set(((Procreation_Alias)__IAPI_instance), value);
         }
-        public static readonly FieldMutateInvoker<Character_Alias> __IAPI_m_character_Invoker = new FieldMutateInvoker<Character_Alias>(typeof(Procreation_Alias), "m_character");
+        public static readonly Core.Invokers.FieldMutateInvoker<Character_Alias> __IAPI_m_character_Invoker = new Core.Invokers.FieldMutateInvoker<Character_Alias>(typeof(Procreation_Alias), "m_character");
         public Character_Alias m_character
         {
             get => __IAPI_m_character_Invoker.Get(((Procreation_Alias)__IAPI_instance));
             set => __IAPI_m_character_Invoker.Set(((Procreation_Alias)__IAPI_instance), value);
         }
-        public static readonly FieldMutateInvoker<Tameable_Alias> __IAPI_m_tameable_Invoker = new FieldMutateInvoker<Tameable_Alias>(typeof(Procreation_Alias), "m_tameable");
+        public static readonly Core.Invokers.FieldMutateInvoker<Tameable_Alias> __IAPI_m_tameable_Invoker = new Core.Invokers.FieldMutateInvoker<Tameable_Alias>(typeof(Procreation_Alias), "m_tameable");
         public Tameable_Alias m_tameable
         {
             get => __IAPI_m_tameable_Invoker.Get(((Procreation_Alias)__IAPI_instance));
@@ -148,20 +144,20 @@ namespace OfTamingAndBreeding.Internals.API
         public int GetLovePoints() => ((Procreation_Alias)__IAPI_instance).GetLovePoints();
 
 
-        public static readonly TypedMethodInvoker<bool> __IAPI_IsPregnant_Invoker1 = new TypedMethodInvoker<bool>(typeof(Procreation_Alias), "IsPregnant", new ParamSig[] { });
+        public static readonly Core.Invokers.TypedMethodInvoker<bool> __IAPI_IsPregnant_Invoker1 = new Core.Invokers.TypedMethodInvoker<bool>(typeof(Procreation_Alias), "IsPregnant", new Core.Signatures.ParamSig[] { });
         public bool IsPregnant() => __IAPI_IsPregnant_Invoker1.Invoke(((Procreation_Alias)__IAPI_instance), new object[] { });
 
 
 
-        public static readonly VoidMethodInvoker __IAPI_Procreate_Invoker1 = new VoidMethodInvoker(typeof(Procreation_Alias), "Procreate", new ParamSig[] { });
+        public static readonly Core.Invokers.VoidMethodInvoker __IAPI_Procreate_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(Procreation_Alias), "Procreate", new Core.Signatures.ParamSig[] { });
         public void Procreate() => __IAPI_Procreate_Invoker1.Invoke(((Procreation_Alias)__IAPI_instance), new object[] { });
 
         public bool ReadyForProcreation() => ((Procreation_Alias)__IAPI_instance).ReadyForProcreation();
-        public static readonly VoidMethodInvoker __IAPI_MakePregnant_Invoker1 = new VoidMethodInvoker(typeof(Procreation_Alias), "MakePregnant", new ParamSig[] { });
+        public static readonly Core.Invokers.VoidMethodInvoker __IAPI_MakePregnant_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(Procreation_Alias), "MakePregnant", new Core.Signatures.ParamSig[] { });
         public void MakePregnant() => __IAPI_MakePregnant_Invoker1.Invoke(((Procreation_Alias)__IAPI_instance), new object[] { });
-        public static readonly VoidMethodInvoker __IAPI_ResetPregnancy_Invoker1 = new VoidMethodInvoker(typeof(Procreation_Alias), "ResetPregnancy", new ParamSig[] { });
+        public static readonly Core.Invokers.VoidMethodInvoker __IAPI_ResetPregnancy_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(Procreation_Alias), "ResetPregnancy", new Core.Signatures.ParamSig[] { });
         public void ResetPregnancy() => __IAPI_ResetPregnancy_Invoker1.Invoke(((Procreation_Alias)__IAPI_instance), new object[] { });
-        public static readonly TypedMethodInvoker<bool> __IAPI_IsDue_Invoker1 = new TypedMethodInvoker<bool>(typeof(Procreation_Alias), "IsDue", new ParamSig[] { });
+        public static readonly Core.Invokers.TypedMethodInvoker<bool> __IAPI_IsDue_Invoker1 = new Core.Invokers.TypedMethodInvoker<bool>(typeof(Procreation_Alias), "IsDue", new Core.Signatures.ParamSig[] { });
         public bool IsDue() => __IAPI_IsDue_Invoker1.Invoke(((Procreation_Alias)__IAPI_instance), new object[] { });
 
 

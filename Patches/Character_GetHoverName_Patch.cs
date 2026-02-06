@@ -34,7 +34,7 @@ namespace OfTamingAndBreeding.Patches
                         {
                             var percent = (float)(int)((1f - Mathf.Clamp01(remainingTime / tameable.m_tamingTime)) * 100f * precision) / precision;
                             string percentText = percent.ToString($"F{decimals}", System.Globalization.CultureInfo.InvariantCulture);
-                            __result += Localization.instance.Localize($" (T:{percentText}%)");
+                            __result += " " + string.Format(Localization.instance.Localize("$otab_hud_tameness"), percentText);
                         }
                         // hotfix
                         else if (remainingTime > tameable.m_tamingTime)
@@ -53,7 +53,7 @@ namespace OfTamingAndBreeding.Patches
                     var remainingTime = growup.m_growTime - (float)growupAPI.m_baseAI.GetTimeSinceSpawned().TotalSeconds;
                     var percent = (float)(int)((1f - Mathf.Clamp01(remainingTime / growup.m_growTime)) * 100f * precision) / precision;
                     string percentText = percent.ToString($"F{decimals}", System.Globalization.CultureInfo.InvariantCulture);
-                    __result += Localization.instance.Localize($" (G:{percentText}%)");
+                    __result += " " + string.Format(Localization.instance.Localize("$otab_hud_growth"), percentText);
                 }
             }
 

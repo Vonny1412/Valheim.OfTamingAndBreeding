@@ -14,7 +14,8 @@ namespace OfTamingAndBreeding.Patches
         static void Postfix(ItemDrop __instance)
         {
             // we need to multiply because localScale has already been set to variable scaling according to stuff like quality
-            __instance.transform.localScale *= Contexts.DataContext.GetEggScale(Utils.GetPrefabName(__instance.gameObject.name));
+            var prefabName = Utils.GetPrefabName(__instance.gameObject.name);
+            __instance.transform.localScale *= Contexts.DataContext.GetEggScale(prefabName);
         }
     }
 

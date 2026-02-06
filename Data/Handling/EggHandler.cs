@@ -1,14 +1,12 @@
-﻿using Jotunn;
-using Jotunn.Entities;
-using Jotunn.Managers;
-using OfTamingAndBreeding.Data.Handling.Base;
-using OfTamingAndBreeding.Data.Models;
-using OfTamingAndBreeding.Helpers;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
+using UnityEngine;
+using Jotunn.Managers;
+
+using OfTamingAndBreeding.Data.Handling.Base;
+using OfTamingAndBreeding.Helpers;
 namespace OfTamingAndBreeding.Data.Handling
 {
 

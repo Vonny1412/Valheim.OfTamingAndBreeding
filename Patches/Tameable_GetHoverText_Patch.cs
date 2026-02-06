@@ -9,40 +9,17 @@ using UnityEngine;
 namespace OfTamingAndBreeding.Patches
 {
 
+    /*
     [HarmonyPatch(typeof(Tameable), "GetHoverText")]
     static class Tameable_GetHoverText_Patch
     {
         [HarmonyPriority(Priority.Last)]
         static void Postfix(Tameable __instance, ref string __result)
         {
-            var isTamed = __instance.IsTamed();
-
-            if (isTamed && __instance.m_commandable)
-            {
-                var search = Localization.instance.Localize("$hud_pet");
-                var replace = Localization.instance.Localize("$hud_pet [<color=yellow><b>$ui_hold $KEY_Use</b></color>] Command");
-                __result = __result.Replace(search, replace);
-            }
-
-            var textLines = new List<string>();
-            textLines.AddRange(Internals.TameableAPI.GetOrCreate(__instance).GetFeedingHoverText());
-
-            if (isTamed)
-            {
-                var procreation = __instance.GetComponent<Procreation>();
-                if (procreation != null)
-                {
-                    textLines.AddRange(Internals.ProcreationAPI.GetOrCreate(procreation).GetProcreationHoverText());
-                }
-            }
-
-            if (textLines.Count > 0)
-            {
-                __result += "\n" + string.Join("\n", textLines.Where((string line) => line.Trim() != ""));
-            }
-
+            // currently not used
         }
     }
+    */
 
     /** original method
     public string GetHoverText()

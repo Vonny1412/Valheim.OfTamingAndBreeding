@@ -16,7 +16,7 @@ namespace OfTamingAndBreeding
     [BepInDependency("com.ValheimModding.YamlDotNetDetector")]
 
     [BepInDependency(WackyDBBridge.PluginGUID, BepInDependency.DependencyFlags.SoftDependency)] // OTAB can post-register recipes
-    [BepInDependency(CllCBridge.PluginGUID, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(CllCBridge.PluginGUID, BepInDependency.DependencyFlags.SoftDependency)] // lifecycle-aware CLLC inheritance
     [BepInDependency("shudnal.Seasons", BepInDependency.DependencyFlags.SoftDependency)] // Seasons mod can alter pregnancy durations on specific seasons
 
     [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Minor)] // ensure client has this mod with correct version
@@ -36,7 +36,7 @@ namespace OfTamingAndBreeding
         internal static void LogWarning(object data) => Instance.Logger.LogWarning(data);
 
         internal const string DefaultWorldDirectory = "__default";
-        internal const string OriginalDataDirectory = "__original";
+        //internal const string OriginalDataDirectory = "__original";
 
         private void Awake()
         {

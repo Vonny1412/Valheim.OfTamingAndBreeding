@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OfTamingAndBreeding.Internals.API;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -20,12 +21,9 @@ namespace OfTamingAndBreeding.Internals
 
         public AnimalAIAPI(AnimalAI __instance) : base(__instance)
         {
-            _baseAI = (BaseAI)__instance;
         }
 
         #region MonsterAI-stuff to make animals tameable
-
-        private readonly BaseAI _baseAI;
 
         public List<ItemDrop> m_consumeItems;
 
@@ -41,13 +39,22 @@ namespace OfTamingAndBreeding.Internals
 
         public Action<ItemDrop> m_onConsumedItem;
 
-        public bool UpdateConsumeAI(float dt)
+        public bool UpdateCustomAI(float dt)
         {
-            if (UpdateConsumeItem(dt))
-            {
-                return false; // disable original method
-            }
+            if (UpdateConsumeItem(dt)) return false;
+            if (UpdateFollowTarget(dt)) return false;
+
             return true; // run original method
+        }
+
+        private bool UpdateFollowTarget(float dt)
+        {
+            if (IsAlerted() || m_follow == null)
+            {
+                return false;
+            }
+            Follow(m_follow, dt);
+            return true;
         }
 
         private bool UpdateConsumeItem(float dt)
@@ -68,11 +75,11 @@ namespace OfTamingAndBreeding.Internals
 
                 if (Plugin.Configs.UseBetterSearchForFood.Value == true)
                 {
-                    m_consumeTarget = Behaviors.ConsumeBehavior.FindNearbyConsumableItem(_baseAI, m_consumeSearchRange, CanConsume);
+                    m_consumeTarget = Behaviors.ConsumeBehavior.FindNearbyConsumableItem(__IAPI_GetInstance(), m_consumeSearchRange, CanConsume);
                 }
                 else
                 {
-                    m_consumeTarget = Behaviors.ConsumeBehavior.FindClosestConsumableItem(_baseAI, m_consumeSearchRange, CanConsume);
+                    m_consumeTarget = Behaviors.ConsumeBehavior.FindClosestConsumableItem(__IAPI_GetInstance(), m_consumeSearchRange, CanConsume);
                 }
             }
 
@@ -118,7 +125,22 @@ namespace OfTamingAndBreeding.Internals
 
         #endregion
 
+        #region MonsterAI-stuff to make animals commandable
+
+        private GameObject m_follow;
+
+        public GameObject GetFollowTarget()
+        {
+            return m_follow;
+        }
+
+        public void SetFollowTarget(GameObject go)
+        {
+            m_follow = go;
+        }
+
+        #endregion
+
     }
-    
 
 }

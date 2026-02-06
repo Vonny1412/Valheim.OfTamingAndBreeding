@@ -40,22 +40,28 @@ namespace OfTamingAndBreeding.Patches
     static class ZSyncAnimation_SetFloat_Patch
     {
 
-        private static readonly int ForwardId = ZSyncAnimation.GetHash("forward_speed");
-        private static readonly int SidewayId = ZSyncAnimation.GetHash("sideway_speed");
+        /*
+        private static readonly int forward_speed = ZSyncAnimation.GetHash("forward_speed");
+        private static readonly int sideway_speed = ZSyncAnimation.GetHash("sideway_speed");
+        private static readonly int anim_speed = ZSyncAnimation.GetHash("anim_speed");
+        private static readonly int turn_speed = ZSyncAnimation.GetHash("turn_speed");
+        private static readonly int inWater = ZSyncAnimation.GetHash("inWater");
+        private static readonly int onGround = ZSyncAnimation.GetHash("onGround");
+        private static readonly int encumbered = ZSyncAnimation.GetHash("encumbered");
+        private static readonly int flying = ZSyncAnimation.GetHash("flying");
+        */
 
         static void Prefix(ZSyncAnimation __instance, int hash, ref float value)
         {
             if (!__instance) return;
 
-            if (hash != ForwardId && hash != SidewayId)
-                return;
+            //if (hash != s_forwardSpeedID && hash != s_sidewaySpeedID && hash != s_animSpeedID)
+            //    return;
 
             var name = Utils.GetPrefabName(__instance.gameObject.name);
             if (!Contexts.DataContext.GetAnimationScaling(name, out float scale))
                 return;
 
-            if (scale < 0.05f)
-                scale = 0.05f; // Safety clamp
             value *= scale;
         }
     }

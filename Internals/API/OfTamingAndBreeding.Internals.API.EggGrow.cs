@@ -1,13 +1,9 @@
-
 using EffectList_Alias = EffectList;
 using EggGrow_Alias = EggGrow;
 using UnityEngine_GameObject_Alias = UnityEngine.GameObject;
 using ItemDrop_Alias = ItemDrop;
 using ZNetView_Alias = ZNetView;
 
-using OfTamingAndBreeding.Internals.API.Core;
-using OfTamingAndBreeding.Internals.API.Core.Invokers;
-using OfTamingAndBreeding.Internals.API.Core.Signatures;
 namespace OfTamingAndBreeding.Internals.API
 {
     public partial class EggGrow : UnityEngine.MonoBehaviour
@@ -33,13 +29,13 @@ namespace OfTamingAndBreeding.Internals.API
         }
 
 
-        public static readonly FieldMutateInvoker<ItemDrop_Alias> __IAPI_m_item_Invoker = new FieldMutateInvoker<ItemDrop_Alias>(typeof(EggGrow_Alias), "m_item");
+        public static readonly Core.Invokers.FieldMutateInvoker<ItemDrop_Alias> __IAPI_m_item_Invoker = new Core.Invokers.FieldMutateInvoker<ItemDrop_Alias>(typeof(EggGrow_Alias), "m_item");
         public ItemDrop_Alias m_item
         {
             get => __IAPI_m_item_Invoker.Get(((EggGrow_Alias)__IAPI_instance));
             set => __IAPI_m_item_Invoker.Set(((EggGrow_Alias)__IAPI_instance), value);
         }
-        public static readonly FieldMutateInvoker<ZNetView_Alias> __IAPI_m_nview_Invoker = new FieldMutateInvoker<ZNetView_Alias>(typeof(EggGrow_Alias), "m_nview");
+        public static readonly Core.Invokers.FieldMutateInvoker<ZNetView_Alias> __IAPI_m_nview_Invoker = new Core.Invokers.FieldMutateInvoker<ZNetView_Alias>(typeof(EggGrow_Alias), "m_nview");
         public ZNetView_Alias m_nview
         {
             get => __IAPI_m_nview_Invoker.Get(((EggGrow_Alias)__IAPI_instance));
@@ -87,11 +83,11 @@ namespace OfTamingAndBreeding.Internals.API
 
 
 
-        public static readonly VoidMethodInvoker __IAPI_UpdateEffects_Invoker1 = new VoidMethodInvoker(typeof(EggGrow_Alias), "UpdateEffects", new ParamSig[] { new NonGenericParamSig(typeof(float), false) });
+        public static readonly Core.Invokers.VoidMethodInvoker __IAPI_UpdateEffects_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(EggGrow_Alias), "UpdateEffects", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(float), false) });
         public void UpdateEffects(float grow) => __IAPI_UpdateEffects_Invoker1.Invoke(((EggGrow_Alias)__IAPI_instance), new object[] { grow });
 
 
-        public static readonly TypedMethodInvoker<bool> __IAPI_CanGrow_Invoker1 = new TypedMethodInvoker<bool>(typeof(EggGrow_Alias), "CanGrow", new ParamSig[] { });
+        public static readonly Core.Invokers.TypedMethodInvoker<bool> __IAPI_CanGrow_Invoker1 = new Core.Invokers.TypedMethodInvoker<bool>(typeof(EggGrow_Alias), "CanGrow", new Core.Signatures.ParamSig[] { });
         public bool CanGrow() => __IAPI_CanGrow_Invoker1.Invoke(((EggGrow_Alias)__IAPI_instance), new object[] { });
 
 

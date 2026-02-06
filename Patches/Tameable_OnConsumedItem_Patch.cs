@@ -19,18 +19,22 @@ namespace OfTamingAndBreeding.Patches
                 return true; // i dont care
             }
 
+            var prefabName = Utils.GetPrefabName(__instance.gameObject.name);
+            if (Contexts.DataContext.GetEatingDisabled(prefabName))
+            {
+                // block ResetFeedingTimer()
+                return false;
+            }
+
             if (nview.IsOwner())
             {
                 var itemName = Utils.GetPrefabName(item.gameObject.name);
                 //zdo.Set(Plugin.ZDO.s_lastConsumedItem, itemName);
 
                 // handle multiplied fedDuration
-                var prefabName = Utils.GetPrefabName(__instance.gameObject.name);
                 var data = Data.Models.Creature.Get(prefabName);
                 if (data != null && data.Tameable != null && data.MonsterAI != null && data.MonsterAI.ConsumeItems != null && data.MonsterAI.ConsumeItems.Length > 0)
                 {
-                    // the value is pre cached for faster access
-                    // no need to search inside database
                     if (Contexts.DataContext.GetFedDuration(prefabName, out float fedDuration))
                     {
                         foreach (var entry in data.MonsterAI.ConsumeItems)
@@ -43,7 +47,7 @@ namespace OfTamingAndBreeding.Patches
                                 //break;
                             }
                         }
-                        if (fedDuration >= 0)
+                        if (fedDuration >= 0) // negative duration = keep last fed duration (maybe clamp the value? nah, keep it as a feature) 
                         {
                             // Intentionally allow 0:
                             // This means the creature will never become fed by this item.

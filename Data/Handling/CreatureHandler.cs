@@ -1,17 +1,11 @@
-﻿using HarmonyLib;
-using Jotunn.Managers;
-using OfTamingAndBreeding.Data.Handling.Base;
-using OfTamingAndBreeding.Data.Models;
-using OfTamingAndBreeding.Helpers;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Linq;
-using UnityEngine;
-using YamlDotNet.Core;
-using YamlDotNet.Core.Tokens;
-using static OfTamingAndBreeding.Data.Models.Creature;
 
+using UnityEngine;
+
+using OfTamingAndBreeding.Data.Handling.Base;
+using OfTamingAndBreeding.Helpers;
 namespace OfTamingAndBreeding.Data.Handling
 {
     internal class CreatureHandler : DataHandler<Models.Creature>
@@ -434,15 +428,37 @@ namespace OfTamingAndBreeding.Data.Handling
                     var pet = ctx.GetOrAddComponent<Pet>(creatureName, creature); // aso neccessary
                     Plugin.LogDebug($"{model}.{nameof(data.Tameable)}: Setting Tameable values");
 
-                    if (data.Tameable.TamingTime != null) tameable.m_tamingTime = (float)data.Tameable.TamingTime;
                     if (data.Tameable.Commandable != null) tameable.m_commandable = (bool)data.Tameable.Commandable;
-                    if (data.Tameable.FedDuration != null) tameable.m_fedDuration = (float)data.Tameable.FedDuration;
-                    
-                    if (tameable.m_fedDuration > 0)
+                    if (data.Tameable.TamingTime != null)
                     {
-                        Patches.Contexts.DataContext.SetFedDuration(creatureName, tameable.m_fedDuration);
+                        var tamingTime = (float)data.Tameable.TamingTime;
+                        if (tamingTime >= 0)
+                        {
+                            // tameable (even if its 0, maybe any other addon uses instant taming?)
+                        }
+                        else
+                        {
+                            // not tameable -> hide statustext
+                            Patches.Contexts.DataContext.SetTamingDisabled(creatureName);
+                        }
+                        tameable.m_tamingTime = tamingTime >= 0 ? tamingTime : 0; // better clamp. dunno if other mods can handle negative values
                     }
-
+                    if (data.Tameable.FedDuration != null)
+                    {
+                        var fedDuration = (float)data.Tameable.FedDuration;
+                        if (fedDuration >= 0)
+                        {
+                            // can eat
+                            Patches.Contexts.DataContext.SetFedDuration(creatureName, fedDuration);
+                        }
+                        else
+                        {
+                            // cannot eat, hide all feeding info in hover
+                            Patches.Contexts.DataContext.SetEatingDisabled(creatureName);
+                        }
+                        tameable.m_fedDuration = fedDuration >= 0 ? fedDuration : 0; // better clamp. dunno if other mods can handle negative values
+                    }
+                    
                     Plugin.LogDebug($"{model}.{nameof(data.Tameable)}: Setting effects");
                     if (tameable.m_sootheEffect.m_effectPrefabs.Length == 0)
                     {

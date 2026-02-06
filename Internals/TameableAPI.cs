@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using static UnityEngine.Networking.UnityWebRequest;
 
 namespace OfTamingAndBreeding.Internals
 {
@@ -18,13 +19,8 @@ namespace OfTamingAndBreeding.Internals
         public static bool TryGet(Tameable __instance, out TameableAPI api)
             => instances.TryGetValue(__instance, out api);
 
-        //public Data.Models.Creature creatureData;
-        public float lastCommandTime = 0;
-
         public TameableAPI(Tameable __instance) : base(__instance)
         {
-            //var prefabName = Utils.GetPrefabName(__instance.name);
-            //this.creatureData = Data.Models.Creature.Get(prefabName);
         }
 
         #region tameable animals
@@ -36,6 +32,7 @@ namespace OfTamingAndBreeding.Internals
             return animalAIAPI != null;
         }
 
+        // patch + original method: Patches/Tameable_TamingUpdate_Patch.cs
         public void TamingAnimalUpdate()
         {
             if (m_nview.IsValid() && m_nview.IsOwner() && !IsTamed() && !IsHungry() && !animalAIAPI.IsAlerted())
@@ -52,6 +49,7 @@ namespace OfTamingAndBreeding.Internals
             }
         }
 
+        // patch + original method: Patches/Tameable_Tame_Patch.cs
         public void TameAnimal()
         {
             Game.instance.IncrementPlayerStat(PlayerStatType.CreatureTamed);
@@ -65,6 +63,54 @@ namespace OfTamingAndBreeding.Internals
                     closestPlayer.Message(MessageHud.MessageType.Center, m_character.m_name + " $hud_tamedone");
                 }
             }
+        }
+
+        // patch + original method: Patches/Tameable_RPC_Command_Patch.cs
+        public void RPC_CommandAnimal(long sender, ZDOID characterID, bool message)
+        {
+            Player player = GetPlayer(characterID);
+            if (player == null)
+            {
+                return;
+            }
+
+            if ((bool)animalAIAPI.GetFollowTarget())
+            {
+                animalAIAPI.SetFollowTarget(null);
+                animalAIAPI.SetPatrolPoint();
+                if (m_nview.IsOwner())
+                {
+                    m_nview.GetZDO().Set(ZDOVars.s_follow, "");
+                }
+
+                if (message)
+                {
+                    player.Message(MessageHud.MessageType.Center, GetHoverName() + " $hud_tamestay");
+                }
+            }
+            else
+            {
+                animalAIAPI.ResetPatrolPoint();
+                animalAIAPI.SetFollowTarget(player.gameObject);
+                if (m_nview.IsOwner())
+                {
+                    m_nview.GetZDO().Set(ZDOVars.s_follow, player.GetPlayerName());
+                }
+
+                if (message)
+                {
+                    player.Message(MessageHud.MessageType.Center, GetHoverName() + " $hud_tamefollow");
+                }
+
+                // well, the following is realy hard to port to AnimalAI
+
+                //int num = m_nview.GetZDO().GetInt(ZDOVars.s_maxInstances);
+                //if (num > 0)
+                //{
+                //UnsummonMaxInstances(num);
+                //}
+            }
+            //m_unsummonTime = 0f;
         }
 
         #endregion

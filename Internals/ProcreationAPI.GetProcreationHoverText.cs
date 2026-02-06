@@ -9,9 +9,6 @@ namespace OfTamingAndBreeding.Internals
     internal partial class ProcreationAPI
     {
 
-
-
-
         public IReadOnlyList<string> GetProcreationHoverText()
         {
             var zdo = m_nview?.GetZDO();
@@ -36,19 +33,9 @@ namespace OfTamingAndBreeding.Internals
             if (!Plugin.Configs.HoverShowPregnancy.Value)
                 return;
 
-            if (!Plugin.Configs.HoverShowPregnancyTimer.Value)
-            {
-                returnLines.Add(string.Format(
-                    L.Localize("$otab_hover_pregnancy"),
-                    Plugin.Configs.HoverColorGood.Value
-                ));
-                return;
-            }
-
             long pregnantLong = zdo.GetLong(ZDOVars.s_pregnant, 0L);
-            if (pregnantLong == 0L)
+            if (!Plugin.Configs.HoverShowPregnancyTimer.Value || pregnantLong == 0L)
             {
-                // Shouldn't happen if IsPregnant() is true, but safe fallback
                 returnLines.Add(string.Format(
                     L.Localize("$otab_hover_pregnancy"),
                     Plugin.Configs.HoverColorGood.Value
