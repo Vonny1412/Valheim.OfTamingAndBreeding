@@ -173,6 +173,8 @@ namespace OfTamingAndBreeding.Internals
                 }
                 else
                 {
+                    // i am using __myTotalCheckRange instead of __myPartnerCheckRange
+                    // so the old partner wont get abendoned if it just stays outside the smaller partner check range for too long
                     int count = GetNearbyCountExcludeMyself(m_seperatePartner, __myTotalCheckRange);
                     keepPartner = count >= RequiredPartners();
                 }
@@ -201,9 +203,12 @@ namespace OfTamingAndBreeding.Internals
                             z_partnerPrefab = ZNetHelper.SetString(zdo, Plugin.ZDOVars.z_partnerPrefab, "", z_partnerPrefab);
                             m_seperatePartner = null;
 
-                            // also reset love points, be ready for a fresh partner <3
-                            s_lovePoints = ZNetHelper.SetInt(zdo, ZDOVars.s_lovePoints, 0, s_lovePoints);
-                            s_lovePoints = GetLovePoints(); // should return same value but maybe someone patched this one
+                            if (Plugin.Configs.MourningResetsLovePoints.Value == true)
+                            {
+                                // also reset love points, be ready for a fresh partner <3
+                                s_lovePoints = ZNetHelper.SetInt(zdo, ZDOVars.s_lovePoints, 0, s_lovePoints);
+                                s_lovePoints = GetLovePoints(); // maybe someone patched this one, so we can continue with real love points
+                            }
                         }
                     }
                 }
@@ -220,7 +225,7 @@ namespace OfTamingAndBreeding.Internals
                         var prefab = __zNetScene.GetPrefab(entry.Prefab);
                         if (prefab == null) return 0; // zero weight => skip this one
 
-                        return entry.Weight * GetNearbyCountExcludeMyself(prefab, __myTotalCheckRange);
+                        return entry.Weight * GetNearbyCountExcludeMyself(prefab, __myPartnerCheckRange);
                     });
 
                     if (foundPartner)

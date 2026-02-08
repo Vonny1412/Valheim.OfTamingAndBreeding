@@ -24,6 +24,63 @@ Instead, it gives you the tools to **design intentional, believable creature beh
 
 ---
 
+## Ecosystem & Mod Compatibility
+
+OTAB is designed to **integrate cleanly into existing Valheim mod setups**.
+
+It provides **native integration hooks** for selected mods, without hard dependencies:
+
+* **Wacky’s Database** – late recipe registration and data-driven item support
+* **Creature Level & Loot Control (CLLC)** – lifecycle-aware trait and effect inheritance
+* **Seasons** – adaptive timing and duration handling
+
+OTAB does **not** bundle or replace these mods.  
+Each integration is optional and explicitly scoped.  
+
+A full compatibility overview (compatible / incompatible / untested mods)  
+is also maintained in the Wiki:  
+👉 https://github.com/Vonny1412/Valheim.OfTamingAndBreeding/wiki
+
+---
+
+## A Note on AllTameable & Similar Mods
+
+OTAB is **not** intended as a replacement for mods like  
+**AllTameable** or **AllTameableTamingOverhaul**.
+
+Those mods focus on:
+
+* Making many (or all) creatures tameable
+* Minimal setup
+* Fast, straightforward gameplay changes
+
+OTAB takes a different approach.
+
+Instead of enabling taming globally, OTAB is designed to:
+
+* Respect vanilla creature identity and progression
+* Enable taming through **explicit, intentional mechanics**
+* Support ritual-like or indirect acquisition paths
+
+Example:
+Some creatures (e.g. Abominations) are **not directly tameable** in OTAB.  
+Instead, they may require special items, eggs, or offspring that must be  
+raised and tamed over time.
+
+This makes OTAB better suited for:
+
+* Server-curated experiences
+* Long-running worlds
+* Lore-driven or progression-based designs
+
+If you want a fast and simple “everything is tameable” experience,  
+AllTameable-style mods are a great fit.
+
+If you want **designed ecosystems with controlled reproduction paths**,  
+OTAB is built for that.
+
+---
+
 ## Core Philosophy
 
 OTAB is built around a few core principles:

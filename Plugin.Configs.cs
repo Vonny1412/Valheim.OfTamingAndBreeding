@@ -21,19 +21,6 @@ namespace OfTamingAndBreeding
 
         public class Configs
         {
-
-            public static ConfigEntry<bool> HoverShowLovePoints { get; private set; }
-            public static ConfigEntry<bool> HoverShowPregnancy { get; private set; }
-            public static ConfigEntry<bool> HoverShowPregnancyTimer { get; private set; }
-
-
-
-
-
-
-
-            public static ConfigEntry<bool> HoverShowFedTimer { get; private set; }
-            public static ConfigEntry<bool> HoverShowFedTimerStarving { get; private set; }
             public static ConfigEntry<bool> HoverShowSeconds { get; private set; }
             public static ConfigEntry<bool> HoverUseIngameTime { get; private set; }
             public static ConfigEntry<string> HoverColorGood { get; private set; }
@@ -42,6 +29,12 @@ namespace OfTamingAndBreeding
 
             // policy
 
+            public static ConfigEntry<bool> HoverShowLovePoints { get; private set; }
+            public static ConfigEntry<bool> HoverShowPregnancy { get; private set; }
+            public static ConfigEntry<bool> HoverShowPregnancyTimer { get; private set; }
+            public static ConfigEntry<bool> HoverShowFedTimer { get; private set; }
+            public static ConfigEntry<bool> HoverShowFedTimerStarving { get; private set; }
+
             public static ConfigEntry<bool> RequireFoodDroppedByPlayer { get; private set; }
             public static ConfigEntry<bool> ShowEggGrowProgress { get; private set; }
             public static ConfigEntry<bool> ShowTamingProgress { get; private set; }
@@ -49,6 +42,7 @@ namespace OfTamingAndBreeding
             public static ConfigEntry<float> HoverProgressPrecision { get; private set; }
             public static ConfigEntry<bool> UseBetterSearchForFood { get; private set; }
             public static ConfigEntry<float> TamingSlowdownPerStar { get; private set; }
+            public static ConfigEntry<bool> MourningResetsLovePoints { get; private set; }
 
             // cache
 
@@ -117,6 +111,8 @@ namespace OfTamingAndBreeding
                     "Formula: progress /= (1 + stars × value)\n" +
                     "Example (base time = 100s, value = 1.0): 0★ = 100s, 1★ = 200s, 2★ = 300s", null, isAdminOnly));
 
+                MourningResetsLovePoints = Config.Bind<bool>(section, "MourningResetsLovePoints", true, new ConfigDescription("If enabled, love points are reset when a creature loses its partner after the mourning period.", null, isAdminOnly));
+                
                 section = "Cache";
 
                 WriteClientCacheFile = Config.Bind<bool>(section, "WriteClientCacheFile", true, new ConfigDescription("Allows clients to write and use a local cache file. Not required for singleplayer worlds.", null, isAdminOnly));
