@@ -1,4 +1,4 @@
-![Of Taming and Breeding](https://github.com/Vonny1412/Valheim.OfTamingAndBreeding/blob/main/_Assets/otab_logo.png)
+![Of Taming and Breeding](https://github.com/Vonny1412/Valheim.OfTamingAndBreeding/blob/main/_Assets/otab_banner.png)
 
 # Of Taming and Breeding (OTAB)
 
