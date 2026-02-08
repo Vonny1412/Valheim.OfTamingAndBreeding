@@ -118,8 +118,8 @@ namespace OfTamingAndBreeding.Data.Models
             public int? MaxCreatures { get; set; } = null;
             public List<string> MaxCreaturesCountPrefabs { get; set; } = null; // OTAB feature
 
-            public float ExtraOffspringChance { get; set; } = 0.0f; // OTAB feature
-            public int MaxOffspringsPerPregnancy { get; set; } = 1; // OTAB feature
+            public float ExtraSiblingChance { get; set; } = 0.0f; // OTAB feature
+            public int MaxSiblingsPerPregnancy { get; set; } = 0; // OTAB feature
 
             public ProcreationOffspringData[] Offspring { get; set; } = null;
 

@@ -40,16 +40,19 @@ namespace OfTamingAndBreeding.Internals
         {
             var displayItems = CollectConsumableDisplayItems(L);
 
+            if (displayItems.Count == 0)
+                return "";
+            //return string.Format(l_consumeItems, Plugin.Configs.HoverColorNormal.Value, l_empty);
+            // disabled because we want to know "what creatures can eat what food" and not "what creatures cannot eat"
+            // todo: remove "$otab_hover_food_empty" from translations?
+            //var l_empty = L.Localize("$otab_hover_food_empty");
+
             var l_consumeItems = L.Localize("$otab_hover_food");
             var l_separator = L.Localize("$otab_hover_food_separator");
-            var l_empty = L.Localize("$otab_hover_food_empty");
-
-            if (displayItems.Count == 0)
-                return string.Format(l_consumeItems, Plugin.Configs.HoverColorNormal.Value, l_empty);
 
             // Split into multiple lines based on approx length
-            const int maxLineLen = 25; // TODO: config?
-            var displayLines = BuildWrappedItemLines_OriginalBehavior(displayItems, l_separator, maxLineLen);
+            const int maxLineLen = 30; // TODO: config?
+            var displayLines = BuildWrappedItemLines(displayItems, l_separator, maxLineLen);
 
             // First line gets the bullet, following lines get transparent bullet
             return string.Join("\n", displayLines.Select((line, i) =>
@@ -68,7 +71,6 @@ namespace OfTamingAndBreeding.Internals
             // 1) Prefer OTAB YAML data (includes FedDurationMultiply coloring)
             var data = Data.Models.Creature.Get(Utils.GetPrefabName(gameObject.name));
             var consumeItems = data?.MonsterAI?.ConsumeItems;
-
             if (consumeItems != null && consumeItems.Length > 0)
             {
                 AddDisplayItemsFromYaml(displayItems, consumeItems, L);
@@ -141,7 +143,7 @@ namespace OfTamingAndBreeding.Internals
             }
         }
 
-        private static List<string> BuildWrappedItemLines_OriginalBehavior(
+        private static List<string> BuildWrappedItemLines(
             List<ConsumableItemDisplay> displayItems,
             string separator,
             int maxLineLen)
@@ -155,12 +157,12 @@ namespace OfTamingAndBreeding.Internals
                 string displayName = displayItem.Name;
                 string displayColor = displayItem.Color;
 
-                // ORIGINAL: only count name length (no separator)
+                // only count name length (no separator)
                 lineLength += displayName.Length;
 
                 displayLineItems.Add($"<color={displayColor}>{displayName}</color>");
 
-                // ORIGINAL: flush AFTER adding
+                // flush AFTER adding
                 if (lineLength >= maxLineLen)
                 {
                     displayLines.Add(string.Join(separator, displayLineItems));
@@ -169,7 +171,7 @@ namespace OfTamingAndBreeding.Internals
                 }
             }
 
-            // ORIGINAL: flush remaining
+            // flush remaining
             if (displayLineItems.Count > 0)
             {
                 displayLines.Add(string.Join(separator, displayLineItems));

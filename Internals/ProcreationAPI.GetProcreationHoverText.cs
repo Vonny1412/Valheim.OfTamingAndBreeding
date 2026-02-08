@@ -45,7 +45,7 @@ namespace OfTamingAndBreeding.Internals
 
             var zTime = ZNet.instance.GetTime();
             var dateTime = new DateTime(pregnantLong);
-            var duration = RealPregnancyDuration.GetValue();
+            var duration = _realPregnancyDuration;
             double secLeft = duration - (zTime - dateTime).TotalSeconds;
 
             returnLines.Add(Helpers.StringHelper.FormatRelativeTime(

@@ -1,4 +1,5 @@
 ﻿using OfTamingAndBreeding.Internals.API;
+using OfTamingAndBreeding.Patches;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,16 +13,28 @@ namespace OfTamingAndBreeding.Internals
 
     internal class GrowupAPI : API.Growup
     {
+
         private static readonly ConditionalWeakTable<Growup, GrowupAPI> instances
             = new ConditionalWeakTable<Growup, GrowupAPI>();
+
         public static GrowupAPI GetOrCreate(Growup __instance)
-            => instances.GetValue(__instance, (Growup inst) => new GrowupAPI(inst));
+        {
+            return instances.GetValue(__instance, inst =>
+            {
+                Lifecycle.CleanupMarks.Mark(inst.GetComponent<ZNetView>());
+                return new GrowupAPI(inst);
+            });
+        }
+
         public static bool TryGet(Growup __instance, out GrowupAPI api)
             => instances.TryGetValue(__instance, out api);
+        public static void Remove(Growup __instance)
+            => instances.Remove(__instance);
 
         public GrowupAPI(Growup __instance) : base(__instance)
         {
         }
+
 
         public bool GrowUpdate_Prefix()
         {

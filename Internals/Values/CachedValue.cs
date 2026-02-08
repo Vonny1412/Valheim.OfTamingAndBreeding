@@ -6,7 +6,8 @@ using System.Threading.Tasks;
 
 namespace OfTamingAndBreeding.Internals.Values
 {
-
+    // class nomore used
+    /*
     internal class CachedValue<T>
     {
         private bool captured = false;
@@ -42,15 +43,6 @@ namespace OfTamingAndBreeding.Internals.Values
         public T GetSavedValue() => value;
         public bool IsCaptured => captured;
 
-        /*
-        // method not used: it is unclear what value to set. this internal value? or the original? or both?
-        // everythin is been handled by SaveValue()
-        public void SetValue(T value)
-        {
-            setter(value);
-        }
-        */
-
         public void SaveValue(bool overwrite = false)
         {
             if (captured && !overwrite) return;
@@ -71,4 +63,5 @@ namespace OfTamingAndBreeding.Internals.Values
         }
 
     }
+    */
 }

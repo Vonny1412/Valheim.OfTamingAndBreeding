@@ -1,13 +1,13 @@
-﻿using System;
+﻿using OfTamingAndBreeding.Data.Models;
+using OfTamingAndBreeding.Helpers;
+using OfTamingAndBreeding.Patches;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
-
-using OfTamingAndBreeding.Data.Models;
-using OfTamingAndBreeding.Helpers;
 
 namespace OfTamingAndBreeding.Internals
 {
@@ -17,14 +17,25 @@ namespace OfTamingAndBreeding.Internals
 
         private static readonly ConditionalWeakTable<EggGrow, EggGrowAPI> instances
             = new ConditionalWeakTable<EggGrow, EggGrowAPI>();
+
         public static EggGrowAPI GetOrCreate(EggGrow __instance)
-            => instances.GetValue(__instance, (EggGrow inst) => new EggGrowAPI(inst));
+        {
+            return instances.GetValue(__instance, inst =>
+            {
+                Lifecycle.CleanupMarks.Mark(inst.GetComponent<ZNetView>());
+                return new EggGrowAPI(inst);
+            });
+        }
+
         public static bool TryGet(EggGrow __instance, out EggGrowAPI api)
             => instances.TryGetValue(__instance, out api);
+        public static void Remove(EggGrow __instance)
+            => instances.Remove(__instance);
 
         public EggGrowAPI(EggGrow __instance) : base(__instance)
         {
         }
+
 
         public bool GrowUpdate_Prefix(ZDO zdo)
         {

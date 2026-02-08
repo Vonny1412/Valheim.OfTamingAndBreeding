@@ -5,10 +5,8 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
 
-using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Data.Models.SubData;
 using OfTamingAndBreeding.Helpers;
-
 namespace OfTamingAndBreeding.Internals
 {
     internal partial class ProcreationAPI : API.Procreation
@@ -16,44 +14,68 @@ namespace OfTamingAndBreeding.Internals
 
         private static readonly ConditionalWeakTable<Procreation, ProcreationAPI> instances
             = new ConditionalWeakTable<Procreation, ProcreationAPI>();
+
         public static ProcreationAPI GetOrCreate(Procreation __instance)
-            => instances.GetValue(__instance, inst => new ProcreationAPI(inst));
+        {
+            return instances.GetValue(__instance, inst =>
+            {
+                Lifecycle.CleanupMarks.Mark(inst.GetComponent<ZNetView>());
+                return new ProcreationAPI(inst);
+            });
+        }
+
         public static bool TryGet(Procreation __instance, out ProcreationAPI api)
             => instances.TryGetValue(__instance, out api);
+        public static void Remove(Procreation __instance)
+            => instances.Remove(__instance);
 
-        public readonly Values.CachedValue<float> RealPregnancyDuration;
-        public readonly Values.CachedValue<int> OriginalMinOffspringLevel;
+
+
+
+        private static Dictionary<string, long> _partnerRecheckTicks = new Dictionary<string, long>();
+        private float _realPregnancyDuration = 0;
+
+        public void SaveRealPregnancyDuration()
+        {
+            _realPregnancyDuration = m_pregnancyDuration;
+        }
 
         public ProcreationAPI(Procreation __instance) : base(__instance)
         {
-            RealPregnancyDuration = new Values.CachedValue<float>(
-                () => m_pregnancyDuration,
-                value => m_pregnancyDuration = value
-            );
-            OriginalMinOffspringLevel = new Values.CachedValue<int>(
-                () => m_minOffspringLevel,
-                value => m_minOffspringLevel = value
-            );
+            _realPregnancyDuration = m_pregnancyDuration; // init value
 
-            var data = Data.Models.Creature.Get(Utils.GetPrefabName(gameObject.name));
-            var dataProcreation = data?.Procreation;
-            if (dataProcreation != null)
+            var prefabName = Utils.GetPrefabName(gameObject.name);
+            if (!_partnerRecheckTicks.ContainsKey(prefabName))
             {
-                _partnerRecheckTicks = TimeSpan.FromSeconds(dataProcreation.PartnerRecheckSeconds).Ticks;
+                var data = Data.Models.Creature.Get(prefabName);
+                var dataProcreation = data?.Procreation;
+                if (dataProcreation != null)
+                {
+                    _partnerRecheckTicks[prefabName] = TimeSpan.FromSeconds(dataProcreation.PartnerRecheckSeconds).Ticks;
+                }
+                else
+                {
+                    _partnerRecheckTicks[prefabName] = 0L; // to block ContainsKey()
+                }
             }
 
+            if (m_nview.IsValid())
+            {
+                m_nview.Register("RPC_DisplayLoveEffect", RPC_DisplayLoveEffect);
+                m_nview.Register<Vector3>("RPC_DisplayBirthEffect", RPC_DisplayBirthEffect);
+            }
         }
 
-        private readonly long? _partnerRecheckTicks;
-
-        public bool Procreate_Prefix()
+        public bool CustomProcreate()
         {
-            if (!m_nview.IsValid() || !m_nview.IsOwner() || !m_tameable.IsTamed())
+            // why doing this? because Procreation component COULD work without Tameable component
+            // maybe one day I gonna add non-tameable procration feature
+            // but that would also mean to build a feeding/hungry workaround 3- maybe in far future
+            var __isTamed = m_tameable ? m_tameable.IsTamed() : (m_character ? m_character.IsTamed() : false);
+
+            if (!m_nview.IsOwner() || !__isTamed || !Helpers.ZNetHelper.TryGetZDO(m_nview, out ZDO zdo))
             {
-                return false;
-            }
-            if (!Helpers.ZNetHelper.TryGetZDO(m_nview, out ZDO zdo))
-            {
+                // note: valheim also immediatly returns if its not the owner
                 return false;
             }
 
@@ -66,7 +88,7 @@ namespace OfTamingAndBreeding.Internals
                 m_myPrefab = ZNetScene.instance.GetPrefab(prefab);
             }
 
-            var data = Data.Models.Creature.Get(Utils.GetPrefabName(gameObject.name));
+            var data = Data.Models.Creature.Get(m_myPrefab.name);
             var dataProcreation = data?.Procreation;
             if (dataProcreation == null)
             {
@@ -85,35 +107,35 @@ namespace OfTamingAndBreeding.Internals
             var __myPartnerCheckRange = m_partnerCheckRange;
             var __myTotalCheckRange = m_totalCheckRange;
             var __myPrefabName = Utils.GetPrefabName(m_myPrefab.name);
-            bool __isPregnant = IsPregnant();
             var __nowTicks = ZNet.instance.GetTime().Ticks;
             var __zNetScene = ZNetScene.instance;
+            bool __isPregnant = IsPregnant();
+            bool __isDue = IsDue();
 
             // s_ => valheim zdo vars
             int s_lovePoints = zdo.GetInt(ZDOVars.s_lovePoints);
-            bool s_lovePointsZero = s_lovePoints == 0;
 
             // z_ => zdo values, change via ZNetHelper
-            int z_doResetPartner = zdo.GetInt(Plugin.ZDOVars.z_doResetPartner, 0);
             string z_partnerPrefab = zdo.GetString(Plugin.ZDOVars.z_partnerPrefab, "");
             long z_partnerNotSeenSince = zdo.GetLong(Plugin.ZDOVars.z_partnerNotSeenSince, 0L);
-
-            int z_doResetOffspring = zdo.GetInt(Plugin.ZDOVars.z_doResetOffspring, 0);
             string z_offspringPrefab = zdo.GetString(Plugin.ZDOVars.z_offspringPrefab, "");
-            int z_offspringCounter = zdo.GetInt(Plugin.ZDOVars.z_offspringCounter, 0);
-            int z_offspringLevel = zdo.GetInt(Plugin.ZDOVars.z_offspringLevel, 0);
-
+            int z_siblingsCounter = zdo.GetInt(Plugin.ZDOVars.z_siblingsCounter, 0);
+            int z_offspringLevel = zdo.GetInt(Plugin.ZDOVars.z_offspringLevel, m_minOffspringLevel);
             int z_needPartner = zdo.GetInt(Plugin.ZDOVars.z_needPartner, 1);
 
+            bool doResetPartner = false;
+            bool doResetOffspring = false;
+
+
             int RequiredPartners() => z_needPartner == 1 ? 1 : 0;
-            
-            int GetNearbyCountExcludeMyself(GameObject ofObj)
+
+            int GetNearbyCountExcludeMyself(GameObject ofObj, float range)
             {
                 var count = SpawnSystem.GetNrOfInstances(
-                    ofObj, __myPosition, __myPartnerCheckRange,
+                    ofObj, __myPosition, range,
                     eventCreaturesOnly: false,
                     procreationOnly: true);
-                if (ofObj.name == __myPrefabName)
+                if (Utils.GetPrefabName(ofObj.name) == __myPrefabName)
                 {
                     count -= 1;
                 }
@@ -123,17 +145,6 @@ namespace OfTamingAndBreeding.Internals
             //------------------------------------------------------
             //-- PARTNER
             //------------------------------------------------------
-
-            if (z_doResetPartner == 1)
-            {
-                z_doResetPartner = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_doResetPartner, 0, z_doResetPartner); // kinda useless but we gonna stick to the system
-                z_partnerPrefab = ZNetHelper.SetString(zdo, Plugin.ZDOVars.z_partnerPrefab, "", z_partnerPrefab);
-                z_partnerNotSeenSince = ZNetHelper.SetLong(zdo, Plugin.ZDOVars.z_partnerNotSeenSince, 0L, z_partnerNotSeenSince);
-
-                m_seperatePartner = null;
-
-                z_doResetOffspring = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_doResetOffspring, 1, z_doResetOffspring); // new partner => new offspring
-            }
 
             // no partner saved - but something is stored in zdo
             if (m_seperatePartner == null && z_partnerPrefab.Length != 0)
@@ -162,7 +173,7 @@ namespace OfTamingAndBreeding.Internals
                 }
                 else
                 {
-                    int count = GetNearbyCountExcludeMyself(m_seperatePartner);
+                    int count = GetNearbyCountExcludeMyself(m_seperatePartner, __myTotalCheckRange);
                     keepPartner = count >= RequiredPartners();
                 }
 
@@ -181,9 +192,8 @@ namespace OfTamingAndBreeding.Internals
                             z_partnerNotSeenSince = ZNetHelper.SetLong(zdo, Plugin.ZDOVars.z_partnerNotSeenSince, __nowTicks, z_partnerNotSeenSince);
                         }
 
-                        bool expired = z_partnerNotSeenSince != 0L && (__nowTicks - z_partnerNotSeenSince) > _partnerRecheckTicks;
-
-                        //if (c_loveZero || expired)
+                        _partnerRecheckTicks.TryGetValue(__myPrefabName, out var recheck);
+                        bool expired = z_partnerNotSeenSince != 0L && (__nowTicks - z_partnerNotSeenSince) > recheck;
                         if (expired) // creature is mourning to have lost the partner it just found =(
                         {
 
@@ -194,7 +204,6 @@ namespace OfTamingAndBreeding.Internals
                             // also reset love points, be ready for a fresh partner <3
                             s_lovePoints = ZNetHelper.SetInt(zdo, ZDOVars.s_lovePoints, 0, s_lovePoints);
                             s_lovePoints = GetLovePoints(); // should return same value but maybe someone patched this one
-                            s_lovePointsZero = s_lovePoints == 0;
                         }
                     }
                 }
@@ -206,12 +215,12 @@ namespace OfTamingAndBreeding.Internals
                 if (dataProcreation.Partner != null && dataProcreation.Partner.Length > 0)
                 {
 
-                    var foundPartner = RandomData.FindRandom<Creature.ProcreationPartnerData>(dataProcreation.Partner, out Creature.ProcreationPartnerData partnerEntry, entry =>
+                    var foundPartner = RandomData.FindRandom<Data.Models.Creature.ProcreationPartnerData>(dataProcreation.Partner, out Data.Models.Creature.ProcreationPartnerData partnerEntry, entry =>
                     {
                         var prefab = __zNetScene.GetPrefab(entry.Prefab);
                         if (prefab == null) return 0; // zero weight => skip this one
 
-                        return entry.Weight * GetNearbyCountExcludeMyself(prefab);
+                        return entry.Weight * GetNearbyCountExcludeMyself(prefab, __myTotalCheckRange);
                     });
 
                     if (foundPartner)
@@ -220,7 +229,7 @@ namespace OfTamingAndBreeding.Internals
 
                         z_partnerPrefab = ZNetHelper.SetString(zdo, Plugin.ZDOVars.z_partnerPrefab, m_seperatePartner.name, z_partnerPrefab);
                         z_partnerNotSeenSince = ZNetHelper.SetLong(zdo, Plugin.ZDOVars.z_partnerNotSeenSince, 0L, z_partnerNotSeenSince);
-                        z_doResetOffspring = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_doResetOffspring, 1, z_doResetOffspring);
+                        doResetOffspring = true;
                     }
 
                 }
@@ -238,14 +247,7 @@ namespace OfTamingAndBreeding.Internals
             //-- OFFSPRING
             //------------------------------------------------------
 
-            if (z_doResetOffspring == 1)
-            {
-                z_doResetOffspring = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_doResetOffspring, 0, z_doResetOffspring);
-                z_offspringPrefab = ZNetHelper.SetString(zdo, Plugin.ZDOVars.z_offspringPrefab, "", z_offspringPrefab);
-                m_offspringPrefab = null;
-            }
-
-            if (m_offspringPrefab == null && m_offspring != null)
+            if (m_offspringPrefab == null && m_offspring != null && string.IsNullOrEmpty(z_offspringPrefab))
             {
                 // handled by other mod or by default?
                 string prefabName = Utils.GetPrefabName(m_offspring);
@@ -253,7 +255,7 @@ namespace OfTamingAndBreeding.Internals
             }
 
             // try load offspring from zdo
-            if (m_offspringPrefab == null && !s_lovePointsZero)
+            if (m_offspringPrefab == null)
             {
                 if (z_offspringPrefab != "")
                 {
@@ -275,7 +277,7 @@ namespace OfTamingAndBreeding.Internals
 
                 // search for random offspring
                 var partnerName = m_seperatePartner?.name;
-                var foundOffspring = RandomData.FindRandom<Creature.ProcreationOffspringData>(dataProcreation.Offspring, out Creature.ProcreationOffspringData randomOffspring, entry =>
+                var foundOffspring = RandomData.FindRandom<Data.Models.Creature.ProcreationOffspringData>(dataProcreation.Offspring, out Data.Models.Creature.ProcreationOffspringData randomOffspring, entry =>
                 {
                     var validPartner = entry.NeedPartner == false || (entry.NeedPartner && partnerName != null && (
                         (entry.NeedPartnerPrefab == null)
@@ -296,7 +298,7 @@ namespace OfTamingAndBreeding.Internals
                 {   // something happend
 
                     // also abort getting siblings
-                    z_offspringCounter = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_offspringCounter, 0, z_offspringCounter);
+                    z_siblingsCounter = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_siblingsCounter, 0, z_siblingsCounter);
 
                     return false;
                 }
@@ -309,7 +311,10 @@ namespace OfTamingAndBreeding.Internals
                 else
                     z_needPartner = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_needPartner, 0, z_needPartner);
 
-                // set m_minOffspringLevel for levelup feature
+                var levelOld = Mathf.Max(m_minOffspringLevel, m_character ? m_character.GetLevel() : m_minOffspringLevel);
+                var levelNew = levelOld;
+
+                // determ offspring level for levelup feature
                 // this is not the best place to set level of next offspring
                 // because the fate will be determined before creature gets pregnant
                 // but i want to store neither offspring-entry-index nor levelup-values into zdo
@@ -321,34 +326,28 @@ namespace OfTamingAndBreeding.Internals
                     var chance = UnityEngine.Random.value;
                     if (chance <= levelUpChance)
                     {
-                        var oldMinLevel = m_character
-                            ? m_character.GetLevel()
-                            : m_minOffspringLevel;
-                        var newMinLevel = oldMinLevel + 1;
-                        if (newMinLevel > levelUpMax)
+                        levelNew = levelNew + 1;
+                        if (levelNew > levelUpMax)
                         {
-                            newMinLevel = levelUpMax;
+                            levelNew = levelUpMax;
                         }
-                        Plugin.LogDebug($"Offspring '{offspring.name}' level up: {oldMinLevel} -> {newMinLevel}");
+                        Plugin.LogDebug($"Offspring '{offspring.name}' level up: {levelOld} -> {levelNew}");
 
-                        z_offspringLevel = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_offspringLevel, newMinLevel, z_offspringLevel);
-                        //m_minOffspringLevel will be set later inside procreation section
                     }
                 }
+                z_offspringLevel = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_offspringLevel, levelNew, z_offspringLevel);
             }
 
             //------------------------------------------------------
             //-- REFRESH
             //------------------------------------------------------
-            
-            if (z_needPartner == 0)
+
+            if (z_needPartner == 0 && m_seperatePartner != m_myPrefab)
             {
                 // do not place this if block into offspring-section
                 // because this place is the best one to keep the values up to date
                 m_seperatePartner = m_myPrefab; // we are targeting ourself as partner for the next procreation 
                 z_partnerPrefab = ZNetHelper.SetString(zdo, Plugin.ZDOVars.z_partnerPrefab, m_seperatePartner.name, z_partnerPrefab);
-                // remember: ZNetHelper.SetString will only increase zdo revision if value has been changed
-                // so its okay to call this on every update
             }
 
             if (m_seperatePartner == null) // this is not fatal! it just says that no partner is currently nearby
@@ -369,132 +368,144 @@ namespace OfTamingAndBreeding.Internals
 
             if (__isPregnant)
             {
-                if (!IsDue())
-                {
-                    return false;
-                }
-
-                ResetPregnancy();
-
-                //---------------------------------
-                // sibling handling start
-                //---------------------------------
-
+                if (__isDue)
                 {
 
-                    var doResetPartner = 1;
+                    ResetPregnancy();
 
-                    // check for siblings
-                    z_offspringCounter += 1;
-                    if (z_offspringCounter >= dataProcreation.MaxOffspringsPerPregnancy && dataProcreation.MaxOffspringsPerPregnancy != 0) // 0 = unlimited
+                    Vector3 forward = transform.forward;
+                    Vector3 dir = forward;
+                    if (m_spawnRandomDirection)
                     {
-                        // Max siblings reached -> stop chaining. Next pregnancy will pick partner/offspring fresh.
-                        z_offspringCounter = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_offspringCounter, 0); // we just changed the value manually, omit last param
+                        float f = UnityEngine.Random.Range(0f, (float)Math.PI * 2f);
+                        dir = new Vector3(Mathf.Cos(f), 0f, Mathf.Sin(f));
+                    }
+
+                    float offset = (m_spawnOffsetMax > 0f)
+                        ? UnityEngine.Random.Range(m_spawnOffset, m_spawnOffsetMax)
+                        : m_spawnOffset;
+
+                    GameObject spawned = UnityEngine.Object.Instantiate(
+                        m_offspringPrefab,
+                        __myPosition - dir * offset,
+                        Quaternion.LookRotation(-forward, Vector3.up));
+
+                    Character ch = spawned.GetComponent<Character>();
+                    int level = Mathf.Max(m_minOffspringLevel, z_offspringLevel);
+                    if (ch != null)
+                    {
+                        ch.SetTamed(__isTamed);
+                        ch.SetLevel(level);
                     }
                     else
                     {
-                        var chance = UnityEngine.Random.value;
-                        if (chance <= dataProcreation.ExtraOffspringChance)
-                        {
-                            ZNetHelper.SetLong(zdo, ZDOVars.s_pregnant, __nowTicks - TimeSpan.FromSeconds(m_pregnancyDuration).Ticks);
-                            z_offspringCounter = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_offspringCounter, z_offspringCounter);
-
-                            doResetPartner = 0;
-                        }
+                        spawned.GetComponent<ItemDrop>()?.SetQuality(level);
                     }
 
-                    m_minOffspringLevel = z_offspringLevel;
-                    z_offspringLevel = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_offspringLevel, 0, z_offspringLevel);
-                    z_doResetPartner = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_doResetPartner, doResetPartner, z_doResetPartner);
+                    //m_birthEffects.Create(spawned.transform.position, Quaternion.identity);
+                    m_nview.InvokeRPC(ZNetView.Everybody, "RPC_DisplayBirthEffect", spawned.transform.position);
+                    
+                    // CLLC traits
+                    ThirdParty.Mods.CllCBridge.BequeathTraits(m_nview.GetComponent<Character>(), m_seperatePartner, spawned);
+
+                    //---------------------------------
+                    // sibling handling
+                    //---------------------------------
+
+                    {
+                        bool unlimited = dataProcreation.MaxSiblingsPerPregnancy < 0; // -1
+                        bool canHaveMore = unlimited || z_siblingsCounter < dataProcreation.MaxSiblingsPerPregnancy;
+                        if (canHaveMore && UnityEngine.Random.value <= dataProcreation.ExtraSiblingChance)
+                        {
+                            ZNetHelper.SetLong(zdo, ZDOVars.s_pregnant, __nowTicks - TimeSpan.FromSeconds(m_pregnancyDuration).Ticks);
+                            z_siblingsCounter = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_siblingsCounter, z_siblingsCounter + 1);
+                        }
+                        else
+                        {
+                            doResetPartner = true;
+                        }
+                        doResetOffspring = true;
+                    }
+
                 }
-
-                //---------------------------------
-                // sibling handling end
-                //---------------------------------
-
-                Vector3 forward = transform.forward;
-                Vector3 dir = forward;
-                if (m_spawnRandomDirection)
-                {
-                    float f = UnityEngine.Random.Range(0f, (float)Math.PI * 2f);
-                    dir = new Vector3(Mathf.Cos(f), 0f, Mathf.Sin(f));
-                }
-
-                float offset = (m_spawnOffsetMax > 0f)
-                    ? UnityEngine.Random.Range(m_spawnOffset, m_spawnOffsetMax)
-                    : m_spawnOffset;
-
-                GameObject spawned = UnityEngine.Object.Instantiate(
-                    m_offspringPrefab,
-                    __myPosition - dir * offset,
-                    Quaternion.LookRotation(-forward, Vector3.up));
-
-                Character ch = spawned.GetComponent<Character>();
-                int level = Mathf.Max(m_minOffspringLevel, m_character ? m_character.GetLevel() : m_minOffspringLevel);
-
-                if (ch != null)
-                {
-                    ch.SetTamed(m_tameable.IsTamed());
-                    ch.SetLevel(level);
-                }
-                else
-                {
-                    spawned.GetComponent<ItemDrop>()?.SetQuality(level);
-                }
-
-                m_birthEffects.Create(spawned.transform.position, Quaternion.identity);
-
-                // CLLC traits
-                ThirdParty.Mods.CllCBridge.BequeathTraits(m_nview.GetComponent<Character>(), m_seperatePartner, spawned);
             }
             else
             {
-                if (UnityEngine.Random.value <= m_pregnancyChance || ((bool)m_baseAI && m_baseAI.IsAlerted()) || m_tameable.IsHungry())
+                bool canProcreate = UnityEngine.Random.value <= m_pregnancyChance && !(m_baseAI && m_baseAI.IsAlerted()) && !m_tameable.IsHungry();
+                if (canProcreate)
                 {
-                    return false;
-                }
-
-                // max creatures check: only using m_seperatePartner + offspring (never m_myPrefab)
-                int totalAround = 0;
-                if (data.Procreation.MaxCreaturesCountPrefabs != null)
-                {
-                    foreach (var prefabName in data.Procreation.MaxCreaturesCountPrefabs)
+                    // max creatures check: only using m_seperatePartner + offspring (never m_myPrefab)
+                    int totalAround = 0;
+                    if (data.Procreation.MaxCreaturesCountPrefabs != null)
                     {
-                        totalAround += SpawnSystem.GetNrOfInstances(__zNetScene.GetPrefab(prefabName), __myPosition, __myTotalCheckRange);
+                        foreach (var prefabName in data.Procreation.MaxCreaturesCountPrefabs)
+                        {
+                            totalAround += SpawnSystem.GetNrOfInstances(__zNetScene.GetPrefab(prefabName), __myPosition, __myTotalCheckRange);
+                        }
                     }
-                }
-                else
-                {
-                    // partners
-                    totalAround += SpawnSystem.GetNrOfInstances(m_seperatePartner, __myPosition, __myTotalCheckRange);
-                    // offsprings
-                    totalAround += SpawnSystem.GetNrOfInstances(m_offspringPrefab, __myPosition, __myTotalCheckRange);
-                }
-
-                if (totalAround >= m_maxCreatures)
-                {
-                    return false;
-                }
-
-                int partnersInRange = GetNearbyCountExcludeMyself(m_seperatePartner);
-                if (partnersInRange >= RequiredPartners())
-                {
-                    if (partnersInRange > 0)
+                    else
                     {
-                        m_loveEffects.Create(__myPosition, transform.rotation);
+                        // partners
+                        totalAround += SpawnSystem.GetNrOfInstances(m_seperatePartner, __myPosition, __myTotalCheckRange);
+                        // offsprings
+                        totalAround += SpawnSystem.GetNrOfInstances(m_offspringPrefab, __myPosition, __myTotalCheckRange);
                     }
 
-                    s_lovePoints++;
-                    if (s_lovePoints >= m_requiredLovePoints)
+                    if (totalAround >= m_maxCreatures)
                     {
-                        MakePregnant();
-                        s_lovePoints = 0;
+                        return false;
                     }
-                    s_lovePoints = ZNetHelper.SetInt(zdo, ZDOVars.s_lovePoints, s_lovePoints);
+
+                    int partnersInRange = GetNearbyCountExcludeMyself(m_seperatePartner, __myPartnerCheckRange);
+                    if (partnersInRange >= RequiredPartners())
+                    {
+                        if (partnersInRange > 0)
+                        {
+                            //m_loveEffects.Create(__myPosition, transform.rotation);
+                            m_nview.InvokeRPC(ZNetView.Everybody, "RPC_DisplayLoveEffect");
+                        }
+
+                        s_lovePoints++;
+                        if (s_lovePoints >= m_requiredLovePoints)
+                        {
+                            MakePregnant();
+                            s_lovePoints = 0;
+                        }
+                        s_lovePoints = ZNetHelper.SetInt(zdo, ZDOVars.s_lovePoints, s_lovePoints);
+                    }
                 }
             }
 
+            if (doResetPartner)
+            {
+                z_partnerPrefab = ZNetHelper.SetString(zdo, Plugin.ZDOVars.z_partnerPrefab, "", z_partnerPrefab);
+                z_partnerNotSeenSince = ZNetHelper.SetLong(zdo, Plugin.ZDOVars.z_partnerNotSeenSince, 0L, z_partnerNotSeenSince);
+                z_siblingsCounter = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_siblingsCounter, 0, z_siblingsCounter);
+                m_seperatePartner = null;
+                doResetOffspring = true;
+            }
+
+            if (doResetOffspring)
+            {
+                z_offspringPrefab = ZNetHelper.SetString(zdo, Plugin.ZDOVars.z_offspringPrefab, "", z_offspringPrefab);
+                z_offspringLevel = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_offspringLevel, m_minOffspringLevel, z_offspringLevel);
+                z_needPartner = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_needPartner, 1, z_needPartner);
+                m_offspringPrefab = null;
+            }
+
             return false; // do not run original, we did the job
+        }
+
+        private void RPC_DisplayLoveEffect(long sender)
+        {
+            if (!gameObject) return;
+            m_loveEffects.Create(transform.position, transform.rotation);
+        }
+
+        private void RPC_DisplayBirthEffect(long sender, Vector3 position)
+        {
+            if (!gameObject) return;
+            m_birthEffects.Create(position, Quaternion.identity);
         }
 
     }

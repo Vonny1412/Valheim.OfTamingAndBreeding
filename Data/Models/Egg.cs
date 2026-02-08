@@ -46,20 +46,22 @@ namespace OfTamingAndBreeding.Data.Models
             public string ItemType { get; set; } = null;
             public float? Weight { get; set; } = null;
 
-            public float? Scale { get; set; } = null;
-            public float? ScaleByQuality { get; set; } = null;
-            public float? ScaleWeightByQuality { get; set; } = null;
-
-            public int? MaxQuality { get; set; } = null;
             public int? Value { get; set; } = null;
             public bool? Teleportable { get; set; } = null;
             public int? MaxStackSize { get; set; } = null;
+
+            public int? MaxQuality { get; set; } = null;
+            public float? ScaleByQuality { get; set; } = null;
+            public float? ScaleWeightByQuality { get; set; } = null;
 
             public string ItemTintRgb { get; set; } = null;
             public string ParticlesTintRgb { get; set; } = null;
             public string LightsTintRgb { get; set; } = null;
             public float LightsScale { get; set; } = 1;
             public bool DisableParticles { get; set; } = false;
+
+            public float? Scale { get; set; } = null;
+
         }
 
         [Serializable]

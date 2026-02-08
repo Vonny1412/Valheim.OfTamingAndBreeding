@@ -14,8 +14,8 @@ namespace OfTamingAndBreeding.Patches
         static bool Prefix(Procreation __instance)
         {
             // duration could have been changed by mods like Seasons
-            Internals.ProcreationAPI.GetOrCreate(__instance)
-                .RealPregnancyDuration.SaveValue(true);
+            var api = Internals.ProcreationAPI.GetOrCreate(__instance);
+            api.SaveRealPregnancyDuration();
             return true;
         }
     }

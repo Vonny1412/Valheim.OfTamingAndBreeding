@@ -30,7 +30,7 @@ namespace OfTamingAndBreeding
             //
 
             // counter for offsprings of current pregnancy
-            public static readonly int z_offspringCounter = $"{Plugin.ModGuid}.z_offspringCounter".GetStableHashCode();
+            public static readonly int z_siblingsCounter = $"{Plugin.ModGuid}.z_siblingsCounter".GetStableHashCode();
 
             // used to store if partner is neccessary for running procreation
             // because it can vary depending on randomly chosen offspring from data
@@ -43,12 +43,6 @@ namespace OfTamingAndBreeding
             // used to store current offspring level (we got a level-up feature, remember?)
             // because it can vary depending on randomly chosen offspring from data
             public static readonly int z_offspringLevel = $"{Plugin.ModGuid}.z_offspringLevel".GetStableHashCode();
-
-            // used to trigger new choosing of partner for procreation
-            public static readonly int z_doResetPartner = $"{Plugin.ModGuid}.z_doResetPartner".GetStableHashCode();
-
-            // used to trigger new choosing of offspring based on chosen partner
-            public static readonly int z_doResetOffspring = $"{Plugin.ModGuid}.z_doResetOffspring".GetStableHashCode();
 
             // used to store current chosen partner for that parent
             public static readonly int z_partnerPrefab = $"{Plugin.ModGuid}.z_partnerPrefab".GetStableHashCode();

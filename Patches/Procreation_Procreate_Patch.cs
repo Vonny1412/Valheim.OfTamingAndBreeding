@@ -11,28 +11,19 @@ namespace OfTamingAndBreeding.Patches
     [HarmonyPatch(typeof(Procreation), "Procreate")]
     static class Procreation_Procreate_Patch
     {
-
         [HarmonyPriority(Priority.Last)]
         static bool Prefix(Procreation __instance)
         {
             try
             {
                 var api = Internals.ProcreationAPI.GetOrCreate(__instance);
-                api.OriginalMinOffspringLevel.SaveValue();
-                return api.Procreate_Prefix(); // override vanilla
+                return api.CustomProcreate(); // override vanilla
             }
             catch (Exception ex)
             {
-                Plugin.LogError($"Procreation_Procreate_Patch.Prefix: {ex}");
+                Plugin.LogFatal($"Procreation_Procreate_Patch.Prefix: {ex}");
                 return true; // fail-open: allow vanilla + other mods
             }
-        }
-
-        [HarmonyPriority(Priority.First)]
-        static void Postfix(Procreation __instance, bool __state)
-        {
-            var api = Internals.ProcreationAPI.GetOrCreate(__instance);
-            api.OriginalMinOffspringLevel.RestoreValue();
         }
     }
 

@@ -1,4 +1,4 @@
-![Of Taming and Breeding](_Assets/otab_logo.png)
+![Of Taming and Breeding](https://github.com/Vonny1412/Valheim.OfTamingAndBreeding/blob/main/_Assets/otab_logo.png)
 
 # Of Taming and Breeding (OTAB)
 
@@ -20,11 +20,12 @@ OTAB is built around a few core principles:
 
 * **Server-authoritative logic**
 * **Explicit configuration over implicit behavior**
-* **No hidden automation**
-* **Performance first**
+* **Transparent systems over opaque automation**
+* **Implicit automation kept minimal and predictable**
+* **Performance-aware design**
 * **Vanilla-compatible, but not vanilla-limited**
 
-Everything in OTAB is **opt-in, explicit and traceable**.
+OTAB prioritizes opt-in systems, explicit configuration and behavior that can be reasoned about.
 
 ---
 
@@ -32,7 +33,7 @@ Everything in OTAB is **opt-in, explicit and traceable**.
 
 OTAB uses **structured YAML files** to define behavior instead of hardcoded rules.
 
-You can fully control (related to taming and breeding):
+You can precisely control (related to taming and breeding):
 
 * Creatures
 * Eggs
@@ -42,7 +43,7 @@ You can fully control (related to taming and breeding):
 
 No recompiling, no guessing, no hidden defaults.
 
-> If something exists, it is because **you explicitly defined it**.
+> OTAB avoids hardcoded assumptions and instead exposes behavior through explicit configuration wherever practical.
 
 ---
 
@@ -50,7 +51,7 @@ No recompiling, no guessing, no hidden defaults.
 
 OTAB treats creature behavior as **explicit components**.
 
-For each creature you decide:
+For each OTAB-managed creature you decide:
 
 * Patch existing behavior
 * Inherit vanilla behavior
@@ -62,7 +63,34 @@ Examples:
 * A passive offspring that **never becomes an adult**
 * Egg-like items out of **any** other item even wood
 
-Nothing happens implicitly.
+Implicit behavior is kept predictable and traceable.
+
+---
+
+## Riding & Mounts (Out of Scope)
+
+OTAB deliberately does **not** implement riding or mount mechanics.
+
+While taming and breeding are closely related, **riding introduces a separate layer of
+player control, animation, physics and synchronization** that does not naturally belong
+into a taming and breeding framework.
+
+OTAB focuses on:
+
+* Creature behavior
+* Reproduction systems
+* Long-term population logic
+* Server-authoritative simulation
+
+Riding is intentionally left to specialized mods.
+
+At the time of writing, **MountUpRestored** was the go-to solution for riding mechanics.
+Unfortunately, it is currently affected by Valheim’s recent loading and localization changes.
+
+I hope that **MountUpRestored** will receive an update,  
+or that someone from the community feels inspired to take up maintenance of a riding-focused mod.
+
+OTAB is designed to **coexist**, not to replace such systems.
 
 ---
 
@@ -83,7 +111,7 @@ This prevents classic problems like:
 * Animals breeding uncontrollably because they ate random drops
 * “Why is this thing suddenly tamed?” moments
 
-Taming always happens **because a player intended it**.
+Taming is designed to happen only when a player explicitly intends it.
 
 > **Note:**  
 > This setting does **not** prevent animals from eating world food.
@@ -112,7 +140,7 @@ Result:
 * Movement looks more natural
 * No perfectly synchronized behavior patterns
 
-The system is simple, fast, and predictable — without feeling artificial.
+The system is simple, lightweight, and predictable
 
 ---
 
@@ -235,7 +263,7 @@ OTAB clearly separates responsibilities:
 * Cannot influence logic
 * Displays synced translations
 
-This guarantees:
+This helps ensure:
 
 * Deterministic multiplayer behavior
 * No desyncs
@@ -244,7 +272,7 @@ This guarantees:
 
 ---
 
-## Encrypted Cache System (Performance First)
+## Encrypted Cache System (Performance-Aware Design)
 
 OTAB uses a **custom encrypted cache system**:
 
@@ -262,8 +290,7 @@ This keeps:
 * Startup predictable
 * Long-running servers stable
 
-Performance is not an afterthought.
-It is a core design goal.
+Performance is treated as a core design goal.
 
 ### About Encryption
 
@@ -277,25 +304,6 @@ Its primary purpose is to **discourage casual data inspection and spoilers**, su
 The data **can still be extracted by determined users**, and OTAB does not attempt to fully prevent this.
 
 Encryption in OTAB is about **preserving discovery and surprise**, not about enforcing secrecy or preventing modding.
-
----
-
-## Zero Runtime Guessing
-
-OTAB deliberately avoids:
-
-* File watchers
-* Auto-reloading
-* Hot-swapping configs
-* Implicit fallbacks
-
-Why?
-
-Because predictable behavior beats convenience when running a real server.
-
-If something changes:  
-→ restart  
-→ everything is consistent again  
 
 ---
 
@@ -330,3 +338,11 @@ It is a **framework for intentional creature design**.
 ---
 
 **Now it’s time to write your own story of taming and breeding.**
+
+---
+
+*OTAB is also a personal learning project.
+Many systems grew organically through experimentation, iteration and a deep dive into Valheim’s internals.
+That said, stability, clarity and long-term maintainability are always treated as first-class goals.*
+
+*Created with ♥️*

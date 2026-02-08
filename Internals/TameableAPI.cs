@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OfTamingAndBreeding.Patches;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -14,10 +15,20 @@ namespace OfTamingAndBreeding.Internals
 
         private static readonly ConditionalWeakTable<Tameable, TameableAPI> instances
             = new ConditionalWeakTable<Tameable, TameableAPI>();
+
         public static TameableAPI GetOrCreate(Tameable __instance)
-            => instances.GetValue(__instance, (Tameable inst) => new TameableAPI(inst));
+        {
+            return instances.GetValue(__instance, inst =>
+            {
+                Lifecycle.CleanupMarks.Mark(inst.GetComponent<ZNetView>());
+                return new TameableAPI(inst);
+            });
+        }
+
         public static bool TryGet(Tameable __instance, out TameableAPI api)
             => instances.TryGetValue(__instance, out api);
+        public static void Remove(Tameable __instance)
+            => instances.Remove(__instance);
 
         public TameableAPI(Tameable __instance) : base(__instance)
         {

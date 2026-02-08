@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OfTamingAndBreeding.Patches;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -12,10 +13,20 @@ namespace OfTamingAndBreeding.Internals
 
         private static readonly ConditionalWeakTable<Character, CharacterAPI> instances
             = new ConditionalWeakTable<Character, CharacterAPI>();
+
         public static CharacterAPI GetOrCreate(Character __instance)
-            => instances.GetValue(__instance, (Character inst) => new CharacterAPI(inst));
+        {
+            return instances.GetValue(__instance, inst =>
+            {
+                Lifecycle.CleanupMarks.Mark(inst.GetComponent<ZNetView>());
+                return new CharacterAPI(inst);
+            });
+        }
+
         public static bool TryGet(Character __instance, out CharacterAPI api)
             => instances.TryGetValue(__instance, out api);
+        public static void Remove(Character __instance)
+            => instances.Remove(__instance);
 
         public CharacterAPI(Character __instance) : base(__instance)
         {

@@ -1,5 +1,4 @@
-﻿using OfTamingAndBreeding.Internals.API;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -11,13 +10,22 @@ namespace OfTamingAndBreeding.Internals
 {
     internal class AnimalAIAPI : API.AnimalAI
     {
-
         private static readonly ConditionalWeakTable<AnimalAI, AnimalAIAPI> instances
             = new ConditionalWeakTable<AnimalAI, AnimalAIAPI>();
+
         public static AnimalAIAPI GetOrCreate(AnimalAI __instance)
-            => instances.GetValue(__instance, (AnimalAI inst) => new AnimalAIAPI(inst));
+        {
+            return instances.GetValue(__instance, inst =>
+            {
+                Lifecycle.CleanupMarks.Mark(inst.GetComponent<ZNetView>());
+                return new AnimalAIAPI(inst);
+            });
+        }
+
         public static bool TryGet(AnimalAI __instance, out AnimalAIAPI api)
             => instances.TryGetValue(__instance, out api);
+        public static void Remove(AnimalAI __instance)
+            => instances.Remove(__instance);
 
         public AnimalAIAPI(AnimalAI __instance) : base(__instance)
         {
