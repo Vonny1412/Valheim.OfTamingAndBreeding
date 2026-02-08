@@ -14,6 +14,16 @@ Instead, it gives you the tools to **design intentional, believable creature beh
 
 ---
 
+> **Configuration & Documentation**
+>  
+> OTAB is highly configurable.  
+> For detailed setup instructions, configuration examples and explanations,
+> please refer to the **OTAB Wiki**:
+>  
+> 👉 https://github.com/Vonny1412/Valheim.OfTamingAndBreeding/wiki
+
+---
+
 ## Core Philosophy
 
 OTAB is built around a few core principles:
