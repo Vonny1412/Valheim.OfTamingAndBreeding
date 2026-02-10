@@ -43,6 +43,7 @@ namespace OfTamingAndBreeding.Data.Models
             public IsEnemyCondition TamesCanAttackTames { get; set; } = IsEnemyCondition.Never; // OTAB feature
             public IsEnemyCondition TamesCanBeAttackedByTames { get; set; } = IsEnemyCondition.Never; // OTAB feature
             public IsEnemyCondition TamesCanAttackPlayer { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public float TamesStarvingDelay { get; set; } = 3600f;
         }
 
         [Serializable]

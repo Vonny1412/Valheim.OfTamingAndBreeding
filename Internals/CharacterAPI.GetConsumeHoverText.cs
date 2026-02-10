@@ -114,6 +114,12 @@ namespace OfTamingAndBreeding.Internals
 
             float min = consumeItems.Last().FedDurationMultiply;
             float max = consumeItems.First().FedDurationMultiply;
+            //float min = consumeItems.Min(x => x.FedDurationMultiply);
+            //float max = consumeItems.Max(x => x.FedDurationMultiply);
+
+
+
+
 
             foreach (var item in consumeItems)
             {

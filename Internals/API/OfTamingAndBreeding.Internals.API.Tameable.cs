@@ -205,6 +205,9 @@ namespace OfTamingAndBreeding.Internals.API
 
 
 
+
+
+
         public static readonly Core.Invokers.TypedMethodInvoker<float> __IAPI_GetRemainingTime_Invoker1 = new Core.Invokers.TypedMethodInvoker<float>(typeof(Tameable_Alias), "GetRemainingTime", new Core.Signatures.ParamSig[] { });
         public float GetRemainingTime() => __IAPI_GetRemainingTime_Invoker1.Invoke(((Tameable_Alias)__IAPI_instance), new object[] { });
 

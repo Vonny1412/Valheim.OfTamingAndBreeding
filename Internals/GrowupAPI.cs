@@ -95,7 +95,7 @@ namespace OfTamingAndBreeding.Internals
                             }
 
                             //
-                            // pass fed to growup (not procentual)
+                            // pass fed time to growup (not procentual)
                             //
 
                             var oldFedDuration = tameable1.m_fedDuration;

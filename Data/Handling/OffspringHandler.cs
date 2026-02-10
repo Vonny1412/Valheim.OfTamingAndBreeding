@@ -220,12 +220,8 @@ namespace OfTamingAndBreeding.Data.Handling
 
                     if (data.Character.Name != null) offspringCharacter.m_name = data.Character.Name;
                     if (data.Character.Group != null) offspringCharacter.m_group = data.Character.Group;
-
-                    if (data.Character.TamesStickToFaction)
-                    {
-                        Patches.Contexts.DataContext.SetSticksToFaction(offspringName);
-                    }
-
+                    if (data.Character.TamesStickToFaction) Patches.Contexts.DataContext.SetSticksToFaction(offspringName);
+                    
                     if (data.Character.Scale != 1 && data.Character.Scale != 0)
                     {
                         var setScale = data.Character.Scale;

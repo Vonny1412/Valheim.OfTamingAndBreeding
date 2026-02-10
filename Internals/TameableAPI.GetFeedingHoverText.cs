@@ -34,30 +34,17 @@ namespace OfTamingAndBreeding.Internals
             if (m_fedDuration <= 0)
                 return;
 
-            long lastFedTimeLong = zdo.GetLong(ZDOVars.s_tameLastFeeding, 0L);
+            float secLeft = GetFedTimeLeft(__IAPI_GetInstance<Tameable>(), zdo, zTime);
 
-            double secLeft;
-            if (lastFedTimeLong == 0)
-            {
-                // never fed -> treat as "starving since spawn"
-                var baseAI = GetComponent<BaseAI>(); // need to use baseAI for tameable animals
-                secLeft = -baseAI.GetTimeSinceSpawned().TotalSeconds;
-            }
-            else
-            {
-                var lastFedTime = new DateTime(lastFedTimeLong);
-                secLeft = m_fedDuration - (zTime - lastFedTime).TotalSeconds;
-            }
-
-            if (!(secLeft > 0 || Plugin.Configs.HoverShowFedTimerStarving.Value))
+            if (!(secLeft > 0 || Plugin.Configs.HoverShowHungryTimer.Value))
                 return;
 
             returnLines.Add(Helpers.StringHelper.FormatRelativeTime(
                 secLeft,
                 labelPositive: L.Localize("$otab_hover_fed"),
-                labelNegative: L.Localize("$otab_hover_starving"),
+                labelNegative: L.Localize("$otab_hover_hungry"),
                 labelAltPositive: L.Localize("$otab_hover_fed_alt"),
-                labelAltNegative: L.Localize("$otab_hover_starving_alt"),
+                labelAltNegative: L.Localize("$otab_hover_hungry_alt"),
                 colorPositive: Plugin.Configs.HoverColorGood.Value,
                 colorNegative: Plugin.Configs.HoverColorBad.Value
             ));

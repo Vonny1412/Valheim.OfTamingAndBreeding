@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using YamlDotNet.Core.Tokens;
 using static Character;
+using static Player;
 using static UnityEngine.ParticleSystem.PlaybackState;
 
 namespace OfTamingAndBreeding
@@ -33,7 +34,7 @@ namespace OfTamingAndBreeding
             public static ConfigEntry<bool> HoverShowPregnancy { get; private set; }
             public static ConfigEntry<bool> HoverShowPregnancyTimer { get; private set; }
             public static ConfigEntry<bool> HoverShowFedTimer { get; private set; }
-            public static ConfigEntry<bool> HoverShowFedTimerStarving { get; private set; }
+            public static ConfigEntry<bool> HoverShowHungryTimer { get; private set; }
 
             public static ConfigEntry<bool> RequireFoodDroppedByPlayer { get; private set; }
             public static ConfigEntry<bool> ShowEggGrowProgress { get; private set; }
@@ -97,7 +98,7 @@ namespace OfTamingAndBreeding
                 HoverShowPregnancy = Config.Bind<bool>(section, "HoverShowPregnancy", true, new ConfigDescription("Allow showing pregnancy status in creature hover text (server policy).", null, isAdminOnly));
                 HoverShowPregnancyTimer = Config.Bind<bool>(section, "HoverShowPregnancyTimer", true, new ConfigDescription("Allow showing pregnancy timer in hover text (server policy).", null, isAdminOnly));
                 HoverShowFedTimer = Config.Bind<bool>(section, "HoverShowFedTimer", true, new ConfigDescription("Allow showing fed/starving timer in hover text (server policy).", null, isAdminOnly));
-                HoverShowFedTimerStarving = Config.Bind<bool>(section, "HoverShowFedTimerStarving", true, new ConfigDescription("If enabled, also show the timer while starving (negative time).", null, isAdminOnly));
+                HoverShowHungryTimer = Config.Bind<bool>(section, "HoverShowHungryTimer", true, new ConfigDescription("If enabled, also show the timer while hungry (negative time).", null, isAdminOnly));
                 HoverProgressPrecision = Config.Bind<float>(section, "HoverProgressPrecision", 1f, new ConfigDescription("Controls hover progress rounding (lower = more precise). Example: 1 = 1%, 0.1 = 0.1%.", new AcceptableValueList<float>(1f, 0.5f, 0.25f, 0.2f, 0.1f, 0.05f, 0.025f, 0.02f, 0.01f, 0.005f, 0.0025f, 0.002f, 0.001f), isAdminOnly));
 
                 ShowEggGrowProgress = Config.Bind<bool>(section, "ShowEggGrowProgress", true, new ConfigDescription("Shows egg hatching progress as a percentage next to the egg's name in the HUD (visible from distance).", null, isAdminOnly));
@@ -112,7 +113,7 @@ namespace OfTamingAndBreeding
                     "Example (base time = 100s, value = 1.0): 0★ = 100s, 1★ = 200s, 2★ = 300s", null, isAdminOnly));
 
                 MourningResetsLovePoints = Config.Bind<bool>(section, "MourningResetsLovePoints", true, new ConfigDescription("If enabled, love points are reset when a creature loses its partner after the mourning period.", null, isAdminOnly));
-                
+
                 section = "Cache";
 
                 WriteClientCacheFile = Config.Bind<bool>(section, "WriteClientCacheFile", true, new ConfigDescription("Allows clients to write and use a local cache file. Not required for singleplayer worlds.", null, isAdminOnly));

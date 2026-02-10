@@ -34,6 +34,26 @@ namespace OfTamingAndBreeding.Internals
         {
         }
 
+        public static float GetFedTimeLeft(Tameable t, ZDO zdo, DateTime zTime)
+        {
+            // IMPORTANT: s_tameLastFeeding is stored as DateTime.Ticks in vanilla Valheim.
+            // This matches new DateTime(long) and is NOT a binary or ZNet time value.
+            long lastFedTimeLong = zdo.GetLong(ZDOVars.s_tameLastFeeding, 0L);
+            double secLeft;
+            if (lastFedTimeLong == 0)
+            {
+                // never fed -> treat as "unfed since spawn"
+                var baseAI = t.GetComponent<BaseAI>(); // need to use baseAI for tameable animals
+                secLeft = -baseAI.GetTimeSinceSpawned().TotalSeconds;
+            }
+            else
+            {
+                var lastFedTime = new DateTime(lastFedTimeLong);
+                secLeft = t.m_fedDuration - (zTime - lastFedTime).TotalSeconds;
+            }
+            return (float)secLeft;
+        }
+
         #region tameable animals
 
         public AnimalAIAPI animalAIAPI;

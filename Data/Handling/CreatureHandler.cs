@@ -345,6 +345,7 @@ namespace OfTamingAndBreeding.Data.Handling
                     Patches.Contexts.DataContext.SetCanAttackTames(creatureName, data.Character.TamesCanAttackTames);
                     Patches.Contexts.DataContext.SetCanBeAttackedByTames(creatureName, data.Character.TamesCanBeAttackedByTames);
                     Patches.Contexts.DataContext.SetCanAttackPlayer(creatureName, data.Character.TamesCanAttackPlayer);
+                    Patches.Contexts.DataContext.SetStarvingDelay(creatureName, data.Character.TamesStarvingDelay);
                 }
             }
             else if (data.Components.Character == Models.SubData.ComponentBehavior.Remove)

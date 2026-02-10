@@ -26,6 +26,7 @@ namespace OfTamingAndBreeding.Patches.Contexts
         private static readonly Dictionary<int, IsEnemyCondition> canAttackTames = new Dictionary<int, IsEnemyCondition>();
         private static readonly Dictionary<int, IsEnemyCondition> canBeAttackedByTames = new Dictionary<int, IsEnemyCondition>();
         private static readonly Dictionary<int, IsEnemyCondition> canAttackPlayer = new Dictionary<int, IsEnemyCondition>();
+        private static readonly Dictionary<int, float> starvingDelay = new Dictionary<int, float>();
         public static void SetCanAttackTames(string name, IsEnemyCondition cond)
         {
             if (cond == IsEnemyCondition.Never) return;
@@ -40,6 +41,10 @@ namespace OfTamingAndBreeding.Patches.Contexts
         {
             if (cond == IsEnemyCondition.Never) return;
             canAttackPlayer[name.GetStableHashCode()] = cond;
+        }
+        public static void SetStarvingDelay(string name, float delay)
+        {
+            starvingDelay[name.GetStableHashCode()] = delay;
         }
         public static IsEnemyCondition GetCanAttackTames(string name)
         {
@@ -64,6 +69,10 @@ namespace OfTamingAndBreeding.Patches.Contexts
                 return c;
             }
             return IsEnemyCondition.Never;
+        }
+        public static bool TryGetStarvingDelay(string name, out float delay)
+        {
+            return starvingDelay.TryGetValue(name.GetStableHashCode(), out delay);
         }
 
 

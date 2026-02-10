@@ -1,13 +1,16 @@
 ﻿using HarmonyLib;
+using OfTamingAndBreeding.Data.Models.SubData;
+using OfTamingAndBreeding.Internals;
+using OfTamingAndBreeding.Internals.API;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-using OfTamingAndBreeding.Data.Models.SubData;
+using System.Xml.Linq;
 namespace OfTamingAndBreeding.Patches
 {
+
     [HarmonyPatch(typeof(BaseAI), "IsEnemy", new[] { typeof(Character), typeof(Character) })]
     static class BaseAI_IsEnemy_Patch
     {
@@ -67,6 +70,12 @@ namespace OfTamingAndBreeding.Patches
                 }
             }
 
+            var zTime = ZNet.instance.GetTime();
+            var tameable1 = a.GetComponent<Tameable>();
+            var tameable2 = b.GetComponent<Tameable>();
+            var isStarving1 = Contexts.DataContext.TryGetStarvingDelay(name1, out float starvingDelay1) && tameable1 && TameableAPI.GetFedTimeLeft(tameable1, zdo1, zTime) < -starvingDelay1;
+            var isStarving2 = Contexts.DataContext.TryGetStarvingDelay(name2, out float starvingDelay2) && tameable2 && TameableAPI.GetFedTimeLeft(tameable2, zdo2, zTime) < -starvingDelay2;
+
             if (isTamed1 && isTamed2)
             {
                 var canAttack = false;
@@ -79,12 +88,8 @@ namespace OfTamingAndBreeding.Patches
                     case IsEnemyCondition.Always:
                         canAttack = true;
                         break;
-                    case IsEnemyCondition.WhenHungry:
-                        var tameable1 = a.GetComponent<Tameable>();
-                        if (tameable1 && tameable1.IsHungry())
-                        {
-                            canAttack = true;
-                        }
+                    case IsEnemyCondition.WhenStarving:
+                        canAttack = isStarving1;
                         break;
                 }
                 
@@ -98,12 +103,8 @@ namespace OfTamingAndBreeding.Patches
                         case IsEnemyCondition.Always:
                             canAttack = true;
                             break;
-                        case IsEnemyCondition.WhenHungry:
-                            var tameable2 = b.GetComponent<Tameable>();
-                            if (tameable2 && tameable2.IsHungry())
-                            {
-                                canAttack = true;
-                            }
+                        case IsEnemyCondition.WhenStarving:
+                            canAttack = isStarving2;
                             break;
                     }
                 }
@@ -128,12 +129,8 @@ namespace OfTamingAndBreeding.Patches
                         case IsEnemyCondition.Always:
                             canAttack = true;
                             break;
-                        case IsEnemyCondition.WhenHungry:
-                            var tameable1 = a.GetComponent<Tameable>();
-                            if (tameable1.IsHungry())
-                            {
-                                canAttack = true;
-                            }
+                        case IsEnemyCondition.WhenStarving:
+                            canAttack = isStarving1;
                             break;
                     }
                     if (canAttack)

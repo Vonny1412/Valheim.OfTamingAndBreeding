@@ -10,6 +10,6 @@ namespace OfTamingAndBreeding.Data.Models.SubData
     {
         Never = 0,
         Always = 1,
-        WhenHungry = 2,
+        WhenStarving = 2,
     }
 }

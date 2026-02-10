@@ -6,11 +6,8 @@ OfTamingAndBreeding.Internals.API.BaseAI.cs
 OfTamingAndBreeding.Internals.API.AnimalAI.cs
 OfTamingAndBreeding.Internals.API.Character.cs
 OfTamingAndBreeding.Internals.API.EggGrow.cs
-OfTamingAndBreeding.Internals.API.EggHatch.cs
-OfTamingAndBreeding.Internals.API.Fermenter.cs
 OfTamingAndBreeding.Internals.API.Growup.cs
 OfTamingAndBreeding.Internals.API.ItemDrop.cs
 OfTamingAndBreeding.Internals.API.MonsterAI.cs
 OfTamingAndBreeding.Internals.API.Procreation.cs
 OfTamingAndBreeding.Internals.API.Tameable.cs
-OfTamingAndBreeding.Internals.API.WearNTear.cs
