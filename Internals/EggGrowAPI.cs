@@ -1,7 +1,4 @@
-﻿using OfTamingAndBreeding.Data.Models;
-using OfTamingAndBreeding.Helpers;
-using OfTamingAndBreeding.Patches;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -9,6 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 
+using OfTamingAndBreeding.Data.Models;
+using OfTamingAndBreeding.Helpers;
 namespace OfTamingAndBreeding.Internals
 {
 
@@ -81,17 +80,16 @@ namespace OfTamingAndBreeding.Internals
                     z_eggGrownTamed = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_eggGrownTamed, grownEntry.Tamed ? 1 : 0, z_eggGrownTamed);
                     z_eggShowHatchEffect = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_eggShowHatchEffect, grownEntry.ShowHatchEffect ? 1 : 0, z_eggShowHatchEffect);
 
-                    var eggGrownEggData = Egg.Get(z_eggGrownPrefab);
-                    if (eggGrownEggData == null)
+                    if (Egg.Exists(z_eggGrownPrefab))
+                    {
+                        // its an[other] egg!
+                        z_EggBehavior = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_EggBehavior, Plugin.ZDOVars.EggBehavior.Matrjoschka, z_EggBehavior);
+                    }
+                    else
                     {
                         // egg grown is not a registered egg
                         // use default egg grow up
                         z_EggBehavior = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_EggBehavior, Plugin.ZDOVars.EggBehavior.Vanilla, z_EggBehavior);
-                    }
-                    else
-                    {
-                        // its an[other] egg!
-                        z_EggBehavior = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_EggBehavior, Plugin.ZDOVars.EggBehavior.Matrjoschka, z_EggBehavior);
                     }
                 }
             }

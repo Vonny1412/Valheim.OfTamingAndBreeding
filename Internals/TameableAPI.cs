@@ -1,8 +1,11 @@
-﻿using OfTamingAndBreeding.Patches;
+﻿using OfTamingAndBreeding.Data;
+using OfTamingAndBreeding.Helpers;
+using OfTamingAndBreeding.Patches;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.Remoting.Contexts;
 using System.Text;
 using System.Threading.Tasks;
 using static UnityEngine.Networking.UnityWebRequest;
@@ -32,7 +35,160 @@ namespace OfTamingAndBreeding.Internals
 
         public TameableAPI(Tameable __instance) : base(__instance)
         {
+            if (m_nview.IsValid())
+            {
+                m_nview.Register<float>("RPC_SetFedDuration", RPC_SetFedDuration);
+            }
         }
+
+        private void RPC_SetFedDuration(long sender, float duration)
+        {
+            m_fedDuration = duration;
+            if (m_nview.IsOwner())
+            {
+                Helpers.ZNetHelper.SetFloat(m_nview.GetZDO(), Plugin.ZDOVars.z_fedDuration, duration);
+            }
+        }
+
+        public void UpdateFedDuration()
+        {
+            var fedDuration = m_nview.GetZDO().GetFloat(Plugin.ZDOVars.z_fedDuration, -1);
+            if (fedDuration >= 0) // yes, we do allow 0, too
+            {
+                m_fedDuration = fedDuration;
+            }
+        }
+
+        public void UpdateStarvingTimePoint()
+        {
+            if (m_nview.IsOwner())
+            {
+                var prefabName = Utils.GetPrefabName(gameObject.name);
+                if (Runtime.Tameable.GetIsEatingDisabled(prefabName))
+                {
+                    // creatures that do not eat at all wont get starving!
+                    return;
+                }
+
+                var starvingDelayMul = Runtime.Tameable.GetStarvingGraceMultiplier(prefabName);
+                var starvingAfter = ZNet.instance.GetTime().AddSeconds(m_fedDuration + m_fedDuration*starvingDelayMul);
+                ZNetHelper.SetLong(m_nview.GetZDO(), Plugin.ZDOVars.z_starvingAfter, starvingAfter.Ticks);
+            }
+        }
+
+        public bool IsStarving()
+        {
+            var l = m_nview.GetZDO().GetLong(Plugin.ZDOVars.z_starvingAfter, -1);
+            if (l == -1)
+            {
+                // either not set yet or eating is disabled
+                return false;
+            }
+            return l < ZNet.instance.GetTime().Ticks;
+        }
+
+        // hint: Tameable.OnConsumedItem is only called for owner
+        public bool OnConsumedItem_Prefix(ItemDrop item)
+        {
+
+            var prefabName = Utils.GetPrefabName(gameObject.name);
+            if (Runtime.Tameable.GetIsEatingDisabled(prefabName))
+            {
+                // block ResetFeedingTimer()
+                return false;
+            }
+
+            var itemName = Utils.GetPrefabName(item.gameObject.name);
+            //zdo.Set(Plugin.ZDO.s_lastConsumedItem, itemName);
+
+            // handle multiplied fedDuration
+            if (Runtime.MonsterAI.TryGetCustomConsumeItems(prefabName, out Data.Models.Creature.MonsterAIConsumItemData[] consumeItems))
+            {
+                if (!Runtime.Tameable.TryGetBaseFedDuration(prefabName, out float fedDuration))
+                {
+                    fedDuration = m_fedDuration;
+                    // save base duration because we are changing the value
+                    Runtime.Tameable.SetBaseFedDuration(prefabName, fedDuration);
+                }
+
+                foreach (var entry in consumeItems)
+                {
+                    if (entry.Prefab == itemName)
+                    {
+                        fedDuration *= entry.FedDurationMultiply;
+                        // what if the same prefab exists multiple times in list?
+                        // just keep going, maybe one day we gonna expand the feature with more options or values
+                        //break;
+                    }
+                }
+                if (fedDuration >= 0)
+                {
+                    // Intentionally allow 0:
+                    // This means the creature will never become fed by this item.
+                    // that way we can keep using taming system and can have items that do not trigger taming/procreation
+
+                    m_nview.InvokeRPC(ZNetView.Everybody, "RPC_SetFedDuration", fedDuration);
+                    m_fedDuration = fedDuration;
+                }
+            }
+
+            UpdateStarvingTimePoint();
+            // calling UpdateStarvingTimePoint before RequireFoodDroppedByPlayer-check
+            // because every valid food should stop starvation
+            // RequireFoodDroppedByPlayer is designed to prevent unwanted taming/breeding
+
+            if (Plugin.Configs.RequireFoodDroppedByPlayer.Value)
+            {
+                int droppedByAnyPlayer = -1;
+                if (item)
+                {
+                    var item_nview = item.GetComponent<ZNetView>();
+                    if (item_nview && item_nview.IsValid())
+                    {
+                        var item_zdo = item_nview.GetZDO();
+                        if (item_zdo != null)
+                        {
+                            droppedByAnyPlayer = item_zdo.GetInt(Plugin.ZDOVars.z_droppedByAnyPlayer, 0);
+                        }
+                    }
+                }
+                if (droppedByAnyPlayer < 0 && Patches.Contexts.ConsumeItemContext.HasValue && item && Patches.Contexts.ConsumeItemContext.LastItemInstanceId == item.GetInstanceID())
+                {
+                    droppedByAnyPlayer = Patches.Contexts.ConsumeItemContext.lastItemDroppedByAnyPlayer;
+                }
+                Patches.Contexts.ConsumeItemContext.Clear();
+                if (droppedByAnyPlayer < 0)
+                {
+                    // we dont know if it has been dropped by player or not
+                    // let valheim handle
+                }
+                if (droppedByAnyPlayer == 0)
+                {
+                    // definitly not dropped by player
+                    // prevent ResetFeedingTimer
+                    return false;
+                }
+            }
+            else
+            {
+                Patches.Contexts.ConsumeItemContext.Clear();
+            }
+
+            // let valheim handle
+            return true;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
 
         public static float GetFedTimeLeft(Tameable t, ZDO zdo, DateTime zTime)
         {
@@ -53,6 +209,13 @@ namespace OfTamingAndBreeding.Internals
             }
             return (float)secLeft;
         }
+
+
+
+
+
+
+
 
         #region tameable animals
 

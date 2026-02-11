@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using OfTamingAndBreeding.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +16,7 @@ namespace OfTamingAndBreeding.Patches
         {
             // we need to multiply because localScale has already been set to variable scaling according to stuff like quality
             var prefabName = Utils.GetPrefabName(__instance.gameObject.name);
-            __instance.transform.localScale *= Contexts.DataContext.GetEggScale(prefabName);
+            __instance.transform.localScale *= Runtime.ItemData.GetCustomScale(prefabName);
         }
     }
 

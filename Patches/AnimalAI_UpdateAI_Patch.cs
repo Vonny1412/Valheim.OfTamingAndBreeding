@@ -1,20 +1,25 @@
 ﻿using HarmonyLib;
+using OfTamingAndBreeding.Internals;
 using System;
+using static UnityEngine.Networking.UnityWebRequest;
 
 namespace OfTamingAndBreeding.Patches
 {
     [HarmonyPatch(typeof(AnimalAI), "UpdateAI")]
     static class AnimalAI_UpdateAI_Patch
     {
-        static bool Prefix(AnimalAI __instance, float dt)
+        static void Postfix(AnimalAI __instance, float dt)
         {
+            // we cannot use prefix. because in vanilla the AnimalAI.UpdateAI() is calling base.UpdateAI (base=BaseAI)
+            // and we cannot access and call BaseAI.UpdateAI for now because it would result in recursive calling of this patch
+            // so just add the consume part at the end, animals got no big ai afterall
+
             // check if this animal is an animal that we are handling
             if (Internals.AnimalAIAPI.TryGet(__instance, out Internals.AnimalAIAPI api))
             {
                 // custom updateAI to make the animal consume items on the ground
-                return api.UpdateCustomAI(dt);
+                api.UpdateCustomAI(dt);
             }
-            return true;
         }
     }
 

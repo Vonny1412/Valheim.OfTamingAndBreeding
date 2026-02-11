@@ -29,10 +29,6 @@ namespace OfTamingAndBreeding.Internals
         public static void Remove(Procreation __instance)
             => instances.Remove(__instance);
 
-
-
-
-        private static Dictionary<string, long> _partnerRecheckTicks = new Dictionary<string, long>();
         private float _realPregnancyDuration = 0;
 
         public void SaveRealPregnancyDuration()
@@ -43,22 +39,6 @@ namespace OfTamingAndBreeding.Internals
         public ProcreationAPI(Procreation __instance) : base(__instance)
         {
             _realPregnancyDuration = m_pregnancyDuration; // init value
-
-            var prefabName = Utils.GetPrefabName(gameObject.name);
-            if (!_partnerRecheckTicks.ContainsKey(prefabName))
-            {
-                var data = Data.Models.Creature.Get(prefabName);
-                var dataProcreation = data?.Procreation;
-                if (dataProcreation != null)
-                {
-                    _partnerRecheckTicks[prefabName] = TimeSpan.FromSeconds(dataProcreation.PartnerRecheckSeconds).Ticks;
-                }
-                else
-                {
-                    _partnerRecheckTicks[prefabName] = 0L; // to block ContainsKey()
-                }
-            }
-
             if (m_nview.IsValid())
             {
                 m_nview.Register("RPC_DisplayLoveEffect", RPC_DisplayLoveEffect);
@@ -194,7 +174,7 @@ namespace OfTamingAndBreeding.Internals
                             z_partnerNotSeenSince = ZNetHelper.SetLong(zdo, Plugin.ZDOVars.z_partnerNotSeenSince, __nowTicks, z_partnerNotSeenSince);
                         }
 
-                        _partnerRecheckTicks.TryGetValue(__myPrefabName, out var recheck);
+                        var recheck = Data.Runtime.Procreation.GetPartnerRecheckTicks(__myPrefabName, 0);
                         bool expired = z_partnerNotSeenSince != 0L && (__nowTicks - z_partnerNotSeenSince) > recheck;
                         if (expired) // creature is mourning to have lost the partner it just found =(
                         {

@@ -48,7 +48,7 @@ namespace OfTamingAndBreeding.Net
             var inFunc1 = $"{nameof(RPCContext)}.{nameof(RPCContext.InitServerSession)}";
             Plugin.LogDebug($"[{inFunc1}] Start");
 
-            DataManager.LoadDataFromLocalFiles();
+            DataOrchestrator.LoadDataFromLocalFiles();
 
             var writeCacheFiles = Plugin.Configs.WriteServerCacheDebugFiles.Value;
 
@@ -83,7 +83,7 @@ namespace OfTamingAndBreeding.Net
                 if (!CacheManager.LoadCacheFromCrypted(serverSession.CacheContent, serverSession.CacheCryptKey))
                 {
                     Plugin.LogFatal($"[{inFunc1}] Failed building cache: Cache #1 corrupted");
-                    DataManager.ResetData();
+                    DataOrchestrator.ResetData();
                     DestroySession();
                     return;
                 }
@@ -98,7 +98,7 @@ namespace OfTamingAndBreeding.Net
                 else
                 {
                     Plugin.LogFatal($"[{inFunc1}] Failed building cache: Hashes mismatch");
-                    DataManager.ResetData();
+                    DataOrchestrator.ResetData();
                     DestroySession();
                 }
 
@@ -240,7 +240,7 @@ namespace OfTamingAndBreeding.Net
                             if (CacheManager.LoadCacheFromCrypted(File.ReadAllText(cacheFilePath), clientSession.CacheCryptKey))
                             {
                                 requestCacheFile = false;
-                                DataManager.ValidateDataAndRegisterPrefabs();
+                                DataOrchestrator.ValidateDataAndRegisterPrefabs();
                                 Plugin.LogInfo($"Loaded data from existing cache");
                             }
                         }
@@ -296,7 +296,7 @@ namespace OfTamingAndBreeding.Net
 
                 if (success)
                 {
-                    DataManager.ValidateDataAndRegisterPrefabs();
+                    DataOrchestrator.ValidateDataAndRegisterPrefabs();
                     Plugin.LogInfo($"Loaded data from received cache");
                 }
                 else

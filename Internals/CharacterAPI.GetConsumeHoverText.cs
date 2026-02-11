@@ -68,10 +68,10 @@ namespace OfTamingAndBreeding.Internals
         {
             var displayItems = new List<ConsumableItemDisplay>();
 
+            var prefabName = Utils.GetPrefabName(gameObject.name);
+
             // 1) Prefer OTAB YAML data (includes FedDurationMultiply coloring)
-            var data = Data.Models.Creature.Get(Utils.GetPrefabName(gameObject.name));
-            var consumeItems = data?.MonsterAI?.ConsumeItems;
-            if (consumeItems != null && consumeItems.Length > 0)
+            if (Data.Runtime.MonsterAI.TryGetCustomConsumeItems(prefabName, out Data.Models.Creature.MonsterAIConsumItemData[] consumeItems))
             {
                 AddDisplayItemsFromYaml(displayItems, consumeItems, L);
                 return displayItems;
@@ -103,7 +103,7 @@ namespace OfTamingAndBreeding.Internals
         {
             if (consumeItems.Length == 1)
             {
-                var itemDrop = Patches.Contexts.DataContext.GetItemDropByPrefab(consumeItems[0].Prefab);
+                var itemDrop = Data.Runtime.MonsterAI.GetItemDropByPrefab(consumeItems[0].Prefab);
                 if (itemDrop == null) return;
 
                 var displayName = L.Localize(itemDrop.m_itemData.m_shared.m_name);
@@ -123,7 +123,7 @@ namespace OfTamingAndBreeding.Internals
 
             foreach (var item in consumeItems)
             {
-                var itemDrop = Patches.Contexts.DataContext.GetItemDropByPrefab(item.Prefab);
+                var itemDrop = Data.Runtime.MonsterAI.GetItemDropByPrefab(item.Prefab);
                 if (itemDrop == null) continue;
 
                 var displayName = L.Localize(itemDrop.m_itemData.m_shared.m_name);

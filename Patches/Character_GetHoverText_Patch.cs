@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using OfTamingAndBreeding.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,13 +25,13 @@ namespace OfTamingAndBreeding.Patches
             Tameable tameable = __instance.GetComponent<Tameable>();
             if ((bool)tameable)
             {
-                if (!isTamed && Contexts.DataContext.GetTamingDisabled(prefabName))
+                if (!isTamed && Runtime.Tameable.GetTamingDisabled(prefabName))
                 {
                     __result = tameable.GetName();
                 }
                 else
                 {
-                    if (Contexts.DataContext.GetEatingDisabled(prefabName))
+                    if (Runtime.Tameable.GetIsEatingDisabled(prefabName))
                     {
                         var hungry = Localization.instance.Localize("$hud_tamehungry");
                         if (!string.IsNullOrEmpty(hungry))

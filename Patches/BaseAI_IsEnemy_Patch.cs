@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using OfTamingAndBreeding.Data;
 using OfTamingAndBreeding.Data.Models.SubData;
 using OfTamingAndBreeding.Internals;
 using OfTamingAndBreeding.Internals.API;
@@ -49,8 +50,8 @@ namespace OfTamingAndBreeding.Patches
             var name2 = Utils.GetPrefabName(b.gameObject.name);
 
             // handle stick-to-faction
-            var stickToFaction1 = Contexts.DataContext.GetSticksToFaction(name1);
-            var stickToFaction2 = Contexts.DataContext.GetSticksToFaction(name2);
+            var stickToFaction1 = Runtime.Character.GetSticksToFaction(name1);
+            var stickToFaction2 = Runtime.Character.GetSticksToFaction(name2);
             if (isTamed1 && stickToFaction1 || isTamed2 && stickToFaction2)
             {
                 if (faction1 == faction2)
@@ -70,17 +71,20 @@ namespace OfTamingAndBreeding.Patches
                 }
             }
 
-            var zTime = ZNet.instance.GetTime();
+            TameableAPI tameableAPI1 = null;
+            TameableAPI tameableAPI2 = null;
             var tameable1 = a.GetComponent<Tameable>();
             var tameable2 = b.GetComponent<Tameable>();
-            var isStarving1 = Contexts.DataContext.TryGetStarvingDelay(name1, out float starvingDelay1) && tameable1 && TameableAPI.GetFedTimeLeft(tameable1, zdo1, zTime) < -starvingDelay1;
-            var isStarving2 = Contexts.DataContext.TryGetStarvingDelay(name2, out float starvingDelay2) && tameable2 && TameableAPI.GetFedTimeLeft(tameable2, zdo2, zTime) < -starvingDelay2;
+            if (tameable1) TameableAPI.TryGet(tameable1, out tameableAPI1);
+            if (tameable2) TameableAPI.TryGet(tameable2, out tameableAPI2);
+            var isStarving1 = tameableAPI1 != null && tameableAPI1.IsStarving();
+            var isStarving2 = tameableAPI2 != null && tameableAPI2.IsStarving();
 
             if (isTamed1 && isTamed2)
             {
                 var canAttack = false;
 
-                switch (Contexts.DataContext.GetCanAttackTames(name1))
+                switch (Runtime.Character.GetCanAttackTames(name1))
                 {
                     case IsEnemyCondition.Never:
                         canAttack = false;
@@ -95,7 +99,7 @@ namespace OfTamingAndBreeding.Patches
                 
                 if (!canAttack)
                 {
-                    switch (Contexts.DataContext.GetCanBeAttackedByTames(name2))
+                    switch (Runtime.Character.GetCanBeAttackedByTames(name2))
                     {
                         case IsEnemyCondition.Never:
                             canAttack = false;
@@ -121,7 +125,7 @@ namespace OfTamingAndBreeding.Patches
                 if (isTamed1 && faction2 == Character.Faction.Players)
                 {
                     var canAttack = false;
-                    switch (Contexts.DataContext.GetCanAttackPlayer(name1))
+                    switch (Runtime.Character.GetCanAttackPlayer(name1))
                     {
                         case IsEnemyCondition.Never:
                             canAttack = false;

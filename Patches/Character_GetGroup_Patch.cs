@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using OfTamingAndBreeding.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace OfTamingAndBreeding.Patches
         {
             var prefabName = Utils.GetPrefabName(__instance.gameObject.name);
 
-            if (Contexts.DataContext.GetGroupWhenTamed(prefabName, out string group))
+            if (Runtime.Character.GetGroupWhenTamed(prefabName, out string group))
             {
                 __result = group;
                 return false;

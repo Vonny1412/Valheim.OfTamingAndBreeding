@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using OfTamingAndBreeding.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace OfTamingAndBreeding.Patches
         static bool Prefix(Tameable __instance)
         {
             var prefabName = Utils.GetPrefabName(__instance.gameObject.name);
-            if (Contexts.DataContext.GetTamingDisabled(prefabName))
+            if (Runtime.Tameable.GetTamingDisabled(prefabName))
             {
                 // taming completly disabled
                 return false;

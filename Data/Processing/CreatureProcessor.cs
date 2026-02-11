@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-
 using UnityEngine;
 
-using OfTamingAndBreeding.Data.Handling.Base;
 using OfTamingAndBreeding.Helpers;
-namespace OfTamingAndBreeding.Data.Handling
+namespace OfTamingAndBreeding.Data.Processing
 {
-    internal class CreatureHandler : DataHandler<Models.Creature>
+    internal class CreatureProcessor : Base.DataProcessor<Models.Creature>
     {
         public override string DirectoryName => Models.Creature.DirectoryName;
 
@@ -19,7 +17,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // PREPARE
         //------------------------------------------------
 
-        public override void Prepare(DataHandlerContext ctx)
+        public override void Prepare(Base.DataProcessorContext ctx)
         {
 
         }
@@ -28,7 +26,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // VALIDATE DATA
         //------------------------------------------------
 
-        public override bool ValidateData(DataHandlerContext ctx, string creatureName, Models.Creature data)
+        public override bool ValidateData(Base.DataProcessorContext ctx, string creatureName, Models.Creature data)
         {
             var model = $"{nameof(Models.Creature)}.{creatureName}";
             var error = false;
@@ -183,7 +181,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // PREPARE PREFAB
         //------------------------------------------------
 
-        public override bool PreparePrefab(DataHandlerContext ctx, string creatureName, Models.Creature data)
+        public override bool PreparePrefab(Base.DataProcessorContext ctx, string creatureName, Models.Creature data)
         {
             var model = $"{nameof(Models.Creature)}.{creatureName}";
 
@@ -204,7 +202,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // VALIDATE PREFAB
         //------------------------------------------------
 
-        public override bool ValidatePrefab(DataHandlerContext ctx, string creatureName, Models.Creature data)
+        public override bool ValidatePrefab(Base.DataProcessorContext ctx, string creatureName, Models.Creature data)
         {
             var model = $"{nameof(Models.Creature)}.{creatureName}";
             var error = false;
@@ -255,7 +253,7 @@ namespace OfTamingAndBreeding.Data.Handling
                         }
                         else
                         {
-                            if (Patches.Contexts.DataContext.GetItemDropByPrefab(foodData.Prefab) == null)
+                            if (Runtime.MonsterAI.GetItemDropByPrefab(foodData.Prefab) == null)
                             {
                                 Plugin.LogError($"{model}.{nameof(data.MonsterAI)}.{nameof(data.MonsterAI.ConsumeItems)}.{i}.{nameof(foodData.Prefab)}: '{foodData.Prefab}' has no ItemDrop component");
                                 error = true;
@@ -326,7 +324,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // REGISTER PREFAB
         //------------------------------------------------
 
-        public override void RegisterPrefab(DataHandlerContext ctx, string creatureName, Models.Creature data)
+        public override void RegisterPrefab(Base.DataProcessorContext ctx, string creatureName, Models.Creature data)
         {
             var model = $"{nameof(Models.Creature)}.{creatureName}";
             var creature = ctx.GetPrefab(creatureName);
@@ -340,12 +338,11 @@ namespace OfTamingAndBreeding.Data.Handling
                 {
                     Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting Character values");
                     if (data.Character.Group != null) character.m_group = data.Character.Group;
-                    if (data.Character.GroupWhenTamed != null) Patches.Contexts.DataContext.SetGroupWhenTamed(creatureName, data.Character.GroupWhenTamed);
-                    if (data.Character.TamesStickToFaction) Patches.Contexts.DataContext.SetSticksToFaction(creatureName);
-                    Patches.Contexts.DataContext.SetCanAttackTames(creatureName, data.Character.TamesCanAttackTames);
-                    Patches.Contexts.DataContext.SetCanBeAttackedByTames(creatureName, data.Character.TamesCanBeAttackedByTames);
-                    Patches.Contexts.DataContext.SetCanAttackPlayer(creatureName, data.Character.TamesCanAttackPlayer);
-                    Patches.Contexts.DataContext.SetStarvingDelay(creatureName, data.Character.TamesStarvingDelay);
+                    if (data.Character.GroupWhenTamed != null) Runtime.Character.SetGroupWhenTamed(creatureName, data.Character.GroupWhenTamed);
+                    if (data.Character.TamesStickToFaction) Runtime.Character.SetSticksToFaction(creatureName);
+                    Runtime.Character.SetCanAttackTames(creatureName, data.Character.TamesCanAttackTames);
+                    Runtime.Character.SetCanBeAttackedByTames(creatureName, data.Character.TamesCanBeAttackedByTames);
+                    Runtime.Character.SetCanAttackPlayer(creatureName, data.Character.TamesCanAttackPlayer);
                 }
             }
             else if (data.Components.Character == Models.SubData.ComponentBehavior.Remove)
@@ -375,10 +372,12 @@ namespace OfTamingAndBreeding.Data.Handling
                                 .OrderByDescending(i => i.FedDurationMultiply)
                                 .ToArray();
 
+                            Runtime.MonsterAI.SetCustomConsumeItems(creatureName, data.MonsterAI.ConsumeItems);
+
                             monsterAI.m_consumeItems = new List<ItemDrop>();
                             foreach (var entry in data.MonsterAI.ConsumeItems)
                             {
-                                var itemDrop = Patches.Contexts.DataContext.GetItemDropByPrefab(entry.Prefab);
+                                var itemDrop = Runtime.MonsterAI.GetItemDropByPrefab(entry.Prefab);
                                 if (itemDrop != null)
                                 {
                                     monsterAI.m_consumeItems.Add(itemDrop);
@@ -404,7 +403,7 @@ namespace OfTamingAndBreeding.Data.Handling
                                 prefabAnimalAIAPI.m_consumeItems = new List<ItemDrop>();
                                 foreach (var entry in data.MonsterAI.ConsumeItems)
                                 {
-                                    var itemDrop = Patches.Contexts.DataContext.GetItemDropByPrefab(entry.Prefab);
+                                    var itemDrop = Runtime.MonsterAI.GetItemDropByPrefab(entry.Prefab);
                                     if (itemDrop != null)
                                     {
                                         prefabAnimalAIAPI.m_consumeItems.Add(itemDrop);
@@ -440,7 +439,7 @@ namespace OfTamingAndBreeding.Data.Handling
                         else
                         {
                             // not tameable -> hide statustext
-                            Patches.Contexts.DataContext.SetTamingDisabled(creatureName);
+                            Runtime.Tameable.SetTamingDisabled(creatureName);
                         }
                         tameable.m_tamingTime = tamingTime >= 0 ? tamingTime : 0; // better clamp. dunno if other mods can handle negative values
                     }
@@ -450,16 +449,21 @@ namespace OfTamingAndBreeding.Data.Handling
                         if (fedDuration >= 0)
                         {
                             // can eat
-                            Patches.Contexts.DataContext.SetFedDuration(creatureName, fedDuration);
+                            Runtime.Tameable.SetBaseFedDuration(creatureName, fedDuration);
                         }
                         else
                         {
                             // cannot eat, hide all feeding info in hover
-                            Patches.Contexts.DataContext.SetEatingDisabled(creatureName);
+                            Runtime.Tameable.SetIsEatingDisabled(creatureName);
                         }
                         tameable.m_fedDuration = fedDuration >= 0 ? fedDuration : 0; // better clamp. dunno if other mods can handle negative values
                     }
-                    
+
+                    if (data.Tameable.StarvingGraceMultiplier != null)
+                    {
+                        Runtime.Tameable.SetStarvingGraceMultiplier(creatureName, (float)data.Tameable.StarvingGraceMultiplier);
+                    }
+
                     Plugin.LogDebug($"{model}.{nameof(data.Tameable)}: Setting effects");
                     if (tameable.m_sootheEffect.m_effectPrefabs.Length == 0)
                     {
@@ -519,6 +523,8 @@ namespace OfTamingAndBreeding.Data.Handling
 
                     if (data.Procreation.MaxCreatures != null) procreation.m_maxCreatures = (int)data.Procreation.MaxCreatures;
 
+                    Runtime.Procreation.SetPartnerRecheckTicks(creatureName, data.Procreation.PartnerRecheckSeconds);
+
                     // sibling chance will be handled in ProcreationAPI
                     //procreationData.siblingChance = Mathf.Clamp(procreationData.siblingChance, 0, 1);
 
@@ -567,7 +573,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // CLEANUP
         //------------------------------------------------
 
-        public override void Cleanup(DataHandlerContext ctx)
+        public override void Cleanup(Base.DataProcessorContext ctx)
         {
         }
 
@@ -575,7 +581,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // UNREGISTER PREFAB
         //------------------------------------------------
 
-        public override void RestorePrefab(DataHandlerContext ctx, string creatureName, Models.Creature data)
+        public override void RestorePrefab(Base.DataProcessorContext ctx, string creatureName, Models.Creature data)
         {
             ctx.Restore(creatureName, (GameObject backup, GameObject current) => {
 

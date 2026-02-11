@@ -25,6 +25,10 @@ namespace OfTamingAndBreeding
             // used to store current selected fed duration of the tamed/untamed creature because it can vary depending on the item it has consumed, based on our Creature.MonsterAIData
             internal static readonly int z_fedDuration = $"{Plugin.ModGuid}.z_fedDuration".GetStableHashCode();
 
+            // todo: short description
+            internal static readonly int z_starvingAfter = $"{Plugin.ModGuid}.z_starvingAfter".GetStableHashCode();
+
+
             //
             // Creature Procreation
             //

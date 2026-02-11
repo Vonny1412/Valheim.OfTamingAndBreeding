@@ -6,12 +6,12 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.Data.Handling.Base
+namespace OfTamingAndBreeding.Data.Processing.Base
 {
-    public class DataHandlerContext
+    public class DataProcessorContext
     {
         public readonly ZNetScene zns;
-        public DataHandlerContext(ZNetScene zns)
+        public DataProcessorContext(ZNetScene zns)
         {
             this.zns = zns;
             cache = new Dictionary<string, UnityEngine.GameObject>();
@@ -101,41 +101,49 @@ namespace OfTamingAndBreeding.Data.Handling.Base
             // backup should not be neccessary
         }
 
-        public GameObject Restore(string prefabName, Action<GameObject, GameObject> cb)
+        public void Restore(string prefabName, Action<GameObject, GameObject> cb)
         {
             var isClone = clonedNames.Contains(prefabName);
             if (isClone)
             {
-                //PrefabManager.Instance.DestroyPrefab(prefabName);
-                return null;
+                // do not destroy, just ignore it because its just a clone
+                return;
             }
-            else
+
+            // its not a clone, we need to restore it back to default
+
+            if (!backups.TryGetValue(prefabName, out var backup) || !backup)
             {
-                if (!backups.TryGetValue(prefabName, out var backup) || !backup)
-                    return null;
-                var current = GetPrefab(prefabName);
-                if (current != null)
-                    return null;
-
-                // remove tracked added components first
-                if (addedComponents.TryGetValue(prefabName, out var added))
-                {
-                    foreach (var type in added)
-                    {
-                        var comp = current.GetComponent(type);
-                        if (comp) UnityEngine.Object.DestroyImmediate(comp);
-                    }
-                    addedComponents.Remove(prefabName);
-                }
-
-                cb(backup, current);
-
-                // NEVER clear the backups! use it as our own cache!
-                //UnityEngine.Object.DestroyImmediate(backup);
-                //backups.Remove(prefabName);
-
-                return current;
+                // we got no backup data for that prefab
+                // hmmm better just return
+                // only restore prefabs with existing backups
+                return;
             }
+
+            var current = GetPrefab(prefabName);
+            if (current == null)
+            {
+                // for safety: prefab is completly unknown. should not happen but whatever
+                return;
+            }
+
+            // remove tracked added components first
+            if (addedComponents.TryGetValue(prefabName, out var added))
+            {
+                foreach (var type in added)
+                {
+                    var comp = current.GetComponent(type);
+                    if (comp) UnityEngine.Object.DestroyImmediate(comp);
+                }
+                addedComponents.Remove(prefabName);
+            }
+
+            // call callback
+            cb(backup, current);
+
+            // NEVER clear the backups! use it as our own cache!
+            //UnityEngine.Object.DestroyImmediate(backup);
+            //backups.Remove(prefabName);
         }
 
     }

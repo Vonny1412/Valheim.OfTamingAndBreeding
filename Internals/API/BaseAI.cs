@@ -20,6 +20,20 @@ namespace OfTamingAndBreeding.Internals.API
 
 
 
+
+        public virtual bool UpdateAI(float dt) => ((BaseAI_Alias)__IAPI_instance).UpdateAI(dt);
+
+
+
+
+        public static readonly Core.Invokers.FieldMutateInvoker<bool> __IAPI_m_alerted_Invoker = new Core.Invokers.FieldMutateInvoker<bool>(typeof(BaseAI_Alias), "m_alerted");
+        public bool m_alerted
+        {
+            get => __IAPI_m_alerted_Invoker.Get(((BaseAI_Alias)__IAPI_instance));
+            set => __IAPI_m_alerted_Invoker.Set(((BaseAI_Alias)__IAPI_instance), value);
+        }
+
+
         public bool IsAlerted() => ((BaseAI_Alias)__IAPI_instance).IsAlerted();
 
 
@@ -103,5 +117,42 @@ namespace OfTamingAndBreeding.Internals.API
         }
 
 
+
+
+        public static readonly Core.Invokers.FieldMutateInvoker<float> __IAPI_m_jumpTimer_Invoker = new Core.Invokers.FieldMutateInvoker<float>(typeof(BaseAI_Alias), "m_jumpTimer");
+        public float m_jumpTimer
+        {
+            get => __IAPI_m_jumpTimer_Invoker.Get(((BaseAI_Alias)__IAPI_instance));
+            set => __IAPI_m_jumpTimer_Invoker.Set(((BaseAI_Alias)__IAPI_instance), value);
+        }
+
+        public static readonly Core.Invokers.FieldMutateInvoker<float> __IAPI_m_randomMoveUpdateTimer_Invoker = new Core.Invokers.FieldMutateInvoker<float>(typeof(BaseAI_Alias), "m_randomMoveUpdateTimer");
+        public float m_randomMoveUpdateTimer
+        {
+            get => __IAPI_m_randomMoveUpdateTimer_Invoker.Get(((BaseAI_Alias)__IAPI_instance));
+            set => __IAPI_m_randomMoveUpdateTimer_Invoker.Set(((BaseAI_Alias)__IAPI_instance), value);
+        }
+
+        public float m_jumpInterval
+        {
+            get => ((BaseAI_Alias)__IAPI_instance).m_jumpInterval;
+            set => ((BaseAI_Alias)__IAPI_instance).m_jumpInterval = value;
+        }
+
+
+        public static readonly Core.Invokers.FieldMutateInvoker<float> __IAPI_m_timeSinceHurt_Invoker = new Core.Invokers.FieldMutateInvoker<float>(typeof(BaseAI_Alias), "m_timeSinceHurt");
+        public float m_timeSinceHurt
+        {
+            get => __IAPI_m_timeSinceHurt_Invoker.Get(((BaseAI_Alias)__IAPI_instance));
+            set => __IAPI_m_timeSinceHurt_Invoker.Set(((BaseAI_Alias)__IAPI_instance), value);
+        }
+
+
+        public static readonly Core.Invokers.VoidMethodInvoker __IAPI_UpdateRegeneration_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(BaseAI_Alias), "UpdateRegeneration", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(float), false) });
+        public void UpdateRegeneration(float dt) => __IAPI_UpdateRegeneration_Invoker1.Invoke(((BaseAI_Alias)__IAPI_instance), new object[] { dt });
+
+
+        public static readonly Core.Invokers.VoidMethodInvoker __IAPI_UpdateTakeoffLanding_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(BaseAI_Alias), "UpdateTakeoffLanding", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(float), false) });
+        public void UpdateTakeoffLanding(float dt) => __IAPI_UpdateTakeoffLanding_Invoker1.Invoke(((BaseAI_Alias)__IAPI_instance), new object[] { dt });
     }
 }

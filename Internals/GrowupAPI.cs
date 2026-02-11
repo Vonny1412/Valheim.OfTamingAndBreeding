@@ -61,6 +61,12 @@ namespace OfTamingAndBreeding.Internals
             Character spawnedCharacter = spawned.GetComponent<Character>();
             if ((bool)myCharacter && (bool)spawnedCharacter)
             {
+                Tameable tameable1 = GetComponent<Tameable>();
+                Tameable tameable2 = spawned.GetComponent<Tameable>();
+                if (tameable2 && TameableAPI.TryGet(tameable2, out TameableAPI tAPI))
+                {
+                    tAPI.UpdateStarvingTimePoint();
+                }
                 if (m_inheritTame)
                 {
                     if (myCharacter.IsTamed())
@@ -69,8 +75,6 @@ namespace OfTamingAndBreeding.Internals
                     }
                     else
                     {
-                        Tameable tameable1 = GetComponent<Tameable>();
-                        Tameable tameable2 = spawned.GetComponent<Tameable>();
                         if ((bool)tameable1 && (bool)tameable2 && Helpers.ZNetHelper.TryGetZDO(spawned, out ZDO zdo2))
                         {
 

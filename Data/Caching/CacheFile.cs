@@ -2,7 +2,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace OfTamingAndBreeding.Data.Cache
+namespace OfTamingAndBreeding.Data.Caching
 {
     internal class CacheFile : DataBase
     {

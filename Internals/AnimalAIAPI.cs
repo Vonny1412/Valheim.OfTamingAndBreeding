@@ -49,13 +49,19 @@ namespace OfTamingAndBreeding.Internals
 
         public bool UpdateCustomAI(float dt)
         {
-            if (UpdateConsumeItem(dt)) return false;
+            if (!m_nview.IsValid() || !m_nview.IsOwner())
+            {
+                return false;
+            }
+
+            Humanoid humanoid = GetComponent<Character>() as Humanoid;
+            if (UpdateConsumeItem(humanoid, dt)) return false;
             if (UpdateFollowTarget(dt)) return false;
 
-            return true; // run original method
+            return true;
         }
 
-        private bool UpdateFollowTarget(float dt)
+        public bool UpdateFollowTarget(float dt)
         {
             if (IsAlerted() || m_follow == null)
             {
@@ -65,7 +71,7 @@ namespace OfTamingAndBreeding.Internals
             return true;
         }
 
-        private bool UpdateConsumeItem(float dt)
+        public bool UpdateConsumeItem(Humanoid humanoid, float dt)
         {
             if (IsAlerted() || m_consumeItems == null || m_consumeItems.Count == 0)
             {

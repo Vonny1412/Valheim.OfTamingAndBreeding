@@ -15,7 +15,7 @@ namespace OfTamingAndBreeding.Patches
     {
         static void Prefix()
         {
-            Data.DataManager.ResetData();
+            Data.DataOrchestrator.ResetData();
             RPCContext.DestroySession();
         }
     }

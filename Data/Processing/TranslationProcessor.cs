@@ -4,14 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 using Jotunn.Entities;
 using Jotunn.Managers;
 
-using OfTamingAndBreeding.Data.Handling.Base;
-namespace OfTamingAndBreeding.Data.Handling
+namespace OfTamingAndBreeding.Data.Processing
 {
-    internal class TranslationHandler : DataHandler<Models.Translation>
+    internal class TranslationProcessor : Base.DataProcessor<Models.Translation>
     {
         public override string DirectoryName => Models.Translation.DirectoryName;
 
@@ -36,38 +34,38 @@ namespace OfTamingAndBreeding.Data.Handling
             //return $"{uniqueFileNumber++:D3}_{fileName}";
         }
 
-        public override void Prepare(DataHandlerContext ctx)
+        public override void Prepare(Base.DataProcessorContext ctx)
         {
             local = LocalizationManager.Instance.GetLocalization();
         }
 
-        public override bool ValidateData(DataHandlerContext ctx, string fileName, Models.Translation data)
+        public override bool ValidateData(Base.DataProcessorContext ctx, string fileName, Models.Translation data)
         {
             return true; // i dont care
         }
 
-        public override bool PreparePrefab(DataHandlerContext ctx, string fileName, Models.Translation data)
+        public override bool PreparePrefab(Base.DataProcessorContext ctx, string fileName, Models.Translation data)
         {
             return true; // i dont care
         }
 
-        public override bool ValidatePrefab(DataHandlerContext ctx, string fileName, Models.Translation data)
+        public override bool ValidatePrefab(Base.DataProcessorContext ctx, string fileName, Models.Translation data)
         {
             return true; // i dont care
         }
 
-        public override void RegisterPrefab(DataHandlerContext ctx, string fileName, Models.Translation data)
+        public override void RegisterPrefab(Base.DataProcessorContext ctx, string fileName, Models.Translation data)
         {
             local.AddTranslation(data.Language, data.Translations);
         }
 
-        public override void Cleanup(DataHandlerContext ctx)
+        public override void Cleanup(Base.DataProcessorContext ctx)
         {
             uniqueFileNumber = 0;
             local = null;
         }
 
-        public override void RestorePrefab(DataHandlerContext ctx, string fileName, Models.Translation data)
+        public override void RestorePrefab(Base.DataProcessorContext ctx, string fileName, Models.Translation data)
         {
             // TODO: do i need to unregister localizations?
         }

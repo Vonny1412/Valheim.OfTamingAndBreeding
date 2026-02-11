@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using OfTamingAndBreeding.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -59,7 +60,7 @@ namespace OfTamingAndBreeding.Patches
             //    return;
 
             var name = Utils.GetPrefabName(__instance.gameObject.name);
-            if (!Contexts.DataContext.GetAnimationScaling(name, out float scale))
+            if (!Runtime.Character.GetAnimationScaling(name, out float scale))
                 return;
 
             value *= scale;

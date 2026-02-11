@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using OfTamingAndBreeding.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -57,7 +58,7 @@ namespace OfTamingAndBreeding.Patches
 
                                 var eggPrefabName = Utils.GetPrefabName(__instance.gameObject.name);
 
-                                var needsAnyBiome = Contexts.DataContext.GetEggNeedsAnyBiome(eggPrefabName);
+                                var needsAnyBiome = Runtime.EggGrow.GetEggNeedsAnyBiome(eggPrefabName);
                                 if (needsAnyBiome != Heightmap.Biome.None)
                                 {
                                     var L = Localization.instance;
@@ -81,7 +82,7 @@ namespace OfTamingAndBreeding.Patches
                                 }
                                 else
                                 {
-                                    var needsLiquid = Contexts.DataContext.GetEggNeedsLiquid(eggPrefabName);
+                                    var needsLiquid = Runtime.EggGrow.GetEggNeedsLiquid(eggPrefabName);
                                     if (needsLiquid != null)
                                     {
                                         switch (needsLiquid.Type)

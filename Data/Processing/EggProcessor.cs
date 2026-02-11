@@ -1,16 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-
 using UnityEngine;
 using Jotunn.Managers;
 
-using OfTamingAndBreeding.Data.Handling.Base;
 using OfTamingAndBreeding.Helpers;
-namespace OfTamingAndBreeding.Data.Handling
+namespace OfTamingAndBreeding.Data.Processing
 {
 
-    internal class EggHandler : DataHandler<Models.Egg>
+    internal class EggProcessor : Base.DataProcessor<Models.Egg>
     {
 
         public override string DirectoryName => Models.Egg.DirectoryName;
@@ -22,7 +20,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // PREPARE
         //------------------------------------------------
 
-        public override void Prepare(DataHandlerContext ctx)
+        public override void Prepare(Base.DataProcessorContext ctx)
         {
 
         }
@@ -31,7 +29,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // VALIDATE DATA
         //------------------------------------------------
 
-        public override bool ValidateData(DataHandlerContext ctx, string eggName, Models.Egg data)
+        public override bool ValidateData(Base.DataProcessorContext ctx, string eggName, Models.Egg data)
         {
             var model = $"{nameof(Models.Egg)}.{eggName}";
             var error = false;
@@ -129,7 +127,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // PREPARE PREFAB
         //------------------------------------------------
 
-        public override bool PreparePrefab(DataHandlerContext ctx, string eggName, Models.Egg data)
+        public override bool PreparePrefab(Base.DataProcessorContext ctx, string eggName, Models.Egg data)
         {
             var model = $"{nameof(Models.Egg)}.{eggName}";
 
@@ -171,7 +169,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // VALIDATE PREFAB
         //------------------------------------------------
 
-        public override bool ValidatePrefab(DataHandlerContext ctx, string eggName, Models.Egg data)
+        public override bool ValidatePrefab(Base.DataProcessorContext ctx, string eggName, Models.Egg data)
         {
             var model = $"{nameof(Models.Egg)}.{eggName}";
             var error = false;
@@ -213,7 +211,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // REGISTER PREFAB
         //------------------------------------------------
 
-        public override void RegisterPrefab(DataHandlerContext ctx, string eggName, Models.Egg data)
+        public override void RegisterPrefab(Base.DataProcessorContext ctx, string eggName, Models.Egg data)
         {
             var model = $"{nameof(Models.Egg)}.{eggName}";
 
@@ -238,7 +236,7 @@ namespace OfTamingAndBreeding.Data.Handling
                     if (data.Item.Description != null) eggItemDataShared.m_description = data.Item.Description;
 
                     if (data.Item.Weight != null) eggItemDataShared.m_weight = (float)data.Item.Weight;
-                    if (data.Item.Scale != null) Patches.Contexts.DataContext.SetEggScale(eggName, (float)data.Item.Scale);
+                    if (data.Item.Scale != null) Runtime.ItemData.SetCustomScale(eggName, (float)data.Item.Scale);
                     if (data.Item.ScaleByQuality != null) eggItemDataShared.m_scaleByQuality = (float)data.Item.ScaleByQuality;
                     if (data.Item.ScaleWeightByQuality != null) eggItemDataShared.m_scaleWeightByQuality = (float)data.Item.ScaleWeightByQuality;
                     if (data.Item.Value != null) eggItemDataShared.m_value = (int)data.Item.Value;
@@ -348,12 +346,12 @@ namespace OfTamingAndBreeding.Data.Handling
                     if (data.EggGrow.RequireUnderRoof != null) eggEggGrow.m_requireUnderRoof = (bool)data.EggGrow.RequireUnderRoof;
                     if (data.EggGrow.RequireCoverPercentige != null) eggEggGrow.m_requireCoverPercentige = (float)data.EggGrow.RequireCoverPercentige;
 
-                    if (data.EggGrow.RequireAnyBiome != null) Patches.Contexts.DataContext.SetEggNeedsAnyBiome(eggName, data.EggGrow.RequireAnyBiome);
+                    if (data.EggGrow.RequireAnyBiome != null) Runtime.EggGrow.SetEggNeedsAnyBiome(eggName, data.EggGrow.RequireAnyBiome);
                     if (data.EggGrow.RequireLiquid != null)
                     {
                         var lType = (EnvironmentHelper.LiquidTypeEx)data.EggGrow.RequireLiquid;
                         var lDepth = data.EggGrow.RequireLiquidDepth ?? 0;
-                        Patches.Contexts.DataContext.SetEggNeedsLiquid(eggName, lType, lDepth);
+                        Runtime.EggGrow.SetEggNeedsLiquid(eggName, lType, lDepth);
                     }
 
                 }
@@ -397,7 +395,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // CLEANUP
         //------------------------------------------------
 
-        public override void Cleanup(DataHandlerContext ctx)
+        public override void Cleanup(Base.DataProcessorContext ctx)
         {
 
         }
@@ -406,7 +404,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // UNREGISTER PREFAB
         //------------------------------------------------
 
-        public override void RestorePrefab(DataHandlerContext ctx, string eggName, Models.Egg data)
+        public override void RestorePrefab(Base.DataProcessorContext ctx, string eggName, Models.Egg data)
         {
             ctx.Restore(eggName, (GameObject backup, GameObject current) => {
 

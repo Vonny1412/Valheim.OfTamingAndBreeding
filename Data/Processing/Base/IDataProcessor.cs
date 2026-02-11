@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace OfTamingAndBreeding.Data.Handling.Base
+namespace OfTamingAndBreeding.Data.Processing.Base
 {
-    interface IDataHandler
+    interface IDataProcessor
     {
         string DirectoryName { get; }
         string ModelTypeName { get; }
@@ -21,13 +21,13 @@ namespace OfTamingAndBreeding.Data.Handling.Base
         int GetLoadedDataCount();
         void ResetData();
 
-        void Prepare(DataHandlerContext ctx);
-        void ValidateAllData(DataHandlerContext ctx);
-        void PrepareAllPrefabs(DataHandlerContext ctx);
-        bool ValidateAllPrefabs(DataHandlerContext ctx);
-        void RegisterAllPrefabs(DataHandlerContext ctx);
-        void Cleanup(DataHandlerContext ctx);
-        void RestoreAllPrefabs(DataHandlerContext ctx);
+        void Prepare(DataProcessorContext ctx);
+        void ValidateAllData(DataProcessorContext ctx);
+        void PrepareAllPrefabs(DataProcessorContext ctx);
+        bool ValidateAllPrefabs(DataProcessorContext ctx);
+        void RegisterAllPrefabs(DataProcessorContext ctx);
+        void Cleanup(DataProcessorContext ctx);
+        void RestoreAllPrefabs(DataProcessorContext ctx);
 
     }
 }

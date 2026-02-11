@@ -2,15 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
 using UnityEngine;
 using Jotunn.Managers;
 
-using OfTamingAndBreeding.Data.Handling.Base;
 using OfTamingAndBreeding.Helpers;
-namespace OfTamingAndBreeding.Data.Handling
+namespace OfTamingAndBreeding.Data.Processing
 {
-    internal class OffspringHandler : DataHandler<Models.Offspring>
+    internal class OffspringProcessor : Base.DataProcessor<Models.Offspring>
     {
 
         public override string DirectoryName => Models.Offspring.DirectoryName;
@@ -21,7 +19,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // PREPARE
         //------------------------------------------------
 
-        public override void Prepare(DataHandlerContext ctx)
+        public override void Prepare(Base.DataProcessorContext ctx)
         {
 
         }
@@ -30,7 +28,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // VALIDATE DATA
         //------------------------------------------------
 
-        public override bool ValidateData(DataHandlerContext ctx, string offspringName, Models.Offspring data)
+        public override bool ValidateData(Base.DataProcessorContext ctx, string offspringName, Models.Offspring data)
         {
             var model = $"{nameof(Models.Offspring)}.{offspringName}";
             var error = false;
@@ -103,7 +101,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // PREPARE PREFAB
         //------------------------------------------------
 
-        public override bool PreparePrefab(DataHandlerContext ctx, string offspringName, Models.Offspring data)
+        public override bool PreparePrefab(Base.DataProcessorContext ctx, string offspringName, Models.Offspring data)
         {
             var model = $"{nameof(Models.Offspring)}.{offspringName}";
 
@@ -146,7 +144,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // VALIDATE PREFAB
         //------------------------------------------------
 
-        public override bool ValidatePrefab(DataHandlerContext ctx, string offspringName, Models.Offspring data)
+        public override bool ValidatePrefab(Base.DataProcessorContext ctx, string offspringName, Models.Offspring data)
         {
             var model = $"{nameof(Models.Offspring)}.{offspringName}";
             var error = false;
@@ -186,7 +184,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // REGISTER PREFAB
         //------------------------------------------------
 
-        public override void RegisterPrefab(DataHandlerContext ctx, string offspringName, Models.Offspring data)
+        public override void RegisterPrefab(Base.DataProcessorContext ctx, string offspringName, Models.Offspring data)
         {
             var model = $"{nameof(Models.Offspring)}.{offspringName}";
 
@@ -220,7 +218,7 @@ namespace OfTamingAndBreeding.Data.Handling
 
                     if (data.Character.Name != null) offspringCharacter.m_name = data.Character.Name;
                     if (data.Character.Group != null) offspringCharacter.m_group = data.Character.Group;
-                    if (data.Character.TamesStickToFaction) Patches.Contexts.DataContext.SetSticksToFaction(offspringName);
+                    if (data.Character.TamesStickToFaction) Runtime.Character.SetSticksToFaction(offspringName);
                     
                     if (data.Character.Scale != 1 && data.Character.Scale != 0)
                     {
@@ -260,7 +258,7 @@ namespace OfTamingAndBreeding.Data.Handling
                         Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting vfx scaling");
                         Helpers.VfxHelper.ScaleVfx(offspring, setScale); // scale model particles
                         Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting animation scaling");
-                        Patches.Contexts.DataContext.SetAnimationScaling(offspringName, 1/setScale); // scale animations
+                        Runtime.Character.SetAnimationScaling(offspringName, 1/setScale); // scale animations
 
                         // we need to clone the effect prefab to make it scaleable independently from its original effect prefab
                         // but we need to make sure that the original effect prefab only gets cloned once 
@@ -331,7 +329,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // CLEANUP
         //------------------------------------------------
 
-        public override void Cleanup(DataHandlerContext ctx)
+        public override void Cleanup(Base.DataProcessorContext ctx)
         {
 
         }
@@ -340,7 +338,7 @@ namespace OfTamingAndBreeding.Data.Handling
         // UNREGISTER PREFAB
         //------------------------------------------------
 
-        public override void RestorePrefab(DataHandlerContext ctx, string offspringName, Models.Offspring data)
+        public override void RestorePrefab(Base.DataProcessorContext ctx, string offspringName, Models.Offspring data)
         {
             ctx.Restore(offspringName, (GameObject backup, GameObject current) => {
 

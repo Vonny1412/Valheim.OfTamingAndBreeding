@@ -3,26 +3,25 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-
-using OfTamingAndBreeding.Data.Handling;
-using OfTamingAndBreeding.Data.Handling.Base;
+using OfTamingAndBreeding.Data.Processing;
+using OfTamingAndBreeding.Data.Processing.Base;
 
 namespace OfTamingAndBreeding.Data
 {
-    internal static class DataManager
+    internal static class DataOrchestrator
     {
 
-        private static readonly IDataHandler[] dataHandlers = new IDataHandler[] {
-            new TranslationHandler(),
-            new OffspringHandler(),
-            new EggHandler(),
-            new CreatureHandler(),
-            new RecipeHandler(),
+        private static readonly IDataProcessor[] dataProcessors = new IDataProcessor[] {
+            new TranslationProcessor(),
+            new OffspringProcessor(),
+            new EggProcessor(),
+            new CreatureProcessor(),
+            new RecipeProcessor(),
         };
 
-        public static IEnumerable<IDataHandler> IterDataHandlers()
+        public static IEnumerable<IDataProcessor> IterDataProcessors()
         {
-            foreach (var dh in dataHandlers)
+            foreach (var dh in dataProcessors)
                 yield return dh;
         }
 
@@ -49,7 +48,7 @@ namespace OfTamingAndBreeding.Data
             else
             {
                 var allokay = true;
-                foreach (var dh in dataHandlers)
+                foreach (var dh in dataProcessors)
                 {
                     foreach (var file in EnumerateCategoryFiles(worldRoot, dh.DirectoryName))
                     {
@@ -106,31 +105,31 @@ namespace OfTamingAndBreeding.Data
         // context stuff
         //---------------------------
 
-        private static DataHandlerContext ctx = null;
+        private static DataProcessorContext ctx = null;
 
         public static void ValidateDataAndRegisterPrefabs()
         {
-            ctx = new DataHandlerContext(ZNetScene.instance);
+            ctx = new DataProcessorContext(ZNetScene.instance);
 
-            foreach (var dh in dataHandlers)
+            foreach (var p in dataProcessors)
             {
-                dh.Prepare(ctx);
+                p.Prepare(ctx);
             }
 
-            foreach (var dh in dataHandlers)
+            foreach (var p in dataProcessors)
             {
-                dh.ValidateAllData(ctx);
+                p.ValidateAllData(ctx);
             }
 
-            foreach (var dh in dataHandlers)
+            foreach (var p in dataProcessors)
             {
-                dh.PrepareAllPrefabs(ctx);
+                p.PrepareAllPrefabs(ctx);
             }
 
             var allOkay = true;
-            foreach (var dh in dataHandlers)
+            foreach (var p in dataProcessors)
             {
-                allOkay &= dh.ValidateAllPrefabs(ctx);
+                allOkay &= p.ValidateAllPrefabs(ctx);
             }
             if (!allOkay)
             {
@@ -139,22 +138,21 @@ namespace OfTamingAndBreeding.Data
                 return;
             }
 
-            foreach (var dh in dataHandlers)
+            foreach (var p in dataProcessors)
             {
-                dh.RegisterAllPrefabs(ctx);
+                p.RegisterAllPrefabs(ctx);
             }
 
-            foreach (var dh in dataHandlers)
+            foreach (var p in dataProcessors)
             {
-                dh.Cleanup(ctx);
+                p.Cleanup(ctx);
             }
 
-            
             if (ZNet.instance.IsServer())
             {
-                foreach (var dh in dataHandlers)
+                foreach (var p in dataProcessors)
                 {
-                    Plugin.LogInfo($"Loaded {dh.GetLoadedDataCount()} {dh.ModelTypeName} entries");
+                    Plugin.LogInfo($"Loaded {p.GetLoadedDataCount()} {p.ModelTypeName} entries");
                 }
             }
             
@@ -162,18 +160,20 @@ namespace OfTamingAndBreeding.Data
 
         public static void ResetData()
         {
-            foreach (var dh in dataHandlers)
+            if (ctx != null)
             {
-                dh.RestoreAllPrefabs(ctx);
+                // ctx==null would mean no data loaded/processed yet
+                foreach (var p in dataProcessors)
+                {
+                    p.RestoreAllPrefabs(ctx);
+                }
             }
-
-            Patches.Contexts.DataContext.Reset();
-
-            foreach (var dh in dataHandlers)
+            Runtime.Reset();
+            foreach (var p in dataProcessors)
             {
-                dh.ResetData();
+                // resets stored data in DataBase<T>
+                p.ResetData();
             }
-
             ctx = null;
         }
 

@@ -43,7 +43,7 @@ namespace OfTamingAndBreeding.Data
             if (File.Exists(cacheCryptedFile))
                 File.Delete(cacheCryptedFile);
 
-            var cacheFile = new Cache.CacheFile
+            var cacheFile = new Caching.CacheFile
             {
                 ModVersion = Plugin.Version,
                 CacheFileName = Plugin.Configs.CacheFileName.Value,
@@ -51,12 +51,12 @@ namespace OfTamingAndBreeding.Data
             };
 
 
-            foreach(var dh in DataManager.IterDataHandlers())
+            foreach(var p in DataOrchestrator.IterDataProcessors())
             {
-                var writeToDir = Path.Combine(cacheDebugFilesPath, dh.DirectoryName);
+                var writeToDir = Path.Combine(cacheDebugFilesPath, p.DirectoryName);
                 Directory.CreateDirectory(writeToDir);
                 var data = new Dictionary<string, string>();
-                foreach (var kv in dh.GetAllYamlData())
+                foreach (var kv in p.GetAllYamlData())
                 {
                     var prefabName = kv.Key;
                     var prefabYaml = kv.Value;
@@ -66,7 +66,7 @@ namespace OfTamingAndBreeding.Data
                         File.WriteAllText(Path.Combine(writeToDir, $"{prefabName}.yml"), prefabYaml);
                     }
                 }
-                cacheFile.Data.Add(dh.DirectoryName, data);
+                cacheFile.Data.Add(p.DirectoryName, data);
             }
 
             string yamlCacheContent = cacheContent = DataBase.Serialize(cacheFile);
@@ -102,22 +102,23 @@ namespace OfTamingAndBreeding.Data
             try
             {
                 var cacheFilePlain = encryptKey == null ? crypted : DeterministicStringCrypto.DecryptFromBase64(crypted, encryptKey);
-                var cacheFile = DataBase.Deserialize<Cache.CacheFile>(cacheFilePlain);
-                DataManager.ResetData();
+                var cacheFile = DataBase.Deserialize<Caching.CacheFile>(cacheFilePlain);
+                DataOrchestrator.ResetData();
                 var allokay = true;
-                foreach(var dh in DataManager.IterDataHandlers())
+                foreach(var p in DataOrchestrator.IterDataProcessors())
                 {
-                    foreach (var kv in cacheFile.Data[dh.DirectoryName])
+                    foreach (var kv in cacheFile.Data[p.DirectoryName])
                     {
                         var prefab = kv.Key;
                         var data = Base64Decode(kv.Value);
-                        allokay &= dh.LoadFromYaml(prefab, data);
+                        allokay &= p.LoadFromYaml(prefab, data);
                     }
                 }
                 return allokay;
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
+                Plugin.LogFatal($"Unexpected error while loading data from crypted cache: {ex}");
             }
             return false;
         }

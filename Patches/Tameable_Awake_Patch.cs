@@ -15,19 +15,8 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         static void Postfix(Tameable __instance)
         {
-            if (!Helpers.ZNetHelper.TryGetZDO(__instance, out ZDO zdo))
-            {
-                return;
-            }
-
-            // we are checking the same like in Tameable_IsHungry_Patch
-            // the zdo val is getting set here: Tameable_OnConsumedItem_Patch
-            // set custom fed duration
-            var fedDuration = zdo.GetFloat(Plugin.ZDOVars.z_fedDuration, -1);
-            if (fedDuration >= 0) // yes, we do allow 0, too
-            {
-                __instance.m_fedDuration = fedDuration;
-            }
+            var tameableAPI = Internals.TameableAPI.GetOrCreate(__instance);
+            tameableAPI.UpdateFedDuration();
 
             var animalAI = __instance.GetComponent<AnimalAI>();
             if (animalAI != null) // the tameable is an animal
@@ -36,7 +25,6 @@ namespace OfTamingAndBreeding.Patches
                 if (Internals.AnimalAIAPI.TryGet(animalAI, out Internals.AnimalAIAPI animalAIAPI))
                 {
                     // used for making the animal tameable
-                    var tameableAPI = Internals.TameableAPI.GetOrCreate(__instance);
                     tameableAPI.animalAIAPI = animalAIAPI;
                     tameableAPI.animalAIAPI.m_onConsumedItem = (Action<ItemDrop>)Delegate.Combine(animalAIAPI.m_onConsumedItem, new Action<ItemDrop>(tameableAPI.OnConsumedItem));
                 }

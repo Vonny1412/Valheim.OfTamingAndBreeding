@@ -44,9 +44,15 @@ namespace OfTamingAndBreeding.Data
         public static void Store(string prefabName, T data)
             => prefabsList[prefabName] = data;
         
+        public static bool Exists(string prefabName)
+        {
+            prefabName = Utils.GetPrefabName(prefabName);
+            return prefabsList.ContainsKey(prefabName);
+        }
+
         public static T Get(string prefabName)
         {
-            prefabName = global::Utils.GetPrefabName(prefabName);
+            prefabName = Utils.GetPrefabName(prefabName);
             if (prefabsList.TryGetValue(prefabName, out T data))
             {
                 return data;

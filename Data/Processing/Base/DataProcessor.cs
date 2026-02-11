@@ -6,10 +6,10 @@ using System.Text;
 using System.Threading.Tasks;
 using YamlDotNet.Core;
 
-namespace OfTamingAndBreeding.Data.Handling.Base
+namespace OfTamingAndBreeding.Data.Processing.Base
 {
 
-    internal abstract class DataHandler<T> : IDataHandler where T : DataBase<T>
+    internal abstract class DataProcessor<T> : IDataProcessor where T : DataBase<T>
     {
 
         public abstract string DirectoryName { get; }
@@ -76,10 +76,10 @@ namespace OfTamingAndBreeding.Data.Handling.Base
         // context routine
         //---------------------
 
-        public abstract void Prepare(DataHandlerContext ctx);
+        public abstract void Prepare(DataProcessorContext ctx);
 
-        public abstract bool ValidateData(DataHandlerContext ctx, string prefabName, T data);
-        public void ValidateAllData(DataHandlerContext ctx)
+        public abstract bool ValidateData(DataProcessorContext ctx, string prefabName, T data);
+        public void ValidateAllData(DataProcessorContext ctx)
         {
             Plugin.LogDebug($"{nameof(ValidateAllData)}: {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
@@ -96,8 +96,8 @@ namespace OfTamingAndBreeding.Data.Handling.Base
             }
         }
 
-        public abstract bool PreparePrefab(DataHandlerContext ctx, string prefabName, T data);
-        public void PrepareAllPrefabs(DataHandlerContext ctx)
+        public abstract bool PreparePrefab(DataProcessorContext ctx, string prefabName, T data);
+        public void PrepareAllPrefabs(DataProcessorContext ctx)
         {
             Plugin.LogDebug($"{nameof(PrepareAllPrefabs)}: {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
@@ -114,8 +114,8 @@ namespace OfTamingAndBreeding.Data.Handling.Base
             }
         }
 
-        public abstract bool ValidatePrefab(DataHandlerContext ctx, string prefabName, T data);
-        public bool ValidateAllPrefabs(DataHandlerContext ctx)
+        public abstract bool ValidatePrefab(DataProcessorContext ctx, string prefabName, T data);
+        public bool ValidateAllPrefabs(DataProcessorContext ctx)
         {
             Plugin.LogDebug($"{nameof(ValidateAllPrefabs)}: {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
@@ -131,8 +131,8 @@ namespace OfTamingAndBreeding.Data.Handling.Base
             return allOkay;
         }
 
-        public abstract void RegisterPrefab(DataHandlerContext ctx, string prefabName, T data);
-        public void RegisterAllPrefabs(DataHandlerContext ctx)
+        public abstract void RegisterPrefab(DataProcessorContext ctx, string prefabName, T data);
+        public void RegisterAllPrefabs(DataProcessorContext ctx)
         {
             Plugin.LogDebug($"{nameof(RegisterAllPrefabs)} {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
@@ -146,10 +146,10 @@ namespace OfTamingAndBreeding.Data.Handling.Base
             }
         }
 
-        public abstract void Cleanup(DataHandlerContext ctx);
+        public abstract void Cleanup(DataProcessorContext ctx);
 
-        public abstract void RestorePrefab(DataHandlerContext ctx, string prefabName, T data);
-        public void RestoreAllPrefabs(DataHandlerContext ctx)
+        public abstract void RestorePrefab(DataProcessorContext ctx, string prefabName, T data);
+        public void RestoreAllPrefabs(DataProcessorContext ctx)
         {
             Plugin.LogDebug($"{nameof(RestoreAllPrefabs)} {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
