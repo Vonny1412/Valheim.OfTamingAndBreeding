@@ -1,0 +1,16 @@
+<Project>
+
+	<PropertyGroup>
+		<AssemblyVersion>$(VersionMajor).0.0.0</AssemblyVersion>
+		<VersionBuild>$([System.DateTime]::UtcNow.ToString(yyyyMMddHHmm))</VersionBuild>
+		<Version>$(VersionMajor).$(VersionMinor).$(VersionPatch)</Version>
+		<AssemblyFileVersion>$(Version).$(VersionBuild)</AssemblyFileVersion>
+		<InformationalVersion>$(Version)$(VersionSuffix)+build.$(VersionBuild)</InformationalVersion>
+		<Copyright Condition=" '$(Authors)' != '' ">Copyright © $(Authors) $([System.DateTime]::UtcNow.ToString(yyyy))</Copyright>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
+		<InformationalVersion>$(Version)$(VersionSuffix)-debug+build.$(VersionBuild)</InformationalVersion>
+	</PropertyGroup>
+
+</Project>

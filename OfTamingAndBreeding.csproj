@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<ProjectName>OfTamingAndBreeding</ProjectName>
+		<AssemblyName>$(ProjectName)</AssemblyName>
+		<RootNamespace>$(ProjectName)</RootNamespace>
+		<PlatformTarget>AnyCPU</PlatformTarget>
+		<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<VersionMajor>0</VersionMajor>
+		<VersionMinor>2</VersionMinor>
+		<VersionPatch>0</VersionPatch>
+		<VersionSuffix>alpha</VersionSuffix>
+		<Authors>Yvonne Pautz</Authors>
+		<Product>Of Taming and Breeding</Product>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<PluginFile>Plugin</PluginFile>
+		<PluginGUID>Vonny1412.OfTamingAndBreeding</PluginGUID>
+		<PluginName>$(Product)</PluginName>
+		<PluginClass>Plugin</PluginClass>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<CopyToPluginsSubDirectory>Vonny1412.OfTamingAndBreeding</CopyToPluginsSubDirectory>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Reference Include="Jotunn">
+			<HintPath>..\.References\Jotunn.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="YamlDotNet">
+			<HintPath>..\.References\YamlDotNet.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+	</ItemGroup>
+
+	<Import Project="$(SolutionDir)\Valheim.Paths.props" />
+	<Import Project="$(SolutionDir)\Valheim.Libraries.props" />
+	<Import Project="$(SolutionDir)\Valheim.Mods.targets" />
+
+</Project>

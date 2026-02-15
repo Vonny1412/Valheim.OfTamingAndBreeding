@@ -1,0 +1,96 @@
+<Project>
+
+	<!-- Set start action -->
+	<PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+		<StartAction>Program</StartAction>
+		<StartProgram>$(GamePath)\valheim.exe</StartProgram>
+		<StartArguments>-console</StartArguments>
+		<StartWorkingDirectory>$(GamePath)</StartWorkingDirectory>
+	</PropertyGroup>
+
+	<!-- Copy to plugins folder -->
+	<Target Name="ValheimPostBuild" AfterTargets="PostBuildEvent">
+		<ItemGroup>
+			<AllFiles Include="$(TargetDir)**\*.*" Exclude="$(TargetDir)**\*.pdb" />
+		</ItemGroup>
+		<Copy
+			Condition=" '$(CopyToPluginsSubDirectory)' != '' "
+			SourceFiles="@(AllFiles)"
+			DestinationFolder="$(PluginsPath)\$(CopyToPluginsSubDirectory)\%(RecursiveDir)"
+			></Copy>
+	</Target>
+
+	<!-- write BepInPlugin Info -->
+	<Target Name="WriteBepInPluginInfo"
+		BeforeTargets="CoreCompile">
+
+		<PropertyGroup>
+			<GeneratedDir>$(ProjectDir)</GeneratedDir>
+			<GeneratedFile>$(GeneratedDir)$(PluginFile).Info.cs</GeneratedFile>
+
+			<BepInPluginInfo>
+using BepInEx%3B
+namespace $(RootNamespace)
+{
+	[BepInPlugin(&quot;$(PluginGUID)&quot;, &quot;$(PluginName)&quot;, &quot;$(Version)&quot;)]
+	public sealed partial class $(PluginClass)
+	{
+		// generated file – do not edit
+		public const string Version = &quot;$(Version)&quot;%3B
+		public const string ModName = &quot;$(PluginName)&quot;%3B
+		public const string ModGuid = &quot;$(PluginGUID)&quot;%3B
+	}
+}
+			</BepInPluginInfo>
+		</PropertyGroup>
+
+		<MakeDir Directories="$(ProjectDir)" />
+
+		<WriteLinesToFile
+		  File="$(GeneratedFile)"
+		  Overwrite="true"
+		  Lines="$(BepInPluginInfo)" />
+
+		<ItemGroup>
+			<Compile Include="$(GeneratedFile)" />
+		</ItemGroup>
+
+	</Target>
+
+	<!-- write BepInPlugin Dependencies Template -->
+	<Target Name="WriteBepInPluginDependencies"
+		BeforeTargets="CoreCompile">
+
+		<PropertyGroup>
+			<GeneratedDir>$(ProjectDir)</GeneratedDir>
+			<GeneratedFile>$(GeneratedDir)$(PluginFile).cs</GeneratedFile>
+
+			<BepInPluginDependencies>
+using BepInEx%3B
+namespace $(RootNamespace)
+{
+	public sealed partial class $(PluginClass) : BaseUnityPlugin
+	{
+		// once-generated file
+		private void Awake()
+		{
+		}
+	}
+}
+			</BepInPluginDependencies>
+		</PropertyGroup>
+
+		<MakeDir Directories="$(ProjectDir)" />
+
+		<WriteLinesToFile
+		  File="$(GeneratedFile)"
+		  Condition="!Exists('$(GeneratedFile)')"
+		  Lines="$(BepInPluginDependencies)" />
+
+		<ItemGroup>
+			<Compile Include="$(GeneratedFile)" />
+		</ItemGroup>
+
+	</Target>
+
+</Project>

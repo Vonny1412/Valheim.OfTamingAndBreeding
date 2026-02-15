@@ -1,0 +1,38 @@
+
+# Build Output
+bin/
+obj/
+.publish/
+
+# IDE / Editor
+.vs/
+.vscode/
+.dev/
+
+# User / Solution Settings
+*.sln.docstates
+*.suo
+*.user
+*.userosscache
+
+# Debug / Temp / Cache
+*.cache
+*.pdb
+*.tmp
+.cache/
+
+# Local Runtime / Testing
+BepInEx/
+Thunderstore/
+
+# Packaging / Archives
+*.7z
+*.zip
+
+# Logs
+LogOutput.log
+output_log.txt
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
