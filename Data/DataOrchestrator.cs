@@ -157,35 +157,31 @@ namespace OfTamingAndBreeding.Data
             {
                 allOkay &= p.ValidateAllPrefabs(ctx);
             }
-            if (!allOkay)
-            {
-                Plugin.LogFatal($"Missing prefab dependencies found!");
-                ResetData();
-                return;
-            }
 
-            foreach (var p in dataProcessors)
-            {
-                p.RegisterAllPrefabs(ctx);
-            }
-
-            foreach (var p in dataProcessors)
-            {
-                p.Cleanup(ctx);
-            }
-
-            if (ZNet.instance.IsServer())
+            if (allOkay)
             {
                 foreach (var p in dataProcessors)
                 {
-                    Plugin.LogInfo($"Loaded {p.GetLoadedDataCount()} {p.ModelTypeName} entries");
+                    p.RegisterAllPrefabs(ctx);
                 }
             }
 
-            dataLoaded = true;
-            foreach(var cb in dataLoadedCallbacks)
+            foreach (var p in dataProcessors)
             {
-                cb();
+                p.Finalize(ctx);
+            }
+
+            if (allOkay)
+            {
+                dataLoaded = true;
+                foreach (var cb in dataLoadedCallbacks)
+                {
+                    cb();
+                }
+            }
+            else
+            {
+                ResetData();
             }
         }
 
@@ -198,14 +194,19 @@ namespace OfTamingAndBreeding.Data
                 {
                     p.RestoreAllPrefabs(ctx);
                 }
+                foreach (var p in dataProcessors)
+                {
+                    p.Cleanup(ctx);
+                }
+                ctx = null;
             }
+
             Runtime.Reset();
             foreach (var p in dataProcessors)
             {
                 // resets stored data in DataBase<T>
                 p.ResetData();
             }
-            ctx = null;
 
             if (dataLoaded)
             {

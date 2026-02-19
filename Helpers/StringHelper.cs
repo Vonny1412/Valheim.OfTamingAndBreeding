@@ -13,9 +13,9 @@ namespace OfTamingAndBreeding.Helpers
         public static string FormatRelativeTime(
             double secondsLeft,
             string labelPositive,
+            string labelPositiveAlt,
             string labelNegative,
-            string labelAltPositive,
-            string labelAltNegative,
+            string labelNegativeAlt,
             string colorPositive,
             string colorNegative)
         {
@@ -24,7 +24,7 @@ namespace OfTamingAndBreeding.Helpers
 
             string color = isNegative ? colorNegative : colorPositive;
             string label = isNegative ? labelNegative : labelPositive;
-            string labelAlt = isNegative ? labelAltNegative : labelAltPositive;
+            string labelAlt = isNegative ? labelNegativeAlt : labelPositiveAlt;
 
             string timeString = "";
             var L = Localization.instance;

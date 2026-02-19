@@ -11,11 +11,17 @@ namespace OfTamingAndBreeding.Data.Processing
     {
         public override string DirectoryName => Models.Recipe.DirectoryName;
 
+        private readonly HashSet<Recipe> originalRecipes = new HashSet<Recipe>();
+        private readonly HashSet<Recipe> otabRecipes = new HashSet<Recipe>();
+
         public override string GetDataKey(string filePath) => null;
 
         public override void Prepare(Base.DataProcessorContext ctx)
         {
-
+            foreach (var recipe in ObjectDB.instance.m_recipes)
+            {
+                originalRecipes.Add(recipe);
+            }
         }
 
         public override bool ValidateData(Base.DataProcessorContext ctx, string recipeName, Models.Recipe data)
@@ -38,14 +44,29 @@ namespace OfTamingAndBreeding.Data.Processing
             WackyDBBridge.ApplyRecipe(data);
         }
 
-        public override void Cleanup(Base.DataProcessorContext ctx)
+        public override void Finalize(Base.DataProcessorContext ctx)
         {
-
+            foreach (var recipe in ObjectDB.instance.m_recipes)
+            {
+                if (!originalRecipes.Contains(recipe))
+                {
+                    otabRecipes.Add(recipe);
+                }
+            }
+            originalRecipes.Clear();
         }
 
         public override void RestorePrefab(Base.DataProcessorContext ctx, string recipeName, Models.Recipe data)
         {
-            // TODO: do i need to unregister the recipe? how to do that?
+            foreach (var recipe in otabRecipes)
+            {
+                ObjectDB.instance.m_recipes.Remove(recipe);
+            }
+            otabRecipes.Clear();
+        }
+
+        public override void Cleanup(Base.DataProcessorContext ctx)
+        {
         }
 
     }

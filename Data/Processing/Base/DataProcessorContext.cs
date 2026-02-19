@@ -103,15 +103,6 @@ namespace OfTamingAndBreeding.Data.Processing.Base
 
         public void Restore(string prefabName, Action<GameObject, GameObject> cb)
         {
-            var isClone = clonedNames.Contains(prefabName);
-            if (isClone)
-            {
-                // do not destroy, just ignore it because its just a clone
-                return;
-            }
-
-            // its not a clone, we need to restore it back to default
-
             if (!backups.TryGetValue(prefabName, out var backup) || !backup)
             {
                 // we got no backup data for that prefab
@@ -127,6 +118,18 @@ namespace OfTamingAndBreeding.Data.Processing.Base
                 return;
             }
 
+            var isClone = clonedNames.Contains(prefabName);
+            if (isClone)
+            {
+                // dont return! we also added backups of the original prefabs for the cloned ones
+                // so just restore the cloned prefabs back to the original states!
+                // thats important!
+                // because if an other server is using same custom prefab names
+                // when joining the other server we can build the custom prefabs from fresh and clean states
+                // why? because removing and destroying cloned prefabs is a pain in the a**
+                //return;
+            }
+            
             // remove tracked added components first
             if (addedComponents.TryGetValue(prefabName, out var added))
             {
@@ -141,9 +144,10 @@ namespace OfTamingAndBreeding.Data.Processing.Base
             // call callback
             cb(backup, current);
 
-            // NEVER clear the backups! use it as our own cache!
-            //UnityEngine.Object.DestroyImmediate(backup);
+            // NEVER clear the backups or remove prefabs from it! we keep using it as our own backup cache!
             //backups.Remove(prefabName);
+
+            return;
         }
 
     }

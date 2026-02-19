@@ -173,6 +173,7 @@ namespace OfTamingAndBreeding.Helpers
             }
         }
 
+        
         public static void RestoreItemIcons(GameObject backup, GameObject current)
         {
 
@@ -242,13 +243,13 @@ namespace OfTamingAndBreeding.Helpers
                         UnityEngine.Object.DestroyImmediate(tex);
                     }
                 }
-                catch { /* ignore */ }
+                catch {  }
 
                 // Destroy the sprite asset itself (safe if it was dynamically created)
                 UnityEngine.Object.DestroyImmediate(s);
             }
         }
-
+        
 
 
 

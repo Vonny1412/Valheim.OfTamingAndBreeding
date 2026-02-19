@@ -35,7 +35,7 @@ namespace OfTamingAndBreeding.ValheimAPI
             }
             if (!m_nview.IsOwner())
             {
-                monsterAI.SetIsAlertedUnsafe(m_nview.GetZDO().GetBool(ZDOVars.s_alert));
+                monsterAI.SetAlertedUnsafe(m_nview.GetZDO().GetBool(ZDOVars.s_alert));
                 return false;
             }
 

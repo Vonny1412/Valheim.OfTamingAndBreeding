@@ -1,11 +1,13 @@
-﻿using System;
+﻿using Jotunn.Managers;
+using OfTamingAndBreeding.Helpers;
+using OfTamingAndBreeding.ValheimAPI;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using UnityEngine;
-using Jotunn.Managers;
-
-using OfTamingAndBreeding.Helpers;
+using YamlDotNet.Core;
 namespace OfTamingAndBreeding.Data.Processing
 {
     internal class OffspringProcessor : Base.DataProcessor<Models.Offspring>
@@ -32,6 +34,18 @@ namespace OfTamingAndBreeding.Data.Processing
         {
             var model = $"{nameof(Models.Offspring)}.{offspringName}";
             var error = false;
+
+            if (data.Clone != null)
+            {
+                if (data.Clone.RemoveEffects != null)
+                {
+                    if (data.Clone.RemoveEffects.Length == 0)
+                    {
+                        Plugin.LogWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.RemoveEffects)}: List is empty and will be set to null");
+                        data.Clone.RemoveEffects = null;
+                    }
+                }
+            }
 
             switch (data.Components.Character)
             {
@@ -68,7 +82,7 @@ namespace OfTamingAndBreeding.Data.Processing
                 case Models.SubData.ComponentBehavior.Inherit:
                     if (data.Growup != null)
                     {
-                        Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.Growup)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
+                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Growup)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
                     }
                     break;
             }
@@ -129,7 +143,82 @@ namespace OfTamingAndBreeding.Data.Processing
                 }
 
                 Plugin.LogDebug($"{model}: Cloning prefab from '{cloneFrom.name}'");
+                ctx.MakeBackup(offspringName, cloneFrom);
                 offspring = ctx.CreateClonedPrefab(offspringName, cloneFrom.name);
+
+                {
+
+                    //
+                    // EFFECTS
+                    //
+
+                    var removedEffects = new List<string>();
+
+                    var debugEffects = data.Clone.DebugEffects == true && ZNet.instance.IsServer();
+                    if (debugEffects) Plugin.LogMessage($"DebugEffects {offspringName}");
+
+                    var removeSet = data.Clone.RemoveEffects != null
+                        ? new HashSet<string>(data.Clone.RemoveEffects, StringComparer.OrdinalIgnoreCase)
+                        : null;
+
+                    var footStep = offspring.GetComponent<FootStep>();
+                    if ((bool)footStep)
+                    {
+                        var m_effects = new List<FootStep.StepEffect>();
+
+                        foreach (var effect in footStep.m_effects)
+                        {
+                            if (debugEffects)
+                                Plugin.LogMessage($"  {nameof(FootStep)} ({effect.m_motionType})");
+                            
+                            if (removeSet == null)
+                            {
+                                if (debugEffects)
+                                {
+                                    foreach (var p in effect.m_effectPrefabs)
+                                        Plugin.LogMessage($"  - {p.name}");
+                                }
+                                continue;
+                            }
+
+                            var kept = new List<GameObject>(effect.m_effectPrefabs.Length);
+
+                            foreach (var p in effect.m_effectPrefabs)
+                            {
+                                var remove = removeSet.Contains(p.name);
+
+                                if (remove)
+                                    removedEffects.Add(p.name);
+
+                                if (debugEffects)
+                                    Plugin.LogMessage(remove
+                                        ? $"  - {p.name} (removed)"
+                                        : $"  - {p.name}");
+
+                                if (!remove)
+                                    kept.Add(p);
+                            }
+
+                            if (kept.Count != 0)
+                            {
+                                m_effects.Add(new FootStep.StepEffect
+                                {
+                                    m_name = effect.m_name,
+                                    m_motionType = effect.m_motionType,
+                                    m_material = effect.m_material,
+                                    m_effectPrefabs = kept.ToArray()
+                                });
+                            }
+                        }
+
+                        if (data.Clone.RemoveEffects != null)
+                        {
+                            footStep.m_effects = m_effects;
+                        }
+                    }
+
+                }
+
             }
             else
             {
@@ -192,19 +281,11 @@ namespace OfTamingAndBreeding.Data.Processing
             PrefabManager.Instance.RegisterToZNetScene(offspring);
 
             ctx.DestroyComponentIfExists<ItemDrop>(offspringName, offspring); // offsprings are not items (wait, why am i even doing this? dont remember.. just keep it)
-            ctx.DestroyComponentIfExists<Procreation>(offspringName, offspring); // offsprings do nor procreate
+            ctx.DestroyComponentIfExists<Procreation>(offspringName, offspring); // offsprings do not procreate
             ctx.DestroyComponentIfExists<Tameable>(offspringName, offspring); // offsprings cannot be explicite tamed
             ctx.DestroyComponentIfExists<CharacterDrop>(offspringName, offspring); // offsprings do not drop items
             ctx.DestroyComponentIfExists<MonsterAI>(offspringName, offspring); // offsprings do not attack
             ctx.GetOrAddComponent<AnimalAI>(offspringName, offspring); // offsprings do act like passive animals
-
-            var footStep = offspring.GetComponent<FootStep>();
-            if ((bool)footStep)
-            {
-                footStep.m_effects.Clear();
-            }
-
-
 
             if (data.Components.Character == Models.SubData.ComponentBehavior.Patch)
             {
@@ -217,9 +298,7 @@ namespace OfTamingAndBreeding.Data.Processing
                     Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting Character values");
 
                     if (data.Character.Name != null) offspringCharacter.m_name = data.Character.Name;
-                    if (data.Character.Group != null) offspringCharacter.m_group = data.Character.Group;
-                    if (data.Character.TamesStickToFaction) Runtime.Character.SetSticksToFaction(offspringName);
-                    
+
                     if (data.Character.Scale != 1 && data.Character.Scale != 0)
                     {
                         var setScale = data.Character.Scale;
@@ -258,7 +337,7 @@ namespace OfTamingAndBreeding.Data.Processing
                         Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting vfx scaling");
                         Helpers.VfxHelper.ScaleVfx(offspring, setScale); // scale model particles
                         Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting animation scaling");
-                        Runtime.Character.SetAnimationScaling(offspringName, 1/setScale); // scale animations
+                        Runtime.Character.SetAnimationScaling(offspringName, 1 / setScale); // scale animations
 
                         // we need to clone the effect prefab to make it scaleable independently from its original effect prefab
                         // but we need to make sure that the original effect prefab only gets cloned once 
@@ -279,7 +358,7 @@ namespace OfTamingAndBreeding.Data.Processing
                                 }
                                 eff.m_prefab = cloned;
                             }
-                            eff.m_prefab.transform.localScale = UnityEngine.Vector3.one * (setScale/2); // i dunno why but /2 is doing the trick!
+                            eff.m_prefab.transform.localScale = UnityEngine.Vector3.one * (setScale / 2); // i dunno why but /2 is doing the trick!
                             eff.m_scale = false;
                             eff.m_inheritParentScale = false;
                         }
@@ -326,10 +405,10 @@ namespace OfTamingAndBreeding.Data.Processing
         }
 
         //------------------------------------------------
-        // CLEANUP
+        // FINALIZE
         //------------------------------------------------
 
-        public override void Cleanup(Base.DataProcessorContext ctx)
+        public override void Finalize(Base.DataProcessorContext ctx)
         {
 
         }
@@ -352,6 +431,18 @@ namespace OfTamingAndBreeding.Data.Processing
                 RestoreHelper.RestoreComponent<Growup>(backup, current);
 
             });
+
+                //var p = PrefabManager.Instance.GetPrefab(offspringName);
+                //if (p) UnityEngine.Object.Destroy(p);
+
+        }
+
+        //------------------------------------------------
+        // CLEANUP
+        //------------------------------------------------
+
+        public override void Cleanup(Base.DataProcessorContext ctx)
+        {
         }
 
     }

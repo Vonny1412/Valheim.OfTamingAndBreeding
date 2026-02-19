@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static OfTamingAndBreeding.Data.Models.Creature;
 
 namespace OfTamingAndBreeding.Data.Models
 {
@@ -16,6 +17,7 @@ namespace OfTamingAndBreeding.Data.Models
         public const string DirectoryName = "Offsprings";
 
         public CloneData Clone = null;
+
         public ComponentsData Components = new ComponentsData();
 
         public CharacterData Character = null;
@@ -26,6 +28,8 @@ namespace OfTamingAndBreeding.Data.Models
         internal class CloneData : SubData.ICloneData
         {
             public string From { get; set; } = null;
+            public string[] RemoveEffects { get; set; } = null;
+            public bool? DebugEffects { get; set; } = null;
         }
 
         [Serializable]
@@ -41,8 +45,6 @@ namespace OfTamingAndBreeding.Data.Models
         public class CharacterData
         {
             public string Name { get; set; } = null;
-            public string Group { get; set; } = null;
-            public bool TamesStickToFaction { get; set; } = false;
             public float Scale { get; set; } = 1;
         }
 

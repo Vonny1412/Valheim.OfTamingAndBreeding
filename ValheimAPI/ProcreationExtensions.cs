@@ -1,4 +1,6 @@
-﻿using OfTamingAndBreeding.Data.Models.SubData;
+﻿using Jotunn.Managers;
+using OfTamingAndBreeding.Data;
+using OfTamingAndBreeding.Data.Models.SubData;
 using OfTamingAndBreeding.Helpers;
 using System;
 using System.Collections.Generic;
@@ -90,6 +92,47 @@ namespace OfTamingAndBreeding.ValheimAPI
                 // the first param of the extension methods (this Procreation procreation) is making problems while deserializing
                 m_nview.Register("RPC_DisplayLoveEffect", (long sender) => procreation.RPC_DisplayLoveEffect(sender));
                 m_nview.Register<Vector3>("RPC_DisplayBirthEffect", (long sender, Vector3 position) => procreation.RPC_DisplayBirthEffect(sender, position));
+            }
+
+
+            var prefabName = Utils.GetPrefabName(procreation.gameObject.name);
+            if (!Runtime.Procreation.TryGetBasePregnancyDuration(prefabName, out float _))
+            {
+                var prefab = PrefabManager.Instance.GetPrefab(prefabName);
+                var prefabProcreation = prefab.GetComponent<Procreation>();
+                Runtime.Procreation.SetBasePregnancyDuration(prefabName, prefabProcreation.m_pregnancyDuration);
+            }
+
+
+            procreation.UpdatePregnancyDuration();
+        }
+
+        public static void UpdatePregnancyDuration(this Procreation procreation)
+        {
+            var m_nview = procreation.GetZNetView();
+            if (!m_nview || !m_nview.IsValid()) return;
+            var zdo = m_nview.GetZDO();
+            if (zdo == null) return;
+
+            var globalFactor = Plugin.Configs.GlobalPregnancyDurationFactor.Value;
+            if (globalFactor < 0f)
+            {
+                procreation.UpdatePregnancyDuration(1f); // back to base
+                return;
+            }
+            var totalFactor = globalFactor;
+            procreation.UpdatePregnancyDuration(totalFactor);
+        }
+
+        private static void UpdatePregnancyDuration(this Procreation procreation, float totalFactor)
+        {
+            if (totalFactor >= 0) // yes, we do allow 0, too
+            {
+                var prefabName = Utils.GetPrefabName(procreation.gameObject.name);
+                if (Runtime.Procreation.TryGetBasePregnancyDuration(prefabName, out float basePregnancyDuration))
+                {
+                    procreation.m_pregnancyDuration = basePregnancyDuration * totalFactor;
+                }
             }
         }
 
@@ -231,17 +274,9 @@ namespace OfTamingAndBreeding.ValheimAPI
                         bool expired = z_partnerNotSeenSince != 0L && (__nowTicks - z_partnerNotSeenSince) > recheck;
                         if (expired) // creature is mourning to have lost the partner it just found =(
                         {
-
                             // this will trigger a new search for partner
                             z_partnerPrefab = ZNetHelper.SetString(zdo, Plugin.ZDOVars.z_partnerPrefab, "", z_partnerPrefab);
                             procreation.m_seperatePartner = null;
-
-                            if (Plugin.Configs.MourningResetsLovePoints.Value == true)
-                            {
-                                // also reset love points, be ready for a fresh partner <3
-                                s_lovePoints = ZNetHelper.SetInt(zdo, ZDOVars.s_lovePoints, 0, s_lovePoints);
-                                s_lovePoints = procreation.GetLovePoints(); // maybe someone patched this one, so we can continue with real love points
-                            }
                         }
                     }
                 }
@@ -250,7 +285,7 @@ namespace OfTamingAndBreeding.ValheimAPI
             //if (m_seperatePartner == null && z_needPartner==1)
             if (procreation.m_seperatePartner == null) // always try to find new partner if its still empty
             {
-                if (dataProcreation.Partner != null && dataProcreation.Partner.Length > 0)
+                if (dataProcreation.Partner != null)
                 {
 
                     var foundPartner = RandomData.FindRandom<Data.Models.Creature.ProcreationPartnerData>(dataProcreation.Partner, out Data.Models.Creature.ProcreationPartnerData partnerEntry, entry =>
@@ -360,22 +395,25 @@ namespace OfTamingAndBreeding.ValheimAPI
                 // because the fate will be determined before creature gets pregnant
                 // but i want to store neither offspring-entry-index nor levelup-values into zdo
                 // so just roll the dice here...
-                var levelUpChance = randomOffspring.LevelUpChance;
-                var levelUpMax = randomOffspring.MaxLevel;
-                if (levelUpChance != 0)
+                if (randomOffspring.LevelUpChance != null && randomOffspring.MaxLevel != null)
                 {
-                    var chance = UnityEngine.Random.value;
-                    if (chance <= levelUpChance)
+                    var levelUpChance = (float)randomOffspring.LevelUpChance;
+                    var levelUpMax = (int)randomOffspring.MaxLevel;
+                    if (levelUpChance != 0)
                     {
-                        levelNew = levelNew + 1;
-                        if (levelNew > levelUpMax)
+                        var chance = UnityEngine.Random.value;
+                        if (chance <= levelUpChance)
                         {
-                            levelNew = levelUpMax;
+                            levelNew = levelNew + 1;
+                            if (levelNew > levelUpMax)
+                            {
+                                levelNew = levelUpMax;
+                            }
+                            Plugin.LogDebug($"Offspring '{offspring.name}' level up: {levelOld} -> {levelNew}");
                         }
-                        Plugin.LogDebug($"Offspring '{offspring.name}' level up: {levelOld} -> {levelNew}");
-
                     }
                 }
+
                 z_offspringLevel = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_offspringLevel, levelNew, z_offspringLevel);
             }
 
@@ -493,7 +531,6 @@ namespace OfTamingAndBreeding.ValheimAPI
                         // offsprings
                         totalAround += SpawnSystem.GetNrOfInstances(m_offspringPrefab, __myPosition, __myTotalCheckRange);
                     }
-
                     if (totalAround >= procreation.m_maxCreatures)
                     {
                         return false;
@@ -574,12 +611,12 @@ namespace OfTamingAndBreeding.ValheimAPI
 
             returnLines.Add(Helpers.StringHelper.FormatRelativeTime(
                 secLeft,
-                labelPositive: L.Localize("$otab_hover_pregnancy_due"),
-                labelNegative: L.Localize("$otab_hover_pregnancy_overdue"),
-                labelAltPositive: L.Localize("$otab_hover_pregnancy_due_alt"),
-                labelAltNegative: L.Localize("$otab_hover_pregnancy_overdue_alt"),
-                colorPositive: Plugin.Configs.HoverColorGood.Value,
-                colorNegative: Plugin.Configs.HoverColorBad.Value
+                labelPositive:      L.Localize("$otab_hover_pregnancy_due"),
+                labelPositiveAlt:   L.Localize("$otab_hover_pregnancy_due_alt"),
+                labelNegative:      L.Localize("$otab_hover_pregnancy_overdue"),
+                labelNegativeAlt:   L.Localize("$otab_hover_pregnancy_overdue_alt"),
+                colorPositive:      Plugin.Configs.HoverColorGood.Value,
+                colorNegative:      Plugin.Configs.HoverColorBad.Value
             ));
         }
 

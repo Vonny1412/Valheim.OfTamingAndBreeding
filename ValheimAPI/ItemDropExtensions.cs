@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using static Chat;
 using static UnityEngine.Networking.UnityWebRequest;
 
 namespace OfTamingAndBreeding.ValheimAPI
@@ -74,114 +75,111 @@ namespace OfTamingAndBreeding.ValheimAPI
             if (zdo == null) return;
 
             var eggGrow = itemDrop.GetComponent<EggGrow>();
-            if (eggGrow)
+            if (eggGrow && eggGrow.GetItemDrop() != null)
             {
-
                 string extraText = "";
+                float growStart = zdo.GetFloat(ZDOVars.s_growStart);
+                var canGrow = eggGrow.CanGrow();
 
-                if (eggGrow.m_growTime > 0) // it has a growtime
+                if (canGrow)
                 {
+                    if (eggGrow.m_growTime > 0)
+                    {
+                        // has a grow time
 
-                    float growStart = zdo.GetFloat(ZDOVars.s_growStart);
+                        string pctText = "0";
+                        if (growStart > 0)
+                        {
+                            float precision = 1f / Plugin.Configs.HudProgressPrecision.Value;
+                            int decimals = Mathf.Max(0, Mathf.RoundToInt(-Mathf.Log10(precision)));
 
+                            float remainingTime = (float)((growStart + eggGrow.m_growTime) - ZNet.instance.GetTimeSeconds());
+                            float pctRaw = (1f - Mathf.Clamp01(remainingTime / eggGrow.m_growTime)) * 100f;
+
+                            float pct = Mathf.Floor(pctRaw * precision) / precision; // no "jumping forward"
+                            pctText = pct.ToString($"F{decimals}", System.Globalization.CultureInfo.InvariantCulture);
+                        }
+                        extraText = $"({pctText}%)";
+                    }
+                    else
+                    {
+                        // unknown/secret grow time
+
+                        extraText = "(?)";
+                    }
+                }
+                else
+                {
                     if (itemDrop.m_itemData.m_stack > 1)
                     {
                         extraText = Localization.instance.Localize("$item_chicken_egg_stacked");
                     }
-                    else if (growStart <= 0f)
+                    else if (eggGrow.m_requireNearbyFire)
                     {
-                        if (!eggGrow.CanGrow())
-                        {
-                            if (eggGrow.m_requireNearbyFire)
-                            {
-                                extraText = Localization.instance.Localize("$otab_egg_requires_heat");
-                            }
-                            else if (eggGrow.m_requireUnderRoof)
-                            {
-                                extraText = Localization.instance.Localize("$otab_egg_requires_roof");
-                            }
-                            else
-                            {
-
-                                var eggPrefabName = Utils.GetPrefabName(itemDrop.gameObject.name);
-
-                                var needsAnyBiome = Runtime.EggGrow.GetEggNeedsAnyBiome(eggPrefabName);
-                                if (needsAnyBiome != Heightmap.Biome.None)
-                                {
-                                    var L = Localization.instance;
-                                    if (selectedLanguage != L.GetSelectedLanguage())
-                                    {
-                                        selectedLanguage = L.GetSelectedLanguage();
-                                        biomNames.Clear();
-                                        biomNames[Heightmap.Biome.Meadows] = L.Localize("$biome_meadows");
-                                        biomNames[Heightmap.Biome.Swamp] = L.Localize("$biome_swamp");
-                                        biomNames[Heightmap.Biome.Mountain] = L.Localize("$biome_mountain");
-                                        biomNames[Heightmap.Biome.BlackForest] = L.Localize("$biome_blackforest");
-                                        biomNames[Heightmap.Biome.Plains] = L.Localize("$biome_plains");
-                                        biomNames[Heightmap.Biome.AshLands] = L.Localize("$biome_ashlands");
-                                        biomNames[Heightmap.Biome.DeepNorth] = L.Localize("$biome_deepnorth");
-                                        biomNames[Heightmap.Biome.Ocean] = L.Localize("$biome_ocean");
-                                        biomNames[Heightmap.Biome.Mistlands] = L.Localize("$biome_mistlands");
-                                    }
-                                    var biomes = Helpers.EnvironmentHelper.UnMaskBiomes(needsAnyBiome);
-                                    extraText = String.Join(" / ", biomes.Select((b) => biomNames[b])); // list of biomes
-                                    extraText = String.Format(L.Localize("$otab_egg_requires_biome"), extraText);
-                                }
-                                else
-                                {
-                                    var needsLiquid = Runtime.EggGrow.GetEggNeedsLiquid(eggPrefabName);
-                                    if (needsLiquid != null)
-                                    {
-                                        switch (needsLiquid.Type)
-                                        {
-                                            case Helpers.EnvironmentHelper.LiquidTypeEx.Water:
-                                                extraText = Localization.instance.Localize("$otab_egg_requires_water");
-                                                break;
-                                            case Helpers.EnvironmentHelper.LiquidTypeEx.Tar:
-                                                extraText = Localization.instance.Localize("$otab_egg_requires_tar");
-                                                break;
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (string.IsNullOrEmpty(extraText))
-                            {
-                                // default message
-                                extraText = Localization.instance.Localize("$item_chicken_egg_cold");
-                            }
-                        }
+                        extraText = Localization.instance.Localize("$otab_egg_requires_heat");
+                    }
+                    else if (eggGrow.m_requireUnderRoof)
+                    {
+                        extraText = Localization.instance.Localize("$otab_egg_requires_roof");
                     }
                     else
                     {
-                        float precision = 1f / Plugin.Configs.HudProgressPrecision.Value;
-                        int decimals = Mathf.Max(0, Mathf.RoundToInt(-Mathf.Log10(precision)));
 
-                        float remainingTime = (float)((growStart + eggGrow.m_growTime) - ZNet.instance.GetTimeSeconds());
-                        float pctRaw = (1f - Mathf.Clamp01(remainingTime / eggGrow.m_growTime)) * 100f;
+                        var eggPrefabName = Utils.GetPrefabName(itemDrop.gameObject.name);
 
-                        float pct = Mathf.Floor(pctRaw * precision) / precision; // no "jumping forward"
-                        string pctText = pct.ToString($"F{decimals}", System.Globalization.CultureInfo.InvariantCulture);
-
-                        extraText = $"({pctText}%)";
+                        var needsAnyBiome = Runtime.EggGrow.GetEggNeedsAnyBiome(eggPrefabName);
+                        if (needsAnyBiome != Heightmap.Biome.None)
+                        {
+                            var L = Localization.instance;
+                            if (selectedLanguage != L.GetSelectedLanguage())
+                            {
+                                selectedLanguage = L.GetSelectedLanguage();
+                                biomNames.Clear();
+                                biomNames[Heightmap.Biome.Meadows] = L.Localize("$biome_meadows");
+                                biomNames[Heightmap.Biome.Swamp] = L.Localize("$biome_swamp");
+                                biomNames[Heightmap.Biome.Mountain] = L.Localize("$biome_mountain");
+                                biomNames[Heightmap.Biome.BlackForest] = L.Localize("$biome_blackforest");
+                                biomNames[Heightmap.Biome.Plains] = L.Localize("$biome_plains");
+                                biomNames[Heightmap.Biome.AshLands] = L.Localize("$biome_ashlands");
+                                biomNames[Heightmap.Biome.DeepNorth] = L.Localize("$biome_deepnorth");
+                                biomNames[Heightmap.Biome.Ocean] = L.Localize("$biome_ocean");
+                                biomNames[Heightmap.Biome.Mistlands] = L.Localize("$biome_mistlands");
+                            }
+                            var biomes = Helpers.EnvironmentHelper.UnMaskBiomes(needsAnyBiome);
+                            extraText = String.Join(" / ", biomes.Select((b) => biomNames[b])); // list of biomes
+                            extraText = String.Format(L.Localize("$otab_egg_requires_biome"), extraText);
+                        }
+                        else
+                        {
+                            var needsLiquid = Runtime.EggGrow.GetEggNeedsLiquid(eggPrefabName);
+                            if (needsLiquid != null)
+                            {
+                                switch (needsLiquid.Type)
+                                {
+                                    case Helpers.EnvironmentHelper.LiquidTypeEx.Water:
+                                        extraText = Localization.instance.Localize("$otab_egg_requires_water");
+                                        break;
+                                    case Helpers.EnvironmentHelper.LiquidTypeEx.Tar:
+                                        extraText = Localization.instance.Localize("$otab_egg_requires_tar");
+                                        break;
+                                }
+                            }
+                        }
                     }
 
-                }
-                else
-                {
-                    // secret growing
-                    extraText = "(?)";
+                    if (string.IsNullOrEmpty(extraText))
+                    {
+                        // default message
+                        extraText = Localization.instance.Localize("$item_chicken_egg_cold");
+                    }
                 }
 
-                text = text.Substring(0, nl) + " " + extraText + text.Substring(nl);
+                if (string.IsNullOrEmpty(extraText) == false)
+                {
+                    text = text.Substring(0, nl) + " " + extraText + text.Substring(nl);
+                }
             }
         }
-
-
-
-
-
-
 
     }
 }

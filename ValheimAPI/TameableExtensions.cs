@@ -1,5 +1,6 @@
 ﻿using Jotunn.Managers;
 using OfTamingAndBreeding.Data;
+using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Helpers;
 using System;
 using System.Collections.Generic;
@@ -8,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using static UnityEngine.Networking.UnityWebRequest;
 
 namespace OfTamingAndBreeding.ValheimAPI
 {
@@ -64,6 +66,13 @@ namespace OfTamingAndBreeding.ValheimAPI
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Player GetPlayer(this Tameable that, ZDOID characterID)
             => LowLevel.Tameable.__IAPI_GetPlayer_Invoker1.Invoke(that, characterID);
+
+
+
+
+
+
+
 
         public static void Awake_PatchPostfix(this Tameable tameable)
         {
@@ -233,6 +242,15 @@ namespace OfTamingAndBreeding.ValheimAPI
                 return false;
             }
             return true;
+        }
+
+        public static void  Tame_PatchPostfix(this Tameable tameable)
+        {
+            var character = tameable.GetComponent<Character>();
+            if (character)
+            {
+                character.SetCharacterStuffIfTamed();
+            }
         }
 
         public static bool RPC_Command_PatchPrefix(this Tameable tameable, long sender, ZDOID characterID, bool message)
@@ -478,21 +496,43 @@ namespace OfTamingAndBreeding.ValheimAPI
             if (tameable.m_fedDuration <= 0)
                 return;
 
-            float secLeft = tameable.GetFedTimeLeft(zdo, zTime);
-
-            var showFed = secLeft >= 0 && Plugin.Configs.HoverShowFedTimer.Value;
-            var showHungry = secLeft < 0 && Plugin.Configs.HoverShowHungryTimer.Value;
-            if (showFed || showHungry)
+            float secondsFedLeft = tameable.GetFedTimeLeft(zdo, zTime);
+            if (secondsFedLeft >= 0)
             {
-                returnLines.Add(Helpers.StringHelper.FormatRelativeTime(
-                    secLeft,
-                    labelPositive: L.Localize("$otab_hover_fed"),
-                    labelNegative: L.Localize("$otab_hover_hungry"),
-                    labelAltPositive: L.Localize("$otab_hover_fed_alt"),
-                    labelAltNegative: L.Localize("$otab_hover_hungry_alt"),
-                    colorPositive: Plugin.Configs.HoverColorGood.Value,
-                    colorNegative: Plugin.Configs.HoverColorBad.Value
-                ));
+                // is fed
+                if (Plugin.Configs.HoverShowFedTimer.Value)
+                {
+                    returnLines.Add(Helpers.StringHelper.FormatRelativeTime(
+                        secondsFedLeft,
+                        labelPositive:      L.Localize("$otab_hover_fed"),
+                        labelPositiveAlt:   L.Localize("$otab_hover_fed_alt"),
+                        labelNegative:      L.Localize("$otab_hover_hungry"),
+                        labelNegativeAlt:   L.Localize("$otab_hover_hungry_alt"),
+                        colorPositive:      Plugin.Configs.HoverColorGood.Value,
+                        colorNegative:      Plugin.Configs.HoverColorBad.Value
+                    ));
+                }
+            }
+            else
+            {
+                // is hungry
+                var z_starvingAfter = zdo.GetLong(Plugin.ZDOVars.z_starvingAfter, -1);
+                if (z_starvingAfter != -1 && Plugin.Configs.HoverShowStarvingTimer.Value)
+                {
+                    // starving point is set
+                    var now = ZNet.instance.GetTime();
+                    var secondsUntillStarving = (new DateTime(z_starvingAfter) - now).TotalSeconds;
+
+                    returnLines.Add(Helpers.StringHelper.FormatRelativeTime(
+                        secondsUntillStarving,
+                        labelPositive:      L.Localize("$otab_hover_starving"),
+                        labelPositiveAlt:   L.Localize("$otab_hover_starving_alt"),
+                        labelNegative:      L.Localize("$otab_hover_starving_alt"),
+                        labelNegativeAlt:   L.Localize("$otab_hover_starving_alt"),
+                        colorPositive:      Plugin.Configs.HoverColorBad.Value,
+                        colorNegative:      Plugin.Configs.HoverColorBad.Value
+                    ));
+                }
             }
         }
 

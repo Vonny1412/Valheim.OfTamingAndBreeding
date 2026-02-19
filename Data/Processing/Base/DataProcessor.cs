@@ -146,7 +146,7 @@ namespace OfTamingAndBreeding.Data.Processing.Base
             }
         }
 
-        public abstract void Cleanup(DataProcessorContext ctx);
+        public abstract void Finalize(DataProcessorContext ctx);
 
         public abstract void RestorePrefab(DataProcessorContext ctx, string prefabName, T data);
         public void RestoreAllPrefabs(DataProcessorContext ctx)
@@ -162,6 +162,8 @@ namespace OfTamingAndBreeding.Data.Processing.Base
                 RestorePrefab(ctx, prefabName, data);
             }
         }
+
+        public abstract void Cleanup(DataProcessorContext ctx);
 
     }
 

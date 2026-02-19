@@ -92,10 +92,8 @@ namespace OfTamingAndBreeding.Helpers
             return byte.TryParse(s.Trim(), out value);
         }
 
-
         private static Color Multiply(Color baseCol, Color tint)
         {
-            // komponentenweise Multiplikation, Alpha typischerweise beibehalten
             return new Color(baseCol.r * tint.r, baseCol.g * tint.g, baseCol.b * tint.b, baseCol.a);
         }
 
@@ -106,7 +104,7 @@ namespace OfTamingAndBreeding.Helpers
             for (int i = 0; i < cks.Length; ++i)
                 cks[i].color = Multiply(cks[i].color, tint);
 
-            outG.SetKeys(cks, grad.alphaKeys); // AlphaKeys unverändert
+            outG.SetKeys(cks, grad.alphaKeys);
             return outG;
         }
 
@@ -278,7 +276,7 @@ namespace OfTamingAndBreeding.Helpers
             }
 
             tex.SetPixels(pixels);
-            tex.Apply(false, false); // <-- NICHT unreadable machen
+            tex.Apply(false, false);
 
             return Sprite.Create(tex, new Rect(0, 0, w, h), src.pivot / r.size, src.pixelsPerUnit);
         }

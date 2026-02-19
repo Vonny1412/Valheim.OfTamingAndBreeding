@@ -72,8 +72,12 @@ namespace OfTamingAndBreeding.ValheimAPI
             => LowLevel.BaseAI.__IAPI_HavePath_Invoker1.Invoke(that, target);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetIsAlertedUnsafe(this BaseAI that, bool alerted)
+        public static void SetAlertedUnsafe(this BaseAI that, bool alerted)
             => LowLevel.BaseAI.__IAPI_m_alerted_Invoker.Set(that, alerted);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SetAlerted(this BaseAI that, bool alerted)
+            => LowLevel.BaseAI.__IAPI_SetAlerted_Invoker1.Invoke(that, alerted);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void UpdateTakeoffLanding(this BaseAI that, float dt)

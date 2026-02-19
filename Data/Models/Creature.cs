@@ -39,6 +39,7 @@ namespace OfTamingAndBreeding.Data.Models
         {
             public string Group { get; set; } = null;
             public string GroupWhenTamed { get; set; } = null;
+            public Character.Faction? FactionWhenTamed { get; set; } = null;
             public bool TamesStickToFaction { get; set; } = false; // OTAB feature
             public IsEnemyCondition TamesCanAttackTames { get; set; } = IsEnemyCondition.Never; // OTAB feature
             public IsEnemyCondition TamesCanBeAttackedByTames { get; set; } = IsEnemyCondition.Never; // OTAB feature
@@ -83,8 +84,8 @@ namespace OfTamingAndBreeding.Data.Models
             public bool NeedPartner { get; set; } = true; // true = vanilla
             public string NeedPartnerPrefab { get; set; } = null; // OTAB feature
 
-            public float LevelUpChance { get; set; } = 0; // OTAB feature
-            public int MaxLevel { get; set; } = 3; // valheim default
+            public float? LevelUpChance { get; set; } = null; // OTAB feature
+            public int? MaxLevel { get; set; } = null;
         }
 
         [Serializable]
@@ -103,7 +104,7 @@ namespace OfTamingAndBreeding.Data.Models
             public float? TotalCheckRange { get; set; } = null;
 
             public ProcreationPartnerData[] Partner { get; set; } = null;
-            public float PartnerRecheckSeconds { get; set; } = 60; // OTAB feature
+            public float? PartnerRecheckSeconds { get; set; } = null; // OTAB feature
             public float? PartnerCheckRange { get; set; } = null;
             public int? RequiredLovePoints { get; set; } = null;
 

@@ -121,7 +121,6 @@ namespace OfTamingAndBreeding
             {
                 Plugin.LogFatal("Patch validation failed. This OTAB build is broken =(");
                 Plugin.LogFatal(ex.ToString());
-
                 DisablePlugin();
                 throw;
             }
@@ -134,6 +133,14 @@ namespace OfTamingAndBreeding
                 ZNetScene.instance?.UnblockObjectsCreation();
                 Patches.DataReadyPatches.Install();
                 _IsOTABReady = true;
+
+                if (ZNet.instance.IsServer())
+                {
+                    foreach (var p in Data.DataOrchestrator.IterDataProcessors())
+                    {
+                        Plugin.LogInfo($"Loaded {p.GetLoadedDataCount()} {p.ModelTypeName} entries");
+                    }
+                }
             });
             Data.DataOrchestrator.OnDataReset(() => {
                 Patches.DataReadyPatches.Uninstall();
@@ -184,8 +191,10 @@ namespace OfTamingAndBreeding
 
         public static void StartClientTimeout(float seconds)
         {
-            CancelClientTimeout();
-            clientTimeoutRoutine = Instance.StartCoroutine(RunClientTimeout(seconds));
+            if (clientTimeoutRoutine == null)
+            {
+                clientTimeoutRoutine = Instance.StartCoroutine(RunClientTimeout(seconds));
+            }
         }
 
         public static void CancelClientTimeout()
@@ -208,7 +217,7 @@ namespace OfTamingAndBreeding
                 }
                 yield return null;
             }
-            Plugin.LogInfo("OTAB Client-Server-Sync timeout. Assuming vanilla server.");
+            Plugin.LogInfo("No server sync detected (timeout). Running in vanilla mode.");
             ZNetScene.instance?.UnblockObjectsCreation();
             _IsOTABReady = false;
         }

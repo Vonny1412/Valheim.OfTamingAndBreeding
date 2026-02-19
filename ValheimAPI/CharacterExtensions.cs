@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using static UnityEngine.Networking.UnityWebRequest;
 
 namespace OfTamingAndBreeding.ValheimAPI
 {
@@ -19,6 +20,51 @@ namespace OfTamingAndBreeding.ValheimAPI
             // no need for threadstatic
             public static string lastText = "";
             public static Character lastTarget = null;
+        }
+
+        public static void Awake_PatchPostfix(this Character character)
+        {
+            character.SetCharacterStuffIfTamed();
+        }
+
+        public static void SetCharacterStuffIfTamed(this Character character)
+        {
+            if (character.IsTamed())
+            {
+
+                character.RemoveBossStuff();
+
+                var prefabName = Utils.GetPrefabName(character.gameObject.name);
+                if (Runtime.Character.TryGetGroupWhenTamed(prefabName, out string group))
+                {
+                    Plugin.LogWarning($"{prefabName} group: '{character.m_group}' to '{group}'");
+                    character.m_group = group;
+                }
+                if (Runtime.Character.TryGetFactionWhenTamed(prefabName, out Character.Faction faction))
+                {
+                    Plugin.LogWarning($"{prefabName} faction: '{character.m_faction}' to '{faction}'");
+                    character.m_faction = faction;
+                }
+
+                // why here? because a character could be tamaed without Tameable component
+                var baseAI = character.GetComponent<BaseAI>();
+                if (baseAI)
+                {
+                    baseAI.SetHuntPlayer(false);
+                    //baseAI.SetAlerted(false);
+                }
+
+            }
+        }
+
+        public static void RemoveBossStuff(this Character character)
+        {
+            if (character.m_boss == true)
+            {
+                character.m_boss = false;
+                character.m_bossEvent = "";
+                EnemyHud.instance.RemoveCharacterHud(character);
+            }
         }
 
         public static void GetHoverName_PatchPostfix(this Character character, ref string result)

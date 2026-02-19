@@ -20,7 +20,7 @@ namespace OfTamingAndBreeding
             public static ConfigEntry<bool> HoverShowLovePoints { get; private set; }
             public static ConfigEntry<bool> HoverShowPregnancyTimer { get; private set; }
             public static ConfigEntry<bool> HoverShowFedTimer { get; private set; }
-            public static ConfigEntry<bool> HoverShowHungryTimer { get; private set; }
+            public static ConfigEntry<bool> HoverShowStarvingTimer { get; private set; }
 
             public static ConfigEntry<bool> HoverShowSeconds { get; private set; }
             public static ConfigEntry<bool> HoverUseIngameTime { get; private set; }
@@ -56,6 +56,7 @@ namespace OfTamingAndBreeding
 
             public static ConfigEntry<float> DefaultStarvingGraceFactor { get; private set; }
 
+            public static ConfigEntry<float> GlobalPregnancyDurationFactor { get; private set; }
             public static ConfigEntry<float> GlobalFedDurationFactor { get; private set; }
             public static ConfigEntry<float> GlobalTamingTimeFactor { get; private set; }
             public static ConfigEntry<float> GlobalGrowTimeFactor { get; private set; }
@@ -63,7 +64,6 @@ namespace OfTamingAndBreeding
             public static ConfigEntry<bool> RequireFoodDroppedByPlayer { get; private set; }
             public static ConfigEntry<bool> UseBetterSearchForFood { get; private set; }
             public static ConfigEntry<float> TamingSlowdownPerStar { get; private set; }
-            public static ConfigEntry<bool> MourningResetsLovePoints { get; private set; }
 
 
             private const string Section_Server_CLLC = "Server - Creature Level & Loot Control";
@@ -91,11 +91,11 @@ namespace OfTamingAndBreeding
 
                 section = Section_UI_Hovertext;
 
-                HoverShowConsumeItems = Config.BindConfigInOrder<bool>(section, "ShowConsumeItems", true, "Allow showing consumeable items in creature hover text.");
-                HoverShowLovePoints = Config.BindConfigInOrder<bool>(section, "ShowLovePoints", true, "Allow showing love points in creature hover text.");
+                HoverShowConsumeItems = Config.BindConfigInOrder<bool>(section, "ShowConsumeItems", true, "Allow showing consumeable items in creature hover text.", synced: false);
+                HoverShowLovePoints = Config.BindConfigInOrder<bool>(section, "ShowLovePoints", true, "Allow showing love points in creature hover text.", synced: false);
                 HoverShowPregnancyTimer = Config.BindConfigInOrder<bool>(section, "ShowPregnancyTimer", true, "Allow showing pregnancy timer in hover text.", synced: false);
                 HoverShowFedTimer = Config.BindConfigInOrder<bool>(section, "ShowFedTimer", true, "Allow showing fed timer in hover text.", synced: false);
-                HoverShowHungryTimer = Config.BindConfigInOrder<bool>(section, "ShowHungryTimer", true, "If enabled, show the timer while hungry (negative time).", synced: false);
+                HoverShowStarvingTimer = Config.BindConfigInOrder<bool>(section, "ShowStarvingTimer", true, "Displays a timer indicating when the creature will start starving in the hover text.\r\nThe timer is only shown if OTAB is also installed on the server.", synced: false);
 
                 HoverShowSeconds = Config.BindConfigInOrder<bool>(section, "ShowSeconds", false, "Show seconds in hover timers (otherwise only days/hours/minutes).", synced: false);
                 HoverUseIngameTime = Config.BindConfigInOrder<bool>(section, "UseIngameTime", true, "Format timers using Valheim in-game time (day length) instead of real time.", synced: false);
@@ -126,9 +126,25 @@ namespace OfTamingAndBreeding
                 CacheFileName = Config.BindConfigInOrder<string>(section, "CacheFileName", "local-{world}-{seed}", "Template for the cache file name (server-resolved). Supports placeholders like {world} and {seed}. Read on world/server start and not synchronized during runtime.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
                 CacheFileCryptKey = Config.BindConfigInOrder<string>(section, "CacheFileCryptKey", "", "Key used to obfuscate the cache contents. This is NOT secure encryption - do NOT use real passwords or personal secrets! Read on world/server start and not synchronized during runtime.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
 
+
                 section = Section_Server_Gameplay;
 
                 DefaultStarvingGraceFactor = Config.BindConfigInOrder<float>(section, "DefaultStarvingGraceFactor", 5f, "Global fallback StarvingGraceFactor used when a creature does not define one in YAML. Multiplies fed duration before entering Starving state.", acceptableValues: new AcceptableValueRange<float>(0, 100), synced: true);
+
+                GlobalPregnancyDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalPregnancyDurationFactor", 1f, "Global multiplier for PregnancyDuration.  Applies immediately; lowering it can instantly finish ongoing pregnancy on the next update.", synced: true);
+                GlobalPregnancyDurationFactor.SettingChanged += (object sender, EventArgs args) => {
+                    //if (ZNet.instance && ZNet.instance.IsServer())
+                    {
+                        foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
+                        {
+                            var procreation = baseAI.GetComponent<Procreation>();
+                            if (procreation != null)
+                            {
+                                procreation.UpdatePregnancyDuration();
+                            }
+                        }
+                    }
+                };
 
                 GlobalFedDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalFedDurationFactor", 1f, "Global multiplier for FedDuration. Applies immediately (may flip Hungry/Starving state).", synced: true);
                 GlobalFedDurationFactor.SettingChanged += (object sender, EventArgs args) => {
@@ -189,8 +205,6 @@ namespace OfTamingAndBreeding
                     "This does not change the base taming time itself — it only affects how fast taming progresses.\nA value of 0 disables this feature.\n" +
                     "Formula: progress /= (1 + stars × value)\n" +
                     "Example (base time = 100s, value = 1.0): 0★ = 100s, 1★ = 200s, 2★ = 300s", synced: true);
-
-                MourningResetsLovePoints = Config.BindConfigInOrder<bool>(section, "MourningResetsLovePoints", true, "If enabled, love points are reset when a creature loses its partner after the mourning period.", synced: true);
 
 
                 section = Section_Server_CLLC;

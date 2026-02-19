@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Jotunn.Managers;
+using OfTamingAndBreeding.Data.Models;
+using OfTamingAndBreeding.Helpers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using Jotunn.Managers;
-
-using OfTamingAndBreeding.Helpers;
 namespace OfTamingAndBreeding.Data.Processing
 {
 
@@ -37,7 +37,7 @@ namespace OfTamingAndBreeding.Data.Processing
             switch (data.Components.Item)
             {
                 case Models.SubData.ComponentBehavior.Remove:
-                    Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.Item)}({nameof(Models.SubData.ComponentBehavior.Remove)}): Component cannot be removed");
+                    Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Item)}({nameof(Models.SubData.ComponentBehavior.Remove)}): Component cannot be removed");
                     break;
                 case Models.SubData.ComponentBehavior.Patch:
                     if (data.Item == null)
@@ -49,7 +49,7 @@ namespace OfTamingAndBreeding.Data.Processing
                 case Models.SubData.ComponentBehavior.Inherit:
                     if (data.Item != null)
                     {
-                        Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.Item)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
+                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Item)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
                     }
                     break;
             }
@@ -69,7 +69,7 @@ namespace OfTamingAndBreeding.Data.Processing
                 case Models.SubData.ComponentBehavior.Inherit:
                     if (data.EggGrow != null)
                     {
-                        Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.EggGrow)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
+                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.EggGrow)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
                     }
                     break;
             }
@@ -89,7 +89,7 @@ namespace OfTamingAndBreeding.Data.Processing
                 case Models.SubData.ComponentBehavior.Inherit:
                     if (data.Floating != null)
                     {
-                        Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.Floating)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
+                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Floating)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
                     }
                     break;
             }
@@ -154,6 +154,7 @@ namespace OfTamingAndBreeding.Data.Processing
                 }
 
                 Plugin.LogDebug($"{model}: Cloning prefab from '{cloneFrom.name}'");
+                ctx.MakeBackup(eggName, cloneFrom);
                 egg = ctx.CreateClonedItemPrefab(eggName, cloneFrom.name);
             }
             else
@@ -261,12 +262,12 @@ namespace OfTamingAndBreeding.Data.Processing
                     eggItemDataShared.m_autoStack = false;
                     eggItemDrop.m_autoPickup = false;
 
-                    string prefabName = egg.gameObject.name;
-                    GameObject eggItemPrefab = ObjectDB.instance.GetItemPrefab(prefabName);
+
+                    GameObject eggItemPrefab = ObjectDB.instance.GetItemPrefab(eggName);
                     if (eggItemPrefab == null)
                     {
                         // not found? maybe its custom item
-                        var customItem = ItemManager.Instance.GetItem(prefabName);
+                        var customItem = ItemManager.Instance.GetItem(eggName);
                         if (customItem != null)
                         {
                             eggItemPrefab = customItem.ItemPrefab;
@@ -286,8 +287,12 @@ namespace OfTamingAndBreeding.Data.Processing
                         var baseIcon = itemDrop.m_itemData.m_shared.m_icons?.FirstOrDefault();
                         if (baseIcon != null)
                         {
+                            Plugin.LogMessage($"{baseIcon.name}");
+                            originalIcons[eggName] = baseIcon;
+
                             var tinted = Helpers.TintHelper.CreateTintedSprite(baseIcon, itemTint);
                             itemDrop.m_itemData.m_shared.m_icons = new[] { tinted };
+                            //itemDrop.m_itemData.m_shared.m_icons = new[] { baseIcon }; // this was just for debugging
                         }
                         else
                         {
@@ -395,7 +400,7 @@ namespace OfTamingAndBreeding.Data.Processing
         // CLEANUP
         //------------------------------------------------
 
-        public override void Cleanup(Base.DataProcessorContext ctx)
+        public override void Finalize(Base.DataProcessorContext ctx)
         {
 
         }
@@ -404,8 +409,21 @@ namespace OfTamingAndBreeding.Data.Processing
         // UNREGISTER PREFAB
         //------------------------------------------------
 
+        private Dictionary<string, Sprite> originalIcons = new Dictionary<string, Sprite>();
+
         public override void RestorePrefab(Base.DataProcessorContext ctx, string eggName, Models.Egg data)
         {
+            if (originalIcons.TryGetValue(eggName, out Sprite originalIcon))
+            {
+                // for some reasons we need to set the original icon back before restoring the prefab
+                // this seems unneccessary but I tell you it is!
+                // otherwiese the icons could look distorted if we rejoin the world
+                Plugin.LogMessage($"{originalIcon.name}");
+                var itemDrop = ctx.GetPrefab(eggName).GetComponent<ItemDrop>();
+                itemDrop.m_itemData.m_shared.m_icons = new[] { originalIcon };
+                // now the next time we (re)enter a world the icons of cloned prefabs still look nice <3
+            }
+
             ctx.Restore(eggName, (GameObject backup, GameObject current) => {
 
                 RestoreHelper.RestoreComponent<ItemDrop>(backup, current);
@@ -416,9 +434,19 @@ namespace OfTamingAndBreeding.Data.Processing
                 RestoreHelper.RestoreChildLights(backup, current);
                 RestoreHelper.RestoreChildParticleRenderers(backup, current);
                 RestoreHelper.RestoreChildLightFlickerBaseColor(backup, current);
-                RestoreHelper.RestoreItemIcons(backup, current);
-
+                
+                // we dont need to use this naymore (or do we? it doesnt seem to be the case)
+                //RestoreHelper.RestoreItemIcons(backup, current);
             });
+        }
+
+        //------------------------------------------------
+        // CLEANUP
+        //------------------------------------------------
+
+        public override void Cleanup(Base.DataProcessorContext ctx)
+        {
+            originalIcons.Clear();
         }
 
     }

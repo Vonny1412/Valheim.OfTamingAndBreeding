@@ -13,9 +13,6 @@ namespace OfTamingAndBreeding.Data.Processing
     {
         public override string DirectoryName => Models.Translation.DirectoryName;
 
-        private int uniqueFileNumber = 0;
-        private CustomLocalization local;
-
         public override string GetDataKey(string filePath)
         {
             var fileName = Path.GetFileNameWithoutExtension(filePath);
@@ -36,7 +33,6 @@ namespace OfTamingAndBreeding.Data.Processing
 
         public override void Prepare(Base.DataProcessorContext ctx)
         {
-            local = LocalizationManager.Instance.GetLocalization();
         }
 
         public override bool ValidateData(Base.DataProcessorContext ctx, string fileName, Models.Translation data)
@@ -56,18 +52,21 @@ namespace OfTamingAndBreeding.Data.Processing
 
         public override void RegisterPrefab(Base.DataProcessorContext ctx, string fileName, Models.Translation data)
         {
+            var local = LocalizationManager.Instance.GetLocalization();
             local.AddTranslation(data.Language, data.Translations);
         }
 
-        public override void Cleanup(Base.DataProcessorContext ctx)
+        public override void Finalize(Base.DataProcessorContext ctx)
         {
-            uniqueFileNumber = 0;
-            local = null;
         }
 
         public override void RestorePrefab(Base.DataProcessorContext ctx, string fileName, Models.Translation data)
         {
             // TODO: do i need to unregister localizations?
+        }
+
+        public override void Cleanup(Base.DataProcessorContext ctx)
+        {
         }
 
     }

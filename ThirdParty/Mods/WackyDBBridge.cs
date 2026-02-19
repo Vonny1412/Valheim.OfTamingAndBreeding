@@ -32,7 +32,7 @@ namespace OfTamingAndBreeding.ThirdParty.Mods
                 IsRegistered = true;
             }
         }
-
+        
         public static void CopyToWacky(object wackyRecipeObj, Data.Models.Recipe src)
         {
             var t = wackyRecipeObj.GetType();

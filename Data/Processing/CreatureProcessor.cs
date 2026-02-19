@@ -1,9 +1,11 @@
-﻿using OfTamingAndBreeding.Helpers;
+﻿using Jotunn.Managers;
+using OfTamingAndBreeding.Helpers;
 using OfTamingAndBreeding.ValheimAPI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using YamlDotNet.Core;
 namespace OfTamingAndBreeding.Data.Processing
 {
     internal class CreatureProcessor : Base.DataProcessor<Models.Creature>
@@ -34,7 +36,7 @@ namespace OfTamingAndBreeding.Data.Processing
             switch (data.Components.Character)
             {
                 case Models.SubData.ComponentBehavior.Remove:
-                    Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.Character)}({nameof(Models.SubData.ComponentBehavior.Remove)}): Component cannot be removed");
+                    Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Character)}({nameof(Models.SubData.ComponentBehavior.Remove)}): Component cannot be removed");
                     break;
                 case Models.SubData.ComponentBehavior.Patch:
                     if (data.Character == null)
@@ -46,7 +48,7 @@ namespace OfTamingAndBreeding.Data.Processing
                 case Models.SubData.ComponentBehavior.Inherit:
                     if (data.Character != null)
                     {
-                        Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.Character)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
+                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Character)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
                     }
                     break;
             }
@@ -54,7 +56,7 @@ namespace OfTamingAndBreeding.Data.Processing
             switch (data.Components.MonsterAI)
             {
                 case Models.SubData.ComponentBehavior.Remove:
-                    Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}({nameof(Models.SubData.ComponentBehavior.Remove)}): Component cannot be removed");
+                    Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}({nameof(Models.SubData.ComponentBehavior.Remove)}): Component cannot be removed");
                     break;
                 case Models.SubData.ComponentBehavior.Patch:
                     if (data.MonsterAI == null)
@@ -66,7 +68,7 @@ namespace OfTamingAndBreeding.Data.Processing
                 case Models.SubData.ComponentBehavior.Inherit:
                     if (data.MonsterAI != null)
                     {
-                        Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
+                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
                     }
                     break;
             }
@@ -83,7 +85,7 @@ namespace OfTamingAndBreeding.Data.Processing
                 case Models.SubData.ComponentBehavior.Inherit:
                     if (data.Tameable != null)
                     {
-                        Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.Tameable)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
+                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Tameable)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
                     }
                     break;
             }
@@ -100,7 +102,7 @@ namespace OfTamingAndBreeding.Data.Processing
                 case Models.SubData.ComponentBehavior.Inherit:
                     if (data.Procreation != null)
                     {
-                        Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.Procreation)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
+                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Procreation)}({nameof(Models.SubData.ComponentBehavior.Inherit)}): Component data will be ignored");
                     }
                     break;
             }
@@ -137,8 +139,13 @@ namespace OfTamingAndBreeding.Data.Processing
                     // if == null then this feature is just disabled
                 }
 
-                if (data.Procreation.Partner == null || data.Procreation.Partner.Length == 0)
+                if (data.Procreation.Partner == null)
                 {
+                    // nothing todo
+                }
+                else if (data.Procreation.Partner.Length == 0)
+                {
+                    Plugin.LogWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Partner)}: Field set to null (list was empty)");
                     data.Procreation.Partner = null; // just clean it up
                 }
                 else
@@ -154,9 +161,23 @@ namespace OfTamingAndBreeding.Data.Processing
                     }
                 }
 
+                if (data.Procreation.PartnerRecheckSeconds != null)
+                {
+                    if (data.Procreation.Partner == null)
+                    {
+                        Plugin.LogWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.PartnerRecheckSeconds)}: Field set to null (Partner list is null or empty)");
+                        data.Procreation.PartnerRecheckSeconds = null;
+                    }
+                    else if (data.Procreation.Partner.Length == 1)
+                    {
+                        Plugin.LogWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.PartnerRecheckSeconds)}: Field set to null (Partner list only contains one prefab)");
+                        data.Procreation.PartnerRecheckSeconds = null;
+                    }
+                }
+
                 if (data.Procreation.Offspring == null || data.Procreation.Offspring.Length == 0)
                 {
-                    Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}: Field is null or empty");
+                    Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}: Field is required but null or empty");
                     error = true;
                 }
                 else
@@ -168,6 +189,12 @@ namespace OfTamingAndBreeding.Data.Processing
                         {
                             Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.Prefab)}: Field is empty");
                             error = true;
+                        }
+                        if (offspringData.LevelUpChance != null && offspringData.MaxLevel == null)
+                        {
+                            Plugin.LogWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.LevelUpChance)}: Fields needs 'MaxLevel' to be set.");
+                            offspringData.LevelUpChance = null;
+                            // no error
                         }
                     }
                 }
@@ -339,7 +366,13 @@ namespace OfTamingAndBreeding.Data.Processing
                     Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting Character values");
                     if (data.Character.Group != null) character.m_group = data.Character.Group;
                     if (data.Character.GroupWhenTamed != null) Runtime.Character.SetGroupWhenTamed(creatureName, data.Character.GroupWhenTamed);
+                    if (data.Character.FactionWhenTamed != null) Runtime.Character.SetFactionWhenTamed(creatureName, (Character.Faction)data.Character.FactionWhenTamed);
+
                     if (data.Character.TamesStickToFaction) Runtime.Character.SetSticksToFaction(creatureName);
+
+
+
+
                     Runtime.Character.SetCanAttackTames(creatureName, data.Character.TamesCanAttackTames);
                     Runtime.Character.SetCanBeAttackedByTames(creatureName, data.Character.TamesCanBeAttackedByTames);
                     Runtime.Character.SetCanAttackPlayer(creatureName, data.Character.TamesCanAttackPlayer);
@@ -524,7 +557,7 @@ namespace OfTamingAndBreeding.Data.Processing
 
                     if (data.Procreation.MaxCreatures != null) procreation.m_maxCreatures = (int)data.Procreation.MaxCreatures;
 
-                    Runtime.Procreation.SetPartnerRecheckTicks(creatureName, data.Procreation.PartnerRecheckSeconds);
+                    if (data.Procreation.PartnerRecheckSeconds != null) Runtime.Procreation.SetPartnerRecheckTicks(creatureName, (float)data.Procreation.PartnerRecheckSeconds);
 
                     // sibling chance will be handled in ProcreationAPI
                     //procreationData.siblingChance = Mathf.Clamp(procreationData.siblingChance, 0, 1);
@@ -571,10 +604,10 @@ namespace OfTamingAndBreeding.Data.Processing
         }
 
         //------------------------------------------------
-        // CLEANUP
+        // FINALIZE
         //------------------------------------------------
 
-        public override void Cleanup(Base.DataProcessorContext ctx)
+        public override void Finalize(Base.DataProcessorContext ctx)
         {
         }
 
@@ -594,6 +627,18 @@ namespace OfTamingAndBreeding.Data.Processing
                 RestoreHelper.RestoreComponent<Procreation>(backup, current);
 
             });
+
+                //var p = PrefabManager.Instance.GetPrefab(creatureName);
+                //if (p)UnityEngine.Object.Destroy(p);
+
+        }
+
+        //------------------------------------------------
+        // CLEANUP
+        //------------------------------------------------
+
+        public override void Cleanup(Base.DataProcessorContext ctx)
+        {
         }
 
     }

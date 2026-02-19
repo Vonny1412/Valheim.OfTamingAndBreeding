@@ -54,24 +54,36 @@ namespace OfTamingAndBreeding.Patches
         {
             BaseAIExtensions.IsEnemyContext.Cleanup();
         }
-        
+
 
         //
         // Character
         //
 
+        [HarmonyPatch(typeof(Character), "Awake")]
+        [HarmonyPostfix]
+        static void Character_Awake_Postfix(Character __instance)
+        {
+            __instance.Awake_PatchPostfix();
+        }
+
+        /*
         [HarmonyPatch(typeof(Character), "GetGroup")]
         [HarmonyPrefix]
         static bool Character_GetGroup_Prefix(Character __instance, ref string __result)
         {
-            var prefabName = Utils.GetPrefabName(__instance.gameObject.name);
-            if (Runtime.Character.TryGetGroupWhenTamed(prefabName, out string group))
+            if (__instance.IsTamed())
             {
-                __result = group;
-                return false;
+                var prefabName = Utils.GetPrefabName(__instance.gameObject.name);
+                if (Runtime.Character.TryGetGroupWhenTamed(prefabName, out string group))
+                {
+                    __result = group;
+                    return false;
+                }
             }
             return true;
         }
+        */
 
         [HarmonyPatch(typeof(Character), "IsTamed", new Type[0])]
         [HarmonyPostfix]
@@ -347,8 +359,15 @@ namespace OfTamingAndBreeding.Patches
             //{
             //return false;
             //}
-
             return __instance.Tame_PatchPrefix();
+        }
+
+        [HarmonyPatch(typeof(Tameable), "Tame")]
+        [HarmonyPostfix]
+        [HarmonyPriority(Priority.Last)]
+        static void Tameable_Tame_Postfix(Tameable __instance)
+        {
+            __instance.Tame_PatchPostfix();
         }
 
         [HarmonyPatch(typeof(Tameable), "TamingUpdate")]

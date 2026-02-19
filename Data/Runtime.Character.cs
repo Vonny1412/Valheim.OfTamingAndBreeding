@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using CharacterFaction = global::Character.Faction;
+
 namespace OfTamingAndBreeding.Data
 {
     internal static partial class Runtime
@@ -12,8 +14,9 @@ namespace OfTamingAndBreeding.Data
         internal static class Character
         {
 
-            private static readonly Dictionary<int, string> groupWhenTamed = new Dictionary<int, string>();
             private static readonly HashSet<int> stickToFaction = new HashSet<int>();
+            private static readonly Dictionary<int, string> groupWhenTamed = new Dictionary<int, string>();
+            private static readonly Dictionary<int, CharacterFaction> factionWhenTamed = new Dictionary<int, CharacterFaction>();
 
             private static readonly Dictionary<int, IsEnemyCondition> canAttackTames = new Dictionary<int, IsEnemyCondition>();
             private static readonly Dictionary<int, IsEnemyCondition> canBeAttackedByTames = new Dictionary<int, IsEnemyCondition>();
@@ -23,14 +26,25 @@ namespace OfTamingAndBreeding.Data
 
             public static void Reset()
             {
-                groupWhenTamed.Clear();
                 stickToFaction.Clear();
+                groupWhenTamed.Clear();
+                factionWhenTamed.Clear();
 
                 canAttackTames.Clear();
                 canBeAttackedByTames.Clear();
                 canAttackPlayer.Clear();
 
                 animationScaling.Clear();
+            }
+
+            public static void SetSticksToFaction(string name)
+            {
+                stickToFaction.Add(name.GetStableHashCode());
+            }
+
+            public static bool GetSticksToFaction(string name)
+            {
+                return stickToFaction.Contains(name.GetStableHashCode());
             }
 
             public static void SetGroupWhenTamed(string name, string group)
@@ -43,14 +57,14 @@ namespace OfTamingAndBreeding.Data
                 return groupWhenTamed.TryGetValue(name.GetStableHashCode(), out group);
             }
 
-            public static void SetSticksToFaction(string name)
+            public static void SetFactionWhenTamed(string name, CharacterFaction faction)
             {
-                stickToFaction.Add(name.GetStableHashCode());
+                factionWhenTamed[name.GetStableHashCode()] = faction;
             }
 
-            public static bool GetSticksToFaction(string name)
+            public static bool TryGetFactionWhenTamed(string name, out CharacterFaction faction)
             {
-                return stickToFaction.Contains(name.GetStableHashCode());
+                return factionWhenTamed.TryGetValue(name.GetStableHashCode(), out faction);
             }
 
             public static void SetCanAttackTames(string name, IsEnemyCondition cond)
