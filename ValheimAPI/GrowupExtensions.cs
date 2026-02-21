@@ -91,15 +91,14 @@ namespace OfTamingAndBreeding.ValheimAPI
             // ready to grow up
             //
 
-            var zdo = m_nview.GetZDO();
-
             Character myCharacter = growup.GetComponent<Character>();
             GameObject spawned = UnityEngine.Object.Instantiate(growup.GetPrefab(), growup.transform.position, growup.transform.rotation);
             Character spawnedCharacter = spawned.GetComponent<Character>();
 
+            var zdo = m_nview.GetZDO();
             var zdo2 = spawned.GetComponent<ZNetView>().GetZDO();
 
-            if ((bool)myCharacter && (bool)spawnedCharacter)
+            if ((bool)spawnedCharacter)
             {
                 Tameable tameable1 = growup.GetComponent<Tameable>();
                 Tameable tameable2 = spawned.GetComponent<Tameable>();
@@ -116,7 +115,7 @@ namespace OfTamingAndBreeding.ValheimAPI
                         ZNetHelper.SetString(zdo2, ZDOVars.s_tamedName, name1);
                         ZNetHelper.SetString(zdo2, ZDOVars.s_tamedNameAuthor, nameAuthor1);
                     }
-
+                
                     //
                     // pass fed time to spawned
                     //

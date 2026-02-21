@@ -1,10 +1,11 @@
 ﻿using Jotunn.Managers;
-using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Helpers;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using UnityEngine;
+
 namespace OfTamingAndBreeding.Data.Processing
 {
 
@@ -124,45 +125,86 @@ namespace OfTamingAndBreeding.Data.Processing
         }
 
         //------------------------------------------------
-        // PREPARE PREFAB
+        // RESERVE PREFAB
         //------------------------------------------------
 
-        public override bool PreparePrefab(Base.DataProcessorContext ctx, string eggName, Models.Egg data)
+        private readonly HashSet<string> reservedPrefabNames = new HashSet<string>();
+
+        public override bool ReservePrefab(Base.DataProcessorContext ctx, string eggName, Models.Egg data)
         {
             var model = $"{nameof(Models.Egg)}.{eggName}";
 
-            //var egg = PrefabManager.Instance.GetPrefab(eggName);
-            var egg = ctx.GetPrefab(eggName);
+            if (reservedPrefabNames.Contains(eggName))
+            {
+                Plugin.LogError($"{model}: Prefab already reserved");
+                return false;
+            }
+            reservedPrefabNames.Add(eggName);
+
+            var egg = ctx.GetReservedPrefab(eggName);
             if (egg == null)
             {
-                if (data.Clone == null)
+
+                var cloned = ctx.GetClonedPrefab(eggName);
+                egg = ctx.GetOriginalPrefab(eggName);
+                if (egg == null || cloned != null) // need clone (not cloned yet / previously cloned, reactivate)
                 {
-                    Plugin.LogError($"{model}.{nameof(data.Clone)} missing");
-                    return false;
+
+                    if (data.Clone == null)
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Clone)} missing");
+                        return false;
+                    }
+
+                    if (data.Clone.From == null)
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)}: Field missing");
+                        return false;
+                    }
+
+                    if (ctx.IsCustomPrefab(data.Clone.From))
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)}: Cannot clone from cloned prefab '{data.Clone.From}'");
+                        return false;
+                    }
+
+                    var cloneFrom = ctx.GetOriginalPrefab(data.Clone.From);
+                    if (!cloneFrom)
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)}: Prefab '{data.Clone.From}' not found");
+                        return false;
+                    }
+
+                    if (cloned == null)
+                    {
+                        // not cloned yet
+
+                        var backup = ctx.MakeCloneBackup(cloneFrom);
+                        egg = ctx.CreateClonedItemPrefab(eggName, cloneFrom.name);
+
+                        ctx.SetCustomPrefabUsingBackup(eggName, backup);
+                    }
+                    else
+                    {
+                        // previously cloned - reactivate
+
+                        Plugin.LogDebug($"{model}.{{nameof(data.Clone): Reactivating cloned prefab for '{cloneFrom.name}'");
+                        var backup = ctx.GetUnusedClonedPrefabBackup(cloneFrom);
+                        RestorePrefabFromBackup(backup, egg);
+
+                        ctx.SetCustomPrefabUsingBackup(eggName, backup);
+                    }
+
+                    ItemManager.Instance.AddItem(new Jotunn.Entities.CustomItem(egg, fixReference: false));
                 }
-                if (data.Clone.From == null)
+                else
                 {
-                    Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)} missing");
-                    return false;
+                    ctx.MakeOriginalBackup(egg);
                 }
 
-                var cloneFrom = ctx.GetPrefab(data.Clone.From);
-                if (!cloneFrom)
-                {
-                    Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)} '{data.Clone.From}' not found");
-                    return false;
-                }
-
-                Plugin.LogDebug($"{model}: Cloning prefab from '{cloneFrom.name}'");
-                ctx.MakeBackup(eggName, cloneFrom);
-                egg = ctx.CreateClonedItemPrefab(eggName, cloneFrom.name);
+                ctx.ReservePrefab(eggName, egg);
             }
-            else
-            {
-                ctx.MakeBackup(eggName, egg);
-            }
 
-            ctx.CachePrefab(eggName, egg);
             return true;
         }
 
@@ -175,7 +217,7 @@ namespace OfTamingAndBreeding.Data.Processing
             var model = $"{nameof(Models.Egg)}.{eggName}";
             var error = false;
 
-            var egg = ctx.GetPrefab(eggName);
+            var egg = ctx.GetOriginalPrefab(eggName);
             if (!egg)
             {
                 Plugin.LogError($"{model}: Prefab not found");
@@ -216,7 +258,7 @@ namespace OfTamingAndBreeding.Data.Processing
         {
             var model = $"{nameof(Models.Egg)}.{eggName}";
 
-            var egg = ctx.GetPrefab(eggName);
+            var egg = ctx.GetOriginalPrefab(eggName);
             ItemManager.Instance.RegisterItemInObjectDB(egg);
 
             //
@@ -257,13 +299,12 @@ namespace OfTamingAndBreeding.Data.Processing
                             //eggItemDataShared.m_itemType = ItemDrop.ItemData.ItemType.Misc;
                         }
                     }
-
+                    
                     // defaults
                     eggItemDataShared.m_autoStack = false;
                     eggItemDrop.m_autoPickup = false;
 
-
-                    GameObject eggItemPrefab = ObjectDB.instance.GetItemPrefab(eggName);
+                    var eggItemPrefab = ObjectDB.instance.GetItemPrefab(eggName);
                     if (eggItemPrefab == null)
                     {
                         // not found? maybe its custom item
@@ -278,7 +319,7 @@ namespace OfTamingAndBreeding.Data.Processing
 
                     // multiply = true by default to preserve texture contrast;
                     // kept as parameter for possible future advanced tint modes
-                    if (TintHelper.TryParseTint(data.Item.ItemTintRgb, out Color itemTint))
+                    if (TintHelper.TryParseTint(data.Item.ItemTintRgb, out UnityEngine.Color itemTint))
                     {
                         TintHelper.TintPrefab(eggItemPrefab, itemTint, true);
 
@@ -287,8 +328,7 @@ namespace OfTamingAndBreeding.Data.Processing
                         var baseIcon = itemDrop.m_itemData.m_shared.m_icons?.FirstOrDefault();
                         if (baseIcon != null)
                         {
-                            Plugin.LogMessage($"{baseIcon.name}");
-                            originalIcons[eggName] = baseIcon;
+                            originalIcons[eggName] = itemDrop.m_itemData.m_shared.m_icons;
 
                             var tinted = Helpers.TintHelper.CreateTintedSprite(baseIcon, itemTint);
                             itemDrop.m_itemData.m_shared.m_icons = new[] { tinted };
@@ -299,17 +339,17 @@ namespace OfTamingAndBreeding.Data.Processing
                             // just ignore
                         }
                     }
-                    if (TintHelper.TryParseTint(data.Item.LightsTintRgb, out Color lightsTint))
+                    if (TintHelper.TryParseTint(data.Item.LightsTintRgb, out UnityEngine.Color lightsTint))
                     {
                         TintHelper.TintLights(eggItemPrefab, lightsTint, true);
                     }
-                    if (TintHelper.TryParseTint(data.Item.ParticlesTintRgb, out Color particlesTint))
+                    if (TintHelper.TryParseTint(data.Item.ParticlesTintRgb, out UnityEngine.Color particlesTint))
                     {
                         TintHelper.TintParticleSystems(eggItemPrefab, particlesTint, true);
                     }
                     if (data.Item.DisableParticles)
                     {
-                        foreach (var r in egg.GetComponentsInChildren<ParticleSystemRenderer>(true))
+                        foreach (var r in egg.GetComponentsInChildren<UnityEngine.ParticleSystemRenderer>(true))
                         {
                             UnityEngine.Object.DestroyImmediate(r);
                             //r.enabled = false;
@@ -318,7 +358,7 @@ namespace OfTamingAndBreeding.Data.Processing
 
                     // scale lights
                     var lightsScale = data.Item.LightsScale;
-                    foreach (var l in eggItemPrefab.GetComponentsInChildren<Light>(true))
+                    foreach (var l in eggItemPrefab.GetComponentsInChildren<UnityEngine.Light>(true))
                     {
                         if (lightsScale <= 0f)
                         {
@@ -394,6 +434,8 @@ namespace OfTamingAndBreeding.Data.Processing
             {
                 ctx.DestroyComponentIfExists<Floating>(eggName, egg);
             }
+
+            Data.Runtime.ItemData.RegisterEggBySharedName(egg);
         }
 
         //------------------------------------------------
@@ -409,35 +451,45 @@ namespace OfTamingAndBreeding.Data.Processing
         // UNREGISTER PREFAB
         //------------------------------------------------
 
-        private Dictionary<string, Sprite> originalIcons = new Dictionary<string, Sprite>();
+        private readonly Dictionary<string, UnityEngine.Sprite[]> originalIcons = new Dictionary<string, UnityEngine.Sprite[]>();
 
-        public override void RestorePrefab(Base.DataProcessorContext ctx, string eggName, Models.Egg data)
+        public override void RestorePrefab(Base.DataProcessorContext ctx, string eggName)
         {
-            if (originalIcons.TryGetValue(eggName, out Sprite originalIcon))
+            if (originalIcons.TryGetValue(eggName, out UnityEngine.Sprite[] icons))
             {
                 // for some reasons we need to set the original icon back before restoring the prefab
                 // this seems unneccessary but I tell you it is!
                 // otherwiese the icons could look distorted if we rejoin the world
-                Plugin.LogMessage($"{originalIcon.name}");
-                var itemDrop = ctx.GetPrefab(eggName).GetComponent<ItemDrop>();
-                itemDrop.m_itemData.m_shared.m_icons = new[] { originalIcon };
+                var itemDrop = ctx.GetOriginalPrefab(eggName).GetComponent<ItemDrop>();
+                foreach (var s in itemDrop.m_itemData.m_shared.m_icons)
+                {
+                    if (s.texture) UnityEngine.Object.DestroyImmediate(s.texture);
+                    UnityEngine.Object.DestroyImmediate(s);
+                }
+                itemDrop.m_itemData.m_shared.m_icons = icons;
                 // now the next time we (re)enter a world the icons of cloned prefabs still look nice <3
             }
 
-            ctx.Restore(eggName, (GameObject backup, GameObject current) => {
+            ctx.Restore(eggName, RestorePrefabFromBackup);
+            if (ctx.IsCustomPrefab(eggName))
+            {
+                ItemManager.Instance.RemoveItem(eggName);
+            }
+        }
 
-                RestoreHelper.RestoreComponent<ItemDrop>(backup, current);
-                RestoreHelper.RestoreComponent<EggGrow>(backup, current);
-                RestoreHelper.RestoreComponent<ParticleSystemRenderer>(backup, current);
+        private void RestorePrefabFromBackup(UnityEngine.GameObject backup, UnityEngine.GameObject current)
+        {
+            RestoreHelper.RestoreComponent<Floating>(backup, current);
+            RestoreHelper.RestoreComponent<ItemDrop>(backup, current);
+            RestoreHelper.RestoreComponent<EggGrow>(backup, current);
+            RestoreHelper.RestoreComponent<UnityEngine.ParticleSystemRenderer>(backup, current);
+            RestoreHelper.RestoreChildRenderers(backup, current);
+            RestoreHelper.RestoreChildLights(backup, current);
+            RestoreHelper.RestoreChildParticleRenderers(backup, current);
+            RestoreHelper.RestoreChildLightFlickerBaseColor(backup, current);
 
-                RestoreHelper.RestoreChildRenderers(backup, current);
-                RestoreHelper.RestoreChildLights(backup, current);
-                RestoreHelper.RestoreChildParticleRenderers(backup, current);
-                RestoreHelper.RestoreChildLightFlickerBaseColor(backup, current);
-                
-                // we dont need to use this naymore (or do we? it doesnt seem to be the case)
-                //RestoreHelper.RestoreItemIcons(backup, current);
-            });
+            // we dont need to use this anymore (or do we? it doesnt seem to be the case)
+            //RestoreHelper.RestoreItemIcons(backup, current);
         }
 
         //------------------------------------------------

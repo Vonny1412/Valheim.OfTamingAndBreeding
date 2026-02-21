@@ -1,10 +1,11 @@
 ﻿
+using OfTamingAndBreeding.Data.Processing;
+using OfTamingAndBreeding.Data.Processing.Base;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using OfTamingAndBreeding.Data.Processing;
-using OfTamingAndBreeding.Data.Processing.Base;
+using UnityEngine;
 
 namespace OfTamingAndBreeding.Data
 {
@@ -135,7 +136,7 @@ namespace OfTamingAndBreeding.Data
 
         public static void ValidateDataAndRegisterPrefabs()
         {
-            ctx = new DataProcessorContext(ZNetScene.instance);
+            ctx = new DataProcessorContext();
 
             foreach (var p in dataProcessors)
             {
@@ -149,7 +150,7 @@ namespace OfTamingAndBreeding.Data
 
             foreach (var p in dataProcessors)
             {
-                p.PrepareAllPrefabs(ctx);
+                p.ReserveAllPrefabs(ctx);
             }
 
             var allOkay = true;
@@ -190,22 +191,21 @@ namespace OfTamingAndBreeding.Data
             if (ctx != null)
             {
                 // ctx==null would mean no data loaded/processed yet
-                foreach (var p in dataProcessors)
+                for (var i= dataProcessors.Length - 1; i >= 0; i--)
                 {
-                    p.RestoreAllPrefabs(ctx);
+                    dataProcessors[i].RestoreAllPrefabs(ctx);
                 }
-                foreach (var p in dataProcessors)
+                for (var i = dataProcessors.Length - 1; i >= 0; i--)
                 {
-                    p.Cleanup(ctx);
+                    dataProcessors[i].Cleanup(ctx);
                 }
                 ctx = null;
             }
 
             Runtime.Reset();
-            foreach (var p in dataProcessors)
+            for (var i = dataProcessors.Length - 1; i >= 0; i--)
             {
-                // resets stored data in DataBase<T>
-                p.ResetData();
+                dataProcessors[i].ResetData();
             }
 
             if (dataLoaded)

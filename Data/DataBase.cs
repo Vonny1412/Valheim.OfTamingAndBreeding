@@ -50,14 +50,10 @@ namespace OfTamingAndBreeding.Data
             return prefabsList.ContainsKey(prefabName);
         }
 
-        public static T Get(string prefabName)
+        public static bool TryGet(string prefabName, out T data)
         {
             prefabName = Utils.GetPrefabName(prefabName);
-            if (prefabsList.TryGetValue(prefabName, out T data))
-            {
-                return data;
-            }
-            return null;
+            return prefabsList.TryGetValue(prefabName, out data);
         }
 
         public static Dictionary<string, T> GetAll()

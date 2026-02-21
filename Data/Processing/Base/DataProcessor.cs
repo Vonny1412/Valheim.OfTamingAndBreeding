@@ -96,18 +96,18 @@ namespace OfTamingAndBreeding.Data.Processing.Base
             }
         }
 
-        public abstract bool PreparePrefab(DataProcessorContext ctx, string prefabName, T data);
-        public void PrepareAllPrefabs(DataProcessorContext ctx)
+        public abstract bool ReservePrefab(DataProcessorContext ctx, string prefabName, T data);
+        public void ReserveAllPrefabs(DataProcessorContext ctx)
         {
-            Plugin.LogDebug($"{nameof(PrepareAllPrefabs)}: {typeof(T).Name}");
+            Plugin.LogDebug($"{nameof(ReserveAllPrefabs)}: {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
             var keys = all.Keys.ToList();
             foreach (var prefabName in keys)
             {
                 if (!all.TryGetValue(prefabName, out var data))
                     continue;
-                Plugin.LogDebug($"{nameof(PreparePrefab)}: {typeof(T).Name} '{prefabName}'");
-                if (!PreparePrefab(ctx, prefabName, data))
+                Plugin.LogDebug($"{nameof(ReservePrefab)}: {typeof(T).Name} '{prefabName}'");
+                if (!ReservePrefab(ctx, prefabName, data))
                 {
                     DataBase<T>.Drop(prefabName);
                 }
@@ -148,7 +148,7 @@ namespace OfTamingAndBreeding.Data.Processing.Base
 
         public abstract void Finalize(DataProcessorContext ctx);
 
-        public abstract void RestorePrefab(DataProcessorContext ctx, string prefabName, T data);
+        public abstract void RestorePrefab(DataProcessorContext ctx, string prefabName);
         public void RestoreAllPrefabs(DataProcessorContext ctx)
         {
             Plugin.LogDebug($"{nameof(RestoreAllPrefabs)} {typeof(T).Name}");
@@ -159,7 +159,7 @@ namespace OfTamingAndBreeding.Data.Processing.Base
                 if (!all.TryGetValue(prefabName, out var data))
                     continue;
                 Plugin.LogDebug($"{nameof(RestorePrefab)} {typeof(T).Name} '{prefabName}'");
-                RestorePrefab(ctx, prefabName, data);
+                RestorePrefab(ctx, prefabName);
             }
         }
 

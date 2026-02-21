@@ -1,13 +1,11 @@
 ﻿using Jotunn.Managers;
 using OfTamingAndBreeding.Helpers;
-using OfTamingAndBreeding.ValheimAPI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Emit;
 using System.Text;
 using UnityEngine;
-using YamlDotNet.Core;
+
 namespace OfTamingAndBreeding.Data.Processing
 {
     internal class OffspringProcessor : Base.DataProcessor<Models.Offspring>
@@ -112,121 +110,165 @@ namespace OfTamingAndBreeding.Data.Processing
         }
 
         //------------------------------------------------
-        // PREPARE PREFAB
+        // RESERVE PREFAB
         //------------------------------------------------
 
-        public override bool PreparePrefab(Base.DataProcessorContext ctx, string offspringName, Models.Offspring data)
+        private readonly HashSet<string> reservedPrefabNames = new HashSet<string>();
+
+        public override bool ReservePrefab(Base.DataProcessorContext ctx, string offspringName, Models.Offspring data)
         {
             var model = $"{nameof(Models.Offspring)}.{offspringName}";
 
-            var offspring = ctx.GetPrefab(offspringName);
+            if (reservedPrefabNames.Contains(offspringName))
+            {
+                Plugin.LogError($"{model}: Prefab already reserved");
+                return false;
+            }
+            reservedPrefabNames.Add(offspringName);
+
+            var offspring = ctx.GetReservedPrefab(offspringName);
             if (offspring == null)
             {
-
-                if (data.Clone == null)
-                {
-                    Plugin.LogError($"{model}.{nameof(data.Clone)} missing");
-                    return false;
-                }
-
-                if (data.Clone.From == null)
-                {
-                    Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)} missing");
-                    return false;
-                }
-
-                var cloneFrom = ctx.GetPrefab(data.Clone.From);
-                if (!cloneFrom)
-                {
-                    Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)} '{data.Clone.From}' not found");
-                    return false;
-                }
-
-                Plugin.LogDebug($"{model}: Cloning prefab from '{cloneFrom.name}'");
-                ctx.MakeBackup(offspringName, cloneFrom);
-                offspring = ctx.CreateClonedPrefab(offspringName, cloneFrom.name);
-
+                var cloned = ctx.GetClonedPrefab(offspringName);
+                offspring = ctx.GetOriginalPrefab(offspringName);
+                if (offspring == null || cloned != null) // need clone (not cloned yet / previously cloned, reactivate)
                 {
 
-                    //
-                    // EFFECTS
-                    //
-
-                    var removedEffects = new List<string>();
-
-                    var debugEffects = data.Clone.DebugEffects == true && ZNet.instance.IsServer();
-                    if (debugEffects) Plugin.LogMessage($"DebugEffects {offspringName}");
-
-                    var removeSet = data.Clone.RemoveEffects != null
-                        ? new HashSet<string>(data.Clone.RemoveEffects, StringComparer.OrdinalIgnoreCase)
-                        : null;
-
-                    var footStep = offspring.GetComponent<FootStep>();
-                    if ((bool)footStep)
+                    if (data.Clone == null)
                     {
-                        var m_effects = new List<FootStep.StepEffect>();
+                        Plugin.LogError($"{model}.{nameof(data.Clone)}: Field missing");
+                        return false;
+                    }
 
-                        foreach (var effect in footStep.m_effects)
+                    if (data.Clone.From == null)
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)}: Field missing");
+                        return false;
+                    }
+
+                    if (ctx.IsCustomPrefab(data.Clone.From))
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)}: Cannot clone from cloned prefab '{data.Clone.From}'");
+                        return false;
+                    }
+
+                    var cloneFrom = ctx.GetOriginalPrefab(data.Clone.From);
+                    if (!cloneFrom)
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)}: Prefab '{data.Clone.From}' not found");
+                        return false;
+                    }
+
+                    if (cloned == null)
+                    {
+                        // not cloned yet
+
+                        var backup = ctx.MakeCloneBackup(cloneFrom);
+                        offspring = ctx.CreateClonedPrefab(offspringName, cloneFrom.name);
+
+                        ctx.SetCustomPrefabUsingBackup(offspringName, backup);
+                    }
+                    else
+                    {
+                        // previously cloned - reactivate
+
+                        Plugin.LogWarning($"{model}.{nameof(data.Clone)}: Reactivating cloned prefab for '{cloneFrom.name}'");
+                        var backup = ctx.GetUnusedClonedPrefabBackup(cloneFrom);
+                        RestorePrefabFromBackup(backup, offspring);
+
+                        ctx.SetCustomPrefabUsingBackup(offspringName, backup);
+                    }
+
+
+                    PrepareClone(offspring, data);
+                }
+                else
+                {
+                    ctx.MakeOriginalBackup(offspring);
+                }
+
+                ctx.ReservePrefab(offspringName, offspring);
+            }
+
+            return true;
+        }
+
+        private void PrepareClone(UnityEngine.GameObject offspring, Models.Offspring data)
+        {
+
+            {
+
+                //
+                // EFFECTS
+                //
+
+                var removedEffects = new List<string>();
+
+                var debugEffects = data.Clone.DebugEffects == true && ZNet.instance.IsServer();
+                if (debugEffects) Plugin.LogMessage($"DebugEffects: {offspring.name}");
+
+                var removeSet = data.Clone.RemoveEffects != null
+                    ? new HashSet<string>(data.Clone.RemoveEffects, StringComparer.OrdinalIgnoreCase)
+                    : null;
+
+                var footStep = offspring.GetComponent<FootStep>();
+                if ((bool)footStep)
+                {
+                    var m_effects = new List<FootStep.StepEffect>();
+
+                    foreach (var effect in footStep.m_effects)
+                    {
+                        if (debugEffects)
+                            Plugin.LogMessage($"  {nameof(FootStep)} ({effect.m_motionType})");
+
+                        if (removeSet == null)
                         {
                             if (debugEffects)
-                                Plugin.LogMessage($"  {nameof(FootStep)} ({effect.m_motionType})");
-                            
-                            if (removeSet == null)
                             {
-                                if (debugEffects)
-                                {
-                                    foreach (var p in effect.m_effectPrefabs)
-                                        Plugin.LogMessage($"  - {p.name}");
-                                }
-                                continue;
+                                foreach (var p in effect.m_effectPrefabs)
+                                    Plugin.LogMessage($"  - {p.name}");
                             }
-
-                            var kept = new List<GameObject>(effect.m_effectPrefabs.Length);
-
-                            foreach (var p in effect.m_effectPrefabs)
-                            {
-                                var remove = removeSet.Contains(p.name);
-
-                                if (remove)
-                                    removedEffects.Add(p.name);
-
-                                if (debugEffects)
-                                    Plugin.LogMessage(remove
-                                        ? $"  - {p.name} (removed)"
-                                        : $"  - {p.name}");
-
-                                if (!remove)
-                                    kept.Add(p);
-                            }
-
-                            if (kept.Count != 0)
-                            {
-                                m_effects.Add(new FootStep.StepEffect
-                                {
-                                    m_name = effect.m_name,
-                                    m_motionType = effect.m_motionType,
-                                    m_material = effect.m_material,
-                                    m_effectPrefabs = kept.ToArray()
-                                });
-                            }
+                            continue;
                         }
 
-                        if (data.Clone.RemoveEffects != null)
+                        var kept = new List<UnityEngine.GameObject>(effect.m_effectPrefabs.Length);
+
+                        foreach (var p in effect.m_effectPrefabs)
                         {
-                            footStep.m_effects = m_effects;
+                            var remove = removeSet.Contains(p.name);
+
+                            if (remove)
+                                removedEffects.Add(p.name);
+
+                            if (debugEffects)
+                                Plugin.LogMessage(remove
+                                    ? $"  - {p.name} (removed)"
+                                    : $"  - {p.name}");
+
+                            if (!remove)
+                                kept.Add(p);
+                        }
+
+                        if (kept.Count != 0)
+                        {
+                            m_effects.Add(new FootStep.StepEffect
+                            {
+                                m_name = effect.m_name,
+                                m_motionType = effect.m_motionType,
+                                m_material = effect.m_material,
+                                m_effectPrefabs = kept.ToArray()
+                            });
                         }
                     }
 
+                    if (data.Clone.RemoveEffects != null)
+                    {
+                        footStep.m_effects = m_effects;
+                    }
                 }
 
             }
-            else
-            {
-                ctx.MakeBackup(offspringName, offspring);
-            }
 
-            ctx.CachePrefab(offspringName, offspring);
-            return true;
         }
 
         //------------------------------------------------
@@ -238,7 +280,7 @@ namespace OfTamingAndBreeding.Data.Processing
             var model = $"{nameof(Models.Offspring)}.{offspringName}";
             var error = false;
 
-            var offspring = ctx.GetPrefab(offspringName);
+            var offspring = ctx.GetReservedPrefab(offspringName);
             if (!offspring)
             {
                 Plugin.LogError($"{model}: Prefab not found");
@@ -277,8 +319,11 @@ namespace OfTamingAndBreeding.Data.Processing
         {
             var model = $"{nameof(Models.Offspring)}.{offspringName}";
 
-            var offspring = ctx.GetPrefab(offspringName);
-            PrefabManager.Instance.RegisterToZNetScene(offspring);
+            var offspring = ctx.GetReservedPrefab(offspringName);
+            if (ctx.IsCustomPrefab(offspringName))
+            {
+                PrefabManager.Instance.RegisterToZNetScene(offspring);
+            }
 
             ctx.DestroyComponentIfExists<ItemDrop>(offspringName, offspring); // offsprings are not items (wait, why am i even doing this? dont remember.. just keep it)
             ctx.DestroyComponentIfExists<Procreation>(offspringName, offspring); // offsprings do not procreate
@@ -326,7 +371,7 @@ namespace OfTamingAndBreeding.Data.Processing
                         //offspringCharacter.m_swimTurnSpeed /= setScale;
                         //offspringCharacter.m_flyTurnSpeed /= setScale;
 
-                        var col = offspring.GetComponent<CapsuleCollider>();
+                        var col = offspring.GetComponent<UnityEngine.CapsuleCollider>();
                         if (col)
                         {
                             col.height *= setScale;
@@ -350,11 +395,11 @@ namespace OfTamingAndBreeding.Data.Processing
                             {
                                 // not cloned yet, try to get it from any cache
                                 var clonedName = $"{prefix}{originalPrefabName}";
-                                var cloned = ctx.GetPrefab(clonedName);
+                                var cloned = ctx.GetClonedPrefab(clonedName);
                                 if (!cloned)
                                 {
                                     // no cache? create clone
-                                    cloned = PrefabManager.Instance.CreateClonedPrefab(clonedName, eff.m_prefab);
+                                    cloned = ctx.CreateClonedPrefab(clonedName, eff.m_prefab);
                                 }
                                 eff.m_prefab = cloned;
                             }
@@ -389,7 +434,7 @@ namespace OfTamingAndBreeding.Data.Processing
                     {
                         offspringGrowup.m_altGrownPrefabs.Add(new Growup.GrownEntry
                         {
-                            m_prefab = ctx.GetPrefab(grownData.Prefab),
+                            m_prefab = ctx.GetOriginalPrefab(grownData.Prefab),
                             m_weight = grownData.Weight,
                         });
                     }
@@ -417,24 +462,21 @@ namespace OfTamingAndBreeding.Data.Processing
         // UNREGISTER PREFAB
         //------------------------------------------------
 
-        public override void RestorePrefab(Base.DataProcessorContext ctx, string offspringName, Models.Offspring data)
+        public override void RestorePrefab(Base.DataProcessorContext ctx, string offspringName)
         {
-            ctx.Restore(offspringName, (GameObject backup, GameObject current) => {
+            ctx.Restore(offspringName, RestorePrefabFromBackup);
+        }
 
-                RestoreHelper.RestoreComponent<Character>(backup, current);
-                RestoreHelper.RestoreComponent<AnimalAI>(backup, current);
-                RestoreHelper.RestoreComponent<ItemDrop>(backup, current);
-                RestoreHelper.RestoreComponent<Procreation>(backup, current);
-                RestoreHelper.RestoreComponent<Tameable>(backup, current);
-                RestoreHelper.RestoreComponent<CharacterDrop>(backup, current);
-                RestoreHelper.RestoreComponent<MonsterAI>(backup, current);
-                RestoreHelper.RestoreComponent<Growup>(backup, current);
-
-            });
-
-                //var p = PrefabManager.Instance.GetPrefab(offspringName);
-                //if (p) UnityEngine.Object.Destroy(p);
-
+        private void RestorePrefabFromBackup(UnityEngine.GameObject backup, UnityEngine.GameObject current)
+        {
+            RestoreHelper.RestoreComponent<Character>(backup, current);
+            RestoreHelper.RestoreComponent<AnimalAI>(backup, current);
+            RestoreHelper.RestoreComponent<ItemDrop>(backup, current);
+            RestoreHelper.RestoreComponent<Procreation>(backup, current);
+            RestoreHelper.RestoreComponent<Tameable>(backup, current);
+            RestoreHelper.RestoreComponent<CharacterDrop>(backup, current);
+            RestoreHelper.RestoreComponent<MonsterAI>(backup, current);
+            RestoreHelper.RestoreComponent<Growup>(backup, current);
         }
 
         //------------------------------------------------

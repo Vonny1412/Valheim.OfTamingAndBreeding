@@ -10,75 +10,218 @@ namespace OfTamingAndBreeding.Data.Processing.Base
 {
     public class DataProcessorContext
     {
-        public readonly ZNetScene zns;
-        public DataProcessorContext(ZNetScene zns)
-        {
-            this.zns = zns;
-            cache = new Dictionary<string, UnityEngine.GameObject>();
-        }
 
-        private readonly Dictionary<string, UnityEngine.GameObject> cache;
+        //
+        // STATIC
+        // 
+        // stored prefabs across servers/worlds
+        //
 
-        public bool PrefabExists(string prefabName, bool requireRegistered = false)
+        // each original prefab gets its own backup prefab
+        private static readonly Dictionary<string, GameObject> originalPrefabBackups = new Dictionary<string, GameObject>();
+
+        // custom prefabs created by OTAB to be used ingame
+        private static readonly Dictionary<string, GameObject> customPrefabs = new Dictionary<string, GameObject>();
+
+        // list of custom prefab backups
+        // each custom prefab gets its own backup
+        // eg:
+        // GrowingAbomination1 -> "OTAB_BACKUP_(Abomination)_CUSTOM_0"
+        // GrowingAbomination2 -> "OTAB_BACKUP_(Abomination)_CUSTOM_1"
+        // GrowingAbomination3 -> "OTAB_BACKUP_(Abomination)_CUSTOM_2"
+        private static readonly Dictionary<string, List<GameObject>> customPrefabBackups = new Dictionary<string, List<GameObject>>();
+
+        //
+        // INSTANCE
+        //
+        // stored prefabs/settings for current server/world
+        //
+
+        // custom prefabs might get used multiple times, like an offspring that also is used for creature data
+        // and eggs need to be pre-created so they can be used in creatures offpsirngs list
+        // for that we are reserving them: prefabs are cloned if needed and can be used in onfollowing process-steps
+        private readonly Dictionary<string, GameObject> reservedPrefabsByName;
+
+        // pool of unused entries from customPrefabBackups
+        // it this pool runs out of backups additional backups will be created and directly added to customPrefabBackups for next server/world joining
+        private readonly Dictionary<string, List<GameObject>> unusedCustomPrefabBackups = new Dictionary<string, List<GameObject>>();
+
+        // register of current used backups of custom prefabs created by otab
+        private readonly Dictionary<string, GameObject> currentCustomPrefabBackup = new Dictionary<string, GameObject>();
+
+        // register of added components by OTAB
+        private readonly Dictionary<string, HashSet<System.Type>> addedComponents = new Dictionary<string, HashSet<System.Type>>();
+
+        //
+        // deep example:
+        //
+        // Server "ChickenServer" uses custom egg prefab "OTAB_TestEgg", cloned from ChickenEgg
+        // Server "DragonServer" uses custom egg prefab "OTAB_TestEgg", cloned from DragonEgg
+        //
+        // problem: both are using same prefab name "OTAB_TestEgg"
+        // what happens:
+        //
+        // - user joins "ChickenServer"
+        // - custom prefab "OTAB_TestEgg" created, cloned from ChickenEgg
+        // - new backup: "OTAB_BACKUP_(ChickenEgg)_CUSTOM_0"
+        // - currentCustomPrefabBackup["OTAB_TestEgg"] = "OTAB_BACKUP_(ChickenEgg)_CUSTOM_0"
+        // - backup added to static customPrefabBackups
+        // - custom prefab "OTAB_TestEgg" gets setup (components add/remove/edit)
+        //
+        // - user leaves server
+        // - "OTAB_TestEgg" gets restored by "OTAB_BACKUP_(ChickenEgg)_CUSTOM_0"
+        //
+        // - user enters "DragonServer"
+        // - prefab "OTAB_TestEgg" already exists
+        // - reactivate "OTAB_TestEgg" by "DragonEgg":
+        //   - "OTAB_BACKUP_(DragonEgg)_CUSTOM_0" does not exist in static customPrefabBackups
+        //   - new backup: "OTAB_BACKUP_(DragonEgg)_CUSTOM_0"
+        //   - backup added to static customPrefabBackups
+        //   - "OTAB_TestEgg" gets restored by "OTAB_BACKUP_(DragonEgg)_CUSTOM_0"
+        //   - currentCustomPrefabBackup["OTAB_TestEgg"] = "OTAB_BACKUP_(DragonEgg)_CUSTOM_0"
+        // - custom prefab "OTAB_TestEgg" gets setup (components add/remove/edit)
+        //
+        // - user leaves server
+        // - "OTAB_TestEgg" gets restored by "OTAB_BACKUP_(DragonEgg)_CUSTOM_0"
+        //
+        // - and goes back to "ChickenServer"
+        // - prefab "OTAB_TestEgg" already exists
+        // - reactivate "OTAB_TestEgg" by "ChickenEgg":
+        //   - "OTAB_BACKUP_(ChickenEgg)_CUSTOM_0" exists in static customPrefabBackups
+        //   - "OTAB_TestEgg" gets restored by "OTAB_BACKUP_(ChickenEgg)_CUSTOM_0"
+        //   - currentCustomPrefabBackup["OTAB_TestEgg"] = "OTAB_BACKUP_(ChickenEgg)_CUSTOM_0"
+        // - custom prefab "OTAB_TestEgg" gets setup (components add/remove/edit)
+        //
+
+        public DataProcessorContext()
         {
-            if (!requireRegistered && cache.TryGetValue(prefabName, out _))
+            reservedPrefabsByName = new Dictionary<string, GameObject>();
+            foreach(var kv in customPrefabBackups)
             {
-                return true;
+                unusedCustomPrefabBackups[kv.Key] = kv.Value.ToList();
             }
-            if ((bool)GetPrefab(prefabName))
-            {
-                return true;
-            }
-            return false;
         }
 
-        public void CachePrefab(string prefabName, UnityEngine.GameObject prefab)
+        public GameObject GetReservedPrefab(string prefabName)
         {
-            cache[prefabName] = prefab; // overwrite ok
-        }
-
-        public UnityEngine.GameObject GetPrefab(string prefabName)
-        {
-            if (cache.TryGetValue(prefabName, out UnityEngine.GameObject prefab))
+            if (reservedPrefabsByName.TryGetValue(prefabName, out var prefab))
             {
                 return prefab;
             }
-            prefab = PrefabManager.Instance.GetPrefab(prefabName);
-            if (prefab) return prefab;
-            return zns.GetPrefab(prefabName);
+            return null;
+        }
+
+        public void ReservePrefab(string prefabName, GameObject prefab)
+        {
+            reservedPrefabsByName.Add(prefabName, prefab);
+        }
+
+        public GameObject GetOriginalPrefab(string prefabName)
+        {
+            return PrefabManager.Instance.GetPrefab(prefabName);
+        }
+
+        public bool IsCustomPrefab(string prefabName)
+        {
+            return customPrefabs.ContainsKey(prefabName);
+        }
+
+        public GameObject GetClonedPrefab(string prefabName)
+        {
+            if (customPrefabs.TryGetValue(prefabName, out var prefab))
+            {
+                return prefab;
+            }
+            return null;
+        }
+
+        public GameObject MakeOriginalBackup(GameObject originalPrefab)
+        {
+            var prefabName = originalPrefab.name;
+            if (originalPrefabBackups.TryGetValue(prefabName, out var backup1))
+            {
+                return backup1;
+            }
+
+            var backupName = $"OTAB_BACKUP_({prefabName})_ORIGINAL";
+            Plugin.LogDebug($"MakeOriginalBackup() for {prefabName} ({backupName})");
+
+            var backup = PrefabManager.Instance.CreateClonedPrefab(backupName, originalPrefab);
+            originalPrefabBackups.Add(prefabName, backup);
+            return backup;
+        }
+
+        public GameObject MakeCloneBackup(GameObject templatePrefab)
+        {
+            var prefabName = templatePrefab.name;
+
+            if (!customPrefabBackups.TryGetValue(prefabName, out var backList))
+            {
+                customPrefabBackups[prefabName] = backList = new List<GameObject>();
+            }
+
+            var backupName = $"OTAB_BACKUP_({prefabName})_CUSTOM_{backList.Count}";
+            Plugin.LogDebug($"MakeCloneBackup() for {prefabName} ({backupName})");
+
+            var backup = PrefabManager.Instance.GetPrefab(backupName);
+            if (backup == null)
+            {
+                backup = PrefabManager.Instance.CreateClonedPrefab(backupName, templatePrefab);
+            }
+            backList.Add(backup);
+            return backup;
         }
 
         public GameObject CreateClonedPrefab(string newName, string cloneFromName)
         {
-            clonedNames.Add(newName);
-            return PrefabManager.Instance.CreateClonedPrefab(newName, cloneFromName);
+            var clone = PrefabManager.Instance.CreateClonedPrefab(newName, cloneFromName);
+            customPrefabs.Add(newName, clone);
+            return clone;
+        }
+
+        public GameObject CreateClonedPrefab(string newName, GameObject cloneFrom)
+        {
+            var clone = PrefabManager.Instance.CreateClonedPrefab(newName, cloneFrom);
+            customPrefabs.Add(newName, clone);
+            return clone;
         }
 
         public GameObject CreateClonedItemPrefab(string newName, string cloneFromName)
         {
-            clonedNames.Add(newName);
             CustomItem eggCustom = new CustomItem(newName, cloneFromName);
-            ItemManager.Instance.AddItem(eggCustom);
-            return eggCustom.ItemPrefab;
+            var clone = eggCustom.ItemPrefab;
+            customPrefabs.Add(newName, clone);
+            return clone;
         }
 
-        private static readonly Dictionary<string, GameObject> backups = new Dictionary<string, GameObject>();
-        private static readonly HashSet<string> clonedNames = new HashSet<string>();
-
-        private readonly Dictionary<string, HashSet<Type>> addedComponents = new Dictionary<string, HashSet<Type>>();
-
-        public void MakeBackup(string prefabName, GameObject original)
+        public void SetCustomPrefabUsingBackup(string customPrefabName, GameObject templatePrefab)
         {
-            if (backups.ContainsKey(prefabName)) return;
-            if (clonedNames.Contains(prefabName)) return; // is clone. this happens when re-joining a world because the clone is cached inside jotunn
-            var backupName = $"OTAB_BACKUP_{prefabName}";
-            var backup = PrefabManager.Instance.GetPrefab(backupName);
-            if (!backup)
+            currentCustomPrefabBackup.Add(customPrefabName, templatePrefab);
+        }
+
+        public GameObject GetUnusedClonedPrefabBackup(GameObject prefab)
+        {
+            var prefabName = prefab.name;
+            if (unusedCustomPrefabBackups.TryGetValue(prefabName, out var queue) && queue.Count != 0)
             {
-                // CreateClonedPrefab is calling Instantiate!
-                backup = PrefabManager.Instance.CreateClonedPrefab(backupName, original);
+                var bak = queue[0];
+                queue.RemoveAt(0);
+                return bak;
             }
-            backups[prefabName] = backup;
+            return MakeCloneBackup(prefab);
+        }
+
+        public bool PrefabExists(string prefabName, bool requireRegistered = false)
+        {
+            if (!requireRegistered && reservedPrefabsByName.TryGetValue(prefabName, out _))
+            {
+                return true;
+            }
+            if ((bool)GetOriginalPrefab(prefabName))
+            {
+                return true;
+            }
+            return false;
         }
 
         public T GetOrAddComponent<T>(string prefabName, GameObject go) where T : Component
@@ -88,7 +231,7 @@ namespace OfTamingAndBreeding.Data.Processing.Base
 
             c = go.AddComponent<T>();
             if (!addedComponents.TryGetValue(prefabName, out var set))
-                addedComponents[prefabName] = set = new HashSet<Type>();
+                addedComponents[prefabName] = set = new HashSet<System.Type>();
             set.Add(typeof(T));
 
             return c;
@@ -103,33 +246,13 @@ namespace OfTamingAndBreeding.Data.Processing.Base
 
         public void Restore(string prefabName, Action<GameObject, GameObject> cb)
         {
-            if (!backups.TryGetValue(prefabName, out var backup) || !backup)
-            {
-                // we got no backup data for that prefab
-                // hmmm better just return
-                // only restore prefabs with existing backups
-                return;
-            }
-
-            var current = GetPrefab(prefabName);
+            var current = GetReservedPrefab(prefabName);
             if (current == null)
             {
                 // for safety: prefab is completly unknown. should not happen but whatever
                 return;
             }
 
-            var isClone = clonedNames.Contains(prefabName);
-            if (isClone)
-            {
-                // dont return! we also added backups of the original prefabs for the cloned ones
-                // so just restore the cloned prefabs back to the original states!
-                // thats important!
-                // because if an other server is using same custom prefab names
-                // when joining the other server we can build the custom prefabs from fresh and clean states
-                // why? because removing and destroying cloned prefabs is a pain in the a**
-                //return;
-            }
-            
             // remove tracked added components first
             if (addedComponents.TryGetValue(prefabName, out var added))
             {
@@ -141,13 +264,33 @@ namespace OfTamingAndBreeding.Data.Processing.Base
                 addedComponents.Remove(prefabName);
             }
 
-            // call callback
-            cb(backup, current);
+            if (IsCustomPrefab(prefabName))
+            {
+                if (currentCustomPrefabBackup.TryGetValue(prefabName, out var backup))
+                {
+                    Plugin.LogDebug($"Restoring cloned prefab {prefabName} ({backup.name})");
+                    cb(backup, current);
+                }
+                else
+                {
+                    // we got no backup data for that prefab
+                    // only restore prefabs with existing backups
+                }
+            }
+            else
+            {
+                if (originalPrefabBackups.TryGetValue(prefabName, out var backup))
+                {
+                    Plugin.LogDebug($"Restoring original prefab {prefabName} ({backup.name})");
+                    cb(backup, current);
+                }
+                else
+                {
+                    // we got no backup data for that prefab
+                    // only restore prefabs with existing backups
+                }
+            }
 
-            // NEVER clear the backups or remove prefabs from it! we keep using it as our own backup cache!
-            //backups.Remove(prefabName);
-
-            return;
         }
 
     }

@@ -175,13 +175,9 @@ namespace OfTamingAndBreeding.ValheimAPI
             {
                 // determine behavior
 
-                var data = Egg.Get(prefabName);
-                if (data == null)
+                if (Egg.TryGet(prefabName, out var data))
                 {
-                    z_EggBehavior = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_EggBehavior, Plugin.ZDOVars.EggBehavior.Vanilla);
-                }
-                else
-                {
+
                     var foundRandom = Data.Models.SubData.RandomData.FindRandom<Egg.EggGrowGrownData>(data.EggGrow.Grown, out Egg.EggGrowGrownData grownEntry);
                     if (!foundRandom) // should not happen but whatever
                     {
@@ -195,6 +191,11 @@ namespace OfTamingAndBreeding.ValheimAPI
 
                     z_EggBehavior = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_EggBehavior, Plugin.ZDOVars.EggBehavior.OTAB, z_EggBehavior);
                 }
+                else
+                {
+                    z_EggBehavior = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_EggBehavior, Plugin.ZDOVars.EggBehavior.Vanilla);
+                }
+
             }
 
             var timeSeconds = (float)ZNet.instance.GetTimeSeconds();
@@ -266,8 +267,6 @@ namespace OfTamingAndBreeding.ValheimAPI
                 {
                     spawnedCharacter.SetTamed(eggGrow.m_tamed);
                     spawnedCharacter.SetLevel(m_item.m_itemData.m_quality);
-
-                    var spawnedTameable = spawnedCharacter.GetComponent<Tameable>();
                 }
                 else
                 {

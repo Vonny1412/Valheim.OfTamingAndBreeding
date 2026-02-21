@@ -1,11 +1,10 @@
-﻿using Jotunn.Managers;
-using OfTamingAndBreeding.Helpers;
+﻿using OfTamingAndBreeding.Helpers;
 using OfTamingAndBreeding.ValheimAPI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using YamlDotNet.Core;
+
 namespace OfTamingAndBreeding.Data.Processing
 {
     internal class CreatureProcessor : Base.DataProcessor<Models.Creature>
@@ -205,23 +204,39 @@ namespace OfTamingAndBreeding.Data.Processing
         }
 
         //------------------------------------------------
-        // PREPARE PREFAB
+        // RESERVE PREFAB
         //------------------------------------------------
 
-        public override bool PreparePrefab(Base.DataProcessorContext ctx, string creatureName, Models.Creature data)
+        private readonly HashSet<string> reservedPrefabNames = new HashSet<string>();
+
+        public override bool ReservePrefab(Base.DataProcessorContext ctx, string creatureName, Models.Creature data)
         {
             var model = $"{nameof(Models.Creature)}.{creatureName}";
 
-            var creature = ctx.GetPrefab(creatureName);
-            if (!creature)
+            if (reservedPrefabNames.Contains(creatureName))
             {
-                Plugin.LogError($"{model}: Prefab not found");
+                Plugin.LogError($"{model}: Prefab already reserved");
                 return false;
             }
+            reservedPrefabNames.Add(creatureName);
 
-            ctx.MakeBackup(creatureName, creature);
+            var creature = ctx.GetReservedPrefab(creatureName);
+            if (creature == null)
+            {
+                creature = ctx.GetOriginalPrefab(creatureName);
+                if (creature == null)
+                {
+                    Plugin.LogError($"{model}: Prefab not found");
+                    return false;
+                }
+                else
+                {
+                    ctx.MakeOriginalBackup(creature);
+                }
 
-            ctx.CachePrefab(creatureName, creature);
+                ctx.ReservePrefab(creatureName, creature);
+            }
+            
             return true;
         }
 
@@ -234,7 +249,7 @@ namespace OfTamingAndBreeding.Data.Processing
             var model = $"{nameof(Models.Creature)}.{creatureName}";
             var error = false;
 
-            var creature = ctx.GetPrefab(creatureName);
+            var creature = ctx.GetReservedPrefab(creatureName);
             if (!creature)
             {
                 Plugin.LogError($"{model}: Prefab not found");
@@ -354,7 +369,7 @@ namespace OfTamingAndBreeding.Data.Processing
         public override void RegisterPrefab(Base.DataProcessorContext ctx, string creatureName, Models.Creature data)
         {
             var model = $"{nameof(Models.Creature)}.{creatureName}";
-            var creature = ctx.GetPrefab(creatureName);
+            var creature = ctx.GetReservedPrefab(creatureName);
 
             var idleSoundPrefab = Helpers.EffectsHelper.FindEffectPrefab<BaseAI>(creatureName, "m_idleSound", 0);
 
@@ -368,14 +383,11 @@ namespace OfTamingAndBreeding.Data.Processing
                     if (data.Character.GroupWhenTamed != null) Runtime.Character.SetGroupWhenTamed(creatureName, data.Character.GroupWhenTamed);
                     if (data.Character.FactionWhenTamed != null) Runtime.Character.SetFactionWhenTamed(creatureName, (Character.Faction)data.Character.FactionWhenTamed);
 
-                    if (data.Character.TamesStickToFaction) Runtime.Character.SetSticksToFaction(creatureName);
+                    if (data.Character.TamedStickToFaction) Runtime.Character.SetSticksToFaction(creatureName);
 
-
-
-
-                    Runtime.Character.SetCanAttackTames(creatureName, data.Character.TamesCanAttackTames);
-                    Runtime.Character.SetCanBeAttackedByTames(creatureName, data.Character.TamesCanBeAttackedByTames);
-                    Runtime.Character.SetCanAttackPlayer(creatureName, data.Character.TamesCanAttackPlayer);
+                    Runtime.Character.SetCanAttackTamed(creatureName, data.Character.TamedCanAttackTamed);
+                    Runtime.Character.SetCanBeAttackedByTamed(creatureName, data.Character.TamedCanBeAttackedByTamed);
+                    Runtime.Character.SetCanAttackPlayer(creatureName, data.Character.TamedCanAttackPlayer);
                 }
             }
             else if (data.Components.Character == Models.SubData.ComponentBehavior.Remove)
@@ -444,6 +456,11 @@ namespace OfTamingAndBreeding.Data.Processing
                                 }
                             }
                         }
+                    }
+
+                    if ((bool)data.MonsterAI.TamedStayNearSpawn == true)
+                    {
+                        Data.Runtime.MonsterAI.SetTamedStayNearSpawn(creatureName);
                     }
                 }
             }
@@ -521,7 +538,7 @@ namespace OfTamingAndBreeding.Data.Processing
                     {
                         tameable.m_petEffect = new EffectList
                         {
-                            m_effectPrefabs = Helpers.EffectsHelper.GetEffectList(new GameObject[] {
+                            m_effectPrefabs = Helpers.EffectsHelper.GetEffectList(new UnityEngine.GameObject[] {
                                 EffectsHelper.GetVisualOnlyEffect("fx_boar_pet", "otab_vfx_pet"),
                                 idleSoundPrefab,
                             })
@@ -575,7 +592,7 @@ namespace OfTamingAndBreeding.Data.Processing
                         };
 
                         procreation.m_loveEffects.m_effectPrefabs[1].m_scale = true;
-                        procreation.m_loveEffects.m_effectPrefabs[1].m_prefab.transform.localScale = Vector3.one * 0.5f;
+                        procreation.m_loveEffects.m_effectPrefabs[1].m_prefab.transform.localScale = UnityEngine.Vector3.one * 0.5f;
 
                     }
                     if (procreation.m_birthEffects.m_effectPrefabs.Length == 0)
@@ -615,22 +632,19 @@ namespace OfTamingAndBreeding.Data.Processing
         // UNREGISTER PREFAB
         //------------------------------------------------
 
-        public override void RestorePrefab(Base.DataProcessorContext ctx, string creatureName, Models.Creature data)
+        public override void RestorePrefab(Base.DataProcessorContext ctx, string creatureName)
         {
-            ctx.Restore(creatureName, (GameObject backup, GameObject current) => {
+            ctx.Restore(creatureName, RestorePrefabFromBackup);
+        }
 
-                RestoreHelper.RestoreComponent<Character>(backup, current);
-                RestoreHelper.RestoreComponent<MonsterAI>(backup, current);
-                RestoreHelper.RestoreComponent<AnimalAI>(backup, current);
-                RestoreHelper.RestoreComponent<Tameable>(backup, current);
-                RestoreHelper.RestoreComponent<Pet>(backup, current);
-                RestoreHelper.RestoreComponent<Procreation>(backup, current);
-
-            });
-
-                //var p = PrefabManager.Instance.GetPrefab(creatureName);
-                //if (p)UnityEngine.Object.Destroy(p);
-
+        private void RestorePrefabFromBackup(UnityEngine.GameObject backup, UnityEngine.GameObject current)
+        {
+            RestoreHelper.RestoreComponent<Character>(backup, current);
+            RestoreHelper.RestoreComponent<MonsterAI>(backup, current);
+            RestoreHelper.RestoreComponent<AnimalAI>(backup, current);
+            RestoreHelper.RestoreComponent<Tameable>(backup, current);
+            RestoreHelper.RestoreComponent<Pet>(backup, current);
+            RestoreHelper.RestoreComponent<Procreation>(backup, current);
         }
 
         //------------------------------------------------

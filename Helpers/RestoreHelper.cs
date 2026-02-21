@@ -173,7 +173,7 @@ namespace OfTamingAndBreeding.Helpers
             }
         }
 
-        
+        // unused
         public static void RestoreItemIcons(GameObject backup, GameObject current)
         {
 
@@ -214,6 +214,7 @@ namespace OfTamingAndBreeding.Helpers
             }
         }
 
+        // unused
         private static void CleanupIconSprites(Sprite[] currentIcons, Sprite[] backupIcons)
         {
             if (currentIcons == null || currentIcons.Length == 0)
@@ -238,7 +239,7 @@ namespace OfTamingAndBreeding.Helpers
                 try
                 {
                     var tex = s.texture;
-                    if (tex && tex.name != null && tex.name.ToLower().Contains("_tinted"))
+                    if (tex && tex.name != null && tex.name.ToLower().EndsWith("_tinted"))
                     {
                         UnityEngine.Object.DestroyImmediate(tex);
                     }
@@ -250,7 +251,7 @@ namespace OfTamingAndBreeding.Helpers
             }
         }
         
-
+        
 
 
 

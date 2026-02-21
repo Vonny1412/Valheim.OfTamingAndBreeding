@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
 using OfTamingAndBreeding.ThirdParty.Mods;
+
 namespace OfTamingAndBreeding.Data.Processing
 {
     internal class RecipeProcessor : Base.DataProcessor<Models.Recipe>
@@ -29,7 +29,7 @@ namespace OfTamingAndBreeding.Data.Processing
             return WackyDBBridge.IsRegistered;
         }
 
-        public override bool PreparePrefab(Base.DataProcessorContext ctx, string recipeName, Models.Recipe data)
+        public override bool ReservePrefab(Base.DataProcessorContext ctx, string recipeName, Models.Recipe data)
         {
             return true; // i dont care
         }
@@ -56,7 +56,7 @@ namespace OfTamingAndBreeding.Data.Processing
             originalRecipes.Clear();
         }
 
-        public override void RestorePrefab(Base.DataProcessorContext ctx, string recipeName, Models.Recipe data)
+        public override void RestorePrefab(Base.DataProcessorContext ctx, string recipeName)
         {
             foreach (var recipe in otabRecipes)
             {

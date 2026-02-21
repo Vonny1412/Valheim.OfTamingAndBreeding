@@ -40,10 +40,10 @@ namespace OfTamingAndBreeding.Data.Models
             public string Group { get; set; } = null;
             public string GroupWhenTamed { get; set; } = null;
             public Character.Faction? FactionWhenTamed { get; set; } = null;
-            public bool TamesStickToFaction { get; set; } = false; // OTAB feature
-            public IsEnemyCondition TamesCanAttackTames { get; set; } = IsEnemyCondition.Never; // OTAB feature
-            public IsEnemyCondition TamesCanBeAttackedByTames { get; set; } = IsEnemyCondition.Never; // OTAB feature
-            public IsEnemyCondition TamesCanAttackPlayer { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public bool TamedStickToFaction { get; set; } = false; // OTAB feature
+            public IsEnemyCondition TamedCanAttackTamed { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public IsEnemyCondition TamedCanBeAttackedByTamed { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public IsEnemyCondition TamedCanAttackPlayer { get; set; } = IsEnemyCondition.Never; // OTAB feature
         }
 
         [Serializable]
@@ -62,6 +62,7 @@ namespace OfTamingAndBreeding.Data.Models
             public float? ConsumeRange { get; set; } = null;
             public float? ConsumeSearchRange { get; set; } = null;
             public float? ConsumeSearchInterval { get; set; } = null;
+            public bool? TamedStayNearSpawn { get; set; } = null; // otab feature
         }
 
         [Serializable]

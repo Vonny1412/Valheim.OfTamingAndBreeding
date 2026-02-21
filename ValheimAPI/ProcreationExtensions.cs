@@ -164,13 +164,12 @@ namespace OfTamingAndBreeding.ValheimAPI
                 procreation.SetMyPrefab(m_myPrefab);
             }
 
-            var data = Data.Models.Creature.Get(m_myPrefab.name);
-            var dataProcreation = data?.Procreation;
-            if (dataProcreation == null)
+            if (!Data.Models.Creature.TryGet(m_myPrefab.name, out var data) || data.Procreation == null)
             {
-                // we do not handle this creature! let valheim do the job
+                // no data/procreation, let valheim do the job
                 return true;
             }
+            var dataProcreation = data.Procreation;
 
             // check if procreation is disabled while swimming
             if (dataProcreation.ProcreateWhileSwimming == false && m_character && m_character.IsSwimming())

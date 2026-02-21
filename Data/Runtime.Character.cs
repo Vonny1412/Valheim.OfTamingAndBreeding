@@ -18,8 +18,8 @@ namespace OfTamingAndBreeding.Data
             private static readonly Dictionary<int, string> groupWhenTamed = new Dictionary<int, string>();
             private static readonly Dictionary<int, CharacterFaction> factionWhenTamed = new Dictionary<int, CharacterFaction>();
 
-            private static readonly Dictionary<int, IsEnemyCondition> canAttackTames = new Dictionary<int, IsEnemyCondition>();
-            private static readonly Dictionary<int, IsEnemyCondition> canBeAttackedByTames = new Dictionary<int, IsEnemyCondition>();
+            private static readonly Dictionary<int, IsEnemyCondition> canAttackTamed = new Dictionary<int, IsEnemyCondition>();
+            private static readonly Dictionary<int, IsEnemyCondition> canBeAttackedByTamed = new Dictionary<int, IsEnemyCondition>();
             private static readonly Dictionary<int, IsEnemyCondition> canAttackPlayer = new Dictionary<int, IsEnemyCondition>();
 
             private static readonly Dictionary<int, float> animationScaling = new Dictionary<int, float>();
@@ -30,8 +30,8 @@ namespace OfTamingAndBreeding.Data
                 groupWhenTamed.Clear();
                 factionWhenTamed.Clear();
 
-                canAttackTames.Clear();
-                canBeAttackedByTames.Clear();
+                canAttackTamed.Clear();
+                canBeAttackedByTamed.Clear();
                 canAttackPlayer.Clear();
 
                 animationScaling.Clear();
@@ -67,30 +67,30 @@ namespace OfTamingAndBreeding.Data
                 return factionWhenTamed.TryGetValue(name.GetStableHashCode(), out faction);
             }
 
-            public static void SetCanAttackTames(string name, IsEnemyCondition cond)
+            public static void SetCanAttackTamed(string name, IsEnemyCondition cond)
             {
                 if (cond == IsEnemyCondition.Never) return;
-                canAttackTames[name.GetStableHashCode()] = cond;
+                canAttackTamed[name.GetStableHashCode()] = cond;
             }
 
-            public static IsEnemyCondition GetCanAttackTames(string name)
+            public static IsEnemyCondition GetCanAttackTamed(string name)
             {
-                if (canAttackTames.TryGetValue(name.GetStableHashCode(), out IsEnemyCondition c))
+                if (canAttackTamed.TryGetValue(name.GetStableHashCode(), out IsEnemyCondition c))
                 {
                     return c;
                 }
                 return IsEnemyCondition.Never;
             }
 
-            public static void SetCanBeAttackedByTames(string name, IsEnemyCondition cond)
+            public static void SetCanBeAttackedByTamed(string name, IsEnemyCondition cond)
             {
                 if (cond == IsEnemyCondition.Never) return;
-                canBeAttackedByTames[name.GetStableHashCode()] = cond;
+                canBeAttackedByTamed[name.GetStableHashCode()] = cond;
             }
 
-            public static IsEnemyCondition GetCanBeAttackedByTames(string name)
+            public static IsEnemyCondition GetCanBeAttackedByTamed(string name)
             {
-                if (canBeAttackedByTames.TryGetValue(name.GetStableHashCode(), out IsEnemyCondition c))
+                if (canBeAttackedByTamed.TryGetValue(name.GetStableHashCode(), out IsEnemyCondition c))
                 {
                     return c;
                 }

@@ -33,8 +33,28 @@ namespace OfTamingAndBreeding.Patches
         // BaseAI
         //
 
+        [HarmonyPatch(typeof(BaseAI), "Awake")]
+        [HarmonyPostfix]
+        static void BaseAI_Awake_Postfix(BaseAI __instance)
+        {
+            var nview = __instance.GetZNetView();
+            if (nview.IsOwner())
+            {
+                // todo: add config for this or an ingame debug command
+                /*
+                var tameable = __instance.GetComponent<Tameable>();
+                if (tameable && tameable.m_commandable == false && __instance.GetPatrolPoint(out var point))
+                {
+                    __instance.ResetPatrolPoint();
+                    Plugin.LogWarning($"ResetPatrolPoint: {__instance.name}");
+                }
+                */
+            }
+        }
+
         [HarmonyPatch(typeof(BaseAI), "IdleMovement")]
         [HarmonyPrefix]
+        [HarmonyPriority(Priority.Last)]
         static bool BaseAI_IdleMovement_Prefix(BaseAI __instance, float dt)
         {
             return __instance.IdleMovement_PatchPrefix(dt);
@@ -184,6 +204,69 @@ namespace OfTamingAndBreeding.Patches
             ItemDropExtensions.DropContext.Clear();
         }
 
+        //
+        // Inventory
+        //
+
+        [HarmonyPatch(typeof(Inventory), "AddItem", new[] { typeof(ItemDrop.ItemData), typeof(int), typeof(int), typeof(int) })]
+        [HarmonyPrefix]
+        [HarmonyPriority(Priority.Last)]
+        static bool Inventory_AddItem_Prefix(Inventory __instance, ItemDrop.ItemData item, int amount, int x, int y, ref bool __result)
+        {
+            ItemDrop.ItemData itemAt = __instance.GetItemAt(x, y);
+            if (itemAt == null) return true;
+            if (item?.m_shared == null || itemAt?.m_shared == null) return true;
+            if (item.m_shared.m_name != itemAt.m_shared.m_name) return true;
+            if (Data.Runtime.ItemData.IsRegisteredEggBySharedName(item.m_shared.m_name) == false)
+            {
+                return true;
+            }
+            // OTAB eggs store level in ItemData.quality.
+            // Valheim ignores quality when MaxQuality == 1 -> mixed stacks can "promote".
+            // Prevent stacking OTAB eggs with different quality.
+            if (itemAt.m_quality != item.m_quality)
+            {
+                __result = false;
+                return false;
+            }
+            return true;
+        }
+
+        //
+        // InventoryGrid
+        //
+
+        [HarmonyPatch(typeof(InventoryGrid), "DropItem", new[] { typeof(Inventory), typeof(ItemDrop.ItemData), typeof(int), typeof(Vector2i) })]
+        [HarmonyPrefix]
+        [HarmonyPriority(Priority.Last)]
+        static bool InventoryGrid_DropItem_Prefix(InventoryGrid __instance, Inventory fromInventory, ItemDrop.ItemData item, int amount, Vector2i pos, ref bool __result)
+        {
+            var m_inventory = __instance.GetInventory();
+            ItemDrop.ItemData itemAt = m_inventory.GetItemAt(pos.x, pos.y);
+            if (itemAt == null) return true;
+            if (item?.m_shared == null || itemAt?.m_shared == null) return true;
+            if (item.m_shared.m_name != itemAt.m_shared.m_name) return true;
+
+            if (Data.Runtime.ItemData.IsRegisteredEggBySharedName(item.m_shared.m_name))
+            {
+                // both are otab-eggs
+                if (itemAt.m_quality != item.m_quality)
+                {
+                    // default behavior
+                    // we are just removing the limitation of quality>1
+                    // maybe a user has forgotten to change egg max quality
+                    // this is just a saveguard to prevent stacking two eggs of different quality
+                    fromInventory.RemoveItem(item);
+                    fromInventory.MoveItemToThis(m_inventory, itemAt, itemAt.m_stack, item.m_gridPos.x, item.m_gridPos.y);
+                    m_inventory.MoveItemToThis(fromInventory, item, amount, pos.x, pos.y);
+
+                    __result = true;
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         //
         // ItemDrop

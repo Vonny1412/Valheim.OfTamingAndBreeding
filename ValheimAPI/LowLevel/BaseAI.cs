@@ -14,6 +14,10 @@ namespace OfTamingAndBreeding.ValheimAPI.LowLevel
         {
         }
 
+        public static readonly Core.Invokers.FieldMutateInvoker<UnityEngine_Vector3_Alias> __IAPI_m_spawnPoint_Invoker = new Core.Invokers.FieldMutateInvoker<UnityEngine_Vector3_Alias>(typeof(BaseAI_Alias), "m_spawnPoint");
+
+        public static readonly Core.Invokers.VoidMethodInvoker __IAPI_RandomMovement_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(BaseAI_Alias), "RandomMovement", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(float), false), new Core.Signatures.NonGenericParamSig(typeof(UnityEngine_Vector3_Alias), false), new Core.Signatures.NonGenericParamSig(typeof(bool), false) });
+
         public static readonly Core.Invokers.FieldMutateInvoker<System.Collections.Generic.List<BaseAI_Alias>> __IAPI_m_instances_Invoker = new Core.Invokers.FieldMutateInvoker<System.Collections.Generic.List<BaseAI_Alias>>(typeof(BaseAI_Alias), "m_instances");
 
         public static readonly Core.Invokers.FieldMutateInvoker<bool> __IAPI_m_alerted_Invoker = new Core.Invokers.FieldMutateInvoker<bool>(typeof(BaseAI_Alias), "m_alerted");
@@ -53,6 +57,7 @@ namespace OfTamingAndBreeding.ValheimAPI.LowLevel
         public static readonly Core.Invokers.VoidMethodInvoker __IAPI_UpdateRegeneration_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(BaseAI_Alias), "UpdateRegeneration", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(float), false) });
 
         public static readonly Core.Invokers.VoidMethodInvoker __IAPI_UpdateTakeoffLanding_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(BaseAI_Alias), "UpdateTakeoffLanding", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(float), false) });
+
 
     }
 }

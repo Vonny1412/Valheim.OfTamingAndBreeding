@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using Jotunn.Entities;
 using Jotunn.Managers;
 
 namespace OfTamingAndBreeding.Data.Processing
@@ -40,7 +38,7 @@ namespace OfTamingAndBreeding.Data.Processing
             return true; // i dont care
         }
 
-        public override bool PreparePrefab(Base.DataProcessorContext ctx, string fileName, Models.Translation data)
+        public override bool ReservePrefab(Base.DataProcessorContext ctx, string fileName, Models.Translation data)
         {
             return true; // i dont care
         }
@@ -60,7 +58,7 @@ namespace OfTamingAndBreeding.Data.Processing
         {
         }
 
-        public override void RestorePrefab(Base.DataProcessorContext ctx, string fileName, Models.Translation data)
+        public override void RestorePrefab(Base.DataProcessorContext ctx, string fileName)
         {
             // TODO: do i need to unregister localizations?
         }

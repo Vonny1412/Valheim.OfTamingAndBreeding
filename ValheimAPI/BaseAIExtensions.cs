@@ -1,4 +1,5 @@
-﻿using OfTamingAndBreeding.Data;
+﻿using HarmonyLib;
+using OfTamingAndBreeding.Data;
 using OfTamingAndBreeding.Data.Models.SubData;
 using System;
 using System.Collections.Generic;
@@ -114,6 +115,24 @@ namespace OfTamingAndBreeding.ValheimAPI
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<BaseAI> GetInstances()
             => LowLevel.BaseAI.__IAPI_m_instances_Invoker.Get(null);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool GetPatrolPoint(this BaseAI that, out Vector3 point)
+        {
+            object[] args = new object[] { default(Vector3) };
+            var result = LowLevel.BaseAI.__IAPI_GetPatrolPoint_Invoker1.Invoke(that, args);
+            point = (Vector3)args[0];
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void RandomMovement(this BaseAI that, float dt, Vector3 centerPoint, bool snapToGround = false)
+            => LowLevel.BaseAI.__IAPI_RandomMovement_Invoker1.Invoke(that, dt, centerPoint, snapToGround);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 GetSpawnPoint(this BaseAI that)
+            => LowLevel.BaseAI.__IAPI_m_spawnPoint_Invoker.Get(that);
+
 
         private static readonly int m_itemMask = LayerMask.GetMask("item");
         private static readonly Collider[] colliders = new Collider[256]; // 256 should be enough for now
@@ -310,7 +329,7 @@ namespace OfTamingAndBreeding.ValheimAPI
             {
                 var canAttack = false;
 
-                switch (Runtime.Character.GetCanAttackTames(name1))
+                switch (Runtime.Character.GetCanAttackTamed(name1))
                 {
                     case IsEnemyCondition.Never:
                         canAttack = false;
@@ -325,7 +344,7 @@ namespace OfTamingAndBreeding.ValheimAPI
 
                 if (!canAttack)
                 {
-                    switch (Runtime.Character.GetCanBeAttackedByTames(name2))
+                    switch (Runtime.Character.GetCanBeAttackedByTamed(name2))
                     {
                         case IsEnemyCondition.Never:
                             canAttack = false;
@@ -378,10 +397,43 @@ namespace OfTamingAndBreeding.ValheimAPI
         {
             if (baseAI is AnimalAI animalAI)
             {
-                return animalAI.IdleMovement_PatchPrefix(dt);
+                // used for animals that can consume food or follow the player
+                // that stuff comes always before idle movement
+                if (animalAI.IdleMovement_PatchPrefix(dt) == false)
+                {
+                    return false;
+                }
             }
-            return true;
+
+            /*
+    protected void IdleMovement(float dt)
+    {
+        Vector3 centerPoint = ((m_character.IsTamed() || HuntPlayer()) ? base.transform.position : m_spawnPoint);
+        if (GetPatrolPoint(out var point))
+        {
+            centerPoint = point;
         }
+
+        RandomMovement(dt, centerPoint, snapToGround: true);
+    }
+            */
+
+            var character = baseAI.GetComponent<Character>();
+            if (!character || !character.IsTamed() || baseAI.HuntPlayer()) return true;
+
+            var prefabName = Utils.GetPrefabName(baseAI.gameObject.name);
+            if (!Data.Runtime.MonsterAI.GetTamedStayNearSpawn(prefabName)) return true;
+
+            if (baseAI.GetPatrolPoint(out _)) return true;
+
+            baseAI.RandomMovement(dt, baseAI.GetSpawnPoint(), snapToGround: true);
+            return false;
+
+        }
+
+
+
+
 
     }
 }

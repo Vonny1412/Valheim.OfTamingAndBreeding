@@ -23,7 +23,7 @@ namespace OfTamingAndBreeding.Data.Processing.Base
 
         void Prepare(DataProcessorContext ctx);
         void ValidateAllData(DataProcessorContext ctx);
-        void PrepareAllPrefabs(DataProcessorContext ctx);
+        void ReserveAllPrefabs(DataProcessorContext ctx);
         bool ValidateAllPrefabs(DataProcessorContext ctx);
         void RegisterAllPrefabs(DataProcessorContext ctx);
         void Finalize(DataProcessorContext ctx);

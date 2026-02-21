@@ -2,130 +2,117 @@
 
 # Of Taming and Breeding (OTAB)
 
-**Of Taming and Breeding (OTAB)** is a mod for **Valheim** that provides a  
-**data-driven framework for taming, breeding and creature behavior**.
+Ever wanted a tamed Abomination walking by your side?  
+Pettable offspring?  
+Lore-compliant lifecycles?  
+Or something strange — like a Surtling offspring that might grow up into… coal?  
 
-It is designed for players and server administrators who want  
-**more control**, **clearer rules**, and **stable long-term worlds**  
-without relying on heavy automation or global overhauls.
+OTAB makes such systems possible.  
 
-OTAB does not try to “make everything tameable”.  
-Instead, it focuses on **intentional, configurable creature behavior**.
-
----
-
-> **Configuration & Documentation**
->  
-> OTAB exposes many systems through configuration and data files.  
-> Detailed setup instructions, examples and design explanations are available in the Wiki:
->  
-> 👉 https://github.com/Vonny1412/Valheim.OfTamingAndBreeding/wiki
+It can be used as plug-and-play.  
+It also allows structured customization through server-defined data.  
+The more you change — the more responsibility you take.  
 
 ---
 
-## What OTAB Is (and Is Not)
+## Extending Creature Behavior
 
-**OTAB aims to be:**
+Creatures in Valheim are more than combat targets.  
+They have territory, instincts and limits.  
 
-* Server-authoritative where possible
-* Explicit in configuration and data
-* Focused on controlled taming and reproduction
-* Suitable for curated or long-running worlds
+**Of Taming and Breeding** introduces structured control over:  
 
-**OTAB is not:**
+* how creatures are tamed  
+* how reproduction works  
+* how offspring grow  
+* which limitations apply  
+* which environmental conditions matter  
 
-* A “make everything tameable” mod
-* A riding or mount system
-* A one-click gameplay shortcut
+OTAB ships with preconfigured YAML data balanced for vanilla Valheim.  
+You can install it and play immediately.  
 
----
+But you can also modify those rules — carefully and intentionally.  
 
-## Ecosystem & Mod Compatibility
-
-OTAB is designed to integrate cleanly into existing Valheim mod setups and provides  
-**optional integration points** for selected mods, without bundling or replacing them:
-
-* **Wacky’s Database** – late recipe registration and data-driven items
-* **Creature Level & Loot Control (CLLC)** – lifecycle-aware trait and effect inheritance
-* **Seasons** – adaptive handling of modified durations
-
-Each integration is optional and explicitly scoped.
-
-A full compatibility overview (compatible / incompatible / untested mods)  
-is maintained in the Wiki.
+Not every creature is meant to be tameable.  
+Not every reproduction path is meant to be trivial.  
+OTAB allows you to define those boundaries explicitly.  
 
 ---
 
-## A Note on AllTameable & Similar Mods
+## Philosophy
 
-OTAB is **not intended as a replacement** for mods like  
-**AllTameable** or **AllTameableTamingOverhaul**.
+OTAB builds on Valheim’s existing systems.  
 
-Those mods primarily focus on:
+It does not attempt to rewrite creature identity or progression.  
+Instead, it exposes structured control over mechanics that are otherwise implicit.  
 
-* Making many or all creatures tameable
-* Minimal setup
-* Immediate gameplay changes
+The aim is:  
 
-OTAB takes a different approach.
+* to respect vanilla balance and creature roles  
+* to make taming and breeding intentional  
+* to avoid accidental or automated ecosystems  
+* to support long-term world stability  
 
-Rather than enabling taming globally, OTAB is built around:
+Creatures should still feel like Valheim creatures —  
+not generic pets or production units.  
 
-* Respecting vanilla creature identity and progression
-* Explicit acquisition paths (items, eggs, offspring, growth)
-* Partner- and offspring-dependent reproduction logic
+If you want global “everything is tameable” gameplay shortcuts,  
+other mods may be a better fit.  
 
-If you want a fast “everything is tameable” experience,  
-AllTameable-style mods are a great fit.
-
-If you want **designed ecosystems with controlled reproduction paths**,  
-OTAB is built for that.
+If you want structured ecosystems with defined rules and limits,  
+OTAB is designed for that.  
 
 ---
 
-## Core Systems (Overview)
+## Configuration & Documentation
 
-OTAB replaces parts of Valheim’s implicit behavior with **configurable systems**, such as:
+All server-side creature definitions and behavior rules are structured in YAML files.  
 
-* Intentional taming rules (e.g. avoiding accidental tames)
-* Component-based creature behavior control
-* Extended procreation logic with partner binding
-* Optional self-breeding and sibling chains
-* Offspring growth and lifecycle handling
-* Egg-based reproduction with environmental requirements
+Behavior is data-driven and explicit.  
 
-The exact behavior depends on configuration and data definitions.
+Detailed setup instructions, examples and design explanations are available in the Wiki:  
+
+👉 https://github.com/Vonny1412/Valheim.OfTamingAndBreeding/wiki
 
 ---
 
-## Server vs Client Model
+## Technical Model
 
-**Server:**
+OTAB follows a server-authoritative design.  
+
+**Server:**  
 
 * Loads YAML data
 * Owns gameplay logic
-* Synchronizes world data to clients
+* Synchronizes runtime data to clients
 
-**Client:**
+**Client:**  
 
 * Receives synchronized data
 * Displays related information
-* Does not decide gameplay logic
+* Does not control gameplay decisions
 
-This separation helps reduce desyncs and keeps multiplayer behavior consistent.
+Clients do not require local YAML files when connecting to a modded server.    
+All necessary data is provided by the server.  
+
+If a client connects to a server without OTAB installed,    
+the mod switches into a passive compatibility mode    
+and does not interfere with vanilla gameplay.  
+
+This separation reduces desync risk and keeps multiplayer behavior consistent.  
 
 ---
 
-## Designed with Long-Term Worlds in Mind
+## Designed for Long-Term Worlds
 
-OTAB is especially suited for:
+OTAB is especially suited for:  
 
 * Long-running servers
-* Roleplay or lore-driven worlds
-* Modpacks with curated progression
-* Admin-managed ecosystems
+* Lore-driven environments
+* Carefully curated modpacks
+* Admin-managed creature ecosystems
 
-It provides **tools**, not shortcuts.
+It provides structure and control — not shortcuts.  
 
 ---
 

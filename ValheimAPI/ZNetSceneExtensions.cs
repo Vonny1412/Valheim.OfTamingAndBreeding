@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 
 namespace OfTamingAndBreeding.ValheimAPI
 {
@@ -24,6 +25,10 @@ namespace OfTamingAndBreeding.ValheimAPI
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void CreateObjects(this ZNetScene zns, List<ZDO> currentNearObjects, List<ZDO> currentDistantObjects)
             => LowLevel.ZNetScene.__IAPI_CreateObjects_Invoker1.Invoke(zns, currentNearObjects, currentDistantObjects);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Dictionary<int, GameObject> GetNamedPrefabs(this ZNetScene zns)
+            => LowLevel.ZNetScene.__IAPI_m_namedPrefabs_Invoker.Get(zns);
 
         public static bool CreateObjects_PatchPrefix(this ZNetScene zns, List<ZDO> currentNearObjects, List<ZDO> currentDistantObjects)
         {
