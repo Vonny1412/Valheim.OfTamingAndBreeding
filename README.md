@@ -5,114 +5,104 @@
 Ever wanted a tamed Abomination walking by your side?  
 Pettable offspring?  
 Lore-compliant lifecycles?  
-Or something strange — like a Surtling offspring that might grow up into… coal?  
+Or something strange — like a Surtling offspring that might grow up into… coal?
 
-OTAB makes such systems possible.  
+OTAB makes such systems possible.
 
 It can be used as plug-and-play.  
-It also allows structured customization through server-defined data.  
-The more you change — the more responsibility you take.  
+It also allows deeper customization through server-defined data.  
+The more you change — the more responsibility you take.
 
 ---
 
-## Extending Creature Behavior
+## What OTAB Does
 
-Creatures in Valheim are more than combat targets.  
-They have territory, instincts and limits.  
+OTAB expands how creatures in Valheim can be tamed, reproduced and managed.
 
-**Of Taming and Breeding** introduces structured control over:  
+Creatures are more than combat targets.  
+They have territory, instincts and limits.
 
-* how creatures are tamed  
-* how reproduction works  
-* how offspring grow  
-* which limitations apply  
-* which environmental conditions matter  
+OTAB introduces explicit control over:
 
-OTAB ships with preconfigured YAML data balanced for vanilla Valheim.  
-You can install it and play immediately.  
+* taming conditions  
+* reproduction logic  
+* offspring growth  
+* environmental requirements  
+* behavioral limitations  
 
-But you can also modify those rules — carefully and intentionally.  
+The mod ships with balanced default YAML data for vanilla gameplay.  
+You can install it and play immediately.
+
+Or you can redefine those rules with intention and control.
 
 Not every creature is meant to be tameable.  
-Not every reproduction path is meant to be trivial.  
-OTAB allows you to define those boundaries explicitly.  
+Not every lifecycle is meant to be trivial.
 
 ---
 
 ## Philosophy
 
-OTAB builds on Valheim’s existing systems.  
+OTAB builds on Valheim’s existing creature systems.
 
-It does not attempt to rewrite creature identity or progression.  
-Instead, it exposes structured control over mechanics that are otherwise implicit.  
+It does not attempt to replace vanilla mechanics or creature identity.  
+Instead, it makes hidden systems configurable and transparent.
 
-The aim is:  
+The aim is to:
 
-* to respect vanilla balance and creature roles  
-* to make taming and breeding intentional  
-* to avoid accidental or automated ecosystems  
-* to support long-term world stability  
+* respect balance and progression  
+* ensure taming and breeding require thought  
+* prevent uncontrolled ecosystem growth  
+* maintain stability in persistent worlds  
 
 Creatures should still feel like Valheim creatures —  
-not generic pets or production units.  
+not generic pets or production units.
 
-If you want global “everything is tameable” gameplay shortcuts,  
-other mods may be a better fit.  
-
-If you want structured ecosystems with defined rules and limits,  
-OTAB is designed for that.  
+If you prefer global “everything is tameable” gameplay changes,  
+other mods may be a better fit.
 
 ---
 
-## Configuration & Documentation
+## Configuration & Technical Model
 
-All server-side creature definitions and behavior rules are structured in YAML files.  
+OTAB follows a server-authoritative design.
 
-Behavior is data-driven and explicit.  
+All creature definitions and behavior rules are structured in YAML files and loaded by the server.
 
-Detailed setup instructions, examples and design explanations are available in the Wiki:  
+These data files define how taming, breeding and lifecycle systems behave.  
+The server owns all gameplay logic and synchronizes the relevant runtime data to connected clients.
+
+OTAB can also be used in singleplayer.  
+In that case, your local installation loads and applies its own YAML data.
+
+When connecting to a multiplayer server, however, local data is ignored.  
+Only the server’s data definitions are used.
+
+The server is always authoritative.
+
+Clients do not require local YAML files when joining a modded server.  
+They receive synchronized data and display related information, but do not control gameplay decisions.
+
+If a client connects to a server without OTAB installed,  
+the mod switches into a passive compatibility mode  
+and does not interfere with vanilla gameplay.
+
+Detailed setup instructions, configuration examples and design explanations are available in the Wiki:
 
 👉 https://github.com/Vonny1412/Valheim.OfTamingAndBreeding/wiki
 
----
-
-## Technical Model
-
-OTAB follows a server-authoritative design.  
-
-**Server:**  
-
-* Loads YAML data
-* Owns gameplay logic
-* Synchronizes runtime data to clients
-
-**Client:**  
-
-* Receives synchronized data
-* Displays related information
-* Does not control gameplay decisions
-
-Clients do not require local YAML files when connecting to a modded server.    
-All necessary data is provided by the server.  
-
-If a client connects to a server without OTAB installed,    
-the mod switches into a passive compatibility mode    
-and does not interfere with vanilla gameplay.  
-
-This separation reduces desync risk and keeps multiplayer behavior consistent.  
 
 ---
 
-## Designed for Long-Term Worlds
+## Designed for Persistent Worlds
 
-OTAB is especially suited for:  
+OTAB is especially suited for:
 
-* Long-running servers
-* Lore-driven environments
-* Carefully curated modpacks
-* Admin-managed creature ecosystems
+* dedicated multiplayer servers  
+* lore-driven environments  
+* curated modpacks  
+* administrator-managed ecosystems  
 
-It provides structure and control — not shortcuts.  
+It provides structure and control for long-lived worlds.
 
 ---
 
