@@ -129,9 +129,9 @@ namespace OfTamingAndBreeding
 
                 section = Section_Server_Gameplay;
 
-                DefaultStarvingGraceFactor = Config.BindConfigInOrder<float>(section, "DefaultStarvingGraceFactor", 5f, "Global fallback StarvingGraceFactor used when a creature does not define one in YAML. Multiplies fed duration before entering Starving state.", acceptableValues: new AcceptableValueRange<float>(0, 100), synced: true);
+                DefaultStarvingGraceFactor = Config.BindConfigInOrder<float>(section, "DefaultStarvingGraceFactor", 5f, "Global fallback StarvingGraceFactor used when a creature does not define one in YAML. Multiplies fed duration before entering Starving state.", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
 
-                GlobalPregnancyDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalPregnancyDurationFactor", 1f, "Global multiplier for PregnancyDuration.  Applies immediately; lowering it can instantly finish ongoing pregnancy on the next update.", synced: true);
+                GlobalPregnancyDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalPregnancyDurationFactor", 1f, "Global multiplier for PregnancyDuration.  Applies immediately; lowering it can instantly finish ongoing pregnancy on the next update.", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
                 GlobalPregnancyDurationFactor.SettingChanged += (object sender, EventArgs args) => {
                     //if (ZNet.instance && ZNet.instance.IsServer())
                     {
@@ -146,7 +146,7 @@ namespace OfTamingAndBreeding
                     }
                 };
 
-                GlobalFedDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalFedDurationFactor", 1f, "Global multiplier for FedDuration. Applies immediately (may flip Hungry/Starving state).", synced: true);
+                GlobalFedDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalFedDurationFactor", 1f, "Global multiplier for FedDuration. Applies immediately (may flip Hungry/Starving state).", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
                 GlobalFedDurationFactor.SettingChanged += (object sender, EventArgs args) => {
                     //if (ZNet.instance && ZNet.instance.IsServer())
                     {
@@ -161,7 +161,7 @@ namespace OfTamingAndBreeding
                     }
                 };
 
-                GlobalTamingTimeFactor = Config.BindConfigInOrder<float>(section, "GlobalTamingTimeFactor", 1f, "Global multiplier for TamingTime. Applies immediately; lowering it can instantly finish ongoing taming on the next update.", synced: true);
+                GlobalTamingTimeFactor = Config.BindConfigInOrder<float>(section, "GlobalTamingTimeFactor", 1f, "Global multiplier for TamingTime. Applies immediately; lowering it can instantly finish ongoing taming on the next update.", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
                 GlobalTamingTimeFactor.SettingChanged += (object sender, EventArgs args) => {
                     //if (ZNet.instance && ZNet.instance.IsServer())
                     {
@@ -176,7 +176,7 @@ namespace OfTamingAndBreeding
                     }
                 };
 
-                GlobalGrowTimeFactor = Config.BindConfigInOrder<float>(section, "GlobalGrowTimeFactor", 1f, "Global multiplier for egg hatching and offspring grow-up time. Applies immediately; lowering it can trigger instant hatching/growing on next update.", synced: true);
+                GlobalGrowTimeFactor = Config.BindConfigInOrder<float>(section, "GlobalGrowTimeFactor", 1f, "Global multiplier for egg hatching and offspring grow-up time. Applies immediately; lowering it can trigger instant hatching/growing on next update.", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
                 GlobalGrowTimeFactor.SettingChanged += (object sender, EventArgs args) => {
                     //if (ZNet.instance && ZNet.instance.IsServer())
                     {

@@ -1,10 +1,9 @@
 ﻿using Jotunn.Managers;
+using OfTamingAndBreeding.Data.Processing.Base;
 using OfTamingAndBreeding.Helpers;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
-using UnityEngine;
 
 namespace OfTamingAndBreeding.Data.Processing
 {
@@ -14,14 +13,15 @@ namespace OfTamingAndBreeding.Data.Processing
 
         public override string DirectoryName => Models.Egg.DirectoryName;
 
-        public override string GetDataKey(string filePath) => null;
+        public override string PrefabTypeName => "item";
 
+        public override string GetDataKey(string filePath) => null;
 
         //------------------------------------------------
         // PREPARE
         //------------------------------------------------
 
-        public override void Prepare(Base.DataProcessorContext ctx)
+        public override void Prepare(Base.PrefabRegistry reg)
         {
 
         }
@@ -30,10 +30,24 @@ namespace OfTamingAndBreeding.Data.Processing
         // VALIDATE DATA
         //------------------------------------------------
 
-        public override bool ValidateData(Base.DataProcessorContext ctx, string eggName, Models.Egg data)
+        public override bool ValidateData(Base.PrefabRegistry reg, string eggName, Models.Egg data)
         {
             var model = $"{nameof(Models.Egg)}.{eggName}";
             var error = false;
+
+            if (data.Clone != null)
+            {
+                if (data.Clone.Name == null)
+                {
+                    Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.Name)}: Missing field");
+                    error = true;
+                }
+                if (data.Clone.Description == null)
+                {
+                    Plugin.LogWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.Description)}: Missing field - Setting to ''");
+                    data.Clone.Description = "";
+                }
+            }
 
             switch (data.Components.Item)
             {
@@ -128,26 +142,17 @@ namespace OfTamingAndBreeding.Data.Processing
         // RESERVE PREFAB
         //------------------------------------------------
 
-        private readonly HashSet<string> reservedPrefabNames = new HashSet<string>();
-
-        public override bool ReservePrefab(Base.DataProcessorContext ctx, string eggName, Models.Egg data)
+        public override bool ReservePrefab(Base.PrefabRegistry reg, string eggName, Models.Egg data)
         {
             var model = $"{nameof(Models.Egg)}.{eggName}";
 
-            if (reservedPrefabNames.Contains(eggName))
-            {
-                Plugin.LogError($"{model}: Prefab already reserved");
-                return false;
-            }
-            reservedPrefabNames.Add(eggName);
-
-            var egg = ctx.GetReservedPrefab(eggName);
+            var egg = reg.GetReservedPrefab(eggName);
             if (egg == null)
             {
 
-                var cloned = ctx.GetClonedPrefab(eggName);
-                egg = ctx.GetOriginalPrefab(eggName);
-                if (egg == null || cloned != null) // need clone (not cloned yet / previously cloned, reactivate)
+                var custom = reg.GetCustomPrefab(eggName);
+                egg = reg.GetOriginalPrefab(eggName);
+                if (egg == null || custom != null) // need clone (not cloned yet / previously cloned, reactivate)
                 {
 
                     if (data.Clone == null)
@@ -162,62 +167,79 @@ namespace OfTamingAndBreeding.Data.Processing
                         return false;
                     }
 
-                    if (ctx.IsCustomPrefab(data.Clone.From))
+                    if (reg.IsCustomPrefab(data.Clone.From))
                     {
                         Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)}: Cannot clone from cloned prefab '{data.Clone.From}'");
                         return false;
                     }
 
-                    var cloneFrom = ctx.GetOriginalPrefab(data.Clone.From);
+                    var cloneFrom = reg.GetOriginalPrefab(data.Clone.From);
                     if (!cloneFrom)
                     {
                         Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)}: Prefab '{data.Clone.From}' not found");
                         return false;
                     }
 
-                    if (cloned == null)
+                    if (custom == null)
                     {
                         // not cloned yet
 
-                        var backup = ctx.MakeCloneBackup(cloneFrom);
-                        egg = ctx.CreateClonedItemPrefab(eggName, cloneFrom.name);
+                        var backup = reg.MakeCustomBackup(cloneFrom);
+                        egg = reg.CreateClonedItemPrefab(eggName, cloneFrom.name);
 
-                        ctx.SetCustomPrefabUsingBackup(eggName, backup);
+                        //ctx.SetCustomPrefabUsingBackup(eggName, backup);
                     }
                     else
                     {
                         // previously cloned - reactivate
+                        // hint: egg==custom
 
                         Plugin.LogDebug($"{model}.{{nameof(data.Clone): Reactivating cloned prefab for '{cloneFrom.name}'");
-                        var backup = ctx.GetUnusedClonedPrefabBackup(cloneFrom);
+                        var backup = reg.GetUnusedCustomPrefabBackup(cloneFrom);
                         RestorePrefabFromBackup(backup, egg);
 
-                        ctx.SetCustomPrefabUsingBackup(eggName, backup);
+                        reg.SetCustomPrefabUsingBackup(eggName, backup);
                     }
 
                     ItemManager.Instance.AddItem(new Jotunn.Entities.CustomItem(egg, fixReference: false));
+                    PrepareClone(reg, eggName, data, egg);
                 }
                 else
                 {
-                    ctx.MakeOriginalBackup(egg);
+                    reg.MakeOriginalBackup(egg);
                 }
 
-                ctx.ReservePrefab(eggName, egg);
+                reg.ReservePrefab(eggName, egg);
             }
 
             return true;
+        }
+
+        private void PrepareClone(Base.PrefabRegistry reg, string eggName, Models.Egg data, UnityEngine.GameObject egg)
+        {
+            var model = $"{nameof(Models.Egg)}.{eggName}";
+
+            var eggItemDrop = egg.GetComponent<ItemDrop>(); // required (checked in ValidatePrefab)
+            Plugin.LogDebug($"{model}.{nameof(data.Clone)}: Setting ItemDrop.ItemData values");
+
+            var eggItemData = eggItemDrop.m_itemData;
+            var eggItemDataShared = eggItemData.m_shared;
+
+            if (data.Clone.Name != null) eggItemDataShared.m_name = data.Clone.Name;
+            if (data.Clone.Description != null) eggItemDataShared.m_description = data.Clone.Description;
+            if (data.Clone.Scale != null) Runtime.ItemData.SetCustomScale(eggName, (float)data.Clone.Scale);
         }
 
         //------------------------------------------------
         // VALIDATE PREFAB
         //------------------------------------------------
 
-        public override bool ValidatePrefab(Base.DataProcessorContext ctx, string eggName, Models.Egg data)
+        public override bool ValidatePrefab(Base.PrefabRegistry reg, string eggName, Models.Egg data)
         {
             var model = $"{nameof(Models.Egg)}.{eggName}";
             var error = false;
 
-            var egg = ctx.GetOriginalPrefab(eggName);
+            var egg = reg.GetReservedPrefab(eggName);
             if (!egg)
             {
                 Plugin.LogError($"{model}: Prefab not found");
@@ -238,7 +260,7 @@ namespace OfTamingAndBreeding.Data.Processing
                 {
                     foreach (var (grownData, i) in data.EggGrow.Grown.Select((value, i) => (value, i)))
                     {
-                        if (!ctx.PrefabExists(grownData.Prefab))
+                        if (!reg.PrefabExists(grownData.Prefab))
                         {
                             Plugin.LogError($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.Grown)}.{i}.{nameof(grownData.Prefab)}: '{grownData.Prefab}' not found");
                             error = true;
@@ -254,11 +276,11 @@ namespace OfTamingAndBreeding.Data.Processing
         // REGISTER PREFAB
         //------------------------------------------------
 
-        public override void RegisterPrefab(Base.DataProcessorContext ctx, string eggName, Models.Egg data)
+        public override void RegisterPrefab(Base.PrefabRegistry reg, string eggName, Models.Egg data)
         {
             var model = $"{nameof(Models.Egg)}.{eggName}";
 
-            var egg = ctx.GetOriginalPrefab(eggName);
+            var egg = reg.GetReservedPrefab(eggName);
             ItemManager.Instance.RegisterItemInObjectDB(egg);
 
             //
@@ -275,14 +297,18 @@ namespace OfTamingAndBreeding.Data.Processing
                     var eggItemData = eggItemDrop.m_itemData;
                     var eggItemDataShared = eggItemData.m_shared;
 
-                    if (data.Item.Name != null) eggItemDataShared.m_name = data.Item.Name;
-                    if (data.Item.Description != null) eggItemDataShared.m_description = data.Item.Description;
+                    // defaults
+                    eggItemDataShared.m_autoStack = false;
+                    eggItemDrop.m_autoPickup = false;
+                    eggItemDrop.m_autoDestroy = false;
 
                     if (data.Item.Weight != null) eggItemDataShared.m_weight = (float)data.Item.Weight;
-                    if (data.Item.Scale != null) Runtime.ItemData.SetCustomScale(eggName, (float)data.Item.Scale);
                     if (data.Item.ScaleByQuality != null) eggItemDataShared.m_scaleByQuality = (float)data.Item.ScaleByQuality;
+                    else eggItemDataShared.m_scaleByQuality = 1; // required
                     if (data.Item.ScaleWeightByQuality != null) eggItemDataShared.m_scaleWeightByQuality = (float)data.Item.ScaleWeightByQuality;
+                    else eggItemDataShared.m_scaleWeightByQuality = 1; // required
                     if (data.Item.Value != null) eggItemDataShared.m_value = (int)data.Item.Value;
+                    else eggItemDataShared.m_value = 0; // required
 
                     if (data.Item.Teleportable != null) eggItemDataShared.m_teleportable = (bool)data.Item.Teleportable;
                     if (data.Item.MaxStackSize != null) eggItemDataShared.m_maxStackSize = (int)data.Item.MaxStackSize;
@@ -300,10 +326,6 @@ namespace OfTamingAndBreeding.Data.Processing
                         }
                     }
                     
-                    // defaults
-                    eggItemDataShared.m_autoStack = false;
-                    eggItemDrop.m_autoPickup = false;
-
                     var eggItemPrefab = ObjectDB.instance.GetItemPrefab(eggName);
                     if (eggItemPrefab == null)
                     {
@@ -379,17 +401,27 @@ namespace OfTamingAndBreeding.Data.Processing
 
             if (data.Components.EggGrow == Models.SubData.ComponentBehavior.Patch)
             {
-                var eggEggGrow = ctx.GetOrAddComponent<EggGrow>(eggName, egg);
+                var eggEggGrow = reg.GetOrAddComponent<EggGrow>(eggName, egg);
 
                 if (data.EggGrow != null)
                 {
                     Plugin.LogDebug($"{model}.{nameof(data.EggGrow)}: Setting values");
 
-                    if (data.EggGrow.GrowTime != null) eggEggGrow.m_growTime = (float)data.EggGrow.GrowTime;
+                    if (data.EggGrow.GrowTime.HasValue)
+                    {
+                        eggEggGrow.m_growTime = data.EggGrow.GrowTime.Value;
+                    }
+
+
+
+
                     if (data.EggGrow.UpdateInterval != null) eggEggGrow.m_updateInterval = (float)data.EggGrow.UpdateInterval;
                     if (data.EggGrow.RequireNearbyFire != null) eggEggGrow.m_requireNearbyFire = (bool)data.EggGrow.RequireNearbyFire;
+                    else eggEggGrow.m_requireNearbyFire = false;
                     if (data.EggGrow.RequireUnderRoof != null) eggEggGrow.m_requireUnderRoof = (bool)data.EggGrow.RequireUnderRoof;
+                    else eggEggGrow.m_requireUnderRoof = false;
                     if (data.EggGrow.RequireCoverPercentige != null) eggEggGrow.m_requireCoverPercentige = (float)data.EggGrow.RequireCoverPercentige;
+                    else eggEggGrow.m_requireCoverPercentige = 0;
 
                     if (data.EggGrow.RequireAnyBiome != null) Runtime.EggGrow.SetEggNeedsAnyBiome(eggName, data.EggGrow.RequireAnyBiome);
                     if (data.EggGrow.RequireLiquid != null)
@@ -406,7 +438,7 @@ namespace OfTamingAndBreeding.Data.Processing
                 {
                     eggEggGrow.m_hatchEffect = new EffectList
                     {
-                        m_effectPrefabs = Helpers.EffectsHelper.GetEffectList(new string[] {
+                        m_effectPrefabs = Helpers.EffectsHelper.CreateEffectList(new string[] {
                         "fx_chicken_birth",
                     })
                     };
@@ -419,12 +451,12 @@ namespace OfTamingAndBreeding.Data.Processing
             }
             else if (data.Components.EggGrow == Models.SubData.ComponentBehavior.Remove)
             {
-                ctx.DestroyComponentIfExists<EggGrow>(eggName, egg);
+                reg.DestroyComponentIfExists<EggGrow>(eggName, egg);
             }
 
             if (data.Components.Floating == Models.SubData.ComponentBehavior.Patch)
             {
-                var eggFloating = ctx.GetOrAddComponent<Floating>(eggName, egg);
+                var eggFloating = reg.GetOrAddComponent<Floating>(eggName, egg);
 
                 Plugin.LogDebug($"{model}.{nameof(data.Floating)}: Setting values");
 
@@ -432,7 +464,7 @@ namespace OfTamingAndBreeding.Data.Processing
             }
             else if (data.Components.Floating == Models.SubData.ComponentBehavior.Remove)
             {
-                ctx.DestroyComponentIfExists<Floating>(eggName, egg);
+                reg.DestroyComponentIfExists<Floating>(eggName, egg);
             }
 
             Data.Runtime.ItemData.RegisterEggBySharedName(egg);
@@ -442,7 +474,7 @@ namespace OfTamingAndBreeding.Data.Processing
         // CLEANUP
         //------------------------------------------------
 
-        public override void Finalize(Base.DataProcessorContext ctx)
+        public override void Finalize(Base.PrefabRegistry reg)
         {
 
         }
@@ -453,14 +485,14 @@ namespace OfTamingAndBreeding.Data.Processing
 
         private readonly Dictionary<string, UnityEngine.Sprite[]> originalIcons = new Dictionary<string, UnityEngine.Sprite[]>();
 
-        public override void RestorePrefab(Base.DataProcessorContext ctx, string eggName)
+        public override void RestorePrefab(Base.PrefabRegistry reg, string eggName)
         {
             if (originalIcons.TryGetValue(eggName, out UnityEngine.Sprite[] icons))
             {
                 // for some reasons we need to set the original icon back before restoring the prefab
                 // this seems unneccessary but I tell you it is!
                 // otherwiese the icons could look distorted if we rejoin the world
-                var itemDrop = ctx.GetOriginalPrefab(eggName).GetComponent<ItemDrop>();
+                var itemDrop = reg.GetOriginalPrefab(eggName).GetComponent<ItemDrop>();
                 foreach (var s in itemDrop.m_itemData.m_shared.m_icons)
                 {
                     if (s.texture) UnityEngine.Object.DestroyImmediate(s.texture);
@@ -470,8 +502,8 @@ namespace OfTamingAndBreeding.Data.Processing
                 // now the next time we (re)enter a world the icons of cloned prefabs still look nice <3
             }
 
-            ctx.Restore(eggName, RestorePrefabFromBackup);
-            if (ctx.IsCustomPrefab(eggName))
+            reg.Restore(eggName, RestorePrefabFromBackup);
+            if (reg.IsCustomPrefab(eggName))
             {
                 ItemManager.Instance.RemoveItem(eggName);
             }
@@ -496,7 +528,7 @@ namespace OfTamingAndBreeding.Data.Processing
         // CLEANUP
         //------------------------------------------------
 
-        public override void Cleanup(Base.DataProcessorContext ctx)
+        public override void Cleanup(Base.PrefabRegistry reg)
         {
             originalIcons.Clear();
         }

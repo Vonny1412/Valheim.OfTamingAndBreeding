@@ -1,7 +1,7 @@
 ﻿using Jotunn.Managers;
 using OfTamingAndBreeding.Data;
-using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Helpers;
+using OfTamingAndBreeding.ValheimAPI.LowLevel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,21 +9,11 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
-using static UnityEngine.Networking.UnityWebRequest;
 
 namespace OfTamingAndBreeding.ValheimAPI
 {
     internal static class TameableExtensions
     {
-        internal sealed class TameableExtraData : Lifecycle.ExtraData<Tameable, TameableExtraData>
-        {
-        }
-
-        internal sealed class AnimalExtraData : Lifecycle.ExtraData<Tameable, AnimalExtraData>
-        {
-            public AnimalAI m_animalAI = null;
-            public AnimalAIExtensions.AnimalAIExtraData m_animalAIData = null;
-        }
 
         public static class ConsumeContext
         {
@@ -67,12 +57,14 @@ namespace OfTamingAndBreeding.ValheimAPI
         public static Player GetPlayer(this Tameable that, ZDOID characterID)
             => LowLevel.Tameable.__IAPI_GetPlayer_Invoker1.Invoke(that, characterID);
 
+        //
+        // 
+        //
 
 
 
 
-
-
+        
 
         public static void Awake_PatchPostfix(this Tameable tameable)
         {
@@ -85,34 +77,28 @@ namespace OfTamingAndBreeding.ValheimAPI
                 m_nview.Register<float>("RPC_UpdateFedDuration", (long sender, float totalFactor) => tameable.RPC_UpdateFedDuration(sender, totalFactor));
             }
 
-            var animalAI = tameable.GetComponent<AnimalAI>();
-            if (animalAI != null) // the tameable is an animal
+            if (tameable.TryGetComponent<Custom.OTAB_CustomAnimalAI>(out var customAnimalAI))
             {
-                // check if this animal is an animal that we are handling
-                if (AnimalAIExtensions.AnimalAIExtraData.TryGet(animalAI, out var animalAIData))
-                {
-                    var animalData = AnimalExtraData.GetOrCreate(tameable);
-                    // used for making the animal tameable
-                    animalData.m_animalAI = animalAI;
-                    animalData.m_animalAIData = animalAIData;
-                    animalData.m_animalAIData.m_onConsumedItem = (Action<ItemDrop>)Delegate.Combine(animalAIData.m_onConsumedItem, new Action<ItemDrop>(tameable.OnConsumedItem));
-                }
+                customAnimalAI.m_onConsumedItem = (Action<ItemDrop>)Delegate.Combine(customAnimalAI.m_onConsumedItem, new Action<ItemDrop>(tameable.OnConsumedItem));
             }
 
-            GameObject prefab = null;
-            Tameable prefabTameable = null;
-            var prefabName = Utils.GetPrefabName(tameable.gameObject.name);
-            if (!Runtime.Tameable.TryGetBaseFedDuration(prefabName, out float _))
+            if (tameable.TryGetComponent<Custom.OTAB_TameableTrait>(out _) == false)
             {
-                prefab = prefab ?? PrefabManager.Instance.GetPrefab(prefabName);
-                prefabTameable = prefabTameable ?? prefab.GetComponent<Tameable>();
-                Runtime.Tameable.SetBaseFedDuration(prefabName, prefabTameable.m_fedDuration);
-            }
-            if (!Runtime.Tameable.TryGetBaseTamingTime(prefabName, out float _))
-            {
-                prefab = prefab ?? PrefabManager.Instance.GetPrefab(prefabName);
-                prefabTameable = prefabTameable ?? prefab.GetComponent<Tameable>();
-                Runtime.Tameable.SetBaseTamingTime(prefabName, prefabTameable.m_tamingTime);
+                // we are using late-registration
+                // instead of adding component in CreatureProcessor
+
+                var prefabName = Utils.GetPrefabName(tameable.gameObject.name);
+                var prefab =  PrefabManager.Instance.GetPrefab(prefabName);
+                var prefabTameable = prefab.GetComponent<Tameable>();
+
+                var c1 = tameable.gameObject.gameObject.AddComponent<Custom.OTAB_TameableTrait>();
+                var c2 = prefab.gameObject.AddComponent<Custom.OTAB_TameableTrait>();
+
+                c1.m_baseFedDuration = prefabTameable.m_fedDuration;
+                c2.m_baseFedDuration = prefabTameable.m_fedDuration;
+
+                c1.m_baseTamingTime = prefabTameable.m_tamingTime;
+                c2.m_baseTamingTime = prefabTameable.m_tamingTime;
             }
 
             tameable.UpdateFedDuration();
@@ -129,7 +115,8 @@ namespace OfTamingAndBreeding.ValheimAPI
             var globalFactor = Plugin.Configs.GlobalTamingTimeFactor.Value;
             if (globalFactor < 0f)
             {
-                tameable.UpdateTamingTime(1f); // back to base
+                // should not be possible but whatever
+                //tameable.UpdateTamingTime(1f); // back to base
                 return;
             }
             var totalFactor = globalFactor;
@@ -140,11 +127,8 @@ namespace OfTamingAndBreeding.ValheimAPI
         {
             if (totalFactor >= 0) // yes, we do allow 0, too
             {
-                var prefabName = Utils.GetPrefabName(tameable.gameObject.name);
-                if (Runtime.Tameable.TryGetBaseTamingTime(prefabName, out float baseTamingTime))
-                {
-                    tameable.m_tamingTime = baseTamingTime * totalFactor;
-                }
+                var trait = tameable.GetComponent<Custom.OTAB_TameableTrait>();
+                tameable.m_tamingTime = trait.m_baseTamingTime * totalFactor;
             }
         }
 
@@ -158,7 +142,8 @@ namespace OfTamingAndBreeding.ValheimAPI
             var globalFactor = Plugin.Configs.GlobalFedDurationFactor.Value;
             if (globalFactor < 0f)
             {
-                tameable.UpdateFedDuration(1f); // back to base
+                // should not be possible but whatever
+                //tameable.UpdateFedDuration(1f); // back to base
                 return;
             }
             var customFactor = zdo.GetFloat(Plugin.ZDOVars.z_fedDurationFactor, 1f);
@@ -170,11 +155,8 @@ namespace OfTamingAndBreeding.ValheimAPI
         {
             if (totalFactor >= 0) // yes, we do allow 0, too
             {
-                var prefabName = Utils.GetPrefabName(tameable.gameObject.name);
-                if (Runtime.Tameable.TryGetBaseFedDuration(prefabName, out float baseDuration))
-                {
-                    tameable.m_fedDuration = baseDuration * totalFactor;
-                }
+                var baseValues = tameable.GetComponent<Custom.OTAB_TameableTrait>();
+                tameable.m_fedDuration = baseValues.m_baseFedDuration * totalFactor;
             }
         }
 
@@ -191,17 +173,19 @@ namespace OfTamingAndBreeding.ValheimAPI
 
         public static bool TamingUpdate_PatchPrefix(this Tameable tameable)
         {
-            var prefabName = Utils.GetPrefabName(tameable.gameObject.name);
-            if (Runtime.Tameable.GetTamingDisabled(prefabName))
+            if (tameable.TryGetComponent<Custom.OTAB_Creature>(out var creature))
             {
-                // taming completly disabled
-                return false;
+                if (creature.m_tamingDisabled == true)
+                {
+                    // taming completly disabled
+                    return false;
+                }
             }
 
-            if (AnimalExtraData.TryGet(tameable, out var animal))
+            if (tameable.TryGetComponent<Custom.OTAB_CustomAnimalAI>(out var customAnimalAI))
             {
                 var m_nview = tameable.GetZNetView();
-                if (m_nview.IsValid() && m_nview.IsOwner() && !tameable.IsTamed() && !tameable.IsHungry() && !animal.m_animalAI.IsAlerted())
+                if (m_nview.IsValid() && m_nview.IsOwner() && !tameable.IsTamed() && !tameable.IsHungry() && !customAnimalAI.GetAnimalAI().IsAlerted())
                 {
                     tameable.DecreaseRemainingTime(3f);
                     if (tameable.GetRemainingTime() <= 0f)
@@ -217,12 +201,13 @@ namespace OfTamingAndBreeding.ValheimAPI
 
                 return false;
             }
+
             return true;
         }
 
         public static bool Tame_PatchPrefix(this Tameable tameable)
         {
-            if (AnimalExtraData.TryGet(tameable, out var animal))
+            if (tameable.TryGetComponent<Custom.OTAB_CustomAnimalAI>(out var customAnimalAI))
             {
                 Game.instance.IncrementPlayerStat(PlayerStatType.CreatureTamed);
 
@@ -230,7 +215,7 @@ namespace OfTamingAndBreeding.ValheimAPI
                 var m_character = tameable.GetCharacter();
                 if (m_nview.IsValid() && m_nview.IsOwner() && (bool)m_character && !tameable.IsTamed())
                 {
-                    animal.m_animalAI.MakeTame();
+                    customAnimalAI.MakeTame();
                     tameable.m_tamedEffect?.Create(tameable.transform.position, tameable.transform.rotation); // only for owner is okay
                     Player closestPlayer = Player.GetClosestPlayer(tameable.transform.position, 30f);
                     if ((bool)closestPlayer)
@@ -241,6 +226,7 @@ namespace OfTamingAndBreeding.ValheimAPI
 
                 return false;
             }
+
             return true;
         }
 
@@ -255,7 +241,7 @@ namespace OfTamingAndBreeding.ValheimAPI
 
         public static bool RPC_Command_PatchPrefix(this Tameable tameable, long sender, ZDOID characterID, bool message)
         {
-            if (AnimalExtraData.TryGet(tameable, out var animal))
+            if (tameable.TryGetComponent<Custom.OTAB_CustomAnimalAI>(out var customAnimalAI))
             {
                 Player player = tameable.GetPlayer(characterID);
                 if (player == null)
@@ -265,10 +251,10 @@ namespace OfTamingAndBreeding.ValheimAPI
 
                 var m_nview = tameable.GetZNetView();
 
-                if ((bool)animal.m_animalAIData.m_follow)
+                if ((bool)customAnimalAI.m_follow)
                 {
-                    animal.m_animalAIData.m_follow = null;
-                    animal.m_animalAI.SetPatrolPoint();
+                    customAnimalAI.m_follow = null;
+                    customAnimalAI.GetAnimalAI().SetPatrolPoint();
                     if (m_nview.IsOwner())
                     {
                         m_nview.GetZDO().Set(ZDOVars.s_follow, "");
@@ -281,8 +267,8 @@ namespace OfTamingAndBreeding.ValheimAPI
                 }
                 else
                 {
-                    animal.m_animalAI.ResetPatrolPoint();
-                    animal.m_animalAIData.m_follow = player.gameObject;
+                    customAnimalAI.GetAnimalAI().ResetPatrolPoint();
+                    customAnimalAI.m_follow = player.gameObject;
                     if (m_nview.IsOwner())
                     {
                         m_nview.GetZDO().Set(ZDOVars.s_follow, player.GetPlayerName());
@@ -305,6 +291,7 @@ namespace OfTamingAndBreeding.ValheimAPI
 
                 return false;
             }
+
             return true;
         }
 
@@ -313,21 +300,46 @@ namespace OfTamingAndBreeding.ValheimAPI
             tameable.UpdateStarvingTimePoint(ZNet.instance.GetTime());
         }
 
-        private static void UpdateStarvingTimePoint(this Tameable tameable, DateTime now)
+        public static float GetStarvingGraceFactor(this Tameable tameable)
+        {
+            if (tameable.TryGetComponent<Custom.OTAB_Creature>(out var creature))
+            {
+                if (creature.m_starvingGraceFactor != -1)
+                {
+                    return creature.m_starvingGraceFactor;
+                }
+            }
+            return Plugin.Configs.DefaultStarvingGraceFactor.Value;
+        }
+
+
+
+        private static long UpdateStarvingTimePoint(this Tameable tameable, DateTime now)
         {
             var m_nview = tameable.GetZNetView();
+            var zdo = m_nview.GetZDO();
             if (m_nview.IsOwner())
             {
-                var prefabName = Utils.GetPrefabName(tameable.gameObject.name);
-                var starvingDelayMul = Runtime.Tameable.GetStarvingGraceFactor(prefabName);
-                var starvingAfter = now.AddSeconds(tameable.m_fedDuration + tameable.m_fedDuration * starvingDelayMul);
-                ZNetHelper.SetLong(m_nview.GetZDO(), Plugin.ZDOVars.z_starvingAfter, starvingAfter.Ticks);
+                var starvingGraceFactor = tameable.GetStarvingGraceFactor();
+                var starvingAfter = now.AddSeconds(tameable.m_fedDuration + tameable.m_fedDuration * starvingGraceFactor);
+                var ticks = starvingAfter.Ticks;
+                ZNetHelper.SetLong(zdo, Plugin.ZDOVars.z_starvingAfter, ticks);
+                return ticks;
             }
+            return zdo.GetLong(Plugin.ZDOVars.z_starvingAfter, -1);
         }
 
         public static bool IsStarving(this Tameable tameable)
         {
-            // important: first handle init value, then check for GetIsFedTimerDisabled
+
+            if (tameable.TryGetComponent<Custom.OTAB_Creature>(out var creatureTrait))
+            {
+                if (creatureTrait.m_fedTimerDisabled)
+                {
+                    // creatures that do not eat at all wont get starving!
+                    return false;
+                }
+            }
 
             var m_nview = tameable.GetZNetView();
             if (!m_nview || !m_nview.IsValid()) return false;
@@ -346,25 +358,17 @@ namespace OfTamingAndBreeding.ValheimAPI
                     if (s_tameLastFeeding != -1)
                     {
                         // how valheim stores time: m_nview.GetZDO().Set(ZDOVars.s_tameLastFeeding, ZNet.instance.GetTime().Ticks);
-                        tameable.UpdateStarvingTimePoint(new DateTime(s_tameLastFeeding));
+                        z_starvingAfter = tameable.UpdateStarvingTimePoint(new DateTime(s_tameLastFeeding));
                     }
                     else
                     {
                         var baseAI = tameable.GetComponent<BaseAI>();
-                        tameable.UpdateStarvingTimePoint(now - baseAI.GetTimeSinceSpawned());
+                        z_starvingAfter = tameable.UpdateStarvingTimePoint(now - baseAI.GetTimeSinceSpawned());
                     }
-                    z_starvingAfter = zdo.GetLong(Plugin.ZDOVars.z_starvingAfter, -1);
                 }
             }
             if (z_starvingAfter == -1)
             {
-                return false;
-            }
-
-            var prefabName = Utils.GetPrefabName(tameable.gameObject.name);
-            if (Runtime.Tameable.GetIsFedTimerDisabled(prefabName))
-            {
-                // creatures that do not eat at all wont get starving!
                 return false;
             }
 
@@ -374,9 +378,11 @@ namespace OfTamingAndBreeding.ValheimAPI
 
         public static bool OnConsumedItem_PrefixPatch(this Tameable tameable, ItemDrop item)
         {
-            var prefabName = Utils.GetPrefabName(tameable.gameObject.name);
-            if (Runtime.Tameable.GetIsFedTimerDisabled(prefabName))
+            var creature = tameable.GetComponent<Custom.OTAB_Creature>();
+
+            if (creature && creature.m_fedTimerDisabled == true)
             {
+                // creatures that do not eat at all wont get starving!
                 // block ResetFeedingTimer()
                 return false;
             }
@@ -389,7 +395,8 @@ namespace OfTamingAndBreeding.ValheimAPI
             }
 
             var customFactor = m_nview.GetZDO().GetFloat(Plugin.ZDOVars.z_fedDurationFactor, 1f);
-            if (Runtime.MonsterAI.TryGetCustomConsumeItems(prefabName, out Data.Models.Creature.MonsterAIConsumItemData[] consumeItems))
+
+            if (creature && creature.HasCustomConsumeItems(out var consumeItems))
             {
                 var itemName = Utils.GetPrefabName(item.gameObject.name);
                 var newFactor = 1f;
@@ -408,7 +415,7 @@ namespace OfTamingAndBreeding.ValheimAPI
                     customFactor = newFactor;
                 }
             }
-
+            
             var globalFactor = Plugin.Configs.GlobalFedDurationFactor.Value;
             var totalFactor = customFactor * globalFactor;
             ZNetHelper.SetFloat(m_nview.GetZDO(), Plugin.ZDOVars.z_fedDurationFactor, customFactor);
@@ -515,23 +522,28 @@ namespace OfTamingAndBreeding.ValheimAPI
             }
             else
             {
-                // is hungry
-                var z_starvingAfter = zdo.GetLong(Plugin.ZDOVars.z_starvingAfter, -1);
-                if (z_starvingAfter != -1 && Plugin.Configs.HoverShowStarvingTimer.Value)
+                if (Plugin.IsOTABDataLoaded())
                 {
-                    // starving point is set
-                    var now = ZNet.instance.GetTime();
-                    var secondsUntillStarving = (new DateTime(z_starvingAfter) - now).TotalSeconds;
+                    // starvation is an otab feature
 
-                    returnLines.Add(Helpers.StringHelper.FormatRelativeTime(
-                        secondsUntillStarving,
-                        labelPositive:      L.Localize("$otab_hover_starving"),
-                        labelPositiveAlt:   L.Localize("$otab_hover_starving_alt"),
-                        labelNegative:      L.Localize("$otab_hover_starving_alt"),
-                        labelNegativeAlt:   L.Localize("$otab_hover_starving_alt"),
-                        colorPositive:      Plugin.Configs.HoverColorBad.Value,
-                        colorNegative:      Plugin.Configs.HoverColorBad.Value
-                    ));
+                    var z_starvingAfter = zdo.GetLong(Plugin.ZDOVars.z_starvingAfter, -1);
+                    if (z_starvingAfter != -1 && Plugin.Configs.HoverShowStarvingTimer.Value)
+                    {
+                        // is starving
+                        // and starving point is set
+                        var now = ZNet.instance.GetTime();
+                        var secondsUntillStarving = (new DateTime(z_starvingAfter) - now).TotalSeconds;
+
+                        returnLines.Add(Helpers.StringHelper.FormatRelativeTime(
+                            secondsUntillStarving,
+                            labelPositive: L.Localize("$otab_hover_starving"),
+                            labelPositiveAlt: L.Localize("$otab_hover_starving_alt"),
+                            labelNegative: L.Localize("$otab_hover_starving_alt"),
+                            labelNegativeAlt: L.Localize("$otab_hover_starving_alt"),
+                            colorPositive: Plugin.Configs.HoverColorBad.Value,
+                            colorNegative: Plugin.Configs.HoverColorBad.Value
+                        ));
+                    }
                 }
             }
         }

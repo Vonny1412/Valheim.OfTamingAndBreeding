@@ -71,12 +71,21 @@ namespace OfTamingAndBreeding.ValheimAPI
                 m_nview.Register("RPC_HatchAndDestroy", (long sender) => eggGrow.RPC_HatchAndDestroy(sender));
             }
 
-            var prefabName = Utils.GetPrefabName(eggGrow.gameObject.name);
-            if (!Runtime.EggGrow.TryGetBaseGrowTime(prefabName, out float _))
+            if (eggGrow.TryGetComponent<Custom.OTAB_EggGrowTrait>(out _) == false)
             {
+                // we are using late-registration
+                // instead of adding component in CreatureProcessor
+
+                var prefabName = Utils.GetPrefabName(eggGrow.gameObject.name);
                 var prefab = PrefabManager.Instance.GetPrefab(prefabName);
                 var prefabEggGrow = prefab.GetComponent<EggGrow>();
-                Runtime.EggGrow.SetBaseGrowTime(prefabName, prefabEggGrow.m_growTime);
+
+                var c1 = eggGrow.gameObject.gameObject.AddComponent<Custom.OTAB_EggGrowTrait>();
+                var c2 = prefab.gameObject.AddComponent<Custom.OTAB_EggGrowTrait>();
+
+                c1.m_baseGrowTime = prefabEggGrow.m_growTime;
+                c2.m_baseGrowTime = prefabEggGrow.m_growTime;
+
             }
 
             eggGrow.UpdateGrowTime();
@@ -92,7 +101,8 @@ namespace OfTamingAndBreeding.ValheimAPI
             var globalFactor = Plugin.Configs.GlobalGrowTimeFactor.Value;
             if (globalFactor < 0f)
             {
-                eggGrow.UpdateGrowTime(1f); // back to base
+                // should not be possible but whatever
+                //eggGrow.UpdateGrowTime(1f); // back to base
                 return;
             }
             var totalFactor = globalFactor;
@@ -103,11 +113,8 @@ namespace OfTamingAndBreeding.ValheimAPI
         {
             if (totalFactor >= 0) // yes, we do allow 0, too
             {
-                var prefabName = Utils.GetPrefabName(eggGrow.gameObject.name);
-                if (Runtime.EggGrow.TryGetBaseGrowTime(prefabName, out float baseGrowTime))
-                {
-                    eggGrow.m_growTime = baseGrowTime * totalFactor;
-                }
+                var trait = eggGrow.GetComponent<Custom.OTAB_EggGrowTrait>();
+                eggGrow.m_growTime = trait.m_baseGrowTime * totalFactor;
             }
         }
 

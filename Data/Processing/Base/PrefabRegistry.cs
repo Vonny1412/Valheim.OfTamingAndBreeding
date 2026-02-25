@@ -1,5 +1,7 @@
-﻿using Jotunn.Entities;
+﻿using Jotunn;
+using Jotunn.Entities;
 using Jotunn.Managers;
+using OfTamingAndBreeding.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,20 +10,37 @@ using UnityEngine;
 
 namespace OfTamingAndBreeding.Data.Processing.Base
 {
-    public class DataProcessorContext
-    {
 
-        //
-        // STATIC
-        // 
-        // stored prefabs across servers/worlds
-        //
+    public class PrefabRegistry
+    {
+        //---------------------
+        // prevent cross-server custom-prefab type corruption
+        //---------------------
+
+        private static readonly Dictionary<string, string> globalRegisteredPrefabTypes = new Dictionary<string, string>();
+
+        public static bool RegisterPrefabType(string prefabName, string prefabTypeName, out string registeredPrefabTypeName)
+        {
+            registeredPrefabTypeName = null;
+            if (globalRegisteredPrefabTypes.TryGetValue(prefabName, out registeredPrefabTypeName))
+            {
+                var registeredTypeMatches = prefabTypeName == registeredPrefabTypeName;
+                return registeredTypeMatches; // types match. no need to register. prefab name/type is valid
+            }
+            // not registered yet
+            globalRegisteredPrefabTypes.Add(prefabName, prefabTypeName);
+            return true;
+        }
+
+        //---------------------
+        // static/global
+        //---------------------
 
         // each original prefab gets its own backup prefab
-        private static readonly Dictionary<string, GameObject> originalPrefabBackups = new Dictionary<string, GameObject>();
+        protected static readonly Dictionary<string, GameObject> originalPrefabBackups = new Dictionary<string, GameObject>();
 
         // custom prefabs created by OTAB to be used ingame
-        private static readonly Dictionary<string, GameObject> customPrefabs = new Dictionary<string, GameObject>();
+        protected static readonly Dictionary<string, GameObject> customPrefabs = new Dictionary<string, GameObject>();
 
         // list of custom prefab backups
         // each custom prefab gets its own backup
@@ -29,13 +48,11 @@ namespace OfTamingAndBreeding.Data.Processing.Base
         // GrowingAbomination1 -> "OTAB_BACKUP_(Abomination)_CUSTOM_0"
         // GrowingAbomination2 -> "OTAB_BACKUP_(Abomination)_CUSTOM_1"
         // GrowingAbomination3 -> "OTAB_BACKUP_(Abomination)_CUSTOM_2"
-        private static readonly Dictionary<string, List<GameObject>> customPrefabBackups = new Dictionary<string, List<GameObject>>();
+        protected static readonly Dictionary<string, List<GameObject>> customPrefabBackups = new Dictionary<string, List<GameObject>>();
 
-        //
-        // INSTANCE
-        //
-        // stored prefabs/settings for current server/world
-        //
+        //---------------------
+        // instance/session
+        //---------------------
 
         // custom prefabs might get used multiple times, like an offspring that also is used for creature data
         // and eggs need to be pre-created so they can be used in creatures offpsirngs list
@@ -48,9 +65,6 @@ namespace OfTamingAndBreeding.Data.Processing.Base
 
         // register of current used backups of custom prefabs created by otab
         private readonly Dictionary<string, GameObject> currentCustomPrefabBackup = new Dictionary<string, GameObject>();
-
-        // register of added components by OTAB
-        private readonly Dictionary<string, HashSet<System.Type>> addedComponents = new Dictionary<string, HashSet<System.Type>>();
 
         //
         // deep example:
@@ -93,7 +107,7 @@ namespace OfTamingAndBreeding.Data.Processing.Base
         // - custom prefab "OTAB_TestEgg" gets setup (components add/remove/edit)
         //
 
-        public DataProcessorContext()
+        public PrefabRegistry()
         {
             reservedPrefabsByName = new Dictionary<string, GameObject>();
             foreach(var kv in customPrefabBackups)
@@ -116,9 +130,25 @@ namespace OfTamingAndBreeding.Data.Processing.Base
             reservedPrefabsByName.Add(prefabName, prefab);
         }
 
-        public GameObject GetOriginalPrefab(string prefabName)
+        public GameObject MakeCustomBackup(GameObject templatePrefab)
         {
-            return PrefabManager.Instance.GetPrefab(prefabName);
+            var prefabName = templatePrefab.name;
+
+            if (!customPrefabBackups.TryGetValue(prefabName, out var backList))
+            {
+                customPrefabBackups[prefabName] = backList = new List<GameObject>();
+            }
+
+            var backupName = $"OTAB_BACKUP_({prefabName})_CUSTOM_{backList.Count}";
+            Plugin.LogDebug($"{nameof(MakeCustomBackup)}() for {prefabName} ({backupName})");
+
+            var backup = PrefabManager.Instance.GetPrefab(backupName);
+            if (backup == null)
+            {
+                backup = PrefabManager.Instance.CreateClonedPrefab(backupName, templatePrefab);
+            }
+            backList.Add(backup);
+            return backup;
         }
 
         public bool IsCustomPrefab(string prefabName)
@@ -126,7 +156,7 @@ namespace OfTamingAndBreeding.Data.Processing.Base
             return customPrefabs.ContainsKey(prefabName);
         }
 
-        public GameObject GetClonedPrefab(string prefabName)
+        public GameObject GetCustomPrefab(string prefabName)
         {
             if (customPrefabs.TryGetValue(prefabName, out var prefab))
             {
@@ -151,41 +181,20 @@ namespace OfTamingAndBreeding.Data.Processing.Base
             return backup;
         }
 
-        public GameObject MakeCloneBackup(GameObject templatePrefab)
-        {
-            var prefabName = templatePrefab.name;
-
-            if (!customPrefabBackups.TryGetValue(prefabName, out var backList))
-            {
-                customPrefabBackups[prefabName] = backList = new List<GameObject>();
-            }
-
-            var backupName = $"OTAB_BACKUP_({prefabName})_CUSTOM_{backList.Count}";
-            Plugin.LogDebug($"MakeCloneBackup() for {prefabName} ({backupName})");
-
-            var backup = PrefabManager.Instance.GetPrefab(backupName);
-            if (backup == null)
-            {
-                backup = PrefabManager.Instance.CreateClonedPrefab(backupName, templatePrefab);
-            }
-            backList.Add(backup);
-            return backup;
-        }
-
         public GameObject CreateClonedPrefab(string newName, string cloneFromName)
         {
             var clone = PrefabManager.Instance.CreateClonedPrefab(newName, cloneFromName);
             customPrefabs.Add(newName, clone);
             return clone;
         }
-
+        /*
         public GameObject CreateClonedPrefab(string newName, GameObject cloneFrom)
         {
             var clone = PrefabManager.Instance.CreateClonedPrefab(newName, cloneFrom);
             customPrefabs.Add(newName, clone);
             return clone;
         }
-
+        */
         public GameObject CreateClonedItemPrefab(string newName, string cloneFromName)
         {
             CustomItem eggCustom = new CustomItem(newName, cloneFromName);
@@ -194,12 +203,23 @@ namespace OfTamingAndBreeding.Data.Processing.Base
             return clone;
         }
 
+        public GameObject GetOriginalPrefab(string prefabName)
+        {
+            return PrefabManager.Instance.GetPrefab(prefabName);
+        }
+
+
+
+
+
+
+
         public void SetCustomPrefabUsingBackup(string customPrefabName, GameObject templatePrefab)
         {
             currentCustomPrefabBackup.Add(customPrefabName, templatePrefab);
         }
 
-        public GameObject GetUnusedClonedPrefabBackup(GameObject prefab)
+        public GameObject GetUnusedCustomPrefabBackup(GameObject prefab)
         {
             var prefabName = prefab.name;
             if (unusedCustomPrefabBackups.TryGetValue(prefabName, out var queue) && queue.Count != 0)
@@ -208,7 +228,7 @@ namespace OfTamingAndBreeding.Data.Processing.Base
                 queue.RemoveAt(0);
                 return bak;
             }
-            return MakeCloneBackup(prefab);
+            return MakeCustomBackup(prefab);
         }
 
         public bool PrefabExists(string prefabName, bool requireRegistered = false)
@@ -226,23 +246,29 @@ namespace OfTamingAndBreeding.Data.Processing.Base
 
         public T GetOrAddComponent<T>(string prefabName, GameObject go) where T : Component
         {
-            var c = go.GetComponent<T>();
-            if (c) return c;
-
-            c = go.AddComponent<T>();
-            if (!addedComponents.TryGetValue(prefabName, out var set))
-                addedComponents[prefabName] = set = new HashSet<System.Type>();
-            set.Add(typeof(T));
-
-            return c;
+            return go.GetOrAddComponent<T>();
         }
 
         public void DestroyComponentIfExists<T>(string prefabName, GameObject obj) where T : UnityEngine.Object
         {
             T c = obj.GetComponent<T>();
             if (c != null) UnityEngine.Object.DestroyImmediate(c);
-            // backup should not be neccessary
         }
+
+
+
+
+        public bool GetCurrentCustomPrefabBackup(string prefabName, GameObject backup)
+        {
+            return currentCustomPrefabBackup.TryGetValue(prefabName, out backup);
+        }
+
+
+
+
+
+
+
 
         public void Restore(string prefabName, Action<GameObject, GameObject> cb)
         {
@@ -251,17 +277,6 @@ namespace OfTamingAndBreeding.Data.Processing.Base
             {
                 // for safety: prefab is completly unknown. should not happen but whatever
                 return;
-            }
-
-            // remove tracked added components first
-            if (addedComponents.TryGetValue(prefabName, out var added))
-            {
-                foreach (var type in added)
-                {
-                    var comp = current.GetComponent(type);
-                    if (comp) UnityEngine.Object.DestroyImmediate(comp);
-                }
-                addedComponents.Remove(prefabName);
             }
 
             if (IsCustomPrefab(prefabName))
@@ -279,7 +294,7 @@ namespace OfTamingAndBreeding.Data.Processing.Base
             }
             else
             {
-                if (originalPrefabBackups.TryGetValue(prefabName, out var backup))
+                if (PrefabRegistry.originalPrefabBackups.TryGetValue(prefabName, out var backup))
                 {
                     Plugin.LogDebug($"Restoring original prefab {prefabName} ({backup.name})");
                     cb(backup, current);

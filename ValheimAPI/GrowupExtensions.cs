@@ -33,12 +33,21 @@ namespace OfTamingAndBreeding.ValheimAPI
         public static void Start_PatchPostfix(this Growup growup)
         {
 
-            var prefabName = Utils.GetPrefabName(growup.gameObject.name);
-            if (!Runtime.Growup.TryGetBaseGrowTime(prefabName, out float _))
+            if (growup.TryGetComponent<Custom.OTAB_GrowupTrait>(out _) == false)
             {
+                // we are using late-registration
+                // instead of adding component in CreatureProcessor
+
+                var prefabName = Utils.GetPrefabName(growup.gameObject.name);
                 var prefab = PrefabManager.Instance.GetPrefab(prefabName);
                 var prefabGrowup = prefab.GetComponent<Growup>();
-                Runtime.Growup.SetBaseGrowTime(prefabName, prefabGrowup.m_growTime);
+
+                var c1 = growup.gameObject.gameObject.AddComponent<Custom.OTAB_GrowupTrait>();
+                var c2 = prefab.gameObject.AddComponent<Custom.OTAB_GrowupTrait>();
+
+                c1.m_baseGrowTime = prefabGrowup.m_growTime;
+                c2.m_baseGrowTime = prefabGrowup.m_growTime;
+
             }
 
             growup.UpdateGrowTime();
@@ -54,7 +63,8 @@ namespace OfTamingAndBreeding.ValheimAPI
             var globalFactor = Plugin.Configs.GlobalGrowTimeFactor.Value;
             if (globalFactor < 0f)
             {
-                growup.UpdateGrowTime(1f); // back to base
+                // should not be possible but whatever
+                //growup.UpdateGrowTime(1f); // back to base
                 return;
             }
             var totalFactor = globalFactor;
@@ -65,11 +75,8 @@ namespace OfTamingAndBreeding.ValheimAPI
         {
             if (totalFactor >= 0) // yes, we do allow 0, too
             {
-                var prefabName = Utils.GetPrefabName(growup.gameObject.name);
-                if (Runtime.Growup.TryGetBaseGrowTime(prefabName, out float baseGrowTime))
-                {
-                    growup.m_growTime = baseGrowTime * totalFactor;
-                }
+                var trait = growup.GetComponent<Custom.OTAB_GrowupTrait>();
+                growup.m_growTime = trait.m_baseGrowTime * totalFactor;
             }
         }
 
@@ -160,6 +167,10 @@ namespace OfTamingAndBreeding.ValheimAPI
                             }
                         }
                     }
+                }
+                else
+                {
+                    spawnedCharacter.SetTamed(false);
                 }
                 spawnedCharacter.SetLevel(myCharacter.GetLevel());
             }

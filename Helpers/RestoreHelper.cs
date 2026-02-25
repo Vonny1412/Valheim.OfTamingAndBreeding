@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -9,6 +10,39 @@ namespace OfTamingAndBreeding.Helpers
 {
     internal static class RestoreHelper
     {
+
+
+
+
+
+        private static string GetPath(Transform t, Transform root)
+        {
+            var parts = new Stack<string>();
+            while (t != null && t != root)
+            {
+                parts.Push(t.name);
+                t = t.parent;
+            }
+            return string.Join("/", parts);
+        }
+
+        private static void CopyPublicFields(Component src, Component dst)
+        {
+            var t = src.GetType();
+            foreach (var f in t.GetFields(BindingFlags.Instance | BindingFlags.Public))
+            {
+                if (f.IsInitOnly) continue;
+                try
+                {
+                    f.SetValue(dst, f.GetValue(src));
+                }
+                catch
+                {
+                    // dirty: keep going
+                }
+            }
+        }
+
 
         //------------------------------
         // single components
@@ -29,30 +63,11 @@ namespace OfTamingAndBreeding.Helpers
             CopyPublicFields(src, dst);
         }
 
-        private static void CopyPublicFields(Component src, Component dst)
-        {
-            var t = src.GetType();
-            foreach (var f in t.GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public))
-            {
-                if (f.IsInitOnly) continue;
-                f.SetValue(dst, f.GetValue(src));
-            }
-        }
+
 
         //------------------------------
         // children list
         //------------------------------
-
-        private static string GetPath(Transform t, Transform root)
-        {
-            var parts = new Stack<string>();
-            while (t != null && t != root)
-            {
-                parts.Push(t.name);
-                t = t.parent;
-            }
-            return string.Join("/", parts);
-        }
 
         private static Dictionary<string, T> MapByPath<T>(GameObject go) where T : Component
         {

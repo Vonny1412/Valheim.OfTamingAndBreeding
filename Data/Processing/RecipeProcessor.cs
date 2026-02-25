@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using BepInEx.Logging;
 using OfTamingAndBreeding.ThirdParty.Mods;
+using UnityEngine;
 
 namespace OfTamingAndBreeding.Data.Processing
 {
@@ -11,12 +13,14 @@ namespace OfTamingAndBreeding.Data.Processing
     {
         public override string DirectoryName => Models.Recipe.DirectoryName;
 
-        private readonly HashSet<Recipe> originalRecipes = new HashSet<Recipe>();
-        private readonly HashSet<Recipe> otabRecipes = new HashSet<Recipe>();
+        public override string PrefabTypeName => null;
 
         public override string GetDataKey(string filePath) => null;
 
-        public override void Prepare(Base.DataProcessorContext ctx)
+        private readonly HashSet<Recipe> originalRecipes = new HashSet<Recipe>();
+        private readonly HashSet<Recipe> otabRecipes = new HashSet<Recipe>();
+
+        public override void Prepare(Base.PrefabRegistry reg)
         {
             foreach (var recipe in ObjectDB.instance.m_recipes)
             {
@@ -24,27 +28,28 @@ namespace OfTamingAndBreeding.Data.Processing
             }
         }
 
-        public override bool ValidateData(Base.DataProcessorContext ctx, string recipeName, Models.Recipe data)
+        public override bool ValidateData(Base.PrefabRegistry reg, string recipeName, Models.Recipe data)
         {
             return WackyDBBridge.IsRegistered;
         }
 
-        public override bool ReservePrefab(Base.DataProcessorContext ctx, string recipeName, Models.Recipe data)
+        public override bool ReservePrefab(Base.PrefabRegistry reg, string recipeName, Models.Recipe data)
         {
             return true; // i dont care
         }
 
-        public override bool ValidatePrefab(Base.DataProcessorContext ctx, string recipeName, Models.Recipe data)
+        public override bool ValidatePrefab(Base.PrefabRegistry reg, string recipeName, Models.Recipe data)
         {
-            return true; // i dont care
+            // TODO!
+            return true;
         }
 
-        public override void RegisterPrefab(Base.DataProcessorContext ctx, string recipeName, Models.Recipe data)
+        public override void RegisterPrefab(Base.PrefabRegistry reg, string recipeName, Models.Recipe data)
         {
             WackyDBBridge.ApplyRecipe(data);
         }
 
-        public override void Finalize(Base.DataProcessorContext ctx)
+        public override void Finalize(Base.PrefabRegistry reg)
         {
             foreach (var recipe in ObjectDB.instance.m_recipes)
             {
@@ -56,7 +61,7 @@ namespace OfTamingAndBreeding.Data.Processing
             originalRecipes.Clear();
         }
 
-        public override void RestorePrefab(Base.DataProcessorContext ctx, string recipeName)
+        public override void RestorePrefab(Base.PrefabRegistry reg, string recipeName)
         {
             foreach (var recipe in otabRecipes)
             {
@@ -65,7 +70,7 @@ namespace OfTamingAndBreeding.Data.Processing
             otabRecipes.Clear();
         }
 
-        public override void Cleanup(Base.DataProcessorContext ctx)
+        public override void Cleanup(Base.PrefabRegistry reg)
         {
         }
 

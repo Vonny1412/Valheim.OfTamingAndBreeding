@@ -1,14 +1,9 @@
 ﻿using JetBrains.Annotations;
+using OfTamingAndBreeding.Data.Models.SubData;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using OfTamingAndBreeding.Data.Models.SubData;
 namespace OfTamingAndBreeding.Data.Models
 {
-
     [Serializable]
     [CanBeNull]
     internal class Creature : DataBase<Creature>
@@ -62,6 +57,7 @@ namespace OfTamingAndBreeding.Data.Models
             public float? ConsumeRange { get; set; } = null;
             public float? ConsumeSearchRange { get; set; } = null;
             public float? ConsumeSearchInterval { get; set; } = null;
+            public string ConsumeAnimation { get; set; } = null;
             public bool? TamedStayNearSpawn { get; set; } = null; // otab feature
         }
 
@@ -69,8 +65,8 @@ namespace OfTamingAndBreeding.Data.Models
         [CanBeNull]
         public class TameableData
         {
-            public float? FedDuration { get; set; } = null;
             public float? TamingTime { get; set; } = null;
+            public float? FedDuration { get; set; } = null;
             public bool? Commandable { get; set; } = null;
             public float? StarvingGraceFactor { get; set; } = null;
         }
@@ -87,6 +83,8 @@ namespace OfTamingAndBreeding.Data.Models
 
             public float? LevelUpChance { get; set; } = null; // OTAB feature
             public int? MaxLevel { get; set; } = null;
+
+            public bool SpawnTamed { get; set; } = true; // OTAB feature
         }
 
         [Serializable]
@@ -119,7 +117,7 @@ namespace OfTamingAndBreeding.Data.Models
             public bool ProcreateWhileSwimming { get; set; } = true; // OTAB feature
 
             public int? MaxCreatures { get; set; } = null;
-            public List<string> MaxCreaturesCountPrefabs { get; set; } = null; // OTAB feature
+            public string[] MaxCreaturesCountPrefabs { get; set; } = null; // OTAB feature
 
             public float ExtraSiblingChance { get; set; } = 0.0f; // OTAB feature
             public int MaxSiblingsPerPregnancy { get; set; } = 0; // OTAB feature

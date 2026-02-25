@@ -11,9 +11,9 @@ namespace OfTamingAndBreeding.Data.Processing.Base
     {
         string DirectoryName { get; }
         string ModelTypeName { get; }
+        string PrefabTypeName { get; }
 
         string GetDataKey(string fileName);
-
 
         bool LoadFromYaml(string prefabName, string yamlString);
         bool LoadFromFile(string file);
@@ -21,14 +21,14 @@ namespace OfTamingAndBreeding.Data.Processing.Base
         int GetLoadedDataCount();
         void ResetData();
 
-        void Prepare(DataProcessorContext ctx);
-        void ValidateAllData(DataProcessorContext ctx);
-        void ReserveAllPrefabs(DataProcessorContext ctx);
-        bool ValidateAllPrefabs(DataProcessorContext ctx);
-        void RegisterAllPrefabs(DataProcessorContext ctx);
-        void Finalize(DataProcessorContext ctx);
-        void RestoreAllPrefabs(DataProcessorContext ctx);
-        void Cleanup(DataProcessorContext ctx);
+        void Orch_Prepare(PrefabRegistry reg);
+        void Orch_ValidateAllData(PrefabRegistry reg);
+        void Orch_ReserveAllPrefabs(PrefabRegistry reg);
+        bool Orch_ValidateAllPrefabs(PrefabRegistry reg);
+        void Orch_RegisterAllPrefabs(PrefabRegistry reg);
+        void Orch_Finalize(PrefabRegistry reg);
+        void Orch_RestoreAllPrefabs(PrefabRegistry reg);
+        void Orch_Cleanup(PrefabRegistry reg);
 
     }
 }

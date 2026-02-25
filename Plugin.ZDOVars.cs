@@ -53,6 +53,9 @@ namespace OfTamingAndBreeding
             // used to store a delay timer for re-chosing partner if old one gets invalid (maybe killed, out of range)
             public static readonly int z_partnerNotSeenSince = $"{Plugin.ModGuid}.z_partnerNotSeenSince".GetStableHashCode();
 
+            // used to store if the upcoming offspring spawns tamed or not
+            public static readonly int z_offspringTamed = $"{Plugin.ModGuid}.z_offspringTamed".GetStableHashCode();
+
             //
             // Egg
             //

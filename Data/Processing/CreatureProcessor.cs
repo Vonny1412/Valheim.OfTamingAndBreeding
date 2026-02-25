@@ -1,5 +1,4 @@
 ﻿using OfTamingAndBreeding.Helpers;
-using OfTamingAndBreeding.ValheimAPI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,14 +10,15 @@ namespace OfTamingAndBreeding.Data.Processing
     {
         public override string DirectoryName => Models.Creature.DirectoryName;
 
-        public override string GetDataKey(string filePath) => null;
+        public override string PrefabTypeName => "creature";
 
+        public override string GetDataKey(string filePath) => null;
 
         //------------------------------------------------
         // PREPARE
         //------------------------------------------------
 
-        public override void Prepare(Base.DataProcessorContext ctx)
+        public override void Prepare(Base.PrefabRegistry reg)
         {
 
         }
@@ -27,7 +27,7 @@ namespace OfTamingAndBreeding.Data.Processing
         // VALIDATE DATA
         //------------------------------------------------
 
-        public override bool ValidateData(Base.DataProcessorContext ctx, string creatureName, Models.Creature data)
+        public override bool ValidateData(Base.PrefabRegistry reg, string creatureName, Models.Creature data)
         {
             var model = $"{nameof(Models.Creature)}.{creatureName}";
             var error = false;
@@ -122,7 +122,11 @@ namespace OfTamingAndBreeding.Data.Processing
 
             if (data.Tameable != null && data.Components.Tameable == Models.SubData.ComponentBehavior.Patch)
             {
-                // nothing to validate here
+                if (data.Tameable.StarvingGraceFactor.HasValue && data.Tameable.StarvingGraceFactor.Value < 0)
+                {
+                    Plugin.LogWarning($"{model}.{nameof(data.Tameable)}.{nameof(data.Tameable.StarvingGraceFactor)}: Negative values not allowed - Using null");
+                    data.Tameable.StarvingGraceFactor = null;
+                }
             }
 
             if (data.Procreation != null && data.Components.Procreation == Models.SubData.ComponentBehavior.Patch)
@@ -191,7 +195,7 @@ namespace OfTamingAndBreeding.Data.Processing
                         }
                         if (offspringData.LevelUpChance != null && offspringData.MaxLevel == null)
                         {
-                            Plugin.LogWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.LevelUpChance)}: Fields needs 'MaxLevel' to be set.");
+                            Plugin.LogWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.LevelUpChance)}: Field needs 'MaxLevel' to be set.");
                             offspringData.LevelUpChance = null;
                             // no error
                         }
@@ -207,18 +211,9 @@ namespace OfTamingAndBreeding.Data.Processing
         // RESERVE PREFAB
         //------------------------------------------------
 
-        private readonly HashSet<string> reservedPrefabNames = new HashSet<string>();
-
-        public override bool ReservePrefab(Base.DataProcessorContext ctx, string creatureName, Models.Creature data)
+        public override bool ReservePrefab(Base.PrefabRegistry ctx, string creatureName, Models.Creature data)
         {
             var model = $"{nameof(Models.Creature)}.{creatureName}";
-
-            if (reservedPrefabNames.Contains(creatureName))
-            {
-                Plugin.LogError($"{model}: Prefab already reserved");
-                return false;
-            }
-            reservedPrefabNames.Add(creatureName);
 
             var creature = ctx.GetReservedPrefab(creatureName);
             if (creature == null)
@@ -244,12 +239,12 @@ namespace OfTamingAndBreeding.Data.Processing
         // VALIDATE PREFAB
         //------------------------------------------------
 
-        public override bool ValidatePrefab(Base.DataProcessorContext ctx, string creatureName, Models.Creature data)
+        public override bool ValidatePrefab(Base.PrefabRegistry reg, string creatureName, Models.Creature data)
         {
             var model = $"{nameof(Models.Creature)}.{creatureName}";
             var error = false;
 
-            var creature = ctx.GetReservedPrefab(creatureName);
+            var creature = reg.GetReservedPrefab(creatureName);
             if (!creature)
             {
                 Plugin.LogError($"{model}: Prefab not found");
@@ -288,14 +283,16 @@ namespace OfTamingAndBreeding.Data.Processing
                 {
                     foreach (var (foodData, i) in data.MonsterAI.ConsumeItems.Select((value, i) => (value, i)))
                     {
-                        if (!ctx.PrefabExists(foodData.Prefab))
+                        var foodItem = reg.GetOriginalPrefab(foodData.Prefab) ?? reg.GetReservedPrefab(foodData.Prefab);
+                        if (foodItem == null)
                         {
                             Plugin.LogError($"{model}.{nameof(data.MonsterAI)}.{nameof(data.MonsterAI.ConsumeItems)}.{i}.{nameof(foodData.Prefab)}: '{foodData.Prefab}' not found");
                             error = true;
                         }
                         else
                         {
-                            if (Runtime.MonsterAI.GetItemDropByPrefab(foodData.Prefab) == null)
+                            var foodItemDrop = foodItem.GetComponent<ItemDrop>();
+                            if (foodItemDrop == null)
                             {
                                 Plugin.LogError($"{model}.{nameof(data.MonsterAI)}.{nameof(data.MonsterAI.ConsumeItems)}.{i}.{nameof(foodData.Prefab)}: '{foodData.Prefab}' has no ItemDrop component");
                                 error = true;
@@ -312,7 +309,7 @@ namespace OfTamingAndBreeding.Data.Processing
                 {
                     foreach (var (partnerData, i) in data.Procreation.Partner.Select((value, i) => (value, i)))
                     {
-                        if (!ctx.PrefabExists(partnerData.Prefab))
+                        if (!reg.PrefabExists(partnerData.Prefab))
                         {
                             Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Partner)}.{i}.{nameof(partnerData.Prefab)}: '{partnerData.Prefab}' not found");
                             error = true;
@@ -323,7 +320,7 @@ namespace OfTamingAndBreeding.Data.Processing
                 foreach (var (offspringData, i) in data.Procreation.Offspring.Select((value, i) => (value, i)))
                 {
 
-                    if (!ctx.PrefabExists(offspringData.Prefab))
+                    if (!reg.PrefabExists(offspringData.Prefab))
                     {
                         Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.Prefab)}: '{offspringData.Prefab}' not found");
                         error = true;
@@ -336,7 +333,7 @@ namespace OfTamingAndBreeding.Data.Processing
 
                     if (offspringData.NeedPartnerPrefab != null)
                     {
-                        if (!ctx.PrefabExists(offspringData.NeedPartnerPrefab))
+                        if (!reg.PrefabExists(offspringData.NeedPartnerPrefab))
                         {
                             Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.NeedPartnerPrefab)}: '{offspringData.NeedPartnerPrefab}' not found");
                             error = true;
@@ -348,7 +345,7 @@ namespace OfTamingAndBreeding.Data.Processing
                 {
                     foreach (var (prefabName, i) in data.Procreation.MaxCreaturesCountPrefabs.Select((value, i) => (value, i)))
                     {
-                        if (!ctx.PrefabExists(prefabName))
+                        if (!reg.PrefabExists(prefabName))
                         {
                             Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.MaxCreaturesCountPrefabs)}.{i}: '{prefabName}' not found");
                             error = true;
@@ -366,10 +363,11 @@ namespace OfTamingAndBreeding.Data.Processing
         // REGISTER PREFAB
         //------------------------------------------------
 
-        public override void RegisterPrefab(Base.DataProcessorContext ctx, string creatureName, Models.Creature data)
+        public override void RegisterPrefab(Base.PrefabRegistry reg, string creatureName, Models.Creature data)
         {
             var model = $"{nameof(Models.Creature)}.{creatureName}";
-            var creature = ctx.GetReservedPrefab(creatureName);
+            var creature = reg.GetReservedPrefab(creatureName);
+            var creatureComponent = reg.GetOrAddComponent<ValheimAPI.Custom.OTAB_Creature>(creatureName, creature);
 
             var idleSoundPrefab = Helpers.EffectsHelper.FindEffectPrefab<BaseAI>(creatureName, "m_idleSound", 0);
 
@@ -417,7 +415,7 @@ namespace OfTamingAndBreeding.Data.Processing
                                 .OrderByDescending(i => i.FedDurationFactor)
                                 .ToArray();
 
-                            Runtime.MonsterAI.SetCustomConsumeItems(creatureName, data.MonsterAI.ConsumeItems);
+                            creatureComponent.SetCustomConsumeItems(data.MonsterAI.ConsumeItems);
 
                             monsterAI.m_consumeItems = new List<ItemDrop>();
                             foreach (var entry in data.MonsterAI.ConsumeItems)
@@ -437,31 +435,56 @@ namespace OfTamingAndBreeding.Data.Processing
                         {
                             Plugin.LogDebug($"{model}.{nameof(data.MonsterAI)}: Setting custom AnimalAI values");
 
-                            var prefabAnimalAIData = animalAI.CreateExtraData();
+                            //var prefabAnimalAIData = animalAI.CreateExtraData();
+                            var customAnimalAI = reg.GetOrAddComponent<ValheimAPI.Custom.OTAB_CustomAnimalAI>(creatureName, creature);
 
-                            if (data.MonsterAI.ConsumeRange != null) prefabAnimalAIData.m_consumeRange = (float)data.MonsterAI.ConsumeRange;
-                            if (data.MonsterAI.ConsumeSearchRange != null) prefabAnimalAIData.m_consumeSearchRange = (float)data.MonsterAI.ConsumeSearchRange;
-                            if (data.MonsterAI.ConsumeSearchInterval != null) prefabAnimalAIData.m_consumeSearchInterval = (float)data.MonsterAI.ConsumeSearchInterval;
-
+                            if (data.MonsterAI.ConsumeRange != null) customAnimalAI.m_consumeRange = (float)data.MonsterAI.ConsumeRange;
+                            if (data.MonsterAI.ConsumeSearchRange != null) customAnimalAI.m_consumeSearchRange = (float)data.MonsterAI.ConsumeSearchRange;
+                            if (data.MonsterAI.ConsumeSearchInterval != null) customAnimalAI.m_consumeSearchInterval = (float)data.MonsterAI.ConsumeSearchInterval;
                             if (data.MonsterAI.ConsumeItems != null)
                             {
-                                prefabAnimalAIData.m_consumeItems = new List<ItemDrop>();
+                                customAnimalAI.m_consumeItems = new List<ItemDrop>();
                                 foreach (var entry in data.MonsterAI.ConsumeItems)
                                 {
                                     var itemDrop = Runtime.MonsterAI.GetItemDropByPrefab(entry.Prefab);
                                     if (itemDrop != null)
                                     {
-                                        prefabAnimalAIData.m_consumeItems.Add(itemDrop);
+                                        customAnimalAI.m_consumeItems.Add(itemDrop);
                                     }
                                 }
                             }
                         }
                     }
 
-                    if ((bool)data.MonsterAI.TamedStayNearSpawn == true)
+                    if (data.MonsterAI.TamedStayNearSpawn != null && (bool)data.MonsterAI.TamedStayNearSpawn == true)
                     {
-                        Data.Runtime.MonsterAI.SetTamedStayNearSpawn(creatureName);
+                        creatureComponent.m_tamedStayNearSpawn = true;
                     }
+
+                    if (data.MonsterAI.ConsumeAnimation != null)
+                    {
+                        var customAnimation = data.MonsterAI.ConsumeAnimation;
+                        if (customAnimation.ToLower() == "debug")
+                        {
+                            var zanim = creature.GetComponent<ZSyncAnimation>();
+                            AnimationHelper.DumpZSyncAnim(zanim, $"{model}:");
+                        }
+                        else
+                        {
+                            if (AnimationHelper.AnimationExists(creature, customAnimation, out AnimationClip animClip))
+                            {
+                                var runner = reg.GetOrAddComponent<ValheimAPI.Custom.OTAB_ConsumeClipOverlay>(creatureName, creature);
+                                runner.m_animClipName = customAnimation;
+                            }
+                            else
+                            {
+                                Plugin.LogWarning(
+                                    $"{model}.{nameof(MonsterAI)}.{nameof(data.MonsterAI.ConsumeAnimation)}: Animation '{customAnimation}' not found on prefab '{creatureName}'. Custom consume animation ignored."
+                                );
+                            }
+                        }
+                    }
+
                 }
             }
             else if (data.Components.MonsterAI == Models.SubData.ComponentBehavior.Remove)
@@ -474,53 +497,68 @@ namespace OfTamingAndBreeding.Data.Processing
             {
                 if (data.Tameable != null)
                 {
-                    var tameable = ctx.GetOrAddComponent<Tameable>(creatureName, creature);
-                    var pet = ctx.GetOrAddComponent<Pet>(creatureName, creature); // aso neccessary
+                    var tameable = reg.GetOrAddComponent<Tameable>(creatureName, creature);
+                    var pet = reg.GetOrAddComponent<Pet>(creatureName, creature); // aso neccessary
                     Plugin.LogDebug($"{model}.{nameof(data.Tameable)}: Setting Tameable values");
 
-                    if (data.Tameable.Commandable != null) tameable.m_commandable = (bool)data.Tameable.Commandable;
-                    if (data.Tameable.TamingTime != null)
+                    if (data.Tameable.Commandable.HasValue)
                     {
-                        var tamingTime = (float)data.Tameable.TamingTime;
+                        tameable.m_commandable = data.Tameable.Commandable.Value;
+                    }
+
+                    if (data.Tameable.TamingTime.HasValue)
+                    {
+                        var tamingTime = data.Tameable.TamingTime.Value;
                         if (tamingTime >= 0)
                         {
                             // tameable (even if its 0, maybe any other addon uses instant taming?)
-                            Runtime.Tameable.SetBaseTamingTime(creatureName, tamingTime);
                         }
                         else
                         {
-                            // not tameable -> hide statustext
-                            Runtime.Tameable.SetTamingDisabled(creatureName);
+                            // not tameable
+                            creatureComponent.m_tamingDisabled = true;
                         }
                         tameable.m_tamingTime = tamingTime >= 0 ? tamingTime : 0; // better clamp. dunno if other mods can handle negative values
                     }
-                    if (data.Tameable.FedDuration != null)
+
+                    if (data.Tameable.FedDuration.HasValue)
                     {
-                        var fedDuration = (float)data.Tameable.FedDuration;
+                        var fedDuration = data.Tameable.FedDuration.Value;
                         if (fedDuration >= 0)
                         {
                             // can eat
-                            Runtime.Tameable.SetBaseFedDuration(creatureName, fedDuration);
                         }
                         else
                         {
-                            // cannot eat, hide all feeding info in hover
-                            Runtime.Tameable.SetIsFedTimerDisabled(creatureName);
+                            // cannot eat
+                            creatureComponent.m_fedTimerDisabled = true;
                         }
                         tameable.m_fedDuration = fedDuration >= 0 ? fedDuration : 0; // better clamp. dunno if other mods can handle negative values
                     }
-
-                    if (data.Tameable.StarvingGraceFactor != null)
+                    else
                     {
-                        Runtime.Tameable.SetStarvingGraceFactor(creatureName, (float)data.Tameable.StarvingGraceFactor);
+                        tameable.m_fedDuration = 600; // we are using 600 as default, not 60
                     }
+
+                    if (data.Tameable.StarvingGraceFactor.HasValue)
+                    {
+                        creatureComponent.m_starvingGraceFactor = data.Tameable.StarvingGraceFactor.Value;
+                    }
+
+
+
+
+
+
+
+
 
                     Plugin.LogDebug($"{model}.{nameof(data.Tameable)}: Setting effects");
                     if (tameable.m_sootheEffect.m_effectPrefabs.Length == 0)
                     {
                         tameable.m_sootheEffect = new EffectList
                         {
-                            m_effectPrefabs = Helpers.EffectsHelper.GetEffectList(new string[] {
+                            m_effectPrefabs = Helpers.EffectsHelper.CreateEffectList(new string[] {
                                 "vfx_creature_soothed",
                             })
                         };
@@ -529,7 +567,7 @@ namespace OfTamingAndBreeding.Data.Processing
                     {
                         tameable.m_tamedEffect = new EffectList
                         {
-                            m_effectPrefabs = Helpers.EffectsHelper.GetEffectList(new string[] {
+                            m_effectPrefabs = Helpers.EffectsHelper.CreateEffectList(new string[] {
                                 "fx_creature_tamed",
                             })
                         };
@@ -538,7 +576,7 @@ namespace OfTamingAndBreeding.Data.Processing
                     {
                         tameable.m_petEffect = new EffectList
                         {
-                            m_effectPrefabs = Helpers.EffectsHelper.GetEffectList(new UnityEngine.GameObject[] {
+                            m_effectPrefabs = Helpers.EffectsHelper.CreateEffectList(new UnityEngine.GameObject[] {
                                 EffectsHelper.GetVisualOnlyEffect("fx_boar_pet", "otab_vfx_pet"),
                                 idleSoundPrefab,
                             })
@@ -549,24 +587,61 @@ namespace OfTamingAndBreeding.Data.Processing
             else if (data.Components.Tameable == Models.SubData.ComponentBehavior.Remove)
             {
                 Plugin.LogDebug($"{model}.{nameof(Tameable)}: Removing Tameable component (if exist)");
-                ctx.DestroyComponentIfExists<Tameable>(creatureName, creature);
+                reg.DestroyComponentIfExists<Tameable>(creatureName, creature);
             }
 
             if (data.Components.Procreation == Models.SubData.ComponentBehavior.Patch)
             {
                 if (data.Procreation != null)
                 {
-                    var procreation = ctx.GetOrAddComponent<Procreation>(creatureName, creature);
+                    var procreation = reg.GetOrAddComponent<Procreation>(creatureName, creature);
                     Plugin.LogDebug($"{model}.{nameof(data.Procreation)}: Setting Procreation values");
+
+                    creatureComponent.m_procreateWhileSwimming = data.Procreation.ProcreateWhileSwimming; // todo: rename yaml option to: "DisableProcreationWhileSwimming"
+                    creatureComponent.m_maxSiblingsPerPregnancy = data.Procreation.MaxSiblingsPerPregnancy;
+                    creatureComponent.m_extraSiblingChance = data.Procreation.ExtraSiblingChance;
+
+                    if (data.Procreation.Partner != null)
+                    {
+                        creatureComponent.SetPartnerList(data.Procreation.Partner);
+                    }
+
+                    if (data.Procreation.Offspring != null)
+                    {
+                        creatureComponent.SetOffspringList(data.Procreation.Offspring);
+                    }
+
+                    if (data.Procreation.MaxCreaturesCountPrefabs != null)
+                    {
+                        creatureComponent.SetMaxCreaturesPrefabs(data.Procreation.MaxCreaturesCountPrefabs);
+                    }
+
+
+
+
+                    
+
+
+
+
+
+
+
+
+
+
 
                     if (data.Procreation.UpdateInterval != null) procreation.m_updateInterval = (float)data.Procreation.UpdateInterval;
                     if (data.Procreation.TotalCheckRange != null) procreation.m_totalCheckRange = (float)data.Procreation.TotalCheckRange;
 
                     if (data.Procreation.PartnerCheckRange != null) procreation.m_partnerCheckRange = (float)data.Procreation.PartnerCheckRange;
                     if (data.Procreation.RequiredLovePoints != null) procreation.m_requiredLovePoints = (int)data.Procreation.RequiredLovePoints;
+                    else procreation.m_requiredLovePoints = 3;
 
                     if (data.Procreation.PregnancyChance != null) procreation.m_pregnancyChance = (float)data.Procreation.PregnancyChance;
+                    else procreation.m_pregnancyChance = 0.33f; // because most vanilla creatures use 0.33 instead of default 0.5
                     if (data.Procreation.PregnancyDuration != null) procreation.m_pregnancyDuration = (float)data.Procreation.PregnancyDuration;
+                    else procreation.m_pregnancyDuration = 60;
 
                     if (data.Procreation.SpawnOffset != null) procreation.m_spawnOffset = (float)data.Procreation.SpawnOffset;
                     if (data.Procreation.SpawnOffsetMax != null) procreation.m_spawnOffsetMax = (float)data.Procreation.SpawnOffsetMax;
@@ -574,10 +649,11 @@ namespace OfTamingAndBreeding.Data.Processing
 
                     if (data.Procreation.MaxCreatures != null) procreation.m_maxCreatures = (int)data.Procreation.MaxCreatures;
 
-                    if (data.Procreation.PartnerRecheckSeconds != null) Runtime.Procreation.SetPartnerRecheckTicks(creatureName, (float)data.Procreation.PartnerRecheckSeconds);
-
-                    // sibling chance will be handled in ProcreationAPI
-                    //procreationData.siblingChance = Mathf.Clamp(procreationData.siblingChance, 0, 1);
+                    if (data.Procreation.PartnerRecheckSeconds.HasValue)
+                    {
+                        var seconds = data.Procreation.PartnerRecheckSeconds.Value;
+                        creatureComponent.m_partnerRecheckTicks = TimeSpan.FromSeconds(seconds).Ticks;
+                    }
 
                     Plugin.LogDebug($"{model}.{nameof(data.Procreation)}: Setting effects");
 
@@ -585,23 +661,23 @@ namespace OfTamingAndBreeding.Data.Processing
                     {
                         procreation.m_loveEffects = new EffectList
                         {
-                            m_effectPrefabs = Helpers.EffectsHelper.GetEffectList(new string[] {
-                            idleSoundPrefab?.name,
+                            m_effectPrefabs = Helpers.EffectsHelper.CreateEffectList(new string[] {
                             "vfx_boar_love",
+                            idleSoundPrefab?.name,
                         })
                         };
 
-                        procreation.m_loveEffects.m_effectPrefabs[1].m_scale = true;
-                        procreation.m_loveEffects.m_effectPrefabs[1].m_prefab.transform.localScale = UnityEngine.Vector3.one * 0.5f;
+                        procreation.m_loveEffects.m_effectPrefabs[0].m_scale = true;
+                        procreation.m_loveEffects.m_effectPrefabs[0].m_prefab.transform.localScale = UnityEngine.Vector3.one * 0.5f;
 
                     }
                     if (procreation.m_birthEffects.m_effectPrefabs.Length == 0)
                     {
                         procreation.m_birthEffects = new EffectList
                         {
-                            m_effectPrefabs = Helpers.EffectsHelper.GetEffectList(new string[] {
-                            idleSoundPrefab?.name,
+                            m_effectPrefabs = Helpers.EffectsHelper.CreateEffectList(new string[] {
                             "vfx_boar_birth",
+                            idleSoundPrefab?.name,
                         })
                         };
                     }
@@ -615,7 +691,7 @@ namespace OfTamingAndBreeding.Data.Processing
             else if (data.Components.Procreation == Models.SubData.ComponentBehavior.Remove)
             {
                 Plugin.LogDebug($"{model}.{nameof(Procreation)}: Removing Procreation component (if exist)");
-                ctx.DestroyComponentIfExists<Procreation>(creatureName, creature);
+                reg.DestroyComponentIfExists<Procreation>(creatureName, creature);
             }
 
         }
@@ -624,7 +700,7 @@ namespace OfTamingAndBreeding.Data.Processing
         // FINALIZE
         //------------------------------------------------
 
-        public override void Finalize(Base.DataProcessorContext ctx)
+        public override void Finalize(Base.PrefabRegistry reg)
         {
         }
 
@@ -632,9 +708,9 @@ namespace OfTamingAndBreeding.Data.Processing
         // UNREGISTER PREFAB
         //------------------------------------------------
 
-        public override void RestorePrefab(Base.DataProcessorContext ctx, string creatureName)
+        public override void RestorePrefab(Base.PrefabRegistry reg, string creatureName)
         {
-            ctx.Restore(creatureName, RestorePrefabFromBackup);
+            reg.Restore(creatureName, RestorePrefabFromBackup);
         }
 
         private void RestorePrefabFromBackup(UnityEngine.GameObject backup, UnityEngine.GameObject current)
@@ -651,7 +727,7 @@ namespace OfTamingAndBreeding.Data.Processing
         // CLEANUP
         //------------------------------------------------
 
-        public override void Cleanup(Base.DataProcessorContext ctx)
+        public override void Cleanup(Base.PrefabRegistry reg)
         {
         }
 

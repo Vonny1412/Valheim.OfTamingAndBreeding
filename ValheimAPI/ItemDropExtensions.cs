@@ -83,12 +83,9 @@ namespace OfTamingAndBreeding.ValheimAPI
 
                 if (canGrow)
                 {
-                    if (eggGrow.m_growTime > 0)
+                    if (eggGrow.m_growTime > 0) // has a grow time
                     {
-                        // has a grow time
-
-                        string pctText = "0";
-                        if (growStart > 0)
+                        if (growStart > 0) // is already growing
                         {
                             float precision = 1f / Plugin.Configs.HudProgressPrecision.Value;
                             int decimals = Mathf.Max(0, Mathf.RoundToInt(-Mathf.Log10(precision)));
@@ -97,14 +94,13 @@ namespace OfTamingAndBreeding.ValheimAPI
                             float pctRaw = (1f - Mathf.Clamp01(remainingTime / eggGrow.m_growTime)) * 100f;
 
                             float pct = Mathf.Floor(pctRaw * precision) / precision; // no "jumping forward"
-                            pctText = pct.ToString($"F{decimals}", System.Globalization.CultureInfo.InvariantCulture);
+                            var pctText = pct.ToString($"F{decimals}", System.Globalization.CultureInfo.InvariantCulture);
+                            extraText = $"({pctText}%)";
                         }
-                        extraText = $"({pctText}%)";
                     }
                     else
                     {
                         // unknown/secret grow time
-
                         extraText = "(?)";
                     }
                 }

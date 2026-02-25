@@ -2,22 +2,20 @@
 using OfTamingAndBreeding.Data;
 using OfTamingAndBreeding.Data.Models.SubData;
 using OfTamingAndBreeding.Helpers;
+using OfTamingAndBreeding.ValheimAPI.LowLevel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.ValheimAPI
 {
     internal static class ProcreationExtensions
     {
-        internal sealed class ProcreationExtraData : Lifecycle.ExtraData<Procreation, ProcreationExtraData>
-        {
-            public float realPregnancyDuration = 0;
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ZNetView GetZNetView(this Procreation that)
@@ -81,9 +79,6 @@ namespace OfTamingAndBreeding.ValheimAPI
 
         public static void Awake_PatchPostfix(this Procreation procreation)
         {
-            var data = ProcreationExtraData.GetOrCreate(procreation);
-            data.realPregnancyDuration = procreation.m_pregnancyDuration; // initial value
-
             var m_nview = procreation.GetZNetView();
             if (m_nview.IsValid())
             {
@@ -94,15 +89,24 @@ namespace OfTamingAndBreeding.ValheimAPI
                 m_nview.Register<Vector3>("RPC_DisplayBirthEffect", (long sender, Vector3 position) => procreation.RPC_DisplayBirthEffect(sender, position));
             }
 
-
-            var prefabName = Utils.GetPrefabName(procreation.gameObject.name);
-            if (!Runtime.Procreation.TryGetBasePregnancyDuration(prefabName, out float _))
+            if (procreation.TryGetComponent<Custom.OTAB_ProcreationTrait>(out _) == false)
             {
+                // we are using late-registration
+                // instead of adding component in CreatureProcessor
+
+                var prefabName = Utils.GetPrefabName(procreation.gameObject.name);
                 var prefab = PrefabManager.Instance.GetPrefab(prefabName);
                 var prefabProcreation = prefab.GetComponent<Procreation>();
-                Runtime.Procreation.SetBasePregnancyDuration(prefabName, prefabProcreation.m_pregnancyDuration);
-            }
 
+                var c1 = procreation.gameObject.gameObject.AddComponent<Custom.OTAB_ProcreationTrait>();
+                var c2 = prefab.gameObject.AddComponent<Custom.OTAB_ProcreationTrait>();
+
+                c1.m_basePregnancyDuration = prefabProcreation.m_pregnancyDuration;
+                c2.m_basePregnancyDuration = prefabProcreation.m_pregnancyDuration;
+
+                c1.m_realPregnancyDuration = prefabProcreation.m_pregnancyDuration;
+                c2.m_realPregnancyDuration = prefabProcreation.m_pregnancyDuration;
+            }
 
             procreation.UpdatePregnancyDuration();
         }
@@ -117,7 +121,8 @@ namespace OfTamingAndBreeding.ValheimAPI
             var globalFactor = Plugin.Configs.GlobalPregnancyDurationFactor.Value;
             if (globalFactor < 0f)
             {
-                procreation.UpdatePregnancyDuration(1f); // back to base
+                // should not be possible but whatever
+                //procreation.UpdatePregnancyDuration(1f); // back to base
                 return;
             }
             var totalFactor = globalFactor;
@@ -128,11 +133,8 @@ namespace OfTamingAndBreeding.ValheimAPI
         {
             if (totalFactor >= 0) // yes, we do allow 0, too
             {
-                var prefabName = Utils.GetPrefabName(procreation.gameObject.name);
-                if (Runtime.Procreation.TryGetBasePregnancyDuration(prefabName, out float basePregnancyDuration))
-                {
-                    procreation.m_pregnancyDuration = basePregnancyDuration * totalFactor;
-                }
+                var trait = procreation.GetComponent<Custom.OTAB_ProcreationTrait>();
+                procreation.m_pregnancyDuration = trait.m_basePregnancyDuration * totalFactor;
             }
         }
 
@@ -164,15 +166,14 @@ namespace OfTamingAndBreeding.ValheimAPI
                 procreation.SetMyPrefab(m_myPrefab);
             }
 
-            if (!Data.Models.Creature.TryGet(m_myPrefab.name, out var data) || data.Procreation == null)
+            if (!procreation.TryGetComponent<Custom.OTAB_Creature>(out var creature))
             {
-                // no data/procreation, let valheim do the job
+                Plugin.LogWarning("no creature component");
                 return true;
             }
-            var dataProcreation = data.Procreation;
 
             // check if procreation is disabled while swimming
-            if (dataProcreation.ProcreateWhileSwimming == false && m_character && m_character.IsSwimming())
+            if (creature.m_procreateWhileSwimming == false && m_character && m_character.IsSwimming())
             {
                 return false;
             }
@@ -197,6 +198,9 @@ namespace OfTamingAndBreeding.ValheimAPI
             int z_siblingsCounter = zdo.GetInt(Plugin.ZDOVars.z_siblingsCounter, 0);
             int z_offspringLevel = zdo.GetInt(Plugin.ZDOVars.z_offspringLevel, procreation.m_minOffspringLevel);
             int z_needPartner = zdo.GetInt(Plugin.ZDOVars.z_needPartner, 1);
+            int z_offspringTamed = zdo.GetInt(Plugin.ZDOVars.z_offspringTamed, 1);
+
+            
 
             bool doResetPartner = false;
             bool doResetOffspring = false;
@@ -261,7 +265,7 @@ namespace OfTamingAndBreeding.ValheimAPI
                 }
                 else
                 {
-                    if (dataProcreation.PartnerRecheckSeconds > 0) // this feature can be turned off by setting it to 0 but would result in less pregnancies
+                    if (creature.m_partnerRecheckTicks > 0) // this feature can be turned off by setting it to 0 but would result in less pregnancies
                     {
                         if (z_partnerNotSeenSince == 0L)
                         {
@@ -269,8 +273,7 @@ namespace OfTamingAndBreeding.ValheimAPI
                             z_partnerNotSeenSince = ZNetHelper.SetLong(zdo, Plugin.ZDOVars.z_partnerNotSeenSince, __nowTicks, z_partnerNotSeenSince);
                         }
 
-                        var recheck = Data.Runtime.Procreation.GetPartnerRecheckTicks(__myPrefabName, 0);
-                        bool expired = z_partnerNotSeenSince != 0L && (__nowTicks - z_partnerNotSeenSince) > recheck;
+                        bool expired = z_partnerNotSeenSince != 0L && (__nowTicks - z_partnerNotSeenSince) > creature.m_partnerRecheckTicks;
                         if (expired) // creature is mourning to have lost the partner it just found =(
                         {
                             // this will trigger a new search for partner
@@ -281,13 +284,16 @@ namespace OfTamingAndBreeding.ValheimAPI
                 }
             }
 
+
+            Plugin.LogWarning($"{procreation.name}");
+
+
             //if (m_seperatePartner == null && z_needPartner==1)
             if (procreation.m_seperatePartner == null) // always try to find new partner if its still empty
             {
-                if (dataProcreation.Partner != null)
+                if (creature.HasPartnerList(out var partnerList))
                 {
-
-                    var foundPartner = RandomData.FindRandom<Data.Models.Creature.ProcreationPartnerData>(dataProcreation.Partner, out Data.Models.Creature.ProcreationPartnerData partnerEntry, entry =>
+                    var foundPartner = RandomData.FindRandom<Data.Models.Creature.ProcreationPartnerData>(partnerList, out Data.Models.Creature.ProcreationPartnerData partnerEntry, entry =>
                     {
                         var prefab = __zNetScene.GetPrefab(entry.Prefab);
                         if (prefab == null) return 0; // zero weight => skip this one
@@ -347,73 +353,75 @@ namespace OfTamingAndBreeding.ValheimAPI
             }
 
             // still empty? search for new offspring
-            if (m_offspringPrefab == null)
+            if (m_offspringPrefab == null && creature.HasOffspringList(out var offspringList))
             {
 
                 // search for random offspring
                 var partnerName = procreation.m_seperatePartner?.name;
-                var foundOffspring = RandomData.FindRandom<Data.Models.Creature.ProcreationOffspringData>(dataProcreation.Offspring, out Data.Models.Creature.ProcreationOffspringData randomOffspring, entry =>
+                var foundOffspring = RandomData.FindRandom<Data.Models.Creature.ProcreationOffspringData>(offspringList, out Data.Models.Creature.ProcreationOffspringData randomOffspring, entry =>
                 {
                     var validPartner = entry.NeedPartner == false || (entry.NeedPartner && partnerName != null && (
                         (entry.NeedPartnerPrefab == null)
                         ||
                         (entry.NeedPartnerPrefab != null && partnerName == entry.NeedPartnerPrefab)
                     ));
-
                     return validPartner ? entry.Weight : 0;
                 });
-
-                GameObject offspring = null;
+                
                 if (foundOffspring)
                 {
-                    offspring = __zNetScene.GetPrefab(randomOffspring.Prefab);
-                }
+                    var offspring = __zNetScene.GetPrefab(randomOffspring.Prefab);
 
-                if (!offspring)
-                {   // something happend
+                    m_offspringPrefab = offspring;
+                    z_offspringPrefab = ZNetHelper.SetString(zdo, Plugin.ZDOVars.z_offspringPrefab, offspring.name, z_offspringPrefab);
 
-                    // also abort getting siblings
-                    z_siblingsCounter = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_siblingsCounter, 0, z_siblingsCounter);
+                    if (randomOffspring.SpawnTamed)
+                        z_offspringTamed = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_offspringTamed, 1, z_offspringTamed);
+                    else
+                        z_offspringTamed = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_offspringTamed, 0, z_offspringTamed);
 
-                    return false;
-                }
+                    if (randomOffspring.NeedPartner)
+                        z_needPartner = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_needPartner, 1, z_needPartner);
+                    else
+                        z_needPartner = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_needPartner, 0, z_needPartner);
 
-                m_offspringPrefab = offspring;
-                z_offspringPrefab = ZNetHelper.SetString(zdo, Plugin.ZDOVars.z_offspringPrefab, offspring.name, z_offspringPrefab);
+                    var levelOld = Mathf.Max(procreation.m_minOffspringLevel, m_character ? m_character.GetLevel() : procreation.m_minOffspringLevel);
+                    var levelNew = levelOld;
 
-                if (randomOffspring.NeedPartner)
-                    z_needPartner = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_needPartner, 1, z_needPartner);
-                else
-                    z_needPartner = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_needPartner, 0, z_needPartner);
-
-                var levelOld = Mathf.Max(procreation.m_minOffspringLevel, m_character ? m_character.GetLevel() : procreation.m_minOffspringLevel);
-                var levelNew = levelOld;
-
-                // determ offspring level for levelup feature
-                // this is not the best place to set level of next offspring
-                // because the fate will be determined before creature gets pregnant
-                // but i want to store neither offspring-entry-index nor levelup-values into zdo
-                // so just roll the dice here...
-                if (randomOffspring.LevelUpChance != null && randomOffspring.MaxLevel != null)
-                {
-                    var levelUpChance = (float)randomOffspring.LevelUpChance;
-                    var levelUpMax = (int)randomOffspring.MaxLevel;
-                    if (levelUpChance != 0)
+                    // determ offspring level for levelup feature
+                    // this is not the best place to set level of next offspring
+                    // because the fate will be determined before creature gets pregnant
+                    // but i want to store neither offspring-entry-index nor levelup-values into zdo
+                    // so just roll the dice here...
+                    if (randomOffspring.LevelUpChance != null && randomOffspring.MaxLevel != null)
                     {
-                        var chance = UnityEngine.Random.value;
-                        if (chance <= levelUpChance)
+                        var levelUpChance = (float)randomOffspring.LevelUpChance;
+                        var levelUpMax = (int)randomOffspring.MaxLevel;
+                        if (levelUpChance != 0)
                         {
-                            levelNew = levelNew + 1;
-                            if (levelNew > levelUpMax)
+                            var chance = UnityEngine.Random.value;
+                            if (chance <= levelUpChance)
                             {
-                                levelNew = levelUpMax;
+                                levelNew = levelNew + 1;
+                                if (levelNew > levelUpMax)
+                                {
+                                    levelNew = levelUpMax;
+                                }
+                                Plugin.LogDebug($"Offspring '{offspring.name}' level up: {levelOld} -> {levelNew}");
                             }
-                            Plugin.LogDebug($"Offspring '{offspring.name}' level up: {levelOld} -> {levelNew}");
                         }
                     }
-                }
 
-                z_offspringLevel = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_offspringLevel, levelNew, z_offspringLevel);
+                    z_offspringLevel = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_offspringLevel, levelNew, z_offspringLevel);
+                }
+            }
+
+            if (m_offspringPrefab == null)
+            {
+                // also abort getting siblings
+                z_siblingsCounter = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_siblingsCounter, 0, z_siblingsCounter);
+
+                return false;
             }
 
             //------------------------------------------------------
@@ -468,12 +476,12 @@ namespace OfTamingAndBreeding.ValheimAPI
                         __myPosition - dir * offset,
                         Quaternion.LookRotation(-forward, Vector3.up));
 
-                    Character ch = spawned.GetComponent<Character>();
+                    Character spawnedCharacter = spawned.GetComponent<Character>();
                     int level = Mathf.Max(procreation.m_minOffspringLevel, z_offspringLevel);
-                    if (ch != null)
+                    if (spawnedCharacter != null)
                     {
-                        ch.SetTamed(__isTamed);
-                        ch.SetLevel(level);
+                        spawnedCharacter.SetTamed(z_offspringTamed == 1);
+                        spawnedCharacter.SetLevel(level);
                     }
                     else
                     {
@@ -491,9 +499,9 @@ namespace OfTamingAndBreeding.ValheimAPI
                     //---------------------------------
 
                     {
-                        bool unlimited = dataProcreation.MaxSiblingsPerPregnancy < 0; // -1
-                        bool canHaveMore = unlimited || z_siblingsCounter < dataProcreation.MaxSiblingsPerPregnancy;
-                        if (canHaveMore && UnityEngine.Random.value <= dataProcreation.ExtraSiblingChance)
+                        bool unlimited = creature.m_maxSiblingsPerPregnancy < 0; // -1
+                        bool canHaveMore = unlimited || z_siblingsCounter < creature.m_maxSiblingsPerPregnancy;
+                        if (canHaveMore && UnityEngine.Random.value <= creature.m_extraSiblingChance)
                         {
                             ZNetHelper.SetLong(zdo, ZDOVars.s_pregnant, __nowTicks - TimeSpan.FromSeconds(procreation.m_pregnancyDuration).Ticks);
                             z_siblingsCounter = ZNetHelper.SetInt(zdo, Plugin.ZDOVars.z_siblingsCounter, z_siblingsCounter + 1);
@@ -516,9 +524,9 @@ namespace OfTamingAndBreeding.ValheimAPI
                 {
                     // max creatures check: only using m_seperatePartner + offspring (never m_myPrefab)
                     int totalAround = 0;
-                    if (data.Procreation.MaxCreaturesCountPrefabs != null)
+                    if (creature.HasMaxCreaturesPrefabs(out var prefabNames))
                     {
-                        foreach (var prefabName in data.Procreation.MaxCreaturesCountPrefabs)
+                        foreach (var prefabName in prefabNames)
                         {
                             totalAround += SpawnSystem.GetNrOfInstances(__zNetScene.GetPrefab(prefabName), __myPosition, __myTotalCheckRange);
                         }
@@ -530,6 +538,7 @@ namespace OfTamingAndBreeding.ValheimAPI
                         // offsprings
                         totalAround += SpawnSystem.GetNrOfInstances(m_offspringPrefab, __myPosition, __myTotalCheckRange);
                     }
+
                     if (totalAround >= procreation.m_maxCreatures)
                     {
                         return false;
@@ -597,15 +606,12 @@ namespace OfTamingAndBreeding.ValheimAPI
 
         private static void AddPregnancyLinesIfEnabled(this Procreation procreation, List<string> returnLines, ZDO zdo, Localization L)
         {
-            if (!ProcreationExtraData.TryGet(procreation, out var data))
-            {
-                return;
-            }
+            var trait = procreation.GetComponent<Custom.OTAB_ProcreationTrait>();
 
             var zTime = ZNet.instance.GetTime();
             long pregnantLong = zdo.GetLong(ZDOVars.s_pregnant, 0L);
             var dateTime = new DateTime(pregnantLong);
-            var duration = data.realPregnancyDuration;
+            var duration = trait.m_realPregnancyDuration;
             double secLeft = duration - (zTime - dateTime).TotalSeconds;
 
             returnLines.Add(Helpers.StringHelper.FormatRelativeTime(

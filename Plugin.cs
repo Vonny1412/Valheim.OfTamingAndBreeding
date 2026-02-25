@@ -132,7 +132,7 @@ namespace OfTamingAndBreeding
             Data.DataOrchestrator.OnDataLoaded(() => {
                 ZNetScene.instance?.UnblockObjectsCreation();
                 Patches.DataReadyPatches.Install();
-                _IsOTABReady = true;
+                otabDataLoaded = true;
 
                 if (ZNet.instance.IsServer())
                 {
@@ -144,7 +144,7 @@ namespace OfTamingAndBreeding
             });
             Data.DataOrchestrator.OnDataReset(() => {
                 Patches.DataReadyPatches.Uninstall();
-                _IsOTABReady = false;
+                otabDataLoaded = false;
             });
 
         }
@@ -152,7 +152,12 @@ namespace OfTamingAndBreeding
         // network stuff
         // todo: maybe create own class for this?
 
-        public static bool _IsOTABReady { get; private set; } = false;
+        public static bool IsOTABDataLoaded()
+        {
+            return otabDataLoaded;
+        }
+
+        private static bool otabDataLoaded = false;
         private static Coroutine clientTimeoutRoutine;
 
         internal static void InitSession()
@@ -211,7 +216,7 @@ namespace OfTamingAndBreeding
             float start = Time.time;
             while (Time.time - start < seconds)
             {
-                if (_IsOTABReady)
+                if (otabDataLoaded)
                 {
                     yield break;
                 }
@@ -219,7 +224,7 @@ namespace OfTamingAndBreeding
             }
             Plugin.LogInfo("No server sync detected (timeout). Running in vanilla mode.");
             ZNetScene.instance?.UnblockObjectsCreation();
-            _IsOTABReady = false;
+            otabDataLoaded = false;
         }
 
     }

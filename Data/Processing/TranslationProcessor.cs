@@ -11,6 +11,8 @@ namespace OfTamingAndBreeding.Data.Processing
     {
         public override string DirectoryName => Models.Translation.DirectoryName;
 
+        public override string PrefabTypeName => null;
+
         public override string GetDataKey(string filePath)
         {
             var fileName = Path.GetFileNameWithoutExtension(filePath);
@@ -29,41 +31,41 @@ namespace OfTamingAndBreeding.Data.Processing
             //return $"{uniqueFileNumber++:D3}_{fileName}";
         }
 
-        public override void Prepare(Base.DataProcessorContext ctx)
+        public override void Prepare(Base.PrefabRegistry reg)
         {
         }
 
-        public override bool ValidateData(Base.DataProcessorContext ctx, string fileName, Models.Translation data)
-        {
-            return true; // i dont care
-        }
-
-        public override bool ReservePrefab(Base.DataProcessorContext ctx, string fileName, Models.Translation data)
+        public override bool ValidateData(Base.PrefabRegistry reg, string fileName, Models.Translation data)
         {
             return true; // i dont care
         }
 
-        public override bool ValidatePrefab(Base.DataProcessorContext ctx, string fileName, Models.Translation data)
+        public override bool ReservePrefab(Base.PrefabRegistry reg, string fileName, Models.Translation data)
         {
             return true; // i dont care
         }
 
-        public override void RegisterPrefab(Base.DataProcessorContext ctx, string fileName, Models.Translation data)
+        public override bool ValidatePrefab(Base.PrefabRegistry reg, string fileName, Models.Translation data)
+        {
+            return true; // i dont care
+        }
+
+        public override void RegisterPrefab(Base.PrefabRegistry reg, string fileName, Models.Translation data)
         {
             var local = LocalizationManager.Instance.GetLocalization();
             local.AddTranslation(data.Language, data.Translations);
         }
 
-        public override void Finalize(Base.DataProcessorContext ctx)
+        public override void Finalize(Base.PrefabRegistry reg)
         {
         }
 
-        public override void RestorePrefab(Base.DataProcessorContext ctx, string fileName)
+        public override void RestorePrefab(Base.PrefabRegistry reg, string fileName)
         {
             // TODO: do i need to unregister localizations?
         }
 
-        public override void Cleanup(Base.DataProcessorContext ctx)
+        public override void Cleanup(Base.PrefabRegistry reg)
         {
         }
 

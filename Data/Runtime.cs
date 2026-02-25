@@ -15,13 +15,14 @@ namespace OfTamingAndBreeding.Data
 
         public static void Reset()
         {
-            Character.Reset();
-            Tameable.Reset();
             MonsterAI.Reset();
+
+
+
+
+            Character.Reset();
             ItemData.Reset();
             EggGrow.Reset();
-            Procreation.Reset();
-            Growup.Reset();
         }
 
     }

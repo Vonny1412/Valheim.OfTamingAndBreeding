@@ -22,8 +22,6 @@ namespace OfTamingAndBreeding.Data
             private static readonly Dictionary<int, IsEnemyCondition> canBeAttackedByTamed = new Dictionary<int, IsEnemyCondition>();
             private static readonly Dictionary<int, IsEnemyCondition> canAttackPlayer = new Dictionary<int, IsEnemyCondition>();
 
-            private static readonly Dictionary<int, float> animationScaling = new Dictionary<int, float>();
-
             public static void Reset()
             {
                 stickToFaction.Clear();
@@ -34,7 +32,6 @@ namespace OfTamingAndBreeding.Data
                 canBeAttackedByTamed.Clear();
                 canAttackPlayer.Clear();
 
-                animationScaling.Clear();
             }
 
             public static void SetSticksToFaction(string name)
@@ -110,16 +107,6 @@ namespace OfTamingAndBreeding.Data
                     return c;
                 }
                 return IsEnemyCondition.Never;
-            }
-
-            public static void SetAnimationScaling(string name, float scale)
-            {
-                animationScaling[name.GetStableHashCode()] = scale;
-            }
-
-            public static bool GetAnimationScaling(string name, out float scale)
-            {
-                return animationScaling.TryGetValue(name.GetStableHashCode(), out scale);
             }
 
         }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace OfTamingAndBreeding.Data.Models.SubData
 {
-    enum IsEnemyCondition
+    internal enum IsEnemyCondition
     {
         Never = 0,
         Always = 1,

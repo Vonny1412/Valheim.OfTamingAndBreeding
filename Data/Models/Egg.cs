@@ -26,6 +26,9 @@ namespace OfTamingAndBreeding.Data.Models
         internal class CloneData : ICloneData
         {
             public string From { get; set; } = null;
+            public string Name { get; set; } = null;
+            public string Description { get; set; } = null;
+            public float? Scale { get; set; } = null;
         }
 
         [Serializable]
@@ -41,8 +44,6 @@ namespace OfTamingAndBreeding.Data.Models
         [CanBeNull]
         public class ItemData
         {
-            public string Name { get; set; } = null;
-            public string Description { get; set; } = null;
             public string ItemType { get; set; } = null;
             public float? Weight { get; set; } = null;
 
@@ -60,7 +61,6 @@ namespace OfTamingAndBreeding.Data.Models
             public float LightsScale { get; set; } = 1;
             public bool DisableParticles { get; set; } = false;
 
-            public float? Scale { get; set; } = null;
 
         }
 

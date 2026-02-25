@@ -9,9 +9,6 @@ namespace OfTamingAndBreeding.ValheimAPI
 {
     internal static class MonsterAIExtensions
     {
-        internal sealed class MonsterAIExtraData : Lifecycle.ExtraData<MonsterAI, MonsterAIExtraData>
-        {
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ZNetView GetZNetView(this MonsterAI that)

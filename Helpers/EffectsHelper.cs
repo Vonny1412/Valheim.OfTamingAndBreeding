@@ -16,7 +16,7 @@ namespace OfTamingAndBreeding.Helpers
 
 
 
-        public static EffectList.EffectData GetEffect(GameObject prefab)
+        public static EffectList.EffectData CreateEffectData(GameObject prefab)
             => prefab ? new EffectList.EffectData
             {
                 m_prefab = prefab,
@@ -33,13 +33,13 @@ namespace OfTamingAndBreeding.Helpers
             } : null;
 
         public static EffectList.EffectData GetEffect(string prefabName)
-            => GetEffect(PrefabManager.Instance.GetPrefab(prefabName));
+            => CreateEffectData(PrefabManager.Instance.GetPrefab(prefabName));
 
-        public static EffectList.EffectData[] GetEffectList(string[] prefabNames)
+        public static EffectList.EffectData[] CreateEffectList(string[] prefabNames)
             => prefabNames.Where((n) => n != null).Select(GetEffect).ToArray();
 
-        public static EffectList.EffectData[] GetEffectList(GameObject[] prefabNames)
-            => prefabNames.Where((n) => n != null).Select(GetEffect).ToArray();
+        public static EffectList.EffectData[] CreateEffectList(GameObject[] prefabNames)
+            => prefabNames.Where((n) => n != null).Select(CreateEffectData).ToArray();
 
         public static GameObject GetVisualOnlyEffect(string prefabName, string cloneName)
         {
@@ -54,10 +54,9 @@ namespace OfTamingAndBreeding.Helpers
             return clone;
         }
 
-
-
-
         /*
+
+        // todo: remove me
 
 -- Boar Tameable m_petEffect
 fx_boar_pet

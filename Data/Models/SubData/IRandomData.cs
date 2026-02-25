@@ -8,7 +8,7 @@ using UnityEngine;
 namespace OfTamingAndBreeding.Data.Models.SubData
 {
 
-    public interface IRandomData
+    internal interface IRandomData
     {
         float Weight { get; set; }
     }

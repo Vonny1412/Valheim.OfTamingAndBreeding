@@ -1,11 +1,12 @@
 ﻿using OfTamingAndBreeding.Data;
+using OfTamingAndBreeding.ValheimAPI.Custom;
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
-using static UnityEngine.Networking.UnityWebRequest;
 
 namespace OfTamingAndBreeding.ValheimAPI
 {
@@ -22,17 +23,17 @@ namespace OfTamingAndBreeding.ValheimAPI
             public static Character lastTarget = null;
         }
 
-        public static void Awake_PatchPostfix(this Character character)
-        {
-            character.SetCharacterStuffIfTamed();
-        }
-
         public static void SetCharacterStuffIfTamed(this Character character)
         {
             if (character.IsTamed())
             {
 
-                character.RemoveBossStuff();
+                if (character.m_boss == true)
+                {
+                    character.m_boss = false;
+                    character.m_bossEvent = "";
+                    EnemyHud.instance.RemoveCharacterHud(character);
+                }
 
                 var prefabName = Utils.GetPrefabName(character.gameObject.name);
                 if (Runtime.Character.TryGetGroupWhenTamed(prefabName, out string group))
@@ -54,16 +55,6 @@ namespace OfTamingAndBreeding.ValheimAPI
                     //baseAI.SetAlerted(false);
                 }
 
-            }
-        }
-
-        public static void RemoveBossStuff(this Character character)
-        {
-            if (character.m_boss == true)
-            {
-                character.m_boss = false;
-                character.m_bossEvent = "";
-                EnemyHud.instance.RemoveCharacterHud(character);
             }
         }
 
@@ -114,19 +105,23 @@ namespace OfTamingAndBreeding.ValheimAPI
         {
             var textLines = new List<string>();
 
+            var creatureTrait = character.GetComponent<Custom.OTAB_Creature>();
+            var m_tamingDisabled = creatureTrait && creatureTrait.m_tamingDisabled;
+            var m_fedTimerDisabled = creatureTrait && creatureTrait.m_fedTimerDisabled;
+
             var prefabName = Utils.GetPrefabName(character.gameObject.name);
             var isTamed = character.IsTamed();
             Tameable tameable = character.GetComponent<Tameable>();
             if ((bool)tameable)
             {
-                if (!isTamed && Runtime.Tameable.GetTamingDisabled(prefabName))
+                if (!isTamed && m_tamingDisabled == true)
                 {
                     // todo: overwrite or not?
                     //text = tameable.GetName();
                 }
                 else
                 {
-                    if (Runtime.Tameable.GetIsFedTimerDisabled(prefabName))
+                    if (m_fedTimerDisabled == true)
                     {
                         var hungry = Localization.instance.Localize("$hud_tamehungry");
                         if (!string.IsNullOrEmpty(hungry))
@@ -255,12 +250,17 @@ namespace OfTamingAndBreeding.ValheimAPI
         {
             var displayItems = new List<ConsumableItemDisplay>();
 
-            var prefabName = Utils.GetPrefabName(character.gameObject.name);
-
-            if (Data.Runtime.MonsterAI.TryGetCustomConsumeItems(prefabName, out Data.Models.Creature.MonsterAIConsumItemData[] consumeItems))
+            if (Plugin.IsOTABDataLoaded())
             {
-                character.AddDisplayItemsFromYaml(displayItems, consumeItems, L);
-                return displayItems;
+                // custom consume items with fed duration factors is an otab feature
+                if (character.TryGetComponent<Custom.OTAB_Creature>(out var creature))
+                {
+                    if (creature.HasCustomConsumeItems(out var consumeItems))
+                    {
+                        character.AddDisplayItemsFromYaml(displayItems, consumeItems, L);
+                        return displayItems;
+                    }
+                }
             }
 
             List<ItemDrop> m_consumeItems = null;
@@ -271,10 +271,13 @@ namespace OfTamingAndBreeding.ValheimAPI
             }
             else
             {
-                var animalAI = character.GetComponent<AnimalAI>();
-                if (animalAI && AnimalAIExtensions.AnimalAIExtraData.TryGet(animalAI, out var animalAIData))
+                if (Plugin.IsOTABDataLoaded())
                 {
-                    m_consumeItems = animalAIData.m_consumeItems;
+                    var animalAI = character.GetComponent<ValheimAPI.Custom.OTAB_CustomAnimalAI>();
+                    if (animalAI)
+                    {
+                        m_consumeItems = animalAI.m_consumeItems;
+                    }
                 }
             }
             if (m_consumeItems != null && m_consumeItems.Count > 0)
@@ -305,8 +308,6 @@ namespace OfTamingAndBreeding.ValheimAPI
 
             float min = consumeItems.Last().FedDurationFactor;
             float max = consumeItems.First().FedDurationFactor;
-            //float min = consumeItems.Min(x => x.FedDurationMultiply);
-            //float max = consumeItems.Max(x => x.FedDurationMultiply);
 
             foreach (var item in consumeItems)
             {

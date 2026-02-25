@@ -16,6 +16,8 @@ namespace OfTamingAndBreeding.Data.Processing.Base
 
         public string ModelTypeName => typeof(T).Name;
 
+        public abstract string PrefabTypeName { get; }
+
         public abstract string GetDataKey(string fileName);
 
         public bool LoadFromYaml(string prefabName, string yamlText)
@@ -73,15 +75,39 @@ namespace OfTamingAndBreeding.Data.Processing.Base
         }
 
         //---------------------
-        // context routine
+        // orchestrator routine
         //---------------------
 
-        public abstract void Prepare(DataProcessorContext ctx);
+        private readonly HashSet<string> reservedPrefabNames = new HashSet<string>(); // for current session
 
-        public abstract bool ValidateData(DataProcessorContext ctx, string prefabName, T data);
-        public void ValidateAllData(DataProcessorContext ctx)
+        public abstract void Prepare(PrefabRegistry reg);
+
+        public abstract bool ValidateData(PrefabRegistry reg, string prefabName, T data);
+
+        public abstract bool ReservePrefab(PrefabRegistry reg, string prefabName, T data);
+
+        public abstract bool ValidatePrefab(PrefabRegistry reg, string prefabName, T data);
+
+        public abstract void RegisterPrefab(PrefabRegistry reg, string prefabName, T data);
+
+        public abstract void Finalize(PrefabRegistry reg);
+
+        public abstract void RestorePrefab(PrefabRegistry reg, string prefabName);
+
+        public abstract void Cleanup(PrefabRegistry reg);
+
+        //
+        // methods called by orchestrator
+        //
+
+        public void Orch_Prepare(PrefabRegistry reg)
         {
-            Plugin.LogDebug($"{nameof(ValidateAllData)}: {typeof(T).Name}");
+            Prepare(reg);
+        }
+
+        public void Orch_ValidateAllData(PrefabRegistry reg)
+        {
+            Plugin.LogDebug($"{nameof(Orch_ValidateAllData)}: {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
             var keys = all.Keys.ToList();
             foreach (var prefabName in keys)
@@ -89,17 +115,24 @@ namespace OfTamingAndBreeding.Data.Processing.Base
                 if (!all.TryGetValue(prefabName, out var data))
                     continue;
                 Plugin.LogDebug($"{nameof(ValidateData)}: {typeof(T).Name} '{prefabName}'");
-                if (!ValidateData(ctx, prefabName, data))
+                try
                 {
-                    DataBase<T>.Drop(prefabName);
+                    if (!ValidateData(reg, prefabName, data))
+                    {
+                        DataBase<T>.Drop(prefabName);
+                    }
+                }
+                catch(Exception)
+                {
+                    Plugin.LogFatal($"{ModelTypeName}.{nameof(ValidateData)}() '{prefabName}' failed");
+                    throw;
                 }
             }
         }
 
-        public abstract bool ReservePrefab(DataProcessorContext ctx, string prefabName, T data);
-        public void ReserveAllPrefabs(DataProcessorContext ctx)
+        public void Orch_ReserveAllPrefabs(PrefabRegistry reg)
         {
-            Plugin.LogDebug($"{nameof(ReserveAllPrefabs)}: {typeof(T).Name}");
+            Plugin.LogDebug($"{nameof(Orch_ReserveAllPrefabs)}: {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
             var keys = all.Keys.ToList();
             foreach (var prefabName in keys)
@@ -107,17 +140,47 @@ namespace OfTamingAndBreeding.Data.Processing.Base
                 if (!all.TryGetValue(prefabName, out var data))
                     continue;
                 Plugin.LogDebug($"{nameof(ReservePrefab)}: {typeof(T).Name} '{prefabName}'");
-                if (!ReservePrefab(ctx, prefabName, data))
+                try
                 {
-                    DataBase<T>.Drop(prefabName);
+                    if (PrefabTypeName != null)
+                    {
+                        if (PrefabRegistry.RegisterPrefabType(prefabName, PrefabTypeName, out string registeredTypeName) == false)
+                        {
+                            Plugin.LogFatal($"Tried to register {typeof(T).Name} '{prefabName}' as type '{PrefabTypeName}' but has already been registered as type '{registeredTypeName}' before by an other OTAB instance. Rename your custom prefab to avoid prefab corruption");
+                            DataBase<T>.Drop(prefabName);
+                            continue;
+                        }
+                    }
+
+                    if (reservedPrefabNames.Contains(prefabName))
+                    {
+                        Plugin.LogError($"{nameof(ReservePrefab)}: {typeof(T).Name} '{prefabName}' already reserved!");
+                        DataBase<T>.Drop(prefabName);
+                        continue;
+                    }
+
+                    if (ReservePrefab(reg, prefabName, data))
+                    {
+                        reservedPrefabNames.Add(prefabName);
+                    }
+                    else
+                    {
+                        // error should be logged in ReservePrefab()
+                        DataBase<T>.Drop(prefabName);
+                    }
+                    
+                }
+                catch (Exception)
+                {
+                    Plugin.LogFatal($"{ModelTypeName}.{nameof(ReservePrefab)}() '{prefabName}' failed");
+                    throw;
                 }
             }
         }
 
-        public abstract bool ValidatePrefab(DataProcessorContext ctx, string prefabName, T data);
-        public bool ValidateAllPrefabs(DataProcessorContext ctx)
+        public bool Orch_ValidateAllPrefabs(PrefabRegistry reg)
         {
-            Plugin.LogDebug($"{nameof(ValidateAllPrefabs)}: {typeof(T).Name}");
+            Plugin.LogDebug($"{nameof(Orch_ValidateAllPrefabs)}: {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
             var keys = all.Keys.ToList();
             var allOkay = true;
@@ -126,15 +189,22 @@ namespace OfTamingAndBreeding.Data.Processing.Base
                 if (!all.TryGetValue(prefabName, out var data))
                     continue;
                 Plugin.LogDebug($"{nameof(ValidatePrefab)}: {typeof(T).Name} '{prefabName}'");
-                allOkay &= ValidatePrefab(ctx, prefabName, data);
+                try
+                {
+                    allOkay &= ValidatePrefab(reg, prefabName, data);
+                }
+                catch (Exception)
+                {
+                    Plugin.LogFatal($"{ModelTypeName}.{nameof(ValidatePrefab)}() '{prefabName}' failed");
+                    throw;
+                }
             }
             return allOkay;
         }
 
-        public abstract void RegisterPrefab(DataProcessorContext ctx, string prefabName, T data);
-        public void RegisterAllPrefabs(DataProcessorContext ctx)
+        public void Orch_RegisterAllPrefabs(PrefabRegistry reg)
         {
-            Plugin.LogDebug($"{nameof(RegisterAllPrefabs)} {typeof(T).Name}");
+            Plugin.LogDebug($"{nameof(Orch_RegisterAllPrefabs)} {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
             var keys = all.Keys.ToList();
             foreach (var prefabName in keys)
@@ -142,16 +212,26 @@ namespace OfTamingAndBreeding.Data.Processing.Base
                 if (!all.TryGetValue(prefabName, out var data))
                     continue;
                 Plugin.LogDebug($"{nameof(RegisterPrefab)} {typeof(T).Name} '{prefabName}'");
-                RegisterPrefab(ctx, prefabName, data);
+                try
+                {
+                    RegisterPrefab(reg, prefabName, data);
+                }
+                catch (Exception)
+                {
+                    Plugin.LogFatal($"{ModelTypeName}.{nameof(RegisterPrefab)}() '{prefabName}' failed");
+                    throw;
+                }
             }
         }
 
-        public abstract void Finalize(DataProcessorContext ctx);
-
-        public abstract void RestorePrefab(DataProcessorContext ctx, string prefabName);
-        public void RestoreAllPrefabs(DataProcessorContext ctx)
+        public void Orch_Finalize(PrefabRegistry reg)
         {
-            Plugin.LogDebug($"{nameof(RestoreAllPrefabs)} {typeof(T).Name}");
+            Finalize(reg);
+        }
+
+        public void Orch_RestoreAllPrefabs(PrefabRegistry reg)
+        {
+            Plugin.LogDebug($"{nameof(Orch_RestoreAllPrefabs)} {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
             var keys = all.Keys.ToList();
             foreach (var prefabName in keys)
@@ -159,11 +239,25 @@ namespace OfTamingAndBreeding.Data.Processing.Base
                 if (!all.TryGetValue(prefabName, out var data))
                     continue;
                 Plugin.LogDebug($"{nameof(RestorePrefab)} {typeof(T).Name} '{prefabName}'");
-                RestorePrefab(ctx, prefabName);
+                try
+                {
+                    RestorePrefab(reg, prefabName);
+                }
+                catch (Exception)
+                {
+                    Plugin.LogFatal($"{ModelTypeName}.{nameof(RestorePrefab)}() '{prefabName}' failed");
+                    throw;
+                }
             }
         }
 
-        public abstract void Cleanup(DataProcessorContext ctx);
+        public void Orch_Cleanup(PrefabRegistry reg)
+        {
+            Cleanup(reg);
+            reservedPrefabNames.Clear();
+        }
+
+
 
     }
 

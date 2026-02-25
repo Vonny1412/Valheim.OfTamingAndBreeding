@@ -1,12 +1,14 @@
 ﻿using HarmonyLib;
 using OfTamingAndBreeding.Data;
 using OfTamingAndBreeding.ValheimAPI;
+using OfTamingAndBreeding.ValheimAPI.Custom;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using YamlDotNet.Core.Tokens;
 
 namespace OfTamingAndBreeding.Patches
 {
@@ -18,16 +20,29 @@ namespace OfTamingAndBreeding.Patches
 
 
         //
-        // AnimalAI
+        // Animator
         //
 
-        [HarmonyPatch(typeof(AnimalAI), "Awake")]
-        [HarmonyPostfix]
-        static void AnimalAI_Awake_Postfix(AnimalAI __instance)
-        {
-            __instance.Awake_PatchPostfix();
-        }
 
+        [HarmonyPatch(typeof(Animator), "SetTrigger", new[] { typeof(string) })]
+        [HarmonyPostfix]
+        static void Animator_SetTrigger_Postfix(Animator __instance, string name)
+        {
+            if (name != "consume") return;
+
+            var character = __instance.GetComponentInParent<Character>();
+            if (!character) return;
+
+            var prefabName = Utils.GetPrefabName(character.gameObject.name);
+            if (string.IsNullOrEmpty(prefabName)) return;
+
+            var runner = character.GetComponent<ValheimAPI.Custom.OTAB_ConsumeClipOverlay>();
+            if (runner)
+            {
+                runner.PlayOverlay(__instance, speed: 1f);
+            }
+
+        }
 
         //
         // BaseAI
@@ -75,7 +90,6 @@ namespace OfTamingAndBreeding.Patches
             BaseAIExtensions.IsEnemyContext.Cleanup();
         }
 
-
         //
         // Character
         //
@@ -84,7 +98,7 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPostfix]
         static void Character_Awake_Postfix(Character __instance)
         {
-            __instance.Awake_PatchPostfix();
+            __instance.SetCharacterStuffIfTamed();
         }
 
         /*
@@ -115,6 +129,21 @@ namespace OfTamingAndBreeding.Patches
             if (BaseAIExtensions.IsEnemyContext.Active && __instance == BaseAIExtensions.IsEnemyContext.TargetInstance)
             {
                 __result = false; // temporary untamed
+            }
+        }
+
+
+        //
+        // EffectList
+        //
+
+        [HarmonyPatch(typeof(EffectList), "Create")]
+        [HarmonyPrefix]
+        static void OTAB_EffectList_Create_Prefix(Transform baseParent, ref float scale)
+        {
+            if (baseParent && baseParent.TryGetComponent<OTAB_ScaledCreature>(out var scaled))
+            {
+                scale = scaled.m_customEffectScale;
             }
         }
 
@@ -347,13 +376,10 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPatch(typeof(Procreation), "IsDue")]
         [HarmonyPrefix]
         [HarmonyPriority(Priority.Last)]
-        static bool Procreation_IsDue_Prefix(Procreation __instance)
+        static void Procreation_IsDue_Prefix(Procreation __instance)
         {
-            if (ProcreationExtensions.ProcreationExtraData.TryGet(__instance, out var data))
-            {
-                data.realPregnancyDuration = __instance.m_pregnancyDuration;
-            }
-            return true;
+            var trait = __instance.GetComponent<ValheimAPI.Custom.OTAB_ProcreationTrait>();
+            trait.m_realPregnancyDuration = __instance.m_pregnancyDuration;
         }
 
         [HarmonyPatch(typeof(Procreation), "Procreate")]
@@ -390,10 +416,12 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         static bool Tameable_DecreaseRemainingTime_Prefix(Tameable __instance, ref float time)
         {
-            var prefabName = Utils.GetPrefabName(__instance.gameObject.name);
-            if (Runtime.Tameable.GetTamingDisabled(prefabName))
+            if (__instance.TryGetComponent<OTAB_Creature>(out var creature))
             {
-                return false;
+                if (creature.m_tamingDisabled == true)
+                {
+                    return false;
+                }
             }
 
             time *= __instance.GetRemainingTimeDecreaseFactor();
@@ -458,10 +486,12 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         static bool Tameable_TamingUpdate_Prefix(Tameable __instance)
         {
-            var prefabName = Utils.GetPrefabName(__instance.gameObject.name);
-            if (Runtime.Tameable.GetTamingDisabled(prefabName))
+            if (__instance.TryGetComponent<OTAB_Creature>(out var creature))
             {
-                return false;
+                if (creature.m_tamingDisabled == true)
+                {
+                    return false;
+                }
             }
 
             return __instance.TamingUpdate_PatchPrefix();
@@ -484,17 +514,14 @@ namespace OfTamingAndBreeding.Patches
             var go = __instance.gameObject;
             if (!go) return;
 
+
+            // todo: remove all extradata classes and add them to custom components
+
             var eggGrow = go.GetComponent<EggGrow>();
             if (eggGrow) ValheimAPI.EggGrowExtensions.EggGrowExtraData.Remove(eggGrow);
 
             var baseAI = go.GetComponent<BaseAI>();
             if (baseAI) ValheimAPI.BaseAIExtensions.BaseAIExtraData.Remove(baseAI);
-
-            var animalAI = go.GetComponent<AnimalAI>();
-            if (animalAI) ValheimAPI.AnimalAIExtensions.AnimalAIExtraData.Remove(animalAI);
-
-            var monsterAI = go.GetComponent<MonsterAI>();
-            if (monsterAI) ValheimAPI.MonsterAIExtensions.MonsterAIExtraData.Remove(monsterAI);
 
             var character = go.GetComponent<Character>();
             if (character) ValheimAPI.CharacterExtensions.CharacterExtraData.Remove(character);
@@ -502,15 +529,8 @@ namespace OfTamingAndBreeding.Patches
             var growup = go.GetComponent<Growup>();
             if (growup) ValheimAPI.GrowupExtensions.GrowupExtraData.Remove(growup);
 
-            var procreation = go.GetComponent<Procreation>();
-            if (procreation) ValheimAPI.ProcreationExtensions.ProcreationExtraData.Remove(procreation);
-
             var itemDrop = go.GetComponent<ItemDrop>();
             if (itemDrop) ValheimAPI.ItemDropExtensions.ItemDropExtraData.Remove(itemDrop);
-
-            var tameable = go.GetComponent<Tameable>();
-            if (tameable) ValheimAPI.TameableExtensions.TameableExtraData.Remove(tameable);
-            if (tameable) ValheimAPI.TameableExtensions.AnimalExtraData.Remove(tameable);
 
         }
 
@@ -519,23 +539,34 @@ namespace OfTamingAndBreeding.Patches
         // ZSyncAnimation
         //
 
+        /*
+        private static readonly Dictionary<int, string> animNames = new Dictionary<int, string>() {
+            { ZSyncAnimation.GetHash("forward_speed"), "forward_speed" },
+            { ZSyncAnimation.GetHash("sideway_speed"), "sideway_speed" },
+            { ZSyncAnimation.GetHash("anim_speed"), "anim_speed" },
+            { ZSyncAnimation.GetHash("turn_speed"), "turn_speed" },
+            { ZSyncAnimation.GetHash("inWater"), "inWater" },
+            { ZSyncAnimation.GetHash("onGround"), "onGround" },
+            { ZSyncAnimation.GetHash("encumbered"), "encumbered" },
+            { ZSyncAnimation.GetHash("flying"), "flying" },
+            { ZSyncAnimation.GetHash("statef"), "statef" },
+            { ZSyncAnimation.GetHash("statei"), "statei" },
+            { ZSyncAnimation.GetHash("blocking"), "blocking" },
+            { ZSyncAnimation.GetHash("attack"), "attack" },
+            { ZSyncAnimation.GetHash("flapping"), "flapping" },
+            { ZSyncAnimation.GetHash("idle"), "idle" },
+        };
+        */
+
         [HarmonyPatch(typeof(ZSyncAnimation), "SetFloat", new[] { typeof(int), typeof(float) })]
         [HarmonyPrefix]
         static void ZSyncAnimation_SetFloat_Prefix(ZSyncAnimation __instance, int hash, ref float value)
         {
-            if (!__instance)
+            if (__instance && __instance.TryGetComponent<OTAB_ScaledCreature>(out var scaled))
             {
-                return; // for safety
-            }
-
-            // ScaleLocomotion
-            var name = Utils.GetPrefabName(__instance.gameObject.name);
-            if (Runtime.Character.GetAnimationScaling(name, out float scale))
-            {
-                value *= scale;
+                value *= scaled.m_customAnimationScale;
             }
         }
-
 
     }
 }

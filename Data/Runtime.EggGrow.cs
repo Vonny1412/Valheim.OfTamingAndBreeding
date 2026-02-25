@@ -19,24 +19,11 @@ namespace OfTamingAndBreeding.Data
             private static readonly Dictionary<int, Heightmap.Biome> eggNeedsAnyBiome = new Dictionary<int, Heightmap.Biome>();
             private static readonly Dictionary<int, LiquidInfo> eggNeedsLiquid = new Dictionary<int, LiquidInfo>();
 
-            private static readonly Dictionary<int, float> baseGrowTime = new Dictionary<int, float>();
-
             public static void Reset()
             {
                 eggNeedsAnyBiome.Clear();
                 eggNeedsLiquid.Clear();
 
-                baseGrowTime.Clear();
-            }
-
-            public static void SetBaseGrowTime(string name, float time)
-            {
-                baseGrowTime[name.GetStableHashCode()] = time;
-            }
-
-            public static bool TryGetBaseGrowTime(string name, out float time)
-            {
-                return baseGrowTime.TryGetValue(name.GetStableHashCode(), out time);
             }
 
             public static void SetEggNeedsAnyBiome(string name, Heightmap.Biome[] biomes)

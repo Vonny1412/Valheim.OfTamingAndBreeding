@@ -11,15 +11,21 @@ namespace OfTamingAndBreeding.Data
     {
         public static class MonsterAI
         {
+
             private static readonly Dictionary<int, ItemDrop> prefabItemDrops = new Dictionary<int, ItemDrop>();
-            private static readonly Dictionary<int, Models.Creature.MonsterAIConsumItemData[]> customConsumeItems = new Dictionary<int, Models.Creature.MonsterAIConsumItemData[]>();
-            private static readonly HashSet<int> tamedStayNearSpawn = new HashSet<int>();
+
+            public static readonly List<Models.Creature.MonsterAIConsumItemData[]> consumeItemData = new List<Models.Creature.MonsterAIConsumItemData[]>();
+            public static readonly List<Models.Creature.ProcreationPartnerData[]> partnerData = new List<Models.Creature.ProcreationPartnerData[]>();
+            public static readonly List<Models.Creature.ProcreationOffspringData[]> offspringData = new List<Models.Creature.ProcreationOffspringData[]>();
+            public static readonly List<string[]> maxCreaturesPrefabs = new List<string[]>();
 
             public static void Reset()
             {
                 prefabItemDrops.Clear();
-                customConsumeItems.Clear();
-                tamedStayNearSpawn.Clear();
+
+                consumeItemData.Clear();
+                partnerData.Clear();
+                offspringData.Clear();
             }
 
             public static ItemDrop GetItemDropByPrefab(string prefabName)
@@ -43,26 +49,6 @@ namespace OfTamingAndBreeding.Data
                 }
                 prefabItemDrops.Add(hash, itemDrop);
                 return itemDrop;
-            }
-
-            public static void SetCustomConsumeItems(string name, Models.Creature.MonsterAIConsumItemData[] items)
-            {
-                customConsumeItems[name.GetStableHashCode()] = items;
-            }
-
-            public static bool TryGetCustomConsumeItems(string name, out Models.Creature.MonsterAIConsumItemData[] items)
-            {
-                return customConsumeItems.TryGetValue(name.GetStableHashCode(), out items);
-            }
-
-            public static void SetTamedStayNearSpawn(string name)
-            {
-                tamedStayNearSpawn.Add(name.GetStableHashCode());
-            }
-
-            public static bool GetTamedStayNearSpawn(string name)
-            {
-                return tamedStayNearSpawn.Contains(name.GetStableHashCode());
             }
 
         }

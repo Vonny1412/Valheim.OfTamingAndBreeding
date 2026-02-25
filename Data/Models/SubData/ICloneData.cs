@@ -1,7 +1,7 @@
 ﻿
 namespace OfTamingAndBreeding.Data.Models.SubData
 {
-    public interface ICloneData
+    internal interface ICloneData
     {
         string From { get; set; }
     }

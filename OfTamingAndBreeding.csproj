@@ -11,7 +11,7 @@
 	<PropertyGroup>
 		<VersionMajor>0</VersionMajor>
 		<VersionMinor>3</VersionMinor>
-		<VersionPatch>1</VersionPatch>
+		<VersionPatch>2</VersionPatch>
 		<VersionSuffix>alpha</VersionSuffix>
 		<Authors>Yvonne Pautz</Authors>
 		<Product>Of Taming and Breeding</Product>

@@ -2,7 +2,7 @@
 
 namespace OfTamingAndBreeding.Data.Models.SubData
 {
-    public enum ComponentBehavior
+    internal enum ComponentBehavior
     {
         Inherit,
         Patch,

@@ -421,14 +421,23 @@ namespace OfTamingAndBreeding.ValheimAPI
             var character = baseAI.GetComponent<Character>();
             if (!character || !character.IsTamed() || baseAI.HuntPlayer()) return true;
 
-            var prefabName = Utils.GetPrefabName(baseAI.gameObject.name);
-            if (!Data.Runtime.MonsterAI.GetTamedStayNearSpawn(prefabName)) return true;
+            if (baseAI.TryGetComponent<Custom.OTAB_Creature>(out var creature))
+            {
+                if (creature.m_tamedStayNearSpawn == true)
+                {
+                    if (baseAI.GetPatrolPoint(out _))
+                    {
+                        // is commandable and currently not following
+                        // => bound to partol point
+                        return true;
+                    }
 
-            if (baseAI.GetPatrolPoint(out _)) return true;
+                    baseAI.RandomMovement(dt, baseAI.GetSpawnPoint(), snapToGround: true);
+                    return false;
+                }
+            }
 
-            baseAI.RandomMovement(dt, baseAI.GetSpawnPoint(), snapToGround: true);
-            return false;
-
+            return true;
         }
 
 

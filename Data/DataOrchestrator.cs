@@ -132,44 +132,44 @@ namespace OfTamingAndBreeding.Data
         // context stuff
         //---------------------------
 
-        private static DataProcessorContext ctx = null;
+        private static PrefabRegistry reg = null;
 
         public static void ValidateDataAndRegisterPrefabs()
         {
-            ctx = new DataProcessorContext();
+            reg = new PrefabRegistry();
 
             foreach (var p in dataProcessors)
             {
-                p.Prepare(ctx);
+                p.Orch_Prepare(reg);
             }
 
             foreach (var p in dataProcessors)
             {
-                p.ValidateAllData(ctx);
+                p.Orch_ValidateAllData(reg);
             }
 
             foreach (var p in dataProcessors)
             {
-                p.ReserveAllPrefabs(ctx);
+                p.Orch_ReserveAllPrefabs(reg);
             }
 
             var allOkay = true;
             foreach (var p in dataProcessors)
             {
-                allOkay &= p.ValidateAllPrefabs(ctx);
+                allOkay &= p.Orch_ValidateAllPrefabs(reg);
             }
 
             if (allOkay)
             {
                 foreach (var p in dataProcessors)
                 {
-                    p.RegisterAllPrefabs(ctx);
+                    p.Orch_RegisterAllPrefabs(reg);
                 }
             }
 
             foreach (var p in dataProcessors)
             {
-                p.Finalize(ctx);
+                p.Orch_Finalize(reg);
             }
 
             if (allOkay)
@@ -188,18 +188,18 @@ namespace OfTamingAndBreeding.Data
 
         public static void ResetData()
         {
-            if (ctx != null)
+            if (reg != null)
             {
                 // ctx==null would mean no data loaded/processed yet
                 for (var i= dataProcessors.Length - 1; i >= 0; i--)
                 {
-                    dataProcessors[i].RestoreAllPrefabs(ctx);
+                    dataProcessors[i].Orch_RestoreAllPrefabs(reg);
                 }
                 for (var i = dataProcessors.Length - 1; i >= 0; i--)
                 {
-                    dataProcessors[i].Cleanup(ctx);
+                    dataProcessors[i].Orch_Cleanup(reg);
                 }
-                ctx = null;
+                reg = null;
             }
 
             Runtime.Reset();
