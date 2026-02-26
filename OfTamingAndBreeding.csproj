@@ -10,8 +10,8 @@
 
 	<PropertyGroup>
 		<VersionMajor>0</VersionMajor>
-		<VersionMinor>3</VersionMinor>
-		<VersionPatch>2</VersionPatch>
+		<VersionMinor>4</VersionMinor>
+		<VersionPatch>0</VersionPatch>
 		<VersionSuffix>alpha</VersionSuffix>
 		<Authors>Yvonne Pautz</Authors>
 		<Product>Of Taming and Breeding</Product>
@@ -42,5 +42,10 @@
 	<Import Project="$(SolutionDir)\Valheim.Paths.props" />
 	<Import Project="$(SolutionDir)\Valheim.Libraries.props" />
 	<Import Project="$(SolutionDir)\Valheim.Mods.targets" />
+	<ItemGroup>
+	  <Reference Update="UnityEngine.ImageConversionModule">
+	    <SpecificVersion>False</SpecificVersion>
+	  </Reference>
+	</ItemGroup>
 
 </Project>

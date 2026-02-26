@@ -41,11 +41,9 @@ namespace OfTamingAndBreeding.ThirdParty.Mods
             var spawnedCharacter = to.GetComponent<Character>();
             if ((bool)spawnedGrowup || (bool)spawnedItemDrop)
             {
-                if (Helpers.ZNetHelper.TryGetZDO(to, out ZDO zdo))
-                {
-                    if (infusion != 0) zdo.Set(Plugin.ZDOVars.z_CLLC_Infusion, infusion);
-                    if (effect != 0) zdo.Set(Plugin.ZDOVars.z_CLLC_Effect, effect);
-                }
+                var zdo = to.GetComponent<ZNetView>().GetZDO();
+                if (infusion != 0) zdo.Set(Plugin.ZDOVars.z_CLLC_Infusion, infusion);
+                if (effect != 0) zdo.Set(Plugin.ZDOVars.z_CLLC_Effect, effect);
             }
             else if ((bool)spawnedCharacter)
             {
@@ -320,8 +318,8 @@ namespace OfTamingAndBreeding.ThirdParty.Mods
                 // Prefab filter (match by prefab name, because instances are "(Clone)")
                 if (prefabMustMatch)
                 {
-                    string want = Utils.GetPrefabName(prefabMustMatch.name);
-                    string have = Utils.GetPrefabName(go.name);
+                    string want = global::Utils.GetPrefabName(prefabMustMatch.name);
+                    string have = global::Utils.GetPrefabName(go.name);
                     if (!string.Equals(want, have, StringComparison.Ordinal))
                         continue;
                 }

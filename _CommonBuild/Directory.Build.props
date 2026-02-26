@@ -1,7 +1,8 @@
 <Project>
 
 	<PropertyGroup>
-		<TargetFramework>net480</TargetFramework>
+		<!--<TargetFramework>net480</TargetFramework>-->
+		<TargetFramework>netstandard2.1</TargetFramework>
 	</PropertyGroup>
 
 	<PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">

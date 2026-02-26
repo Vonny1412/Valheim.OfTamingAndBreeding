@@ -8,18 +8,6 @@
 		<StartWorkingDirectory>$(GamePath)</StartWorkingDirectory>
 	</PropertyGroup>
 
-	<!-- Copy to plugins folder -->
-	<Target Name="ValheimPostBuild" AfterTargets="PostBuildEvent">
-		<ItemGroup>
-			<AllFiles Include="$(TargetDir)**\*.*" Exclude="$(TargetDir)**\*.pdb" />
-		</ItemGroup>
-		<Copy
-			Condition=" '$(CopyToPluginsSubDirectory)' != '' "
-			SourceFiles="@(AllFiles)"
-			DestinationFolder="$(PluginsPath)\$(CopyToPluginsSubDirectory)\%(RecursiveDir)"
-			></Copy>
-	</Target>
-
 	<!-- write BepInPlugin Info -->
 	<Target Name="WriteBepInPluginInfo"
 		BeforeTargets="CoreCompile">
@@ -27,7 +15,7 @@
 		<PropertyGroup>
 			<GeneratedDir>$(ProjectDir)</GeneratedDir>
 			<GeneratedFile>$(GeneratedDir)$(PluginFile).Info.cs</GeneratedFile>
-
+			
 			<BepInPluginInfo>
 using BepInEx%3B
 namespace $(RootNamespace)
@@ -43,18 +31,18 @@ namespace $(RootNamespace)
 }
 			</BepInPluginInfo>
 		</PropertyGroup>
-
+		
 		<MakeDir Directories="$(ProjectDir)" />
-
+		
 		<WriteLinesToFile
 		  File="$(GeneratedFile)"
 		  Overwrite="true"
 		  Lines="$(BepInPluginInfo)" />
-
+		
 		<ItemGroup>
 			<Compile Include="$(GeneratedFile)" />
 		</ItemGroup>
-
+		
 	</Target>
 
 	<!-- write BepInPlugin Dependencies Template -->
@@ -91,6 +79,18 @@ namespace $(RootNamespace)
 			<Compile Include="$(GeneratedFile)" />
 		</ItemGroup>
 
+	</Target>
+
+	<!-- Copy to plugins folder -->
+	<Target Name="ValheimPostBuild" AfterTargets="PostBuildEvent">
+		<ItemGroup>
+			<AllFiles Include="$(TargetDir)**\*.*" Exclude="$(TargetDir)**\*.pdb" />
+		</ItemGroup>
+		<Copy
+			Condition=" '$(CopyToPluginsSubDirectory)' != '' "
+			SourceFiles="@(AllFiles)"
+			DestinationFolder="$(PluginsPath)\$(CopyToPluginsSubDirectory)\%(RecursiveDir)"
+			></Copy>
 	</Target>
 
 </Project>

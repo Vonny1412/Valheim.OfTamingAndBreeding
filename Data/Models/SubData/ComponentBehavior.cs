@@ -2,6 +2,7 @@
 
 namespace OfTamingAndBreeding.Data.Models.SubData
 {
+    [Serializable]
     internal enum ComponentBehavior
     {
         Inherit,

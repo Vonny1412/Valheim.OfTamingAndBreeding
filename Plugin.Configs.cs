@@ -1,6 +1,6 @@
 ﻿using BepInEx.Configuration;
 using Jotunn.Extensions;
-using OfTamingAndBreeding.ValheimAPI;
+using OfTamingAndBreeding.Components.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;

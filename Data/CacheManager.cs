@@ -5,14 +5,13 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-
-using OfTamingAndBreeding.Helpers;
+using OfTamingAndBreeding.Utils;
+using OfTamingAndBreeding.Registry;
 
 namespace OfTamingAndBreeding.Data
 {
     internal class CacheManager
     {
-
 
         public static string GetCachePath(string serverName)
             => Path.Combine(Plugin.CacheDir, serverName);
@@ -43,7 +42,7 @@ namespace OfTamingAndBreeding.Data
             if (File.Exists(cacheCryptedFile))
                 File.Delete(cacheCryptedFile);
 
-            var cacheFile = new Caching.CacheFile
+            var cacheFile = new Models.CacheFile
             {
                 ModVersion = Plugin.Version,
                 CacheFileName = Plugin.Configs.CacheFileName.Value,
@@ -51,12 +50,12 @@ namespace OfTamingAndBreeding.Data
             };
 
 
-            foreach(var p in DataOrchestrator.IterDataProcessors())
+            foreach(var p in RegistryOrchestrator.IterDataProcessors())
             {
                 var writeToDir = Path.Combine(cacheDebugFilesPath, p.DirectoryName);
                 Directory.CreateDirectory(writeToDir);
                 var data = new Dictionary<string, string>();
-                foreach (var kv in p.GetAllYamlData())
+                foreach (var kv in p.GetAllSerializedData())
                 {
                     var prefabName = kv.Key;
                     var prefabYaml = kv.Value;
@@ -69,7 +68,7 @@ namespace OfTamingAndBreeding.Data
                 cacheFile.Data.Add(p.DirectoryName, data);
             }
 
-            string yamlCacheContent = cacheContent = DataBase.Serialize(cacheFile);
+            string yamlCacheContent = cacheContent = SerializeableData.Serialize(cacheFile);
             string cryptedCacheContent = null;
             if (encryptKey != null)
             {
@@ -102,16 +101,16 @@ namespace OfTamingAndBreeding.Data
             try
             {
                 var cacheFilePlain = encryptKey == null ? crypted : DeterministicStringCrypto.DecryptFromBase64(crypted, encryptKey);
-                var cacheFile = DataBase.Deserialize<Caching.CacheFile>(cacheFilePlain);
-                DataOrchestrator.ResetData();
+                var cacheFile = SerializeableData.Deserialize<Models.CacheFile>(cacheFilePlain);
+                RegistryOrchestrator.ResetData();
                 var allokay = true;
-                foreach(var p in DataOrchestrator.IterDataProcessors())
+                foreach(var p in RegistryOrchestrator.IterDataProcessors())
                 {
                     foreach (var kv in cacheFile.Data[p.DirectoryName])
                     {
                         var prefab = kv.Key;
                         var data = Base64Decode(kv.Value);
-                        allokay &= p.LoadFromYaml(prefab, data);
+                        allokay &= p.LoadYaml(prefab, data);
                     }
                 }
                 return allokay;
@@ -122,9 +121,6 @@ namespace OfTamingAndBreeding.Data
             }
             return false;
         }
-
-
-
 
         public static string Base64Encode(string plainText)
         {

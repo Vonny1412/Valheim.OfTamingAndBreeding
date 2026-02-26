@@ -1,10 +1,10 @@
 ﻿using OfTamingAndBreeding.Data;
-using OfTamingAndBreeding.Helpers;
+using OfTamingAndBreeding.Utils;
+using OfTamingAndBreeding.Registry;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEngine;
 
 namespace OfTamingAndBreeding.Net
 {
@@ -48,8 +48,8 @@ namespace OfTamingAndBreeding.Net
             var inFunc1 = $"{nameof(RPCContext)}.{nameof(RPCContext.InitServerSession)}";
             Plugin.LogDebug($"[{inFunc1}] Start");
 
-            DataOrchestrator.LoadDataFromLocalFiles();
-            if (DataOrchestrator.IsDataLoaded() == false)
+            RegistryOrchestrator.LoadDataFromLocalFiles();
+            if (RegistryOrchestrator.IsDataLoaded() == false)
             {
                 DestroySession();
                 return;
@@ -88,7 +88,7 @@ namespace OfTamingAndBreeding.Net
                 if (!CacheManager.LoadCacheFromCrypted(serverSession.CacheContent, serverSession.CacheCryptKey))
                 {
                     Plugin.LogFatal($"[{inFunc1}] Failed building cache: Cache #1 corrupted");
-                    DataOrchestrator.ResetData();
+                    RegistryOrchestrator.ResetData();
                     DestroySession();
                     return;
                 }
@@ -103,7 +103,7 @@ namespace OfTamingAndBreeding.Net
                 else
                 {
                     Plugin.LogFatal($"[{inFunc1}] Failed building cache: Hashes mismatch");
-                    DataOrchestrator.ResetData();
+                    RegistryOrchestrator.ResetData();
                     DestroySession();
                 }
 
@@ -245,7 +245,7 @@ namespace OfTamingAndBreeding.Net
                             if (CacheManager.LoadCacheFromCrypted(File.ReadAllText(cacheFilePath), clientSession.CacheCryptKey))
                             {
                                 requestCacheFile = false;
-                                DataOrchestrator.ValidateDataAndRegisterPrefabs();
+                                RegistryOrchestrator.ValidateDataAndRegisterPrefabs();
                                 Plugin.LogInfo($"Loaded data from existing cache");
                             }
                         }
@@ -301,7 +301,7 @@ namespace OfTamingAndBreeding.Net
 
                 if (success)
                 {
-                    DataOrchestrator.ValidateDataAndRegisterPrefabs();
+                    RegistryOrchestrator.ValidateDataAndRegisterPrefabs();
                     Plugin.LogInfo($"Loaded data from received cache");
                 }
                 else

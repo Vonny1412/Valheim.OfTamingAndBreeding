@@ -33,7 +33,7 @@ namespace OfTamingAndBreeding.ThirdParty.Mods
             }
         }
         
-        public static void CopyToWacky(object wackyRecipeObj, Data.Models.Recipe src)
+        public static void CopyToWacky(object wackyRecipeObj, Data.Models.RecipeData src)
         {
             var t = wackyRecipeObj.GetType();
 
@@ -59,7 +59,7 @@ namespace OfTamingAndBreeding.ThirdParty.Mods
             f.SetValue(obj, value);
         }
 
-        public static void ApplyRecipe(Data.Models.Recipe src)
+        public static void ApplyRecipe(Data.Models.RecipeData src)
         {
             if (!IsRegistered)
             {

@@ -1,0 +1,61 @@
+﻿using JetBrains.Annotations;
+using OfTamingAndBreeding.Data.Models.SubData;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using static OfTamingAndBreeding.Data.Models.CreatureData;
+
+namespace OfTamingAndBreeding.Data.Models
+{
+    [Serializable]
+    internal class OffspringData : DataBase<OffspringData>
+    {
+
+        public const string DirectoryName = "Offsprings";
+
+        public CloneData Clone = null;
+
+        public ComponentsData Components = new ComponentsData();
+
+        public GrowupData Growup = null;
+
+        [Serializable]
+        [CanBeNull]
+        internal class CloneData : SubData.ICloneData
+        {
+            public string From { get; set; } = null;
+            public string Name { get; set; } = null;
+            public float Scale { get; set; } = 1;
+            public float MaxHealthFactor { get; set; } = 1;
+            public string[] RemoveEffects { get; set; } = null;
+            public bool? DebugEffects { get; set; } = null;
+        }
+
+        [Serializable]
+        [CanBeNull]
+        public class ComponentsData
+        {
+            public ComponentBehavior Growup { get; set; } = ComponentBehavior.Inherit; // yes, its optional
+        }
+
+        [Serializable]
+        [CanBeNull]
+        public class GrowupGrownData : SubData.IRandomData
+        {
+            public string Prefab { get; set; } = null;
+            public float Weight { get; set; } = 1;
+        }
+
+        [Serializable]
+        [CanBeNull]
+        public class GrowupData
+        {
+            public float? GrowTime { get; set; } = null;
+            public bool? InheritTame { get; set; } = null;
+            public GrowupGrownData[] Grown { get; set; } = null;
+        }
+
+    }
+}

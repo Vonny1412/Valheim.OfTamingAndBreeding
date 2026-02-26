@@ -22,8 +22,8 @@
 	<!-- Manual overrides -->
 	<PropertyGroup>
 		<BepInExPath>$(GamePath)\BepInEx</BepInExPath>
-		<ManagedDataPath>$(GamePath)\valheim_Data\Managed</ManagedDataPath>
-		<UnityPath>$(GamePath)\unstripped_libs</UnityPath>
+		<ManagedPath>$(GamePath)\valheim_Data\Managed</ManagedPath>
+		<UnstrippedPath>$(GamePath)\unstripped_libs</UnstrippedPath>
 		<PluginsPath>$(GamePath)\BepInEx\plugins</PluginsPath>
 	</PropertyGroup>
 

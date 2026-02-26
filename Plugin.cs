@@ -1,18 +1,18 @@
 ﻿using BepInEx;
 using BepInEx.Bootstrap;
-using HarmonyLib;
 using Jotunn;
 using Jotunn.Utils;
+using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Net;
+using OfTamingAndBreeding.Registry;
+using OfTamingAndBreeding.StaticContext;
 using OfTamingAndBreeding.ThirdParty.Mods;
-using OfTamingAndBreeding.ValheimAPI;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
-using static TMPro.SpriteAssetUtilities.TexturePacker_JsonArray;
 
 namespace OfTamingAndBreeding
 {
@@ -94,7 +94,7 @@ namespace OfTamingAndBreeding
             enabled = false;
             Instance = null;
 
-            UnityEngine.Object.Destroy(this);
+            Destroy(this);
         }
 
         private void Awake()
@@ -105,7 +105,7 @@ namespace OfTamingAndBreeding
 
             if (CheckModsInChainloader() == false)
             {
-                Plugin.LogFatal($"Incompatible Mod(s) found - Abort loading");
+                LogFatal($"Incompatible Mod(s) found - Abort loading");
                 DisablePlugin();
                 return;
             }
@@ -119,8 +119,8 @@ namespace OfTamingAndBreeding
             }
             catch (Exception ex)
             {
-                Plugin.LogFatal("Patch validation failed. This OTAB build is broken =(");
-                Plugin.LogFatal(ex.ToString());
+                LogFatal("Patch validation failed. This OTAB build is broken =(");
+                LogFatal(ex.ToString());
                 DisablePlugin();
                 throw;
             }
@@ -129,102 +129,31 @@ namespace OfTamingAndBreeding
             Net.RPCContext.RegisterRPCs();
             ThirdParty.ThirdPartyManager.RegisterBridges();
 
-            Data.DataOrchestrator.OnDataLoaded(() => {
+            RegistryOrchestrator.OnDataLoaded(() => {
                 ZNetScene.instance?.UnblockObjectsCreation();
                 Patches.DataReadyPatches.Install();
                 otabDataLoaded = true;
 
                 if (ZNet.instance.IsServer())
                 {
-                    foreach (var p in Data.DataOrchestrator.IterDataProcessors())
+                    foreach (var p in RegistryOrchestrator.IterDataProcessors())
                     {
-                        Plugin.LogInfo($"Loaded {p.GetLoadedDataCount()} {p.ModelTypeName} entries");
+                        LogInfo($"Loaded {p.GetLoadedDataCount()} {p.ModelTypeName} entries");
                     }
                 }
             });
-            Data.DataOrchestrator.OnDataReset(() => {
+            RegistryOrchestrator.OnDataReset(() => {
                 Patches.DataReadyPatches.Uninstall();
                 otabDataLoaded = false;
             });
 
         }
 
-        // network stuff
-        // todo: maybe create own class for this?
+        internal static bool otabDataLoaded = false;
 
         public static bool IsOTABDataLoaded()
         {
             return otabDataLoaded;
-        }
-
-        private static bool otabDataLoaded = false;
-        private static Coroutine clientTimeoutRoutine;
-
-        internal static void InitSession()
-        {
-            var zn = ZNet.instance;
-            var isLocal = zn.IsLocalInstance();
-            if (zn.IsServer())
-            {
-                ZNetSceneExtensions.ObjectsContext.blockObjectsCreation = false;
-                RPCContext.InitServerSession(isLocal);
-            }
-            else
-            {
-                ZNetSceneExtensions.ObjectsContext.blockObjectsCreation = true;
-                RPCContext.InitClientSession(isLocal);
-            }
-        }
-
-        internal static void RequestHandshakeWithServer()
-        {
-            // only called for clients
-            RPCContext.RequestHandshakeWithServer();
-            StartClientTimeout(5f);
-        }
-
-        internal static void CloseSession()
-        {
-            // called for client and server
-
-            Data.DataOrchestrator.ResetData();
-            RPCContext.DestroySession();
-
-            ZNetSceneExtensions.ObjectsContext.Clear();
-            CancelClientTimeout();
-        }
-
-        public static void StartClientTimeout(float seconds)
-        {
-            if (clientTimeoutRoutine == null)
-            {
-                clientTimeoutRoutine = Instance.StartCoroutine(RunClientTimeout(seconds));
-            }
-        }
-
-        public static void CancelClientTimeout()
-        {
-            if (clientTimeoutRoutine != null)
-            {
-                Instance.StopCoroutine(clientTimeoutRoutine);
-                clientTimeoutRoutine = null;
-            }
-        }
-
-        private static System.Collections.IEnumerator RunClientTimeout(float seconds)
-        {
-            float start = Time.time;
-            while (Time.time - start < seconds)
-            {
-                if (otabDataLoaded)
-                {
-                    yield break;
-                }
-                yield return null;
-            }
-            Plugin.LogInfo("No server sync detected (timeout). Running in vanilla mode.");
-            ZNetScene.instance?.UnblockObjectsCreation();
-            otabDataLoaded = false;
         }
 
     }
