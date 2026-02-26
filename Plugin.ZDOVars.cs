@@ -60,7 +60,7 @@ namespace OfTamingAndBreeding
             // Egg
             //
 
-            // used to store flag if valheim is handling the egg grow update or we (0=undecided, 1=valheim, 2=we)
+            // used to store flag if valheim is handling the egg grow update or we (0=undecided, 1=valheim, 2=otab)
             public static readonly int z_EggBehavior = $"{Plugin.ModGuid}.z_EggBehavior".GetStableHashCode();
 
             // used to store current selected grown prefab for the egg because it can vary based on our egg data
