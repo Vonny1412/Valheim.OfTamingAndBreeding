@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Utils
@@ -18,26 +15,26 @@ namespace OfTamingAndBreeding.Utils
 
         public static void DumpZSyncAnim(ZSyncAnimation zsa, string tag = "")
         {
-            if (!zsa) { Plugin.LogMessage($"{tag} ZSyncAnimation: <null>"); return; }
+            if (!zsa) { Plugin.LogServerMessage($"{tag} ZSyncAnimation: <null>"); return; }
 
             var a = FindAnimatorFromZSync(zsa);
-            Plugin.LogMessage($"{tag} ZSyncAnimation on {zsa.name}, Animator={(a ? a.name : "<null>")}");
+            Plugin.LogServerMessage($"{tag} ZSyncAnimation on {zsa.name}, Animator={(a ? a.name : "<null>")}");
 
             if (!a || !a.runtimeAnimatorController)
             {
-                Plugin.LogMessage($"{tag} No RuntimeAnimatorController found.");
+                Plugin.LogServerMessage($"{tag} No RuntimeAnimatorController found.");
                 return;
             }
 
             var ctrl = a.runtimeAnimatorController;
 
-            Plugin.LogMessage($"{tag} Params:");
+            Plugin.LogServerMessage($"{tag} Params:");
             foreach (var p in a.parameters)
-                Plugin.LogMessage($"{tag}  - {p.name} [{p.type}]");
+                Plugin.LogServerMessage($"{tag}  - {p.name} [{p.type}]");
 
-            Plugin.LogMessage($"{tag} Clips:");
+            Plugin.LogServerMessage($"{tag} Clips:");
             foreach (var c in ctrl.animationClips.Distinct())
-                Plugin.LogMessage($"{tag}  - {c.name} ({c.length:0.00}s loop={(c.isLooping ? "yes" : "no")})");
+                Plugin.LogServerMessage($"{tag}  - {c.name} ({c.length:0.00}s loop={(c.isLooping ? "yes" : "no")})");
         }
 
         public static bool AnimationExists(GameObject prefab, string clipName, out AnimationClip animClip)

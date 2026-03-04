@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.ThirdParty.Mods
@@ -187,7 +186,7 @@ namespace OfTamingAndBreeding.ThirdParty.Mods
 
             foreach (var o in opts)
             {
-                Plugin.LogDebug($"{o.Path}: value={o.Value}, weight={o.Weight}");
+                Plugin.LogServerDebug($"{o.Path}: value={o.Value}, weight={o.Weight}");
             }
 
             // If all weights are 0: fallback -> None
@@ -268,7 +267,7 @@ namespace OfTamingAndBreeding.ThirdParty.Mods
 
             foreach (var o in opts)
             {
-                Plugin.LogDebug($"{o.Path}: value={o.Value}, weight={o.Weight}");
+                Plugin.LogServerDebug($"{o.Path}: value={o.Value}, weight={o.Weight}");
             }
 
             bool anyWeight = false;

@@ -1,10 +1,4 @@
 ﻿using HarmonyLib;
-using Jotunn.Managers;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OfTamingAndBreeding.Patches
 {
@@ -15,7 +9,7 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPostfix]
         private static void ZNet_Start_Postfix()
         {
-            Net.NetworkSessionManager.InitSession();
+            Net.NetworkSessionManager.Instance.StartSession();
         }
 
         [HarmonyPatch(typeof(ZNet), "RPC_PeerInfo")]
@@ -25,12 +19,12 @@ namespace OfTamingAndBreeding.Patches
             if (ZNet.instance == null)
             {
                 // wtf?
-                Plugin.LogWarning("ZNet.instance is still null on ZNet.RPC_PeerInfo");
+                Plugin.LogError("ZNet.instance is still null on ZNet.RPC_PeerInfo");
                 return;
             }
             if (!ZNet.instance.IsServer())
             {
-                Net.NetworkSessionManager.RequestHandshakeWithServer();
+                Net.NetworkSessionManager.Instance.RequestHandshakeWithServer();
             }
         }
 
@@ -38,7 +32,7 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPrefix]
         private static void ZNet_OnDestroy_Prefix()
         {
-            Net.NetworkSessionManager.CloseSession();
+            Net.NetworkSessionManager.Instance.CloseSession();
         }
 
     }

@@ -1,14 +1,9 @@
-﻿using OfTamingAndBreeding.Registry;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.StaticContext
 {
-    internal class EggDataContext
+    internal static class EggDataContext
     {
 
 
@@ -21,7 +16,7 @@ namespace OfTamingAndBreeding.StaticContext
             grownListByIndex = new List<Data.Models.EggData.EggGrowGrownData[]>();
             sharedNameHashes = new HashSet<int>();
 
-            RegistryOrchestrator.OnDataReset(() => {
+            Net.NetworkSessionManager.Instance.OnClosed((dataLoaded) => {
                 grownListByIndex.Clear();
                 sharedNameHashes.Clear();
             });

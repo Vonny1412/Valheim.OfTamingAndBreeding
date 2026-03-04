@@ -1,10 +1,6 @@
 ﻿using HarmonyLib;
-using OfTamingAndBreeding.Components.Extensions;
-using System;
+using OfTamingAndBreeding.StaticContext;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OfTamingAndBreeding.Patches
 {
@@ -21,7 +17,13 @@ namespace OfTamingAndBreeding.Patches
             // IMPORTANT: We must not let ZNetScene instantiate network objects before OTAB server data is applied.
             // Otherwise components (Awake/Start) would run with wrong vanilla values.
             // We therefore defer CreateObjects until DataOrchestrator marks dataLoaded == true.
-            return __instance.CreateObjects_PatchPrefix(currentNearObjects, currentDistantObjects);
+
+            if (ZNetSceneContext.blockObjectsCreation)
+            {
+                ZNetSceneContext.pending.Enqueue((new List<ZDO>(currentNearObjects), new List<ZDO>(currentDistantObjects)));
+                return false;
+            }
+            return true;
         }
 
     }

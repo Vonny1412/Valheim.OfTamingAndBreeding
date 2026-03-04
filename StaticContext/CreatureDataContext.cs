@@ -1,14 +1,8 @@
-﻿using OfTamingAndBreeding.Registry;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace OfTamingAndBreeding.StaticContext
 {
-    internal class CreatureDataContext
+    internal static class CreatureDataContext
     {
 
         public class ConsumeItem
@@ -29,7 +23,7 @@ namespace OfTamingAndBreeding.StaticContext
             offspringData = new List<Data.Models.CreatureData.ProcreationOffspringData[]>();
             maxCreaturesPrefabs = new List<string[]>();
 
-            RegistryOrchestrator.OnDataReset(() => {
+            Net.NetworkSessionManager.Instance.OnClosed((dataLoaded) => {
                 consumeItemData.Clear();
                 partnerData.Clear();
                 offspringData.Clear();

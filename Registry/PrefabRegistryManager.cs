@@ -7,29 +7,24 @@ using System.Linq;
 
 namespace OfTamingAndBreeding.Registry
 {
-    internal static class RegistryOrchestrator
+    internal class PrefabRegistryManager : Common.SingletonClass<PrefabRegistryManager>
     {
 
-        private static bool dataLoaded = false;
-        private static readonly List<Action> dataLoadedCallbacks = new List<Action>();
-        private static readonly List<Action> dataResetCallbacks = new List<Action>();
+        //--------------------------------------------------
+        // Singleton
 
-        public static bool IsDataLoaded()
+        protected override void OnCreate()
         {
-            return dataLoaded;
         }
 
-        public static void OnDataLoaded(Action cb)
+        protected override void OnDestroy()
         {
-            dataLoadedCallbacks.Add(cb);
         }
 
-        public static void OnDataReset(Action cb)
-        {
-            dataResetCallbacks.Add(cb);
-        }
+        //--------------------------------------------------
 
-        private static readonly IDataProcessor[] dataProcessors = new IDataProcessor[] {
+        private readonly IDataProcessor[] dataProcessors = new IDataProcessor[] {
+            new IconProcessor(),
             new TranslationProcessor(),
             new OffspringProcessor(),
             new EggProcessor(),
@@ -37,7 +32,20 @@ namespace OfTamingAndBreeding.Registry
             new RecipeProcessor(),
         };
 
-        public static IEnumerable<IDataProcessor> IterDataProcessors()
+        private readonly List<Action> onFinishedCallbacks = new List<Action>();
+        private readonly List<Action> onResetCallbacks = new List<Action>();
+
+        public void OnFinished(Action cb)
+        {
+            onFinishedCallbacks.Add(cb);
+        }
+
+        public void OnReset(Action cb)
+        {
+            onResetCallbacks.Add(cb);
+        }
+
+        public IEnumerable<IDataProcessor> IterDataProcessors()
         {
             foreach (var dh in dataProcessors)
                 yield return dh;
@@ -48,23 +56,23 @@ namespace OfTamingAndBreeding.Registry
         // Client YAMLs are ignored once connected to a server.
         // This ensures deterministic breeding/taming behavior in multiplayer.
 
-        public static void LoadDataFromLocalFiles()
+        public void LoadDataFromLocalFiles()
         {
             var zn = ZNet.instance;
             string worldName = zn.GetWorldName();
-            Plugin.LogInfo($"Loading Data for world: '{worldName}'");
+            Plugin.LogServerInfo($"Loading Data for world: '{worldName}'");
 
             // pick world root (worldName or fallback)
             string worldRoot = Path.Combine(Plugin.ServerDataDir, worldName);
             if (!Directory.Exists(worldRoot))
             {
                 worldRoot = Path.Combine(Plugin.ServerDataDir, Plugin.Configs.DefaultWorldDirectory.Value);
-                Plugin.LogWarning($"No data directory found for world '{worldName}', using fallback to '{Plugin.Configs.DefaultWorldDirectory.Value}'");
+                Plugin.LogServerInfo($"No data directory found for world '{worldName}', using fallback to '{Plugin.Configs.DefaultWorldDirectory.Value}'");
             }
 
             if (!Directory.Exists(worldRoot))
             {
-                Plugin.LogWarning($"No data directory found. Continuing without data...");
+                Plugin.LogServerInfo($"No data directory found. Continuing without data...");
             }
             else
             {
@@ -87,7 +95,7 @@ namespace OfTamingAndBreeding.Registry
             ValidateDataAndRegisterPrefabs();
         }
 
-        private static IEnumerable<string> EnumerateCategoryFiles(string worldRoot, string categoryFolderName)
+        private IEnumerable<string> EnumerateCategoryFiles(string worldRoot, string categoryFolderName)
         {
             var stack = new Stack<string>();
             stack.Push(worldRoot);
@@ -127,77 +135,81 @@ namespace OfTamingAndBreeding.Registry
         }
 
         //---------------------------
-        // context stuff
+        // process routine
         //---------------------------
 
-        private static PrefabRegistry reg = null;
-
-        public static void ValidateDataAndRegisterPrefabs()
+        public void ValidateDataAndRegisterPrefabs()
         {
-            reg = new PrefabRegistry();
+
+            PrefabRegistry.CreateInstance();
+            PrefabRegistry.SaveOriginalPrefabNames();
 
             foreach (var p in dataProcessors)
             {
-                p.PrepareProcess(reg);
+                p.CallPrepareProcess();
             }
 
             foreach (var p in dataProcessors)
             {
-                p.ValidateAllData(reg);
+                p.CallValidateAllData();
             }
 
             foreach (var p in dataProcessors)
             {
-                p.ReserveAllPrefabs(reg);
+                p.CallReserveAllPrefabs();
             }
 
             var allOkay = true;
             foreach (var p in dataProcessors)
             {
-                allOkay &= p.ValidateAllPrefabs(reg);
+                allOkay &= p.CallValidateAllPrefabs();
             }
 
-            if (allOkay)
+            if (allOkay == false)
             {
                 foreach (var p in dataProcessors)
                 {
-                    p.RegisterAllPrefabs(reg);
+                    p.CallFinalizeProcess();
                 }
+                ResetRegistry();
+                return;
             }
+
+            // from this point everything is okay
 
             foreach (var p in dataProcessors)
             {
-                p.FinalizeProcess(reg);
+                p.CallRegisterAllPrefabs();
             }
-
-            if (allOkay)
+            foreach (var p in dataProcessors)
             {
-                dataLoaded = true;
-                foreach (var cb in dataLoadedCallbacks)
-                {
-                    cb();
-                }
+                p.CallEditAllPrefabs();
             }
-            else
+            foreach (var p in dataProcessors)
             {
-                ResetData();
+                p.CallFinalizeProcess();
+            }
+            foreach (var cb in onFinishedCallbacks)
+            {
+                cb();
             }
         }
 
-        public static void ResetData()
+        public void ResetRegistry()
         {
-            if (reg != null)
+            foreach (var cb in onResetCallbacks)
             {
-                // ctx==null would mean no data loaded/processed yet
-                for (var i= dataProcessors.Length - 1; i >= 0; i--)
-                {
-                    dataProcessors[i].RestoreAllPrefabs(reg);
-                }
-                for (var i = dataProcessors.Length - 1; i >= 0; i--)
-                {
-                    dataProcessors[i].CleanupProcess(reg);
-                }
-                reg = null;
+                cb();
+            }
+
+            for (var i= dataProcessors.Length - 1; i >= 0; i--)
+            {
+                dataProcessors[i].CallRestoreAllPrefabs();
+            }
+
+            for (var i = dataProcessors.Length - 1; i >= 0; i--)
+            {
+                dataProcessors[i].CallCleanupProcess();
             }
 
             for (var i = dataProcessors.Length - 1; i >= 0; i--)
@@ -205,14 +217,7 @@ namespace OfTamingAndBreeding.Registry
                 dataProcessors[i].ResetData();
             }
 
-            if (dataLoaded)
-            {
-                dataLoaded = false;
-                foreach (var cb in dataResetCallbacks)
-                {
-                    cb();
-                }
-            }
+            PrefabRegistry.DestroyInstance();
         }
 
     }

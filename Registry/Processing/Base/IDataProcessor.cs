@@ -1,9 +1,5 @@
-﻿using JetBrains.Annotations;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OfTamingAndBreeding.Registry.Processing.Base
 {
@@ -15,27 +11,22 @@ namespace OfTamingAndBreeding.Registry.Processing.Base
 
         string GetDataKey(string fileName);
         bool LoadFromFile(string file);
-        bool LoadYaml(string prefabName, string yamlText);
-
-
-
-
-
-
+        bool LoadYamlData(string prefabName, string yamlText);
 
         Dictionary<string, string> GetAllSerializedData();
         int GetLoadedDataCount();
 
         void ResetData();
 
-        void PrepareProcess(PrefabRegistry reg);
-        void ValidateAllData(PrefabRegistry reg);
-        void ReserveAllPrefabs(PrefabRegistry reg);
-        bool ValidateAllPrefabs(PrefabRegistry reg);
-        void RegisterAllPrefabs(PrefabRegistry reg);
-        void FinalizeProcess(PrefabRegistry reg);
-        void RestoreAllPrefabs(PrefabRegistry reg);
-        void CleanupProcess(PrefabRegistry reg);
+        void CallPrepareProcess();
+        void CallValidateAllData();
+        void CallReserveAllPrefabs();
+        bool CallValidateAllPrefabs();
+        void CallRegisterAllPrefabs();
+        void CallEditAllPrefabs();
+        void CallFinalizeProcess();
+        void CallRestoreAllPrefabs();
+        void CallCleanupProcess();
 
     }
 }

@@ -1,9 +1,6 @@
 ﻿using JetBrains.Annotations;
 using OfTamingAndBreeding.Data.Models.SubData;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace OfTamingAndBreeding.Data.Models
 {
@@ -43,6 +40,8 @@ namespace OfTamingAndBreeding.Data.Models
         [CanBeNull]
         public class ItemData
         {
+            public string CustomIconName { get; set; } = null;
+
             public string ItemType { get; set; } = null;
             public float? Weight { get; set; } = null;
 

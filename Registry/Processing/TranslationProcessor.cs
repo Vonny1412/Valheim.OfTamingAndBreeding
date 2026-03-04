@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using Jotunn.Managers;
 using OfTamingAndBreeding.Data.Models;
-using OfTamingAndBreeding.Data.Models.SubData;
 
 namespace OfTamingAndBreeding.Registry.Processing
 {
@@ -36,41 +33,45 @@ namespace OfTamingAndBreeding.Registry.Processing
         //
         //
         //
-        public override void Prepare(Base.PrefabRegistry reg)
+        public override void PrepareProcess()
         {
         }
 
-        public override bool ValidateData(Base.PrefabRegistry reg, string fileName, TranslationData data)
-        {
-            return true; // i dont care
-        }
-
-        public override bool ReservePrefab(Base.PrefabRegistry reg, string fileName, TranslationData data)
+        public override bool ValidateData(string fileName, TranslationData data)
         {
             return true; // i dont care
         }
 
-        public override bool ValidatePrefab(Base.PrefabRegistry reg, string fileName, TranslationData data)
+        public override bool ReservePrefab(string fileName, TranslationData data)
         {
             return true; // i dont care
         }
 
-        public override void RegisterPrefab(Base.PrefabRegistry reg, string fileName, TranslationData data)
+        public override bool ValidatePrefab(string fileName, TranslationData data)
+        {
+            return true; // i dont care
+        }
+
+        public override void RegisterPrefab(string fileName, TranslationData data)
         {
             var local = LocalizationManager.Instance.GetLocalization();
             local.AddTranslation(data.Language, data.Translations);
         }
 
-        public override void Finalize(Base.PrefabRegistry reg)
+        public override void EditPrefab(string fileName, TranslationData data)
         {
         }
 
-        public override void RestorePrefab(Base.PrefabRegistry reg, string fileName)
+        public override void FinalizeProcess()
+        {
+        }
+
+        public override void RestorePrefab(string fileName)
         {
             // TODO: do i need to unregister localizations?
         }
 
-        public override void Cleanup(Base.PrefabRegistry reg)
+        public override void CleanupProcess()
         {
         }
 

@@ -1,14 +1,62 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Utils
 {
     internal static class SpriteUtils
     {
+
+        public static bool TryLoadValidImage(string base64, out Texture2D texture)
+        {
+            byte[] bytes = Convert.FromBase64String(base64);
+            return TryLoadValidImage(bytes, out texture);
+        }
+
+        public static Sprite TextureToSprite(Texture2D tex)
+        {
+            if (!tex) return null;
+            return Sprite.Create(
+                tex,
+                new Rect(0, 0, tex.width, tex.height),
+                new Vector2(0.5f, 0.5f),
+                100f
+            );
+        }
+
+        public static bool TryLoadValidImage(byte[] bytes, out Texture2D texture)
+        {
+            texture = null;
+
+            if (bytes == null || bytes.Length == 0)
+                return false;
+
+            try
+            {
+                var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+
+                bool loaded = tex.LoadImage(bytes, markNonReadable: true);
+                if (!loaded)
+                {
+                    UnityEngine.Object.Destroy(tex);
+                    return false;
+                }
+
+                // zusätzliche Sicherheitsprüfung
+                if (tex.width <= 0 || tex.height <= 0)
+                {
+                    UnityEngine.Object.Destroy(tex);
+                    return false;
+                }
+
+                texture = tex;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         private static Texture2D RenderSpriteToTexture(Sprite src)
         {
             if (!src) return null;
@@ -79,6 +127,7 @@ namespace OfTamingAndBreeding.Utils
             System.IO.File.WriteAllBytes(path, png);
             UnityEngine.Object.Destroy(tex);
         }
+
         public static Texture2D LoadImageFromFile(string path, bool readable = true)
         {
             if (string.IsNullOrWhiteSpace(path) || !System.IO.File.Exists(path))

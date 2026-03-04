@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OfTamingAndBreeding.Utils
 {
@@ -46,18 +42,31 @@ namespace OfTamingAndBreeding.Utils
             }
 
             if (ts.Days > 0)
-                timeString += String.Format(L.Localize("$otab_hover_time_days"), color, ts.Days);
+            {
+                var tsDays = ts.Days.ToString();
+                timeString += L.Localize("$otab_hover_time_days", color, tsDays);
+            }
+            var timeFormat = L.Localize("$otab_hover_time_format");
             if (ts.Hours > 0 || timeString != "")
-                timeString += String.Format(L.Localize("$otab_hover_time_hours"), color, ts.Hours);
+            {
+                var tsHours = String.Format(timeFormat, ts.Hours);
+                timeString += L.Localize("$otab_hover_time_hours", color, tsHours);
+            }
             if (ts.Minutes > 0 || timeString != "")
-                timeString += String.Format(L.Localize("$otab_hover_time_minutes"), color, ts.Minutes);
+            {
+                var tsMinutes = String.Format(timeFormat, ts.Minutes);
+                timeString += L.Localize("$otab_hover_time_minutes", color, tsMinutes);
+            }
             if (Plugin.Configs.HoverShowSeconds.Value)
-                timeString += String.Format(L.Localize("$otab_hover_time_seconds"), color, ts.Seconds);
+            {
+                var tsSeconds = String.Format(timeFormat, ts.Seconds);
+                timeString += L.Localize("$otab_hover_time_seconds", color, tsSeconds);
+            }
 
 
             return timeString != ""
-                ? String.Format(label, color, timeString.Trim())
-                : String.Format(labelAlt, color);
+                ? L.Localize(label, color, timeString.Trim())
+                : L.Localize(labelAlt, color);
         }
 
     }

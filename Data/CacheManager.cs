@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,7 +9,7 @@ using OfTamingAndBreeding.Registry;
 
 namespace OfTamingAndBreeding.Data
 {
-    internal class CacheManager
+    internal class CacheManager : Common.SingletonClass<CacheManager>
     {
 
         public static string GetCachePath(string serverName)
@@ -22,10 +21,23 @@ namespace OfTamingAndBreeding.Data
         public static string GetCacheCryptedFile(string serverName)
             => Path.Combine(Plugin.CacheDir, $"{serverName}.cache");
 
-        public static string BuildCache(string serverName, string encryptKey, bool writeFiles)
+        //--------------------------------------------------
+        // Singleton
+
+        protected override void OnCreate()
+        {
+        }
+
+        protected override void OnDestroy()
+        {
+        }
+
+        //--------------------------------------------------
+
+        public string BuildCache(string serverName, string encryptKey, bool writeFiles)
             => BuildCache(serverName, encryptKey, writeFiles, out string _);
 
-        public static string BuildCache(string serverName, string encryptKey, bool writeFiles, out string cacheContent)
+        public string BuildCache(string serverName, string encryptKey, bool writeFiles, out string cacheContent)
         {
             cacheContent = null;
 
@@ -50,7 +62,7 @@ namespace OfTamingAndBreeding.Data
             };
 
 
-            foreach(var p in RegistryOrchestrator.IterDataProcessors())
+            foreach(var p in PrefabRegistryManager.Instance.IterDataProcessors())
             {
                 var writeToDir = Path.Combine(cacheDebugFilesPath, p.DirectoryName);
                 Directory.CreateDirectory(writeToDir);
@@ -96,21 +108,21 @@ namespace OfTamingAndBreeding.Data
         }
         */
 
-        public static bool LoadCacheFromCrypted(string crypted, string encryptKey)
+        public bool LoadCacheFromCrypted(string crypted, string encryptKey)
         {
             try
             {
                 var cacheFilePlain = encryptKey == null ? crypted : DeterministicStringCrypto.DecryptFromBase64(crypted, encryptKey);
                 var cacheFile = SerializeableData.Deserialize<Models.CacheFile>(cacheFilePlain);
-                RegistryOrchestrator.ResetData();
+                PrefabRegistryManager.Instance.ResetRegistry();
                 var allokay = true;
-                foreach(var p in RegistryOrchestrator.IterDataProcessors())
+                foreach(var p in PrefabRegistryManager.Instance.IterDataProcessors())
                 {
                     foreach (var kv in cacheFile.Data[p.DirectoryName])
                     {
                         var prefab = kv.Key;
                         var data = Base64Decode(kv.Value);
-                        allokay &= p.LoadYaml(prefab, data);
+                        allokay &= p.LoadYamlData(prefab, data);
                     }
                 }
                 return allokay;
@@ -122,28 +134,8 @@ namespace OfTamingAndBreeding.Data
             return false;
         }
 
-        public static string Base64Encode(string plainText)
-        {
-            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
-            return System.Convert.ToBase64String(plainTextBytes);
-        }
-
-        public static string Base64Decode(string base64EncodedData)
-        {
-            var base64EncodedBytes = System.Convert.FromBase64String(base64EncodedData);
-            return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
-        }
-
-        public static string ComputeSha256FileHash(string filePath)
-        {
-            if (string.IsNullOrEmpty(filePath))
-                throw new ArgumentException("filePath is required", nameof(filePath));
-
-            using (var fs = File.OpenRead(filePath))
-            {
-                return ComputeSha256StreamHash(fs);
-            }
-        }
+        //--------------------------------------------------
+        // Helpers
 
         public static string ComputeSha256StringHash(string content)
         {
@@ -167,6 +159,29 @@ namespace OfTamingAndBreeding.Data
                 var hash = sha.ComputeHash(stream);
                 return BytesToHex(hash);
             }
+        }
+
+        public static string ComputeSha256FileHash(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath))
+                throw new ArgumentException("filePath is required", nameof(filePath));
+
+            using (var fs = File.OpenRead(filePath))
+            {
+                return ComputeSha256StreamHash(fs);
+            }
+        }
+
+        private static string Base64Encode(string plainText)
+        {
+            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(plainText);
+            return System.Convert.ToBase64String(plainTextBytes);
+        }
+
+        private static string Base64Decode(string base64EncodedData)
+        {
+            var base64EncodedBytes = System.Convert.FromBase64String(base64EncodedData);
+            return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
         }
 
         private static string BytesToHex(byte[] bytes)

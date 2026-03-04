@@ -15,23 +15,23 @@ namespace OfTamingAndBreeding.ValheimAPI
         {
         }
 
-        public static readonly Core.Invokers.FieldMutateInvoker<Character_Alias> __IAPI_m_character_Invoker = new Core.Invokers.FieldMutateInvoker<Character_Alias>(typeof(Tameable_Alias), "m_character");
+        //public static readonly Core.Invokers.FieldMutateInvoker<Character_Alias> __IAPI_m_character_Invoker = new Core.Invokers.FieldMutateInvoker<Character_Alias>(typeof(Tameable_Alias), "m_character");
 
-        public static readonly Core.Invokers.FieldMutateInvoker<MonsterAI_Alias> __IAPI_m_monsterAI_Invoker = new Core.Invokers.FieldMutateInvoker<MonsterAI_Alias>(typeof(Tameable_Alias), "m_monsterAI");
+        //public static readonly Core.Invokers.FieldMutateInvoker<MonsterAI_Alias> __IAPI_m_monsterAI_Invoker = new Core.Invokers.FieldMutateInvoker<MonsterAI_Alias>(typeof(Tameable_Alias), "m_monsterAI");
 
-        public static readonly Core.Invokers.FieldMutateInvoker<Piece_Alias> __IAPI_m_piece_Invoker = new Core.Invokers.FieldMutateInvoker<Piece_Alias>(typeof(Tameable_Alias), "m_piece");
+        //public static readonly Core.Invokers.FieldMutateInvoker<Piece_Alias> __IAPI_m_piece_Invoker = new Core.Invokers.FieldMutateInvoker<Piece_Alias>(typeof(Tameable_Alias), "m_piece");
 
-        public static readonly Core.Invokers.FieldMutateInvoker<ZNetView_Alias> __IAPI_m_nview_Invoker = new Core.Invokers.FieldMutateInvoker<ZNetView_Alias>(typeof(Tameable_Alias), "m_nview");
+        //public static readonly Core.Invokers.FieldMutateInvoker<ZNetView_Alias> __IAPI_m_nview_Invoker = new Core.Invokers.FieldMutateInvoker<ZNetView_Alias>(typeof(Tameable_Alias), "m_nview");
 
-        public static readonly Core.Invokers.FieldMutateInvoker<float> __IAPI_m_lastPetTime_Invoker = new Core.Invokers.FieldMutateInvoker<float>(typeof(Tameable_Alias), "m_lastPetTime");
+        //public static readonly Core.Invokers.FieldMutateInvoker<float> __IAPI_m_lastPetTime_Invoker = new Core.Invokers.FieldMutateInvoker<float>(typeof(Tameable_Alias), "m_lastPetTime");
 
-        public static readonly Core.Invokers.FieldMutateInvoker<float> __IAPI_m_unsummonTime_Invoker = new Core.Invokers.FieldMutateInvoker<float>(typeof(Tameable_Alias), "m_unsummonTime");
+        //public static readonly Core.Invokers.FieldMutateInvoker<float> __IAPI_m_unsummonTime_Invoker = new Core.Invokers.FieldMutateInvoker<float>(typeof(Tameable_Alias), "m_unsummonTime");
 
-        public static readonly Core.Invokers.FieldMutateInvoker<System.Collections.Generic.List<Player_Alias>> __IAPI_s_nearbyPlayers_Invoker = new Core.Invokers.FieldMutateInvoker<System.Collections.Generic.List<Player_Alias>>(typeof(Tameable_Alias), "s_nearbyPlayers");
+        //public static readonly Core.Invokers.FieldMutateInvoker<System.Collections.Generic.List<Player_Alias>> __IAPI_s_nearbyPlayers_Invoker = new Core.Invokers.FieldMutateInvoker<System.Collections.Generic.List<Player_Alias>>(typeof(Tameable_Alias), "s_nearbyPlayers");
 
-        public static readonly Core.Invokers.ConstFieldInvoker<float> __IAPI_m_playerMaxDistance_Invoker = new Core.Invokers.ConstFieldInvoker<float>(typeof(Tameable_Alias), "m_playerMaxDistance");
+        //public static readonly Core.Invokers.ConstFieldInvoker<float> __IAPI_m_playerMaxDistance_Invoker = new Core.Invokers.ConstFieldInvoker<float>(typeof(Tameable_Alias), "m_playerMaxDistance");
 
-        public static readonly Core.Invokers.ConstFieldInvoker<float> __IAPI_m_tameDeltaTime_Invoker = new Core.Invokers.ConstFieldInvoker<float>(typeof(Tameable_Alias), "m_tameDeltaTime");
+        //public static readonly Core.Invokers.ConstFieldInvoker<float> __IAPI_m_tameDeltaTime_Invoker = new Core.Invokers.ConstFieldInvoker<float>(typeof(Tameable_Alias), "m_tameDeltaTime");
 
         public static readonly Core.Invokers.VoidMethodInvoker __IAPI_Tame_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(Tameable_Alias), "Tame", new Core.Signatures.ParamSig[] { });
 

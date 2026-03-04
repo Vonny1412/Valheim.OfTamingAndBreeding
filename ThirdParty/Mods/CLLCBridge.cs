@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Reflection;
-using UnityEngine; // for Debug? optional
-// Character is from Valheim
-// ZNetView / ZDO usage is inside CLLC, not needed here
 
 namespace OfTamingAndBreeding.ThirdParty.Mods
 {

@@ -1,11 +1,7 @@
 ﻿using HarmonyLib;
-using OfTamingAndBreeding.Components.Extensions;
-using OfTamingAndBreeding.ValheimAPI;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using OfTamingAndBreeding.Components;
+using OfTamingAndBreeding.Components.Traits;
+using OfTamingAndBreeding.Utils;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Patches
@@ -24,23 +20,41 @@ namespace OfTamingAndBreeding.Patches
                 // cannot grow afterall
                 return;
             }
-            __result = __instance.CanGrow_PatchPostfix();
-        }
 
-        [HarmonyPatch(typeof(EggGrow), "GrowUpdate")]
-        [HarmonyPrefix]
-        [HarmonyPriority(Priority.Last)]
-        private static bool EggGrow_GrowUpdate_Prefix(EggGrow __instance)
-        {
-            return __instance.GrowUpdate_PatchPrefix();
-        }
+            var eggPosition = __instance.transform.position;
 
-        [HarmonyPatch(typeof(EggGrow), "Start")]
-        [HarmonyPostfix]
-        [HarmonyPriority(Priority.Last)]
-        private static void EggGrow_Start_Postfix(EggGrow __instance)
-        {
-            __instance.Start_PatchPostfix();
+            if (__instance.TryGetComponent<OTABEgg>(out var component))
+            {
+                if (component.m_requireBiome != Heightmap.Biome.None && !Utils.EnvironmentUtils.IsInBiome(eggPosition, component.m_requireBiome))
+                {
+                    __result = false;
+                }
+
+                if (component.m_requireLiquid != EnvironmentUtils.LiquidTypeEx.None)
+                {
+                    var liquidType = component.m_requireLiquid;
+                    var liquidDepth = component.m_requireLiquidDepth;
+                    switch (liquidType)
+                    {
+                        case Utils.EnvironmentUtils.LiquidTypeEx.Water:
+                            if (!Utils.EnvironmentUtils.IsInWater(eggPosition, liquidDepth))
+                            {
+                                __result = false;
+                            }
+                            break;
+                        case Utils.EnvironmentUtils.LiquidTypeEx.Tar:
+                            if (!Utils.EnvironmentUtils.IsInTar(eggPosition, liquidDepth))
+                            {
+                                __result = false;
+                            }
+                            break;
+
+                            // todo: lava?
+                    }
+                }
+
+                // ... maybe more to come
+            }
         }
 
         [HarmonyPatch(typeof(EggGrow), "UpdateEffects")]
@@ -51,6 +65,18 @@ namespace OfTamingAndBreeding.Patches
             {
                 r.enabled = grow == 0;
             }
+        }
+
+        [HarmonyPatch(typeof(EggGrow), "GrowUpdate")]
+        [HarmonyPrefix]
+        [HarmonyPriority(Priority.Last)]
+        private static bool EggGrow_GrowUpdate_Prefix(EggGrow __instance)
+        {
+            if (__instance.TryGetComponent<EggGrowTrait>(out var trait) && trait.GrowUpdate())
+            {
+                return false;
+            }
+            return true;
         }
 
     }

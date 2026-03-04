@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Utils
@@ -44,22 +42,24 @@ namespace OfTamingAndBreeding.Utils
         // single components
         //------------------------------
 
-        public static void RestoreComponent<T>(GameObject backup, GameObject current) where T : Component
+        public static void RestoreComponent<T>(GameObject current, GameObject backup) where T : Component
         {
             var src = backup.GetComponent<T>();
             var dst = current.GetComponent<T>();
-
             if (src == null)
             {
-                if (dst != null) UnityEngine.Object.DestroyImmediate(dst);
+                if (dst != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(dst);
+                }
                 return;
             }
-
-            if (dst == null) dst = current.AddComponent<T>();
+            if (dst == null)
+            {
+                dst = current.AddComponent<T>();
+            }
             CopyPublicFields(src, dst);
         }
-
-
 
         //------------------------------
         // children list
@@ -79,7 +79,7 @@ namespace OfTamingAndBreeding.Utils
             return map;
         }
 
-        public static void RestoreChildRenderers(GameObject backup, GameObject current)
+        public static void RestoreChildRenderers(GameObject current, GameObject backup)
         {
             var bMap = MapByPath<Renderer>(backup);
             var cMap = MapByPath<Renderer>(current);
@@ -114,7 +114,7 @@ namespace OfTamingAndBreeding.Utils
             }
         }
 
-        public static void RestoreChildLights(GameObject backup, GameObject current)
+        public static void RestoreChildLights(GameObject current, GameObject backup)
         {
             var bMap = MapByPath<Light>(backup);
             var cMap = MapByPath<Light>(current);
@@ -135,7 +135,7 @@ namespace OfTamingAndBreeding.Utils
             }
         }
 
-        public static void RestoreChildParticleRenderers(GameObject backup, GameObject current)
+        public static void RestoreChildParticleRenderers(GameObject current, GameObject backup)
         {
             var bMap = MapByPath<ParticleSystemRenderer>(backup);
             var cMap = MapByPath<ParticleSystemRenderer>(current);
@@ -153,7 +153,7 @@ namespace OfTamingAndBreeding.Utils
             }
         }
 
-        public static void RestoreChildLightFlickerBaseColor(GameObject backup, GameObject current)
+        public static void RestoreChildLightFlickerBaseColor(GameObject current, GameObject backup)
         {
 
             // map by path for MonoBehaviours whose type name is LightFlicker
@@ -185,7 +185,7 @@ namespace OfTamingAndBreeding.Utils
         }
 
         // unused
-        public static void RestoreItemIcons(GameObject backup, GameObject current)
+        public static void RestoreItemIcons(GameObject current, GameObject backup)
         {
 
             // Usually only one ItemDrop per item prefab, but handle multiple just in case

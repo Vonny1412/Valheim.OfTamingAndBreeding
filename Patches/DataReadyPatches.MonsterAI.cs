@@ -1,10 +1,5 @@
 ﻿using HarmonyLib;
-using OfTamingAndBreeding.Components.Extensions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using OfTamingAndBreeding.Components.Traits;
 
 namespace OfTamingAndBreeding.Patches
 {
@@ -16,24 +11,30 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         private static bool MonsterAI_FindClosestConsumableItem_Prefix(MonsterAI __instance, ref ItemDrop __result)
         {
-            if (Plugin.Configs.UseBetterSearchForFood.Value == true)
+            if (__instance.TryGetComponent<BaseAITrait>(out var trait))
             {
-                __result = __instance.FindNearbyConsumableItem(__instance.m_consumeSearchRange, __instance.m_consumeItems);
+                if (Plugin.Configs.UseBetterSearchForFood.Value == true)
+                {
+                    __result = trait.FindNearbyConsumableItem(__instance.m_consumeSearchRange, __instance.m_consumeItems);
+                }
+                else
+                {
+                    __result = trait.FindClosestConsumableItem(__instance.m_consumeSearchRange, __instance.m_consumeItems);
+                }
+                return false;
             }
-            else
-            {
-                __result = __instance.FindClosestConsumableItem(__instance.m_consumeSearchRange, __instance.m_consumeItems);
-            }
-            // skrew it, just replace it completly!
-            // because i dont like the vanilla CanConsume-method
-            return false;
+            return true;
         }
 
         [HarmonyPatch(typeof(MonsterAI), "UpdateAI")]
         [HarmonyPrefix]
         private static bool MonsterAI_UpdateAI_Prefix(MonsterAI __instance, float dt)
         {
-            return __instance.UpdateAI_PatchPrefix(dt);
+            if (__instance.TryGetComponent<MonsterAITrait>(out var trait) && trait.UpdateAI(dt))
+            {
+                return false;
+            }
+            return true;
         }
 
     }

@@ -1,9 +1,5 @@
 ﻿using Jotunn.Managers;
-using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Utils
@@ -144,19 +140,19 @@ vfx_boar_birth
             var prefab = ZNetScene.instance.GetPrefab(prefabName);
             if (!prefab)
             {
-                Plugin.LogWarning($"GetEffectData(): Unknown prefab '{prefabName}'");
+                Plugin.LogError($"GetEffectData(): Unknown prefab '{prefabName}'");
                 return null;
             }
             T procreation = prefab.GetComponent<T>();
             if (!procreation)
             {
-                Plugin.LogWarning($"GetEffectData(): No Component '{nameof(T)}' for prefab '{prefabName}'");
+                Plugin.LogError($"GetEffectData(): No Component '{nameof(T)}' for prefab '{prefabName}'");
                 return null;
             }
             var fieldInfo = typeof(T).GetField(fieldName);
             if (fieldInfo == null)
             {
-                Plugin.LogWarning($"GetEffectData(): No Component Field '{nameof(T)}.{fieldName}' for prefab '{prefabName}'");
+                Plugin.LogError($"GetEffectData(): No Component Field '{nameof(T)}.{fieldName}' for prefab '{prefabName}'");
                 return null;
             }
             return (EffectList)fieldInfo.GetValue(procreation);

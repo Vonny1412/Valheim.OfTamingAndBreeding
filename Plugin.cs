@@ -1,18 +1,13 @@
 ﻿using BepInEx;
 using BepInEx.Bootstrap;
-using Jotunn;
 using Jotunn.Utils;
+using OfTamingAndBreeding.Components.Base;
 using OfTamingAndBreeding.Components.Extensions;
-using OfTamingAndBreeding.Net;
-using OfTamingAndBreeding.Registry;
+using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.StaticContext;
 using OfTamingAndBreeding.ThirdParty.Mods;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
-using UnityEngine;
 
 namespace OfTamingAndBreeding
 {
@@ -49,12 +44,36 @@ namespace OfTamingAndBreeding
         public static string CacheDir { get; private set; }
 
         // this way we can keep track where each loglevel is beeing used
-        internal static void LogMessage(object data) => Instance.Logger.LogMessage(data);
-        internal static void LogError(object data) => Instance.Logger.LogError(data);
+
         internal static void LogFatal(object data) => Instance.Logger.LogFatal(data);
+        internal static void LogError(object data) => Instance.Logger.LogError(data);
+        internal static void LogWarning(object data) => Instance.Logger.LogWarning(data);
+        internal static void LogMessage(object data) => Instance.Logger.LogMessage(data);
         internal static void LogInfo(object data) => Instance.Logger.LogInfo(data);
         internal static void LogDebug(object data) => Instance.Logger.LogDebug(data);
-        internal static void LogWarning(object data) => Instance.Logger.LogWarning(data);
+
+        internal static void LogServerMessage(object data) {
+            if (Net.NetworkSessionManager.Instance.IsServer())
+            {
+                Instance.Logger.LogMessage(data);
+            }
+        }
+
+        internal static void LogServerInfo(object data)
+        {
+            if (Net.NetworkSessionManager.Instance.IsServer())
+            {
+                Instance.Logger.LogInfo(data);
+            }
+        }
+
+        internal static void LogServerDebug(object data)
+        {
+            if (Net.NetworkSessionManager.Instance.IsServer())
+            {
+                Instance.Logger.LogDebug(data);
+            }
+        }
 
         private bool CheckModsInChainloader()
         {
@@ -119,41 +138,85 @@ namespace OfTamingAndBreeding
             }
             catch (Exception ex)
             {
-                LogFatal("Patch validation failed. This OTAB build is broken =(");
+                LogFatal(@"Patch validation failed. This OTAB build is broken.");
                 LogFatal(ex.ToString());
                 DisablePlugin();
                 throw;
             }
 
             Configs.Initialize(Config);
+
             Net.RPCContext.RegisterRPCs();
             ThirdParty.ThirdPartyManager.RegisterBridges();
 
-            RegistryOrchestrator.OnDataLoaded(() => {
-                ZNetScene.instance?.UnblockObjectsCreation();
-                Patches.DataReadyPatches.Install();
-                otabDataLoaded = true;
+            Data.CacheManager.CreateInstance();
+            Registry.PrefabRegistryManager.CreateInstance();
+            Net.NetworkSessionManager.CreateInstance();
 
-                if (ZNet.instance.IsServer())
+            Net.NetworkSessionManager.Instance.OnReady((dataLoaded) => {
+                if (dataLoaded)
                 {
-                    foreach (var p in RegistryOrchestrator.IterDataProcessors())
+                    Patches.DataReadyPatches.Install();
+                    foreach (var p in Registry.PrefabRegistryManager.Instance.IterDataProcessors())
                     {
-                        LogInfo($"Loaded {p.GetLoadedDataCount()} {p.ModelTypeName} entries");
+                        LogServerInfo($"Loaded {p.GetLoadedDataCount()} {p.ModelTypeName} entries");
                     }
                 }
+                else
+                {
+                    LogInfo("No server sync detected (timeout). Running in vanilla mode.");
+                }
+
+                // unblock objects creation
+                ZNetSceneContext.blockObjectsCreation = false;
+                while (ZNetSceneContext.pending.Count > 0)
+                {
+                    var (near, distant) = ZNetSceneContext.pending.Dequeue();
+                    ZNetScene.instance.CreateObjects(near, distant);
+                }
+
+                TameableTrait.AddComponentToPrefabs(typeof(Tameable));
+                EggGrowTrait.AddComponentToPrefabs(typeof(EggGrow));
+                GrowupTrait.AddComponentToPrefabs(typeof(Growup));
+                CharacterTrait.AddComponentToPrefabs(typeof(Character), typeof(BaseAI));
+                ProcreationTrait.AddComponentToPrefabs(typeof(Procreation));
+                BaseAITrait.AddComponentToPrefabs(typeof(BaseAI));
+                ItemDropTrait.AddComponentToPrefabs(typeof(ItemDrop));
+                MonsterAITrait.AddComponentToPrefabs(typeof(MonsterAI));
+
+                OnSessionReady(dataLoaded);
             });
-            RegistryOrchestrator.OnDataReset(() => {
-                Patches.DataReadyPatches.Uninstall();
-                otabDataLoaded = false;
+
+            Net.NetworkSessionManager.Instance.OnClosed((dataLoaded) => {
+                if (dataLoaded)
+                {
+                    Patches.DataReadyPatches.Uninstall();
+                }
+
+                OTABComponentRegistry.RemoveComponentsFromPrefabs();
+
+                OnSessionClosed(dataLoaded);
             });
 
         }
 
-        internal static bool otabDataLoaded = false;
-
-        public static bool IsOTABDataLoaded()
+        public static bool IsServerDataLoaded()
         {
-            return otabDataLoaded;
+            return Net.NetworkSessionManager.Instance != null && Net.NetworkSessionManager.Instance.IsServerDataLoaded();
+        }
+
+        public static void OnSessionReady(bool dataLoaded)
+        {
+            // could be used as api
+            // dataLoaded == true -> OTAB Mode
+            // dataLoaded == false -> Vanilla Mode
+        }
+
+        public static void OnSessionClosed(bool dataLoaded)
+        {
+            // could be used as api
+            // dataLoaded == true -> OTAB Mode
+            // dataLoaded == false -> Vanilla Mode
         }
 
     }

@@ -38,6 +38,7 @@ namespace OfTamingAndBreeding.Data.Models
             public IsEnemyCondition TamedCanAttackTamed { get; set; } = IsEnemyCondition.Never; // OTAB feature
             public IsEnemyCondition TamedCanBeAttackedByTamed { get; set; } = IsEnemyCondition.Never; // OTAB feature
             public IsEnemyCondition TamedCanAttackPlayer { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public IsEnemyCondition TamedCanBeAttackedByPlayer { get; set; } = IsEnemyCondition.Never; // OTAB feature
         }
 
         [Serializable]

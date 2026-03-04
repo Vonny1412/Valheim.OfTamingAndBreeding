@@ -1,11 +1,6 @@
 ﻿using JetBrains.Annotations;
 using OfTamingAndBreeding.Data.Models.SubData;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static OfTamingAndBreeding.Data.Models.CreatureData;
 
 namespace OfTamingAndBreeding.Data.Models
 {

@@ -24,7 +24,7 @@ namespace OfTamingAndBreeding.ValheimAPI
 
         public static readonly Core.Invokers.VoidMethodInvoker __IAPI_SetAlerted_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(BaseAI_Alias), "SetAlerted", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(bool), false) });
 
-        public static readonly Core.Invokers.FieldMutateInvoker<Tameable_Alias> __IAPI_m_tamable_Invoker = new Core.Invokers.FieldMutateInvoker<Tameable_Alias>(typeof(BaseAI_Alias), "m_tamable");
+        //public static readonly Core.Invokers.FieldMutateInvoker<Tameable_Alias> __IAPI_m_tamable_Invoker = new Core.Invokers.FieldMutateInvoker<Tameable_Alias>(typeof(BaseAI_Alias), "m_tamable");
 
         public static readonly Core.Invokers.TypedMethodInvoker<bool> __IAPI_MoveTo_Invoker1 = new Core.Invokers.TypedMethodInvoker<bool>(typeof(BaseAI_Alias), "MoveTo", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(float), false), new Core.Signatures.NonGenericParamSig(typeof(UnityEngine_Vector3_Alias), false), new Core.Signatures.NonGenericParamSig(typeof(float), false), new Core.Signatures.NonGenericParamSig(typeof(bool), false) });
 
@@ -34,15 +34,15 @@ namespace OfTamingAndBreeding.ValheimAPI
 
         public static readonly Core.Invokers.TypedMethodInvoker<bool> __IAPI_IsLookingAt_Invoker1 = new Core.Invokers.TypedMethodInvoker<bool>(typeof(BaseAI_Alias), "IsLookingAt", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(UnityEngine_Vector3_Alias), false), new Core.Signatures.NonGenericParamSig(typeof(float), false), new Core.Signatures.NonGenericParamSig(typeof(bool), false) });
 
-        public static readonly Core.Invokers.FieldMutateInvoker<ZSyncAnimation_Alias> __IAPI_m_animator_Invoker = new Core.Invokers.FieldMutateInvoker<ZSyncAnimation_Alias>(typeof(BaseAI_Alias), "m_animator");
+        //public static readonly Core.Invokers.FieldMutateInvoker<ZSyncAnimation_Alias> __IAPI_m_animator_Invoker = new Core.Invokers.FieldMutateInvoker<ZSyncAnimation_Alias>(typeof(BaseAI_Alias), "m_animator");
 
-        public static readonly Core.Invokers.FieldMutateInvoker<Character_Alias> __IAPI_m_character_Invoker = new Core.Invokers.FieldMutateInvoker<Character_Alias>(typeof(BaseAI_Alias), "m_character");
+        //public static readonly Core.Invokers.FieldMutateInvoker<Character_Alias> __IAPI_m_character_Invoker = new Core.Invokers.FieldMutateInvoker<Character_Alias>(typeof(BaseAI_Alias), "m_character");
 
         public static readonly Core.Invokers.FieldMutateInvoker<float> __IAPI_m_fleeTargetUpdateTime_Invoker = new Core.Invokers.FieldMutateInvoker<float>(typeof(BaseAI_Alias), "m_fleeTargetUpdateTime");
 
         public static readonly Core.Invokers.VoidMethodInvoker __IAPI_Follow_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(BaseAI_Alias), "Follow", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(UnityEngine_GameObject_Alias), false), new Core.Signatures.NonGenericParamSig(typeof(float), false) });
 
-        public static readonly Core.Invokers.FieldMutateInvoker<ZNetView_Alias> __IAPI_m_nview_Invoker = new Core.Invokers.FieldMutateInvoker<ZNetView_Alias>(typeof(BaseAI_Alias), "m_nview");
+        //public static readonly Core.Invokers.FieldMutateInvoker<ZNetView_Alias> __IAPI_m_nview_Invoker = new Core.Invokers.FieldMutateInvoker<ZNetView_Alias>(typeof(BaseAI_Alias), "m_nview");
 
         public static readonly Core.Invokers.VoidMethodInvoker __IAPI_SetPatrolPoint_Invoker2 = new Core.Invokers.VoidMethodInvoker(typeof(BaseAI_Alias), "SetPatrolPoint", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(UnityEngine_Vector3_Alias), false) });
 

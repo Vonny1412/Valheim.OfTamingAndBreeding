@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace OfTamingAndBreeding.ThirdParty.Mods
 {
@@ -63,7 +60,7 @@ namespace OfTamingAndBreeding.ThirdParty.Mods
         {
             if (!IsRegistered)
             {
-                Plugin.LogError($"Cannot register recipe - WackyDB not registered");
+                Plugin.LogWarning($"Cannot register recipe - WackyDB not registered");
                 return;
             }
             var wackyRecipe = Activator.CreateInstance(recipeDataType);

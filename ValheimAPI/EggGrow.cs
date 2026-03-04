@@ -10,9 +10,9 @@ namespace OfTamingAndBreeding.ValheimAPI
         {
         }
 
-        public static readonly Core.Invokers.FieldMutateInvoker<ItemDrop_Alias> __IAPI_m_item_Invoker = new Core.Invokers.FieldMutateInvoker<ItemDrop_Alias>(typeof(EggGrow_Alias), "m_item");
+        //public static readonly Core.Invokers.FieldMutateInvoker<ItemDrop_Alias> __IAPI_m_item_Invoker = new Core.Invokers.FieldMutateInvoker<ItemDrop_Alias>(typeof(EggGrow_Alias), "m_item");
 
-        public static readonly Core.Invokers.FieldMutateInvoker<ZNetView_Alias> __IAPI_m_nview_Invoker = new Core.Invokers.FieldMutateInvoker<ZNetView_Alias>(typeof(EggGrow_Alias), "m_nview");
+        //public static readonly Core.Invokers.FieldMutateInvoker<ZNetView_Alias> __IAPI_m_nview_Invoker = new Core.Invokers.FieldMutateInvoker<ZNetView_Alias>(typeof(EggGrow_Alias), "m_nview");
 
         public static readonly Core.Invokers.VoidMethodInvoker __IAPI_UpdateEffects_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(EggGrow_Alias), "UpdateEffects", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(float), false) });
 

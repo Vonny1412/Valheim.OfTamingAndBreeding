@@ -17,13 +17,13 @@ namespace OfTamingAndBreeding.ValheimAPI
 
         public static readonly Core.Invokers.FieldMutateInvoker<UnityEngine_GameObject_Alias> __IAPI_m_offspringPrefab_Invoker = new Core.Invokers.FieldMutateInvoker<UnityEngine_GameObject_Alias>(typeof(Procreation_Alias), "m_offspringPrefab");
 
-        public static readonly Core.Invokers.FieldMutateInvoker<ZNetView_Alias> __IAPI_m_nview_Invoker = new Core.Invokers.FieldMutateInvoker<ZNetView_Alias>(typeof(Procreation_Alias), "m_nview");
+        //public static readonly Core.Invokers.FieldMutateInvoker<ZNetView_Alias> __IAPI_m_nview_Invoker = new Core.Invokers.FieldMutateInvoker<ZNetView_Alias>(typeof(Procreation_Alias), "m_nview");
 
-        public static readonly Core.Invokers.FieldMutateInvoker<BaseAI_Alias> __IAPI_m_baseAI_Invoker = new Core.Invokers.FieldMutateInvoker<BaseAI_Alias>(typeof(Procreation_Alias), "m_baseAI");
+        //public static readonly Core.Invokers.FieldMutateInvoker<BaseAI_Alias> __IAPI_m_baseAI_Invoker = new Core.Invokers.FieldMutateInvoker<BaseAI_Alias>(typeof(Procreation_Alias), "m_baseAI");
 
-        public static readonly Core.Invokers.FieldMutateInvoker<Character_Alias> __IAPI_m_character_Invoker = new Core.Invokers.FieldMutateInvoker<Character_Alias>(typeof(Procreation_Alias), "m_character");
+        //public static readonly Core.Invokers.FieldMutateInvoker<Character_Alias> __IAPI_m_character_Invoker = new Core.Invokers.FieldMutateInvoker<Character_Alias>(typeof(Procreation_Alias), "m_character");
 
-        public static readonly Core.Invokers.FieldMutateInvoker<Tameable_Alias> __IAPI_m_tameable_Invoker = new Core.Invokers.FieldMutateInvoker<Tameable_Alias>(typeof(Procreation_Alias), "m_tameable");
+        //public static readonly Core.Invokers.FieldMutateInvoker<Tameable_Alias> __IAPI_m_tameable_Invoker = new Core.Invokers.FieldMutateInvoker<Tameable_Alias>(typeof(Procreation_Alias), "m_tameable");
 
         public static readonly Core.Invokers.TypedMethodInvoker<bool> __IAPI_IsPregnant_Invoker1 = new Core.Invokers.TypedMethodInvoker<bool>(typeof(Procreation_Alias), "IsPregnant", new Core.Signatures.ParamSig[] { });
 

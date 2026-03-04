@@ -1,10 +1,5 @@
 ﻿using HarmonyLib;
 using OfTamingAndBreeding.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Patches
@@ -24,7 +19,7 @@ namespace OfTamingAndBreeding.Patches
             var prefabName = global::Utils.GetPrefabName(character.gameObject.name);
             if (string.IsNullOrEmpty(prefabName)) return;
 
-            var runner = character.GetComponent<OTAB_ConsumeClipOverlay>();
+            var runner = character.GetComponent<ConsumeAnimationClipOverlay>();
             if (runner)
             {
                 runner.PlayOverlay(__instance, speed: 1f);

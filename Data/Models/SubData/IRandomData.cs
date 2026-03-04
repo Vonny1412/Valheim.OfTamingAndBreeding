@@ -1,4 +1,6 @@
-﻿namespace OfTamingAndBreeding.Data.Models.SubData
+﻿using System;
+
+namespace OfTamingAndBreeding.Data.Models.SubData
 {
     internal interface IRandomData
     {

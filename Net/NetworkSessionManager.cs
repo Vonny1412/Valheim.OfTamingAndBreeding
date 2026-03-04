@@ -1,26 +1,70 @@
 ﻿using Jotunn;
-using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Registry;
 using OfTamingAndBreeding.StaticContext;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Net
 {
-    internal static class NetworkSessionManager
+    internal class NetworkSessionManager : Common.SingletonClass<NetworkSessionManager>
     {
 
-        private static Coroutine clientTimeoutRoutine;
+        //--------------------------------------------------
+        // Singleton
 
-        public static void InitSession()
+        protected override void OnCreate()
+        {
+            PrefabRegistryManager.Instance.OnFinished(() => {
+                serverDataLoaded = true;
+                CancelClientTimeout();
+                RunOnReadyCallback(true);
+            });
+            PrefabRegistryManager.Instance.OnReset(() => {
+                serverDataLoaded = false;
+            });
+        }
+
+        protected override void OnDestroy()
+        {
+            CloseSession();
+        }
+
+        //--------------------------------------------------
+
+        private readonly List<Action<bool>> onSessionReady = new List<Action<bool>>();
+        private readonly List<Action<bool>> onSessionClosed = new List<Action<bool>>();
+
+        private bool serverDataLoaded = false;
+        private bool isServer = false;
+        private Coroutine clientTimeoutRoutine;
+
+        public bool IsServerDataLoaded()
+        {
+            return serverDataLoaded;
+        }
+
+        public bool IsServer()
+        {
+            return isServer;
+        }
+
+        public void OnReady(Action<bool> cb)
+        {
+            onSessionReady.Add(cb);
+        }
+
+        public void OnClosed(Action<bool> cb)
+        {
+            onSessionClosed.Add(cb);
+        }
+
+        public void StartSession()
         {
             var zn = ZNet.instance;
             var isLocal = zn.IsLocalInstance();
-            if (zn.IsServer())
+            isServer = zn.IsServer();
+            if (isServer)
             {
                 ZNetSceneContext.blockObjectsCreation = false;
                 RPCContext.InitServerSession(isLocal);
@@ -32,25 +76,28 @@ namespace OfTamingAndBreeding.Net
             }
         }
 
-        public static void RequestHandshakeWithServer()
+        public void RequestHandshakeWithServer()
         {
             // only called for clients
             RPCContext.RequestHandshakeWithServer();
             StartClientTimeout(5f);
         }
 
-        public static void CloseSession()
+        public void CloseSession()
         {
             // called for client and server
+            var wasServerDataLoaded = serverDataLoaded;
 
-            RegistryOrchestrator.ResetData();
+            PrefabRegistryManager.Instance.ResetRegistry();
             RPCContext.DestroySession();
 
             ZNetSceneContext.Clear();
             CancelClientTimeout();
+
+            RunOnClosedCallback(wasServerDataLoaded);
         }
 
-        public static void StartClientTimeout(float seconds)
+        public void StartClientTimeout(float seconds)
         {
             if (clientTimeoutRoutine == null)
             {
@@ -58,7 +105,7 @@ namespace OfTamingAndBreeding.Net
             }
         }
 
-        public static void CancelClientTimeout()
+        public void CancelClientTimeout()
         {
             if (clientTimeoutRoutine != null)
             {
@@ -67,20 +114,34 @@ namespace OfTamingAndBreeding.Net
             }
         }
 
-        private static System.Collections.IEnumerator RunClientTimeout(float seconds)
+        private void RunOnReadyCallback(bool isServerDataLoaded)
+        {
+            foreach (var cb in onSessionReady)
+            {
+                cb(isServerDataLoaded);
+            }
+        }
+
+        private void RunOnClosedCallback(bool wasServerDataLoaded)
+        {
+            foreach (var cb in onSessionClosed)
+            {
+                cb(wasServerDataLoaded);
+            }
+        }
+
+        private System.Collections.IEnumerator RunClientTimeout(float seconds)
         {
             float start = Time.time;
             while (Time.time - start < seconds)
             {
-                if (Plugin.otabDataLoaded)
+                if (serverDataLoaded)
                 {
                     yield break;
                 }
                 yield return null;
             }
-            Plugin.LogInfo("No server sync detected (timeout). Running in vanilla mode.");
-            ZNetScene.instance?.UnblockObjectsCreation();
-            Plugin.otabDataLoaded = false;
+            RunOnReadyCallback(false);
         }
 
     }

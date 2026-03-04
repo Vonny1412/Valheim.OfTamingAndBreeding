@@ -1,10 +1,5 @@
 ﻿using HarmonyLib;
 using OfTamingAndBreeding.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OfTamingAndBreeding.Patches
 {
@@ -34,9 +29,9 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPrefix]
         private static void ZSyncAnimation_SetFloat_Prefix(ZSyncAnimation __instance, int hash, ref float value)
         {
-            if (__instance && __instance.TryGetComponent<OTAB_ScaledCreature>(out var scaled))
+            if (__instance && __instance.TryGetComponent<ScaledCreature>(out var scaled))
             {
-                value *= scaled.m_customAnimationScale;
+                value *= scaled.m_animationScale;
             }
         }
 

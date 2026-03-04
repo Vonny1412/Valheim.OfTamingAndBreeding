@@ -1,12 +1,10 @@
-﻿using OfTamingAndBreeding.Data.Models.SubData;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using OfTamingAndBreeding.Components.Base;
+using OfTamingAndBreeding.Data.Models.SubData;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Components
 {
-    public sealed class OTAB_Creature : MonoBehaviour
+    public class OTABCreature : OTABComponent<OTABCreature>
     {
 
         //
@@ -17,6 +15,7 @@ namespace OfTamingAndBreeding.Components
         [SerializeField] internal IsEnemyCondition m_tamedCanAttackTamed = IsEnemyCondition.Never;
         [SerializeField] internal IsEnemyCondition m_tamedCanBeAttackedByTamed = IsEnemyCondition.Never;
         [SerializeField] internal IsEnemyCondition m_tamedCanAttackPlayer = IsEnemyCondition.Never;
+        [SerializeField] internal IsEnemyCondition m_tamedCanBeAttackedByPlayer = IsEnemyCondition.Never;
         [SerializeField] internal bool m_changeGroupWhenTamed = false;
         [SerializeField] internal string m_changeGroupWhenTamedTo = "";
         [SerializeField] internal bool m_changeFactionWhenTamed = false;
@@ -46,16 +45,6 @@ namespace OfTamingAndBreeding.Components
             consumeItems = null;
             return false;
         }
-
-
-        //
-        // Tameable
-        //
-
-        [SerializeField] internal bool m_fedTimerDisabled = false;
-        [SerializeField] internal bool m_tamingDisabled = false;
-        [SerializeField] internal float m_starvingGraceFactor = -1;
-
 
 
         //
@@ -120,13 +109,6 @@ namespace OfTamingAndBreeding.Components
             prefabNames = null;
             return false;
         }
-
-
-
-
-
-
-
 
     }
 }

@@ -1,0 +1,94 @@
+using OfTamingAndBreeding.Data.Models;
+using OfTamingAndBreeding.Utils;
+using System;
+using UnityEngine;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
+
+namespace OfTamingAndBreeding.Components
+{
+    public sealed class OTAB_ConsumeClipOverlay : MonoBehaviour
+    {
+        [SerializeField] internal string m_animClipName;
+
+        [NonSerialized] private PlayableGraph m_graph;
+        [NonSerialized] private AnimationClip m_animClip;
+        [NonSerialized] private bool m_isPlaying = false;
+        [NonSerialized] private Rigidbody m_body = null;
+
+        private void Awake()
+        {
+            var ch = GetComponentInParent<Character>();
+            if (ch)
+            {
+                m_body = ch.GetComponent<Rigidbody>();
+            }
+            AnimationUtils.AnimationExists(gameObject, m_animClipName, out m_animClip);
+        }
+
+        private void Update()
+        {
+            if (m_isPlaying && m_body && m_body.linearVelocity.sqrMagnitude > 0.05f)
+            {
+                StopOverlay();
+            }
+        }
+
+        internal void PlayOverlay(Animator animator, float speed = 1f)
+        {
+            if (!animator) return;
+            if (!m_animClip) return;
+
+            StopOverlay();
+
+            float speedSafe = Mathf.Max(0.01f, speed);
+            float duration = Mathf.Max(0.05f, m_animClip.length / speedSafe);
+
+            m_graph = PlayableGraph.Create($"OTAB_ConsumeOverlay_{GetInstanceID()}");
+            m_graph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
+
+            var output = AnimationPlayableOutput.Create(m_graph, "OTAB_Out", animator);
+
+            var clipPlayable = AnimationClipPlayable.Create(m_graph, m_animClip);
+            clipPlayable.SetSpeed(speedSafe);
+            clipPlayable.SetApplyFootIK(false);
+
+            // Start at 0 explicitly
+            clipPlayable.SetTime(0);
+
+            var mixer = AnimationMixerPlayable.Create(m_graph, 1);
+            m_graph.Connect(clipPlayable, 0, mixer, 0);
+            mixer.SetInputWeight(0, 1f);
+
+            output.SetSourcePlayable(mixer);
+
+            m_graph.Play();
+            m_isPlaying = true;
+
+            CancelInvoke(nameof(StopOverlay));
+            Invoke(nameof(StopOverlay), duration);
+        }
+
+        internal void StopOverlay()
+        {
+            CancelInvoke(nameof(StopOverlay));
+
+            if (m_graph.IsValid())
+                m_graph.Destroy();
+            m_isPlaying = false;
+        }
+
+        private void OnDisable() => StopOverlay();
+        private void OnDestroy() => StopOverlay();
+
+        //
+        // public api
+        //
+
+        public bool IsPlaying()
+        {
+            return m_isPlaying;
+        }
+
+    }
+}

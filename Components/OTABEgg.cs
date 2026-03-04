@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using OfTamingAndBreeding.Components.Base;
+using System;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Components
 {
-    public sealed class OTAB_Egg : MonoBehaviour
+    public class OTABEgg : OTABComponent<OTABEgg>
     {
 
         //
@@ -35,11 +32,6 @@ namespace OfTamingAndBreeding.Components
             grownList = null;
             return false;
         }
-
-
-
-
-
 
     }
 

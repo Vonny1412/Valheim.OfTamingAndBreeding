@@ -1,11 +1,8 @@
 ﻿using BepInEx.Configuration;
 using Jotunn.Extensions;
 using OfTamingAndBreeding.Components.Extensions;
+using OfTamingAndBreeding.Components.Traits;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace OfTamingAndBreeding
 {
@@ -50,6 +47,7 @@ namespace OfTamingAndBreeding
             public static ConfigEntry<bool> WriteServerCacheFiles { get; private set; }
             public static ConfigEntry<string> CacheFileName { get; private set; }
             public static ConfigEntry<string> CacheFileCryptKey { get; private set; }
+            public static ConfigEntry<bool> ExportIconsToCache { get; private set; }
 
 
             private const string Section_Server_Gameplay = "Server - Gameplay";
@@ -125,6 +123,7 @@ namespace OfTamingAndBreeding
                 WriteServerCacheFiles = Config.BindConfigInOrder<bool>(section, "WriteServerCacheFiles", true, "Write debug output on the server (cleaned YAML and an unencrypted cache file). This setting is read on world/server start and is not synchronized during runtime.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
                 CacheFileName = Config.BindConfigInOrder<string>(section, "CacheFileName", "local-{world}-{seed}", "Template for the cache file name (server-resolved). Supports placeholders like {world} and {seed}. Read on world/server start and not synchronized during runtime.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
                 CacheFileCryptKey = Config.BindConfigInOrder<string>(section, "CacheFileCryptKey", "", "Key used to obfuscate the cache contents. This is NOT secure encryption - do NOT use real passwords or personal secrets! Read on world/server start and not synchronized during runtime.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
+                ExportIconsToCache = Config.BindConfigInOrder<bool>(section, "ExportIconsToCache", false, "When enabled, item icons are written to the server cache directory for customization or debug purposes.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
 
 
                 section = Section_Server_Gameplay;
@@ -133,69 +132,42 @@ namespace OfTamingAndBreeding
 
                 GlobalPregnancyDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalPregnancyDurationFactor", 1f, "Global multiplier for PregnancyDuration.  Applies immediately; lowering it can instantly finish ongoing pregnancy on the next update.", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
                 GlobalPregnancyDurationFactor.SettingChanged += (object sender, EventArgs args) => {
-                    //if (ZNet.instance && ZNet.instance.IsServer())
+                    foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
                     {
-                        foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
-                        {
-                            var procreation = baseAI.GetComponent<Procreation>();
-                            if (procreation != null)
-                            {
-                                procreation.UpdatePregnancyDuration();
-                            }
-                        }
+                        var procreationTrait = baseAI.GetComponent<ProcreationTrait>();
+                        procreationTrait?.UpdatePregnancyDuration();
                     }
                 };
 
                 GlobalFedDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalFedDurationFactor", 1f, "Global multiplier for FedDuration. Applies immediately (may flip Hungry/Starving state).", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
                 GlobalFedDurationFactor.SettingChanged += (object sender, EventArgs args) => {
-                    //if (ZNet.instance && ZNet.instance.IsServer())
+                    foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
                     {
-                        foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
-                        {
-                            var tameable = baseAI.GetComponent<Tameable>();
-                            if (tameable != null)
-                            {
-                                tameable.UpdateFedDuration();
-                            }
-                        }
+                        var tameableTrait = baseAI.GetComponent<TameableTrait>();
+                        tameableTrait?.UpdateFedDuration();
                     }
                 };
 
                 GlobalTamingTimeFactor = Config.BindConfigInOrder<float>(section, "GlobalTamingTimeFactor", 1f, "Global multiplier for TamingTime. Applies immediately; lowering it can instantly finish ongoing taming on the next update.", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
                 GlobalTamingTimeFactor.SettingChanged += (object sender, EventArgs args) => {
-                    //if (ZNet.instance && ZNet.instance.IsServer())
+                    foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
                     {
-                        foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
-                        {
-                            var tameable = baseAI.GetComponent<Tameable>();
-                            if (tameable != null)
-                            {
-                                tameable.UpdateTamingTime();
-                            }
-                        }
+                        var tameableTrait = baseAI.GetComponent<TameableTrait>();
+                        tameableTrait?.UpdateTamingTime();
                     }
                 };
 
                 GlobalGrowTimeFactor = Config.BindConfigInOrder<float>(section, "GlobalGrowTimeFactor", 1f, "Global multiplier for egg hatching and offspring grow-up time. Applies immediately; lowering it can trigger instant hatching/growing on next update.", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
                 GlobalGrowTimeFactor.SettingChanged += (object sender, EventArgs args) => {
-                    //if (ZNet.instance && ZNet.instance.IsServer())
+                    foreach (var itemDrop in ItemDropExtensions.GetInstances().ToArray())
                     {
-                        foreach (var itemDrop in ItemDropExtensions.GetInstances().ToArray())
-                        {
-                            var eggGrow = itemDrop.GetComponent<EggGrow>();
-                            if (eggGrow != null)
-                            {
-                                eggGrow.UpdateGrowTime();
-                            }
-                        }
-                        foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
-                        {
-                            var growup = baseAI.GetComponent<Growup>();
-                            if (growup != null)
-                            {
-                                growup.UpdateGrowTime();
-                            }
-                        }
+                        var eggGrowTrait = itemDrop.GetComponent<EggGrowTrait>();
+                        eggGrowTrait?.UpdateGrowTime();
+                    }
+                    foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
+                    {
+                        var growupTrait = baseAI.GetComponent<GrowupTrait>();
+                        growupTrait?.UpdateGrowTime();
                     }
                 };
 

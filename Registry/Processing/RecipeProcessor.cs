@@ -1,13 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using BepInEx.Logging;
 using OfTamingAndBreeding.ThirdParty.Mods;
-using UnityEngine;
 using OfTamingAndBreeding.Data.Models;
-using OfTamingAndBreeding.Data.Models.SubData;
 
 namespace OfTamingAndBreeding.Registry.Processing
 {
@@ -28,7 +22,7 @@ namespace OfTamingAndBreeding.Registry.Processing
         private readonly HashSet<Recipe> originalRecipes = new HashSet<Recipe>();
         private readonly HashSet<Recipe> otabRecipes = new HashSet<Recipe>();
 
-        public override void Prepare(Base.PrefabRegistry reg)
+        public override void PrepareProcess()
         {
             foreach (var recipe in ObjectDB.instance.m_recipes)
             {
@@ -36,28 +30,32 @@ namespace OfTamingAndBreeding.Registry.Processing
             }
         }
 
-        public override bool ValidateData(Base.PrefabRegistry reg, string recipeName, RecipeData data)
+        public override bool ValidateData(string recipeName, RecipeData data)
         {
             return WackyDBBridge.IsRegistered;
         }
 
-        public override bool ReservePrefab(Base.PrefabRegistry reg, string recipeName, RecipeData data)
+        public override bool ReservePrefab(string recipeName, RecipeData data)
         {
-            return true; // i dont care
-        }
-
-        public override bool ValidatePrefab(Base.PrefabRegistry reg, string recipeName, RecipeData data)
-        {
-            // TODO!
             return true;
         }
 
-        public override void RegisterPrefab(Base.PrefabRegistry reg, string recipeName, RecipeData data)
+        public override bool ValidatePrefab(string recipeName, RecipeData data)
+        {
+            // TODO?
+            return true;
+        }
+
+        public override void RegisterPrefab(string recipeName, RecipeData data)
         {
             WackyDBBridge.ApplyRecipe(data);
         }
 
-        public override void Finalize(Base.PrefabRegistry reg)
+        public override void EditPrefab(string recipeName, RecipeData data)
+        {
+        }
+
+        public override void FinalizeProcess()
         {
             foreach (var recipe in ObjectDB.instance.m_recipes)
             {
@@ -69,17 +67,17 @@ namespace OfTamingAndBreeding.Registry.Processing
             originalRecipes.Clear();
         }
 
-        public override void RestorePrefab(Base.PrefabRegistry reg, string recipeName)
+        public override void RestorePrefab(string recipeName)
+        {
+        }
+
+        public override void CleanupProcess()
         {
             foreach (var recipe in otabRecipes)
             {
                 ObjectDB.instance.m_recipes.Remove(recipe);
             }
             otabRecipes.Clear();
-        }
-
-        public override void Cleanup(Base.PrefabRegistry reg)
-        {
         }
 
     }
