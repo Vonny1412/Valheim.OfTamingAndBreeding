@@ -34,11 +34,14 @@ namespace OfTamingAndBreeding.Data.Models
             public string Group { get; set; } = null;
             public string GroupWhenTamed { get; set; } = null;
             public Character.Faction? FactionWhenTamed { get; set; } = null;
-            public bool TamedStickToFaction { get; set; } = false; // OTAB feature
             public IsEnemyCondition TamedCanAttackTamed { get; set; } = IsEnemyCondition.Never; // OTAB feature
             public IsEnemyCondition TamedCanBeAttackedByTamed { get; set; } = IsEnemyCondition.Never; // OTAB feature
             public IsEnemyCondition TamedCanAttackPlayer { get; set; } = IsEnemyCondition.Never; // OTAB feature
             public IsEnemyCondition TamedCanBeAttackedByPlayer { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public IsEnemyCondition TamedCanAttackGroup { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public IsEnemyCondition TamedCanBeAttackedByGroup { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public IsEnemyCondition TamedCanAttackFaction { get; set; } = IsEnemyCondition.Always; // OTAB feature
+            public IsEnemyCondition TamedCanBeAttackedByFaction { get; set; } = IsEnemyCondition.Always; // OTAB feature
         }
 
         [Serializable]
@@ -68,6 +71,7 @@ namespace OfTamingAndBreeding.Data.Models
             public float? TamingTime { get; set; } = null;
             public float? FedDuration { get; set; } = null;
             public bool? Commandable { get; set; } = null;
+            public InteractableCondition Interactable { get; set; } = InteractableCondition.Always; // OTAB feature
             public float? StarvingGraceFactor { get; set; } = null;
         }
 

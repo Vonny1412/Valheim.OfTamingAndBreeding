@@ -3,12 +3,10 @@
 namespace OfTamingAndBreeding.Data.Models.SubData
 {
     [Serializable]
-    public enum IsEnemyCondition
+    public enum InteractableCondition
     {
         Never = 0,
         WhenFed = 1,
-        WhenHungry = 2,
-        WhenStarving = 4,
-        Always = 7,
+        Always = 2,
     }
 }

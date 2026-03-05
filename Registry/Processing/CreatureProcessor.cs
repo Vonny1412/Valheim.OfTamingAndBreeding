@@ -420,11 +420,14 @@ namespace OfTamingAndBreeding.Registry.Processing
                         creatureComponent.m_changeFactionWhenTamedTo = data.Character.FactionWhenTamed.Value;
                     }
 
-                    creatureComponent.m_stickToFaction = data.Character.TamedStickToFaction;
                     creatureComponent.m_tamedCanAttackTamed = data.Character.TamedCanAttackTamed;
                     creatureComponent.m_tamedCanBeAttackedByTamed = data.Character.TamedCanBeAttackedByTamed;
                     creatureComponent.m_tamedCanAttackPlayer = data.Character.TamedCanAttackPlayer;
                     creatureComponent.m_tamedCanBeAttackedByPlayer = data.Character.TamedCanBeAttackedByPlayer;
+                    creatureComponent.m_tamedCanAttackGroup = data.Character.TamedCanAttackGroup;
+                    creatureComponent.m_tamedCanBeAttackedByGroup = data.Character.TamedCanBeAttackedByGroup;
+                    creatureComponent.m_tamedCanAttackFaction = data.Character.TamedCanAttackFaction;
+                    creatureComponent.m_tamedCanBeAttackedByFaction = data.Character.TamedCanBeAttackedByFaction;
 
                 }
             }
@@ -590,6 +593,8 @@ namespace OfTamingAndBreeding.Registry.Processing
                     {
                         tameableTrait.m_starvingGraceFactor = data.Tameable.StarvingGraceFactor.Value;
                     }
+
+                    tameableTrait.m_interactable = data.Tameable.Interactable;
 
 
 

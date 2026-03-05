@@ -141,6 +141,7 @@ namespace OfTamingAndBreeding.Net
                 }
                 yield return null;
             }
+            clientTimeoutRoutine = null;
             RunOnReadyCallback(false);
         }
 

@@ -5,9 +5,6 @@ namespace OfTamingAndBreeding.Patches
 {
     internal partial class AlwaysActivePatches
     {
-        /*
-         
-        // todo: can this be removed?
 
         [HarmonyPatch(typeof(ItemDrop), "GetHoverText")]
         [HarmonyPostfix]
@@ -18,13 +15,13 @@ namespace OfTamingAndBreeding.Patches
 
             if (__instance.TryGetComponent<EggGrowTrait>(out var eggGrowTrait))
             {
-                var text = eggGrowTrait.GetHoverText();
+                var text = eggGrowTrait.GetHoverExtraText();
                 if (string.IsNullOrEmpty(text) == false)
                 {
                     __result = __result[..nl] + " " + text + __result[nl..];
                 }
             }
         }
-        */
+        
     }
 }

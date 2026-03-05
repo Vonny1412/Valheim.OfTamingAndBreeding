@@ -13,6 +13,8 @@ namespace OfTamingAndBreeding.Components.Traits
         [SerializeField] public bool m_fedTimerDisabled = false;
         [SerializeField] public bool m_tamingDisabled = false;
         [SerializeField] public float m_starvingGraceFactor = -1; // todo: add bool m_useDefaultStarvingGraceFactor (?)
+        [SerializeField] public Data.Models.SubData.InteractableCondition m_interactable = Data.Models.SubData.InteractableCondition.Always;
+
 
         // set in awake
         [NonSerialized] private ZNetView m_nview = null;
@@ -358,6 +360,11 @@ namespace OfTamingAndBreeding.Components.Traits
                 }
             }
             return zdo.GetLong(Plugin.ZDOVars.z_starvingAfter, -1);
+        }
+
+        public bool IsHungry()
+        {
+            return m_tameable.IsHungry();
         }
 
         public bool IsStarving()

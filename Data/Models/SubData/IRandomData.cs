@@ -2,7 +2,7 @@
 
 namespace OfTamingAndBreeding.Data.Models.SubData
 {
-    internal interface IRandomData
+    public interface IRandomData
     {
         float Weight { get; set; }
     }

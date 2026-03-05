@@ -6,16 +6,22 @@ namespace OfTamingAndBreeding.Components
 {
     public class OTABCreature : OTABComponent<OTABCreature>
     {
+        // todo: update "internal" fields to public/private
+        // and also for otabegg
+
 
         //
         // Character
         //
 
-        [SerializeField] internal bool m_stickToFaction = false;
         [SerializeField] internal IsEnemyCondition m_tamedCanAttackTamed = IsEnemyCondition.Never;
         [SerializeField] internal IsEnemyCondition m_tamedCanBeAttackedByTamed = IsEnemyCondition.Never;
         [SerializeField] internal IsEnemyCondition m_tamedCanAttackPlayer = IsEnemyCondition.Never;
         [SerializeField] internal IsEnemyCondition m_tamedCanBeAttackedByPlayer = IsEnemyCondition.Never;
+        [SerializeField] internal IsEnemyCondition m_tamedCanAttackGroup = IsEnemyCondition.Never;
+        [SerializeField] internal IsEnemyCondition m_tamedCanBeAttackedByGroup = IsEnemyCondition.Never;
+        [SerializeField] internal IsEnemyCondition m_tamedCanAttackFaction = IsEnemyCondition.Never;
+        [SerializeField] internal IsEnemyCondition m_tamedCanBeAttackedByFaction = IsEnemyCondition.Never;
         [SerializeField] internal bool m_changeGroupWhenTamed = false;
         [SerializeField] internal string m_changeGroupWhenTamedTo = "";
         [SerializeField] internal bool m_changeFactionWhenTamed = false;

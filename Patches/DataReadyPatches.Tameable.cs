@@ -87,6 +87,46 @@ namespace OfTamingAndBreeding.Patches
             return true;
         }
 
+        [HarmonyPatch(typeof(Tameable), "Interact")]
+        [HarmonyPrefix]
+        [HarmonyPriority(Priority.First)]
+        private static bool Tameable_Interact_Prefix(Tameable __instance, Humanoid user, bool __runOriginal)
+        {
+            var forbid = false;
+
+            var trait = __instance.GetComponent<TameableTrait>();
+            switch (trait.m_interactable)
+            {
+                case Data.Models.SubData.InteractableCondition.Never:
+                    forbid = true;
+                    break;
+                case Data.Models.SubData.InteractableCondition.WhenFed:
+                    forbid = __instance.IsHungry();
+                    break;
+            }
+
+            if (forbid)
+            {
+                var characterName = Localization.instance.Localize(__instance.GetComponent<Character>().name);
+                var msg = Localization.instance.Localize("$otab_message_not_interactable", characterName);
+                if (!string.IsNullOrEmpty(msg))
+                {
+                    user.Message(MessageHud.MessageType.Center, msg);
+                }
+                return false;
+            }
+
+            return true;
+        }
+
+
+
+
+
+
+
+
+
 
 
 

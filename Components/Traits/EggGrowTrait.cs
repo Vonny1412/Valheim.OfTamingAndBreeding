@@ -87,7 +87,7 @@ namespace OfTamingAndBreeding.Components.Traits
         private static readonly Dictionary<Heightmap.Biome, string> biomNames = new Dictionary<Heightmap.Biome, string>();
         private static string selectedLanguage = null;
 
-        public string GetHoverText()
+        public string GetHoverExtraText()
         {
             if (!m_nview.IsValid() || !m_eggGrow)
             {
