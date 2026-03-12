@@ -1,18 +1,110 @@
 ﻿using HarmonyLib;
-using OfTamingAndBreeding.Components;
 using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Data.Models.SubData;
 using System;
+using System.Runtime.CompilerServices;
 
 namespace OfTamingAndBreeding.Patches
 {
     internal partial class DataReadyPatches
     {
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool EvaluateCondition(
+            IsEnemyCondition condition,
+            bool relevant,
+            bool isHungry,
+            bool isStarving,
+            ref bool neverEver)
+        {
+            switch (condition)
+            {
+                case IsEnemyCondition.Never:
+                    return false;
+                case IsEnemyCondition.Always:
+                    return true;
+                case IsEnemyCondition.WhenFed:
+                    return !isHungry;
+                case IsEnemyCondition.WhenHungry:
+                    return isHungry;
+                case IsEnemyCondition.WhenStarving:
+                    return isStarving;
+                case IsEnemyCondition.NeverEver:
+                    neverEver = true;
+                    return false;
+                default:
+                    return false;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool HasFactionAlliance(Character.Faction a, Character.Faction b)
+        {
+            if (a == b)
+                return true;
+
+            if (a > b)
+            {
+#pragma warning disable IDE0180
+                var tmp = a;
+#pragma warning restore IDE0180
+                a = b;
+                b = tmp;
+            }
+
+            /* // current enum
+            public enum Faction {
+                Players,
+                AnimalsVeg,
+                ForestMonsters,
+                Undead,
+                Demon,
+                MountainMonsters,
+                SeaMonsters,
+                PlainsMonsters,
+                Boss,
+                MistlandsMonsters,
+                Dverger,
+                PlayerSpawned,
+                TrainingDummy
+            }
+            */
+
+            switch (a)
+            {
+                case Character.Faction.Players:
+                    return b == Character.Faction.Dverger;
+
+                case Character.Faction.AnimalsVeg:
+                    return b == Character.Faction.ForestMonsters
+                        || b == Character.Faction.MistlandsMonsters
+                        || b == Character.Faction.Dverger;
+
+                case Character.Faction.Undead:
+                    return b == Character.Faction.Demon
+                        || b == Character.Faction.Boss;
+
+                case Character.Faction.Demon:
+                    return b == Character.Faction.Boss;
+
+                case Character.Faction.ForestMonsters:
+                case Character.Faction.MountainMonsters:
+                case Character.Faction.SeaMonsters:
+                case Character.Faction.PlainsMonsters:
+                    return b == Character.Faction.Boss;
+
+                case Character.Faction.Boss:
+                    return b == Character.Faction.MistlandsMonsters
+                        || b == Character.Faction.Dverger;
+            }
+
+            return false;
+        }
+
         [HarmonyPatch(typeof(BaseAI), "IsEnemy", new[] { typeof(Character), typeof(Character) })]
         [HarmonyPrefix]
-        [HarmonyPriority(Priority.Last)]
-        private static bool BaseAI_IsEnemy_Prefix(BaseAI __instance, Character a, Character b, ref bool __result)
+        // not using Last or First priority -> other mods may want to change behaviour
+        private static bool BaseAI_IsEnemy_Prefix(Character a, Character b, ref bool __result)
         {
             StaticContext.IsEnemyContext.Depth++;
             bool isOuterMost = (StaticContext.IsEnemyContext.Depth == 1);
@@ -21,265 +113,112 @@ namespace OfTamingAndBreeding.Patches
                 return true;
             }
 
-            // both are players => let valheim decide
-            if (a.IsPlayer() && b.IsPlayer())
+            if (a == b || !a || !b)
             {
                 return true;
             }
 
+            bool isPlayer1 = a.IsPlayer();
+            bool isPlayer2 = b.IsPlayer();
             bool isTamed1 = a.IsTamed();
             bool isTamed2 = b.IsTamed();
 
-            // both are wild => let valheim decide
-            if (isTamed1 == isTamed2 && !isTamed1)
+            // (both wild || both player) let valheim decide
+            if ((!isTamed1 && !isTamed2) || (isPlayer1 && isPlayer2))
             {
                 return true;
             }
 
-            Character.Faction faction1 = a.GetFaction();
-            Character.Faction faction2 = b.GetFaction();
-            string group1 = a.m_group;
-            string group2 = b.m_group;
+            var trait1 = a.GetComponent<CharacterTrait>();
+            var trait2 = b.GetComponent<CharacterTrait>();
 
-            var custom1 = a.GetComponent<OTABCreature>();
-            var custom2 = b.GetComponent<OTABCreature>();
+            var isHungry1 = trait1 && trait1.IsHungry();
+            var isHungry2 = trait2 && trait2.IsHungry();
+            var isStarving1 = isHungry1 && trait1.IsStarving();
+            var isStarving2 = isHungry2 && trait2.IsStarving();
 
-            var tameableTrait1 = a.GetComponent<TameableTrait>();
-            var tameableTrait2 = b.GetComponent<TameableTrait>();
-
-            var isHungry1 = tameableTrait1 && tameableTrait1.IsHungry();
-            var isHungry2 = tameableTrait2 && tameableTrait2.IsHungry();
-            var isStarving1 = tameableTrait1 && tameableTrait1.IsStarving();
-            var isStarving2 = tameableTrait2 && tameableTrait2.IsStarving();
-
-            var attackTamed1 = custom1?.m_tamedCanAttackTamed ?? IsEnemyCondition.Never;
-            var attackByTamed2 = custom2?.m_tamedCanBeAttackedByTamed ?? IsEnemyCondition.Never;
-            var attackPlayer1 = custom1?.m_tamedCanAttackPlayer ?? IsEnemyCondition.Never;
-            var attackByPlayer2 = custom2?.m_tamedCanBeAttackedByPlayer ?? IsEnemyCondition.Never;
-            var attackGroup1 = custom1?.m_tamedCanAttackPlayer ?? IsEnemyCondition.Never;
-            var attackByGroup2 = custom2?.m_tamedCanBeAttackedByGroup ?? IsEnemyCondition.Never;
-            var attackFaction1 = custom1?.m_tamedCanAttackFaction ?? IsEnemyCondition.Always;
-            var attackByFaction2 = custom2?.m_tamedCanBeAttackedByFaction ?? IsEnemyCondition.Always;
-
-            var isSameTamed = isTamed1 && isTamed2;
-            var isSameGroup = group1 == group2;
-            var isSameFaction = faction1 == faction2 || ((faction1 == Character.Faction.Undead || faction1 == Character.Faction.Demon) && (faction2 == Character.Faction.Undead || faction2 == Character.Faction.Demon));
-
+            var neverEver = false;
             var canAttack = false;
 
-            if (b.IsPlayer())
+            if (isPlayer2)
             {
-                if (isTamed1)
-                {
-                    // aggression tamed vs player
-                    switch (attackPlayer1)
-                    {
-                        case IsEnemyCondition.Never:
-                            canAttack |= false;
-                            break;
-                        case IsEnemyCondition.Always:
-                            canAttack |= true;
-                            break;
-                        case IsEnemyCondition.WhenFed:
-                            canAttack |= isHungry1 == false;
-                            break;
-                        case IsEnemyCondition.WhenHungry:
-                            canAttack |= isHungry1 == true;
-                            break;
-                        case IsEnemyCondition.WhenStarving:
-                            canAttack |= isStarving1 == true;
-                            break;
-                    }
-                }
+                // aggression tamed vs player
+                canAttack |= EvaluateCondition(trait1.m_canAttackPlayer, isTamed1, isHungry1, isStarving1, ref neverEver);
             }
-            else if (a.IsPlayer())
+            else if (isPlayer1)
             {
-                if (isTamed2)
-                {
-                    // aggression player vs tamed
-                    switch (attackByPlayer2)
-                    {
-                        case IsEnemyCondition.Never:
-                            canAttack |= false;
-                            break;
-                        case IsEnemyCondition.Always:
-                            canAttack |= true;
-                            break;
-                        case IsEnemyCondition.WhenFed:
-                            canAttack |= isHungry2 == false;
-                            break;
-                        case IsEnemyCondition.WhenHungry:
-                            canAttack |= isHungry2 == true;
-                            break;
-                        case IsEnemyCondition.WhenStarving:
-                            canAttack |= isStarving2 == true;
-                            break;
-                    }
-                }
+                // aggression player vs tamed
+                canAttack |= EvaluateCondition(trait2.m_canBeAttackedByPlayer, isTamed2, isHungry2, isStarving2, ref neverEver);
             }
             else
             {
+                Character.Faction faction1 = a.GetFaction();
+                Character.Faction faction2 = b.GetFaction();
+                string group1 = a.GetGroup();
+                string group2 = b.GetGroup();
+
+                var isBothTamed = isTamed1 && isTamed2;
+                var isSameGroup = !string.IsNullOrEmpty(group1) && group1 == group2;
+                var hasFactionAlliance = HasFactionAlliance(faction1, faction2);
                 var canAttackTamed = false;
                 var canAttackGroup = false;
                 var canAttackFaction = false;
 
-                if (isSameTamed)
-                {
-                    // aggression tamed vs tamed
+                // aggression tamed vs tamed (outgoing)
+                canAttackTamed |= EvaluateCondition(trait1.m_canAttackTamed, isBothTamed, isHungry1, isStarving1, ref neverEver);
 
-                    switch (attackTamed1)
-                    {
-                        case IsEnemyCondition.Never:
-                            canAttackTamed |= false;
-                            break;
-                        case IsEnemyCondition.Always:
-                            canAttackTamed |= true;
-                            break;
-                        case IsEnemyCondition.WhenFed:
-                            canAttackTamed |= isHungry1 == false;
-                            break;
-                        case IsEnemyCondition.WhenHungry:
-                            canAttackTamed |= isHungry1 == true;
-                            break;
-                        case IsEnemyCondition.WhenStarving:
-                            canAttackTamed |= isStarving1 == true;
-                            break;
-                    }
+                // aggression tamed vs tamed (incoming)
+                canAttackTamed |= EvaluateCondition(trait2.m_canBeAttackedByTamed, isBothTamed, isHungry2, isStarving2, ref neverEver);
 
-                    switch (attackByTamed2)
-                    {
-                        case IsEnemyCondition.Never:
-                            canAttackTamed |= false;
-                            break;
-                        case IsEnemyCondition.Always:
-                            canAttackTamed |= true;
-                            break;
-                        case IsEnemyCondition.WhenFed:
-                            canAttackTamed |= isHungry2 == false;
-                            break;
-                        case IsEnemyCondition.WhenHungry:
-                            canAttackTamed |= isHungry2 == true;
-                            break;
-                        case IsEnemyCondition.WhenStarving:
-                            canAttackTamed |= isStarving2 == true;
-                            break;
-                    }
+                // aggression tamed vs group
+                canAttackGroup |= EvaluateCondition(trait1.m_canAttackGroup, isTamed1 && isSameGroup, isHungry1, isStarving1, ref neverEver);
 
-                }
+                // aggression group vs tamed
+                canAttackGroup |= EvaluateCondition(trait2.m_canBeAttackedByGroup, isTamed2 && isSameGroup, isHungry2, isStarving2, ref neverEver);
 
-                if (isSameGroup)
-                {
-                    // aggression tamed vs group
+                // aggression tamed vs faction
+                canAttackFaction |= EvaluateCondition(trait1.m_canAttackFaction, isTamed1 && hasFactionAlliance, isHungry1, isStarving1, ref neverEver);
 
-                    switch (attackGroup1)
-                    {
-                        case IsEnemyCondition.Never:
-                            canAttackGroup |= false;
-                            break;
-                        case IsEnemyCondition.Always:
-                            canAttackGroup |= true;
-                            break;
-                        case IsEnemyCondition.WhenFed:
-                            canAttackGroup |= isHungry1 == false;
-                            break;
-                        case IsEnemyCondition.WhenHungry:
-                            canAttackGroup |= isHungry1 == true;
-                            break;
-                        case IsEnemyCondition.WhenStarving:
-                            canAttackGroup |= isStarving1 == true;
-                            break;
-                    }
+                // aggression faction vs tamed
+                canAttackFaction |= EvaluateCondition(trait2.m_canBeAttackedByFaction, isTamed2 && hasFactionAlliance, isHungry2, isStarving2, ref neverEver);
 
-                    // aggression group vs tamed
-
-                    switch (attackByGroup2)
-                    {
-                        case IsEnemyCondition.Never:
-                            canAttackGroup |= false;
-                            break;
-                        case IsEnemyCondition.Always:
-                            canAttackGroup |= true;
-                            break;
-                        case IsEnemyCondition.WhenFed:
-                            canAttackGroup |= isHungry2 == false;
-                            break;
-                        case IsEnemyCondition.WhenHungry:
-                            canAttackGroup |= isHungry2 == true;
-                            break;
-                        case IsEnemyCondition.WhenStarving:
-                            canAttackGroup |= isStarving2 == true;
-                            break;
-                    }
-                }
-
-                if (isSameFaction)
-                {
-                    // aggression tamed vs faction
-
-                    switch (attackFaction1)
-                    {
-                        case IsEnemyCondition.Never:
-                            canAttackFaction |= false;
-                            break;
-                        case IsEnemyCondition.Always:
-                            canAttackFaction |= true;
-                            break;
-                        case IsEnemyCondition.WhenFed:
-                            canAttackFaction |= isHungry1 == false;
-                            break;
-                        case IsEnemyCondition.WhenHungry:
-                            canAttackFaction |= isHungry1 == true;
-                            break;
-                        case IsEnemyCondition.WhenStarving:
-                            canAttackFaction |= isStarving1 == true;
-                            break;
-                    }
-
-                    // aggression faction vs tamed
-
-                    switch (attackByFaction2)
-                    {
-                        case IsEnemyCondition.Never:
-                            canAttackFaction |= false;
-                            break;
-                        case IsEnemyCondition.Always:
-                            canAttackFaction |= true;
-                            break;
-                        case IsEnemyCondition.WhenFed:
-                            canAttackFaction |= isHungry2 == false;
-                            break;
-                        case IsEnemyCondition.WhenHungry:
-                            canAttackFaction |= isHungry2 == true;
-                            break;
-                        case IsEnemyCondition.WhenStarving:
-                            canAttackFaction |= isStarving2 == true;
-                            break;
-                    }
-                }
-
-                // important: group > faction|tamed
-
-                if (isSameGroup && canAttackGroup && (isSameTamed == false || canAttackTamed))
+                if (isSameGroup && canAttackGroup)
                 {
                     // group aggression allowed
-                    // and not both are tamed OR tamed aggression allowed
-                    canAttack |= true;
+                    if (isBothTamed == false || canAttackTamed)
+                    {
+                        // and not both are tamed OR tamed aggression allowed
+                        canAttack = true;
+                    }
                 }
-                else if (isSameFaction && canAttackFaction && (isSameTamed == false || canAttackTamed))
+                else if (hasFactionAlliance && canAttackFaction)
                 {
-                    // group aggression allowed
-                    // and not both are tamed OR tamed aggression allowed
-                    canAttack |= true;
+                    // faction aggression allowed
+                    if (isBothTamed == false || canAttackTamed)
+                    {
+                        // and not both are tamed OR tamed aggression allowed
+                        canAttack = true;
+                    }
                 }
-                else if (isSameTamed && canAttackTamed)
+                else if (isBothTamed && canAttackTamed)
                 {
                     // not the same group or faction
                     // but both sides are tamed + aggression allowed
                     // use IsEnemyContext to temporarly disable tamed status of b (the target beeing attacked by a)
                     StaticContext.IsEnemyContext.Active = true;
                     StaticContext.IsEnemyContext.TargetInstance = b;
+                    //hint: if neverEver is true the patch finalizer will clear the context states anyway
                 }
-                
+
+            }
+
+            if (neverEver)
+            {
+                // neverever is a special case - always!
+                // it should only be used to make creatures passive all the time
+                // useful for animals like deers
+                __result = false;
+                return false;
             }
 
             if (canAttack)

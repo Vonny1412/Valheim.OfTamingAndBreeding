@@ -1,9 +1,11 @@
 ﻿using System;
 
-namespace OfTamingAndBreeding.Utils
+namespace OfTamingAndBreeding.OTABUtils
 {
     internal static class ZNetUtils
     {
+
+        // this helper class is to make sure that zdo's revisions get only increased if neccessary
 
         // about unsafe overloads:
         // Use only if 'cur' is a cached snapshot of the same ZDO key from earlier in this tick.

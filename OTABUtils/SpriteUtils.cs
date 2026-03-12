@@ -1,16 +1,10 @@
 ﻿using System;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.Utils
+namespace OfTamingAndBreeding.OTABUtils
 {
     internal static class SpriteUtils
     {
-
-        public static bool TryLoadValidImage(string base64, out Texture2D texture)
-        {
-            byte[] bytes = Convert.FromBase64String(base64);
-            return TryLoadValidImage(bytes, out texture);
-        }
 
         public static Sprite TextureToSprite(Texture2D tex)
         {
@@ -23,6 +17,12 @@ namespace OfTamingAndBreeding.Utils
             );
         }
 
+        public static bool TryLoadValidImage(string base64, out Texture2D texture)
+        {
+            byte[] bytes = Convert.FromBase64String(base64);
+            return TryLoadValidImage(bytes, out texture);
+        }
+
         public static bool TryLoadValidImage(byte[] bytes, out Texture2D texture)
         {
             texture = null;
@@ -32,8 +32,10 @@ namespace OfTamingAndBreeding.Utils
 
             try
             {
-                var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-
+                var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false)
+                {
+                    filterMode = FilterMode.Bilinear
+                };
                 bool loaded = tex.LoadImage(bytes, markNonReadable: true);
                 if (!loaded)
                 {
@@ -41,7 +43,6 @@ namespace OfTamingAndBreeding.Utils
                     return false;
                 }
 
-                // zusätzliche Sicherheitsprüfung
                 if (tex.width <= 0 || tex.height <= 0)
                 {
                     UnityEngine.Object.Destroy(tex);

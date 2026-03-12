@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace OfTamingAndBreeding.Utils
+namespace OfTamingAndBreeding.OTABUtils
 {
     internal static class StringUtils
     {

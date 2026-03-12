@@ -1,12 +1,12 @@
-﻿using OfTamingAndBreeding.Utils;
+﻿using OfTamingAndBreeding.Components;
+using OfTamingAndBreeding.Components.Traits;
+using OfTamingAndBreeding.Data.Models;
+using OfTamingAndBreeding.Data.Models.SubData;
+using OfTamingAndBreeding.OTABUtils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using OfTamingAndBreeding.Data.Models;
-using OfTamingAndBreeding.Data.Models.SubData;
-using OfTamingAndBreeding.Components;
-using OfTamingAndBreeding.Components.Traits;
 
 namespace OfTamingAndBreeding.Registry.Processing
 {
@@ -26,7 +26,6 @@ namespace OfTamingAndBreeding.Registry.Processing
 
         public override void PrepareProcess()
         {
-
         }
 
         //------------------------------------------------
@@ -295,6 +294,11 @@ namespace OfTamingAndBreeding.Registry.Processing
                 {
                     data.MonsterAI.ConsumeItems = data.MonsterAI.ConsumeItems.Where((CreatureData.MonsterAIConsumItemData foodData, int i) => {
 
+                        if (StaticContext.SpecialPrefabContext.IsSpecialPrefabCommand(foodData.Prefab))
+                        {
+                            return true;
+                        }
+
                         var foodItem = PrefabRegistry.Instance.GetCustomPrefab(foodData.Prefab)
                                     ?? PrefabRegistry.Instance.GetOriginalPrefab(foodData.Prefab);
                         if (foodItem == null)
@@ -392,15 +396,15 @@ namespace OfTamingAndBreeding.Registry.Processing
         {
             var model = $"{nameof(CreatureData)}.{creatureName}";
             var creature = PrefabRegistry.Instance.GetReservedPrefab(creatureName);
-            var creatureComponent = PrefabRegistry.Instance.GetOrAddComponent<OTABCreature>(creatureName, creature);
 
-            var idleSoundPrefab = Utils.PrefabUtils.FindEffectPrefab<BaseAI>(creatureName, "m_idleSound", 0);
+            var idleSoundPrefab = OTABUtils.PrefabUtils.FindEffectPrefab<BaseAI>(creatureName, "m_idleSound", 0);
 
             if (data.Components.Character == ComponentBehavior.Patch)
             {
-                var character = creature.GetComponent<Character>();
                 if (data.Character != null)
                 {
+                    var character = creature.GetComponent<Character>();
+                    var characterTrait = CharacterTrait.GetOrAddComponent(creature);
                     Plugin.LogServerDebug($"{model}.{nameof(data.Character)}: Setting Character values");
 
                     if (data.Character.Group != null)
@@ -410,24 +414,24 @@ namespace OfTamingAndBreeding.Registry.Processing
 
                     if (data.Character.GroupWhenTamed != null)
                     {
-                        creatureComponent.m_changeGroupWhenTamed = true;
-                        creatureComponent.m_changeGroupWhenTamedTo = data.Character.GroupWhenTamed;
+                        characterTrait.m_changeGroupWhenTamed = true;
+                        characterTrait.m_changeGroupWhenTamedTo = data.Character.GroupWhenTamed;
                     }
 
                     if (data.Character.FactionWhenTamed.HasValue)
                     {
-                        creatureComponent.m_changeFactionWhenTamed = true;
-                        creatureComponent.m_changeFactionWhenTamedTo = data.Character.FactionWhenTamed.Value;
+                        characterTrait.m_changeFactionWhenTamed = true;
+                        characterTrait.m_changeFactionWhenTamedTo = data.Character.FactionWhenTamed.Value;
                     }
 
-                    creatureComponent.m_tamedCanAttackTamed = data.Character.TamedCanAttackTamed;
-                    creatureComponent.m_tamedCanBeAttackedByTamed = data.Character.TamedCanBeAttackedByTamed;
-                    creatureComponent.m_tamedCanAttackPlayer = data.Character.TamedCanAttackPlayer;
-                    creatureComponent.m_tamedCanBeAttackedByPlayer = data.Character.TamedCanBeAttackedByPlayer;
-                    creatureComponent.m_tamedCanAttackGroup = data.Character.TamedCanAttackGroup;
-                    creatureComponent.m_tamedCanBeAttackedByGroup = data.Character.TamedCanBeAttackedByGroup;
-                    creatureComponent.m_tamedCanAttackFaction = data.Character.TamedCanAttackFaction;
-                    creatureComponent.m_tamedCanBeAttackedByFaction = data.Character.TamedCanBeAttackedByFaction;
+                    characterTrait.m_canAttackTamed = data.Character.CanAttackTamed;
+                    characterTrait.m_canBeAttackedByTamed = data.Character.CanBeAttackedByTamed;
+                    characterTrait.m_canAttackPlayer = data.Character.CanAttackPlayer;
+                    characterTrait.m_canBeAttackedByPlayer = data.Character.CanBeAttackedByPlayer;
+                    characterTrait.m_canAttackGroup = data.Character.CanAttackGroup;
+                    characterTrait.m_canBeAttackedByGroup = data.Character.CanBeAttackedByGroup;
+                    characterTrait.m_canAttackFaction = data.Character.CanAttackFaction;
+                    characterTrait.m_canBeAttackedByFaction = data.Character.CanBeAttackedByFaction;
 
                 }
             }
@@ -442,23 +446,39 @@ namespace OfTamingAndBreeding.Registry.Processing
                 {
                     var monsterAI = creature.GetComponent<MonsterAI>();
                     var animalAI = creature.GetComponent<AnimalAI>();
+                    var baseAITrait = BaseAITrait.GetOrAddComponent(creature);
 
-                    StaticContext.CreatureDataContext.ConsumeItem[] consumeItems = null;
+                    BaseAITrait.ConsumeItem[] consumeItems = null;
+
                     if (data.MonsterAI.ConsumeItems != null)
                     {
                         consumeItems = data.MonsterAI.ConsumeItems
                             .OrderByDescending(i => i.FedDurationFactor)
                             .Select((ci) =>
                             {
+
+                                if (StaticContext.SpecialPrefabContext.IsSpecialPrefabCommand(ci.Prefab))
+                                {
+                                    if (StaticContext.SpecialPrefabContext.CreateSpecialPrefabFromCommand(ci.Prefab, out var specialPrefab))
+                                    {
+                                        // nothing todo if it has been created
+                                    }
+                                    return new BaseAITrait.ConsumeItem
+                                    {
+                                        itemDrop = specialPrefab.GetComponent<ItemDrop>(),
+                                        fedDurationFactor = ci.FedDurationFactor,
+                                    };
+                                }
+
                                 var foodItem = PrefabRegistry.Instance.GetCustomPrefab(ci.Prefab)
                                             ?? PrefabRegistry.Instance.GetOriginalPrefab(ci.Prefab);
-                                return new StaticContext.CreatureDataContext.ConsumeItem
+                                return new BaseAITrait.ConsumeItem
                                 {
                                     itemDrop = foodItem.GetComponent<ItemDrop>(),
                                     fedDurationFactor = ci.FedDurationFactor,
                                 };
                             }).ToArray();
-                        creatureComponent.SetCustomConsumeItems(consumeItems);
+                        baseAITrait.SetCustomConsumeItems(consumeItems);
                     }
 
                     if (monsterAI != null)
@@ -487,7 +507,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                         {
                             Plugin.LogServerDebug($"{model}.{nameof(data.MonsterAI)}: Setting custom AnimalAI values");
 
-                            var exAnimalAI = PrefabRegistry.Instance.GetOrAddComponent<ExtendedAnimaAI>(creatureName, creature);
+                            var exAnimalAI = AnimalAITrait.GetOrAddComponent(creature);
 
                             if (data.MonsterAI.ConsumeRange != null) exAnimalAI.m_consumeRange = (float)data.MonsterAI.ConsumeRange;
                             if (data.MonsterAI.ConsumeSearchRange != null) exAnimalAI.m_consumeSearchRange = (float)data.MonsterAI.ConsumeSearchRange;
@@ -504,10 +524,8 @@ namespace OfTamingAndBreeding.Registry.Processing
                         }
                     }
 
-                    if (data.MonsterAI.TamedStayNearSpawn != null && (bool)data.MonsterAI.TamedStayNearSpawn == true)
-                    {
-                        creatureComponent.m_tamedStayNearSpawn = true;
-                    }
+                    baseAITrait.m_tamedStayNearSpawn = data.MonsterAI.TamedStayNearSpawn;
+                    
 
                     if (data.MonsterAI.ConsumeAnimation != null)
                     {
@@ -546,8 +564,9 @@ namespace OfTamingAndBreeding.Registry.Processing
                 if (data.Tameable != null)
                 {
                     var tameable = PrefabRegistry.Instance.GetOrAddComponent<Tameable>(creatureName, creature);
-                    var tameableTrait = PrefabRegistry.Instance.GetOrAddComponent<TameableTrait>(creatureName, creature);
+                    var tameableTrait = TameableTrait.GetOrAddComponent(creature);
                     var pet = PrefabRegistry.Instance.GetOrAddComponent<Pet>(creatureName, creature); // also neccessary
+
                     Plugin.LogServerDebug($"{model}.{nameof(data.Tameable)}: Setting Tameable values");
 
                     if (data.Tameable.Commandable.HasValue)
@@ -596,20 +615,18 @@ namespace OfTamingAndBreeding.Registry.Processing
 
                     tameableTrait.m_interactable = data.Tameable.Interactable;
 
-
-
-
-
-
-
-
+                    if (data.Tameable.RequireGlobalKeys != null)
+                    {
+                        var keysList = ParseGlobalKeys(data.Tameable.RequireGlobalKeys);
+                        tameableTrait.SetRequiredGlobalKeys(keysList);
+                    }
 
                     Plugin.LogServerDebug($"{model}.{nameof(data.Tameable)}: Setting effects");
                     if (tameable.m_sootheEffect.m_effectPrefabs.Length == 0)
                     {
                         tameable.m_sootheEffect = new EffectList
                         {
-                            m_effectPrefabs = Utils.PrefabUtils.CreateEffectList(new string[] {
+                            m_effectPrefabs = OTABUtils.PrefabUtils.CreateEffectList(new string[] {
                                 "vfx_creature_soothed",
                             })
                         };
@@ -618,7 +635,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     {
                         tameable.m_tamedEffect = new EffectList
                         {
-                            m_effectPrefabs = Utils.PrefabUtils.CreateEffectList(new string[] {
+                            m_effectPrefabs = OTABUtils.PrefabUtils.CreateEffectList(new string[] {
                                 "fx_creature_tamed",
                             })
                         };
@@ -627,7 +644,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     {
                         tameable.m_petEffect = new EffectList
                         {
-                            m_effectPrefabs = Utils.PrefabUtils.CreateEffectList(new UnityEngine.GameObject[] {
+                            m_effectPrefabs = OTABUtils.PrefabUtils.CreateEffectList(new UnityEngine.GameObject[] {
                                 PrefabUtils.GetVisualOnlyEffect("fx_boar_pet", "otab_vfx_pet"),
                                 idleSoundPrefab,
                             })
@@ -646,25 +663,39 @@ namespace OfTamingAndBreeding.Registry.Processing
                 if (data.Procreation != null)
                 {
                     var procreation = PrefabRegistry.Instance.GetOrAddComponent<Procreation>(creatureName, creature);
+                    var procreationTrait = ProcreationTrait.GetOrAddComponent(creature);
                     Plugin.LogServerDebug($"{model}.{nameof(data.Procreation)}: Setting Procreation values");
 
-                    creatureComponent.m_procreateWhileSwimming = data.Procreation.ProcreateWhileSwimming; // todo: rename yaml option to: "DisableProcreationWhileSwimming"
-                    creatureComponent.m_maxSiblingsPerPregnancy = data.Procreation.MaxSiblingsPerPregnancy;
-                    creatureComponent.m_extraSiblingChance = data.Procreation.ExtraSiblingChance;
+                    procreationTrait.m_procreateWhileSwimming = data.Procreation.ProcreateWhileSwimming; // todo: rename yaml option to: "DisableProcreationWhileSwimming"
+                    procreationTrait.m_maxSiblingsPerPregnancy = data.Procreation.MaxSiblingsPerPregnancy;
+                    procreationTrait.m_extraSiblingChance = data.Procreation.ExtraSiblingChance;
 
                     if (data.Procreation.Partner != null)
                     {
-                        creatureComponent.SetPartnerList(data.Procreation.Partner);
+                        var partnerList = data.Procreation.Partner.Select((p) => new ProcreationTrait.ProcreationPartner(
+                            prefab: p.Prefab,
+                            weight: p.Weight
+                        )).ToArray();
+                        procreationTrait.SetPartnerList(partnerList);
                     }
 
                     if (data.Procreation.Offspring != null)
                     {
-                        creatureComponent.SetOffspringList(data.Procreation.Offspring);
+                        var offspringList = data.Procreation.Offspring.Select((o) => new ProcreationTrait.ProcreationOffspring(
+                            prefab: o.Prefab,
+                            weight: o.Weight,
+                            needPartner: o.NeedPartner,
+                            needPartnerPrefab: o.NeedPartnerPrefab,
+                            levelUpChance: o.LevelUpChance ?? 0,
+                            maxLevel: o.MaxLevel ?? 1,
+                            spawnTamed: o.SpawnTamed
+                        )).ToArray();
+                        procreationTrait.SetOffspringList(offspringList);
                     }
 
                     if (data.Procreation.MaxCreaturesCountPrefabs != null)
                     {
-                        creatureComponent.SetMaxCreaturesPrefabs(data.Procreation.MaxCreaturesCountPrefabs);
+                        procreationTrait.SetMaxCreaturesPrefabs(data.Procreation.MaxCreaturesCountPrefabs);
                     }
 
 
@@ -680,7 +711,7 @@ namespace OfTamingAndBreeding.Registry.Processing
 
 
 
-
+                    // todo: cleanup, use HasValue/Value
 
                     if (data.Procreation.UpdateInterval != null) procreation.m_updateInterval = (float)data.Procreation.UpdateInterval;
                     if (data.Procreation.TotalCheckRange != null) procreation.m_totalCheckRange = (float)data.Procreation.TotalCheckRange;
@@ -703,7 +734,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     if (data.Procreation.PartnerRecheckSeconds.HasValue)
                     {
                         var seconds = data.Procreation.PartnerRecheckSeconds.Value;
-                        creatureComponent.m_partnerRecheckTicks = TimeSpan.FromSeconds(seconds).Ticks;
+                        procreationTrait.m_partnerRecheckTicks = TimeSpan.FromSeconds(seconds).Ticks;
                     }
 
                     Plugin.LogServerDebug($"{model}.{nameof(data.Procreation)}: Setting effects");
@@ -712,7 +743,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     {
                         procreation.m_loveEffects = new EffectList
                         {
-                            m_effectPrefabs = Utils.PrefabUtils.CreateEffectList(new string[] {
+                            m_effectPrefabs = OTABUtils.PrefabUtils.CreateEffectList(new string[] {
                             "vfx_boar_love",
                             idleSoundPrefab?.name,
                         })
@@ -726,7 +757,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     {
                         procreation.m_birthEffects = new EffectList
                         {
-                            m_effectPrefabs = Utils.PrefabUtils.CreateEffectList(new string[] {
+                            m_effectPrefabs = OTABUtils.PrefabUtils.CreateEffectList(new string[] {
                             "vfx_boar_birth",
                             idleSoundPrefab?.name,
                         })

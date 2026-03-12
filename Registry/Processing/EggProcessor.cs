@@ -1,8 +1,9 @@
 ﻿using Jotunn.Managers;
 using OfTamingAndBreeding.Components;
+using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Data.Models.SubData;
-using OfTamingAndBreeding.Utils;
+using OfTamingAndBreeding.OTABUtils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -82,26 +83,6 @@ namespace OfTamingAndBreeding.Registry.Processing
                     break;
             }
 
-            switch (data.Components.EggGrow)
-            {
-                case ComponentBehavior.Remove:
-                    //Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.EggGrow)}({nameof(ComponentBehavior.Remove)}): Component cannot be removed");
-                    break;
-                case ComponentBehavior.Patch:
-                    if (data.EggGrow == null)
-                    {
-                        Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.EggGrow)}({nameof(ComponentBehavior.Patch)}): Missing component data");
-                        error = true;
-                    }
-                    break;
-                case ComponentBehavior.Inherit:
-                    if (data.EggGrow != null)
-                    {
-                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.EggGrow)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
-                    }
-                    break;
-            }
-
             switch (data.Components.Floating)
             {
                 case ComponentBehavior.Remove:
@@ -122,9 +103,24 @@ namespace OfTamingAndBreeding.Registry.Processing
                     break;
             }
 
-            if (data.Item != null && data.Components.Item == ComponentBehavior.Patch)
+            switch (data.Components.EggGrow)
             {
-                // nothing to validate here
+                case ComponentBehavior.Remove:
+                    //Plugin.LogDebug($"{model}.{nameof(data.Components)}.{nameof(data.Components.EggGrow)}({nameof(ComponentBehavior.Remove)}): Component cannot be removed");
+                    break;
+                case ComponentBehavior.Patch:
+                    if (data.EggGrow == null)
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.EggGrow)}({nameof(ComponentBehavior.Patch)}): Missing component data");
+                        error = true;
+                    }
+                    break;
+                case ComponentBehavior.Inherit:
+                    if (data.EggGrow != null)
+                    {
+                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.EggGrow)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
+                    }
+                    break;
             }
 
             if (data.EggGrow != null && data.Components.EggGrow == ComponentBehavior.Patch)
@@ -193,6 +189,12 @@ namespace OfTamingAndBreeding.Registry.Processing
                         return false;
                     }
 
+                    if (!cloneFrom.GetComponent<ItemDrop>())
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)}: Prefab '{data.Clone.From}' has no ItemDrop");
+                        return false;
+                    }
+
                     if (custom == null)
                     {
                         // not cloned yet
@@ -206,7 +208,6 @@ namespace OfTamingAndBreeding.Registry.Processing
                     }
 
                     ItemManager.Instance.AddItem(new Jotunn.Entities.CustomItem(egg, fixReference: false));
-                    PrepareClone(eggName, data, egg);
                 }
                 else
                 {
@@ -217,30 +218,6 @@ namespace OfTamingAndBreeding.Registry.Processing
             }
 
             return true;
-        }
-
-        private void PrepareClone(string eggName, EggData data, UnityEngine.GameObject egg)
-        {
-            var model = $"{nameof(EggData)}.{eggName}";
-
-            var eggItemDrop = egg.GetComponent<ItemDrop>(); // required (checked in ValidatePrefab)
-            Plugin.LogServerDebug($"{model}.{nameof(data.Clone)}: Setting ItemDrop.ItemData values");
-
-            var eggItemData = eggItemDrop.m_itemData;
-            var eggItemDataShared = eggItemData.m_shared;
-
-            if (data.Clone.Name != null) eggItemDataShared.m_name = data.Clone.Name;
-            if (data.Clone.Description != null) eggItemDataShared.m_description = data.Clone.Description;
-
-            if (data.Clone.Scale.HasValue)
-            {
-                var customScale = data.Clone.Scale.Value;
-                if (customScale != 1 && customScale > 0)
-                {
-                    var component = PrefabRegistry.Instance.GetOrAddComponent<ScaledEgg>(eggName, egg);
-                    component.m_scale = customScale;
-                }
-            }
         }
 
         //------------------------------------------------
@@ -267,19 +244,16 @@ namespace OfTamingAndBreeding.Registry.Processing
                 }
             }
 
-            if (data.Components.Item == ComponentBehavior.Patch)
+            if (data.Clone != null)
             {
-                if (data.Item != null)
+                if (data.Clone.CustomIconName != null)
                 {
-                    if (data.Item.CustomIconName != null)
+                    var iconName = data.Clone.CustomIconName;
+                    var iconExists = StaticContext.IconDataContext.iconTextures.ContainsKey(iconName);
+                    if (iconExists == false)
                     {
-                        var iconName = data.Item.CustomIconName;
-                        var iconExists = StaticContext.IconDataContext.iconTextures.ContainsKey(iconName);
-                        if (iconExists == false)
-                        {
-                            Plugin.LogWarning($"{model}.{nameof(data.Item)}.{nameof(data.Item.CustomIconName)}: Icon with name '{iconName}' not found - using original icon");
-                            data.Item.CustomIconName = null;
-                        }
+                        Plugin.LogWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.CustomIconName)}: Icon with name '{iconName}' not found - using original icon");
+                        data.Clone.CustomIconName = null;
                     }
                 }
             }
@@ -327,117 +301,49 @@ namespace OfTamingAndBreeding.Registry.Processing
             var model = $"{nameof(EggData)}.{eggName}";
 
             var egg = PrefabRegistry.Instance.GetReservedPrefab(eggName);
-            var eggComponent = PrefabRegistry.Instance.GetOrAddComponent<OTABEgg>(eggName, egg);
 
-            //
-            // set values
-            //
+            var eggItemDrop = egg.GetComponent<ItemDrop>();
+            var eggItemData = eggItemDrop.m_itemData;
+            var eggItemDataShared = eggItemData.m_shared;
 
-            var itemDrop = egg.GetComponent<ItemDrop>();
-            var baseIcon = itemDrop.m_itemData.m_shared.m_icons?.FirstOrDefault();
+            // defaults for EVERY egg
+            eggItemDrop.m_autoPickup = false;
+            eggItemDrop.m_autoDestroy = false;
+            eggItemDataShared.m_autoStack = false;
+            eggItemDataShared.m_value = 0;
+
+            var baseIcon = eggItemDataShared.m_icons?.FirstOrDefault();
             SaveIcon(baseIcon, $"{eggName} (original)");
+
+            if (PrefabRegistry.IsCustomPrefab(eggName))
+            {
+                PrepareClone(eggName, data, egg);
+            }
+
+            //
+            // Item
+            //
 
             if (data.Components.Item == ComponentBehavior.Patch)
             {
-                if (data.Item != null)
+                if (data.Item.MaxStackSize.HasValue)
                 {
-                    var eggItemDrop = egg.GetComponent<ItemDrop>(); // required (checked in ValidatePrefab)
-                    Plugin.LogServerDebug($"{model}.{nameof(data.Item)}: Setting values");
+                    eggItemDataShared.m_maxStackSize = data.Item.MaxStackSize.Value;
+                }
 
-                    var eggItemData = eggItemDrop.m_itemData;
-                    var eggItemDataShared = eggItemData.m_shared;
+                if (data.Item.MaxQuality.HasValue)
+                {
+                    eggItemDataShared.m_maxQuality = data.Item.MaxQuality.Value;
+                }
 
-                    // defaults
-                    eggItemDataShared.m_autoStack = false;
-                    eggItemDrop.m_autoPickup = false;
-                    eggItemDrop.m_autoDestroy = false;
+                if (data.Item.ScaleByQuality.HasValue)
+                {
+                    eggItemDataShared.m_scaleByQuality = data.Item.ScaleByQuality.Value;
+                }
 
-                    if (data.Item.Weight != null) eggItemDataShared.m_weight = (float)data.Item.Weight;
-                    if (data.Item.ScaleByQuality != null) eggItemDataShared.m_scaleByQuality = (float)data.Item.ScaleByQuality;
-                    else eggItemDataShared.m_scaleByQuality = 1; // required
-                    if (data.Item.ScaleWeightByQuality != null) eggItemDataShared.m_scaleWeightByQuality = (float)data.Item.ScaleWeightByQuality;
-                    else eggItemDataShared.m_scaleWeightByQuality = 1; // required
-                    if (data.Item.Value != null) eggItemDataShared.m_value = (int)data.Item.Value;
-                    else eggItemDataShared.m_value = 0; // required
-
-                    if (data.Item.Teleportable != null) eggItemDataShared.m_teleportable = (bool)data.Item.Teleportable;
-                    if (data.Item.MaxStackSize != null) eggItemDataShared.m_maxStackSize = (int)data.Item.MaxStackSize;
-                    if (data.Item.MaxQuality != null) eggItemDataShared.m_maxQuality = (int)data.Item.MaxQuality;
-
-                    if (data.Item.ItemType != null)
-                    {
-                        if (Enum.TryParse<ItemDrop.ItemData.ItemType>(data.Item.ItemType, ignoreCase: true, out var result))
-                        {
-                            eggItemDataShared.m_itemType = result;
-                        }
-                        else
-                        {
-                            //eggItemDataShared.m_itemType = ItemDrop.ItemData.ItemType.Misc;
-                        }
-                    }
-
-
-
-                    UnityEngine.Sprite customIcon = null;
-                    if (data.Item.CustomIconName != null)
-                    {
-                        Plugin.LogServerDebug($"{model}: Setting custom icon");
-                        var tex2d = StaticContext.IconDataContext.iconTextures[data.Item.CustomIconName];
-                        customIcon = SpriteUtils.TextureToSprite(tex2d);
-                    }
-                    else if (baseIcon != null && ColorUtils.TryParseColor(data.Item.ItemTintRgb, out UnityEngine.Color iconTint))
-                    {
-                        Plugin.LogServerDebug($"{model}: Tinting icon");
-                        customIcon = Utils.TintUtils.CreateTintedSprite(baseIcon, iconTint);
-                    }
-                    if (customIcon != null)
-                    {
-                        SaveIcon(customIcon, $"{eggName} (final)");
-                        originalIcons[eggName] = itemDrop.m_itemData.m_shared.m_icons;
-                        itemDrop.m_itemData.m_shared.m_icons = new[] { customIcon };
-                    }
-
-
-
-                    Plugin.LogServerDebug($"{model}: Tinting prefab, lights and particles");
-
-                    // multiply = true by default to preserve texture contrast;
-                    // kept as parameter for possible future advanced tint modes
-                    if (ColorUtils.TryParseColor(data.Item.ItemTintRgb, out UnityEngine.Color itemTint))
-                    {
-                        TintUtils.TintPrefab(egg, itemTint, true);
-                    }
-                    if (ColorUtils.TryParseColor(data.Item.LightsTintRgb, out UnityEngine.Color lightsTint))
-                    {
-                        TintUtils.TintLights(egg, lightsTint, true);
-                    }
-                    if (ColorUtils.TryParseColor(data.Item.ParticlesTintRgb, out UnityEngine.Color particlesTint))
-                    {
-                        TintUtils.TintParticleSystems(egg, particlesTint, true);
-                    }
-                    if (data.Item.DisableParticles)
-                    {
-                        foreach (var r in egg.GetComponentsInChildren<UnityEngine.ParticleSystemRenderer>(true))
-                        {
-                            UnityEngine.Object.DestroyImmediate(r);
-                            //r.enabled = false;
-                        }
-                    }
-
-                    // scale lights
-                    var lightsScale = data.Item.LightsScale;
-                    foreach (var l in egg.GetComponentsInChildren<UnityEngine.Light>(true))
-                    {
-                        if (lightsScale <= 0f)
-                        {
-                            l.enabled = false;
-                            l.range = 0;
-                            continue;
-                        }
-
-                        //l.enabled = true;
-                        l.range *= lightsScale;
-                    }
+                if (data.Item.ScaleWeightByQuality.HasValue)
+                {
+                    eggItemDataShared.m_scaleWeightByQuality = data.Item.ScaleWeightByQuality.Value;
                 }
             }
             else if (data.Components.Item == ComponentBehavior.Remove)
@@ -445,9 +351,34 @@ namespace OfTamingAndBreeding.Registry.Processing
                 // ignore, cannot be removed
             }
 
+            //
+            // Floating
+            //
+
+            if (data.Components.Floating == ComponentBehavior.Patch)
+            {
+                var eggFloating = PrefabRegistry.Instance.GetOrAddComponent<Floating>(eggName, egg);
+
+                Plugin.LogServerDebug($"{model}.{nameof(data.Floating)}: Setting values");
+
+                if (data.Floating.WaterLevelOffset.HasValue)
+                {
+                    eggFloating.m_waterLevelOffset = data.Floating.WaterLevelOffset.Value;
+                }
+            }
+            else if (data.Components.Floating == ComponentBehavior.Remove)
+            {
+                PrefabRegistry.Instance.DestroyComponentIfExists<Floating>(eggName, egg);
+            }
+
+            //
+            // EggGrow
+            //
+
             if (data.Components.EggGrow == ComponentBehavior.Patch)
             {
                 var eggEggGrow = PrefabRegistry.Instance.GetOrAddComponent<EggGrow>(eggName, egg);
+                var eggEggGrowTrait = EggGrowTrait.GetOrAddComponent(egg);
 
                 if (data.EggGrow != null)
                 {
@@ -458,21 +389,37 @@ namespace OfTamingAndBreeding.Registry.Processing
                         eggEggGrow.m_growTime = data.EggGrow.GrowTime.Value;
                     }
 
+                    if (data.EggGrow.UpdateInterval.HasValue)
+                    {
+                        eggEggGrow.m_updateInterval = data.EggGrow.UpdateInterval.Value;
+                    }
 
+                    if (data.EggGrow.RequireNearbyFire.HasValue)
+                    {
+                        eggEggGrow.m_requireNearbyFire = data.EggGrow.RequireNearbyFire.Value;
+                    }
+                    else
+                    {
+                        eggEggGrow.m_requireNearbyFire = false;
+                    }
 
+                    if (data.EggGrow.RequireUnderRoof.HasValue)
+                    {
+                        eggEggGrow.m_requireUnderRoof = data.EggGrow.RequireUnderRoof.Value;
+                    }
+                    else
+                    {
+                        eggEggGrow.m_requireUnderRoof = false;
+                    }
 
-                    if (data.EggGrow.UpdateInterval != null) eggEggGrow.m_updateInterval = (float)data.EggGrow.UpdateInterval;
-                    if (data.EggGrow.RequireNearbyFire != null) eggEggGrow.m_requireNearbyFire = (bool)data.EggGrow.RequireNearbyFire;
-                    else eggEggGrow.m_requireNearbyFire = false;
-                    if (data.EggGrow.RequireUnderRoof != null) eggEggGrow.m_requireUnderRoof = (bool)data.EggGrow.RequireUnderRoof;
-                    else eggEggGrow.m_requireUnderRoof = false;
-                    if (data.EggGrow.RequireCoverPercentige != null) eggEggGrow.m_requireCoverPercentige = (float)data.EggGrow.RequireCoverPercentige;
-                    else eggEggGrow.m_requireCoverPercentige = 0;
-
-
-
-
-
+                    if (data.EggGrow.RequireCoverPercentige.HasValue)
+                    {
+                        eggEggGrow.m_requireCoverPercentige = data.EggGrow.RequireCoverPercentige.Value;
+                    }
+                    else
+                    {
+                        eggEggGrow.m_requireCoverPercentige = 0;
+                    }
 
                     if (data.EggGrow.RequireAnyBiome != null)
                     {
@@ -481,21 +428,33 @@ namespace OfTamingAndBreeding.Registry.Processing
                         {
                             mask |= biome;
                         }
-                        eggComponent.m_requireBiome = mask;
+                        eggEggGrowTrait.m_requireBiome = mask;
                     }
 
                     if (data.EggGrow.RequireLiquid.HasValue)
                     {
-                        eggComponent.m_requireLiquid = data.EggGrow.RequireLiquid.Value;
+                        eggEggGrowTrait.m_requireLiquid = data.EggGrow.RequireLiquid.Value;
                         if (data.EggGrow.RequireLiquidDepth.HasValue)
                         {
-                            eggComponent.m_requireLiquidDepth = data.EggGrow.RequireLiquidDepth.Value;
+                            eggEggGrowTrait.m_requireLiquidDepth = data.EggGrow.RequireLiquidDepth.Value;
                         }
+                    }
+
+                    if (data.EggGrow.RequireGlobalKeys != null)
+                    {
+                        var keysList = ParseGlobalKeys(data.EggGrow.RequireGlobalKeys);
+                        eggEggGrowTrait.SetRequiredGlobalKeys(keysList);
                     }
 
                     if (data.EggGrow.Grown != null)
                     {
-                        eggComponent.SetCustomGrownList(data.EggGrow.Grown);
+                        var grownList = data.EggGrow.Grown.Select((g) => new EggGrowTrait.EggGrown(
+                            weight: g.Weight,
+                            prefab: g.Prefab,
+                            tamed: g.Tamed,
+                            showHatchEffect: g.ShowHatchEffect
+                        )).ToArray();
+                        eggEggGrowTrait.SetCustomGrownList(grownList);
                     }
 
                 }
@@ -505,7 +464,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 {
                     eggEggGrow.m_hatchEffect = new EffectList
                     {
-                        m_effectPrefabs = Utils.PrefabUtils.CreateEffectList(new string[] {
+                        m_effectPrefabs = OTABUtils.PrefabUtils.CreateEffectList(new string[] {
                         "fx_chicken_birth",
                     })
                     };
@@ -521,20 +480,126 @@ namespace OfTamingAndBreeding.Registry.Processing
                 PrefabRegistry.Instance.DestroyComponentIfExists<EggGrow>(eggName, egg);
             }
 
-            if (data.Components.Floating == ComponentBehavior.Patch)
-            {
-                var eggFloating = PrefabRegistry.Instance.GetOrAddComponent<Floating>(eggName, egg);
-
-                Plugin.LogServerDebug($"{model}.{nameof(data.Floating)}: Setting values");
-
-                eggFloating.m_waterLevelOffset = data.Floating.WaterLevelOffset;
-            }
-            else if (data.Components.Floating == ComponentBehavior.Remove)
-            {
-                PrefabRegistry.Instance.DestroyComponentIfExists<Floating>(eggName, egg);
-            }
-
             StaticContext.EggDataContext.RegisterEggSharedName(egg);
+        }
+
+        private void PrepareClone(string eggName, EggData data, UnityEngine.GameObject egg)
+        {
+            var model = $"{nameof(EggData)}.{eggName}";
+
+            Plugin.LogServerDebug($"{model}.{nameof(data.Clone)}: Setting ItemDrop.ItemData values");
+
+            var eggItemDrop = egg.GetComponent<ItemDrop>();
+            var eggItemData = eggItemDrop.m_itemData;
+            var eggItemDataShared = eggItemData.m_shared;
+
+            if (data.Clone.Name != null)
+            {
+                eggItemDataShared.m_name = data.Clone.Name;
+            }
+
+            if (data.Clone.Description != null)
+            {
+                eggItemDataShared.m_description = data.Clone.Description;
+            }
+
+            if (data.Clone.ItemType != null && Enum.TryParse<ItemDrop.ItemData.ItemType>(data.Clone.ItemType, ignoreCase: true, out var result))
+            {
+                eggItemDataShared.m_itemType = result;
+            }
+
+            if (data.Clone.Scale.HasValue)
+            {
+                var customScale = data.Clone.Scale.Value;
+                if (customScale != 1 && customScale > 0)
+                {
+                    var component = PrefabRegistry.Instance.GetOrAddComponent<ScaledEgg>(eggName, egg);
+                    component.m_scale = customScale;
+                }
+            }
+
+            if (data.Clone.Weight.HasValue)
+            {
+                eggItemDataShared.m_weight = data.Clone.Weight.Value;
+            }
+
+            if (data.Clone.Teleportable.HasValue)
+            {
+                eggItemDataShared.m_teleportable = data.Clone.Teleportable.Value;
+            }
+
+            // icon stuff
+
+            UnityEngine.Sprite customIcon = null;
+
+            var baseIcon = eggItemDataShared.m_icons?.FirstOrDefault();
+
+            if (data.Clone.CustomIconName != null)
+            {
+                Plugin.LogServerDebug($"{model}.{nameof(data.Clone)}: Setting custom icon");
+                var tex2d = StaticContext.IconDataContext.iconTextures[data.Clone.CustomIconName];
+                customIcon = SpriteUtils.TextureToSprite(tex2d);
+            }
+
+            else if (baseIcon != null && ColorUtils.TryParseColor(data.Clone.ItemTintRgb, out UnityEngine.Color iconTint))
+            {
+                Plugin.LogServerDebug($"{model}.{nameof(data.Clone)}: Tinting icon");
+                customIcon = OTABUtils.TintUtils.CreateTintedSprite(baseIcon, iconTint);
+            }
+
+            if (customIcon != null)
+            {
+                SaveIcon(customIcon, $"{eggName} (final)");
+                originalIcons[eggName] = eggItemDataShared.m_icons;
+                eggItemDataShared.m_icons = new[] { customIcon };
+            }
+
+            // tint/lights stuff
+
+            Plugin.LogServerDebug($"{model}.{nameof(data.Clone)}: Tinting prefab, lights and particles");
+
+            // multiply = true by default to preserve texture contrast;
+            // kept as parameter for possible future advanced tint modes
+
+            if (ColorUtils.TryParseColor(data.Clone.ItemTintRgb, out UnityEngine.Color itemTint))
+            {
+                TintUtils.TintPrefab(egg, itemTint, true);
+            }
+            if (ColorUtils.TryParseColor(data.Clone.LightsTintRgb, out UnityEngine.Color lightsTint))
+            {
+                TintUtils.TintLights(egg, lightsTint, true);
+            }
+            if (ColorUtils.TryParseColor(data.Clone.ParticlesTintRgb, out UnityEngine.Color particlesTint))
+            {
+                TintUtils.TintParticleSystems(egg, particlesTint, true);
+            }
+            if (data.Clone.DisableParticles.HasValue && data.Clone.DisableParticles.Value == true)
+            {
+                foreach (var r in egg.GetComponentsInChildren<UnityEngine.ParticleSystemRenderer>(true))
+                {
+                    UnityEngine.Object.DestroyImmediate(r);
+                    //r.enabled = false;
+                }
+            }
+            if (data.Clone.LightsScale.HasValue)
+            {
+                var lightsScale = data.Clone.LightsScale.Value;
+                if (lightsScale != 1.0f)
+                {
+                    foreach (var l in egg.GetComponentsInChildren<UnityEngine.Light>(true))
+                    {
+                        if (lightsScale <= 0f)
+                        {
+                            l.enabled = false;
+                            l.range = 0;
+                            continue;
+                        }
+
+                        //l.enabled = true;
+                        l.range *= lightsScale;
+                    }
+                }
+            }
         }
 
         private void SaveIcon(UnityEngine.Sprite sprite, string name)
@@ -553,7 +618,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     {
                         System.IO.File.Delete(pngFile);
                     }
-                    Utils.SpriteUtils.ExportSpriteToPng(sprite, pngFile);
+                    OTABUtils.SpriteUtils.ExportSpriteToPng(sprite, pngFile);
                 }
             }
         }

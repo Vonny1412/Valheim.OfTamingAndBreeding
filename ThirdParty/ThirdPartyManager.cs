@@ -25,6 +25,8 @@ namespace OfTamingAndBreeding.ThirdParty
     internal static class ThirdPartyManager
     {
 
+        // todo: should this also use singleton. not important but yeah, make it singleton one day
+
         public static bool TryGetPluginMetadata(string GUID, out BepInPlugin meta)
         {
             if (Chainloader.PluginInfos.TryGetValue(GUID, out var info))

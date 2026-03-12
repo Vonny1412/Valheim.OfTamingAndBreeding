@@ -1,13 +1,12 @@
 ﻿using OfTamingAndBreeding.Components.Base;
 using OfTamingAndBreeding.Components.Extensions;
-using OfTamingAndBreeding.Components.Traits;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.Components
+namespace OfTamingAndBreeding.Components.Traits
 {
-    public class ExtendedAnimaAI : OTABComponent<ExtendedAnimaAI>
+    public class AnimalAITrait : OTABComponent<AnimalAITrait>
     {
 
         // set by registry processor
@@ -62,15 +61,19 @@ namespace OfTamingAndBreeding.Components
                 return false;
             }
 
-            if (UpdateConsumeItem(dt)) return true;
-            if (UpdateFollowTarget(dt)) return true;
+            if (m_animalAI.IsAlerted() == false)
+            {
+                if (UpdateConsumeItem(dt)) return true;
+                if (UpdateFollowTarget(dt)) return true;
+            }
   
             return false;
         }
 
-        public bool UpdateConsumeItem(float dt)
+        private bool UpdateConsumeItem(float dt)
         {
-            if (m_animalAI.IsAlerted() || m_consumeItems == null || m_consumeItems.Count == 0)
+            // note: IsOwner checked in IdleMovement()
+            if (m_consumeItems == null || m_consumeItems.Count == 0)
             {
                 return false;
             }
@@ -114,9 +117,10 @@ namespace OfTamingAndBreeding.Components
             return false;
         }
 
-        public bool UpdateFollowTarget(float dt)
+        private bool UpdateFollowTarget(float dt)
         {
-            if (m_animalAI.IsAlerted() || m_follow == null)
+            // note: IsOwner checked in IdleMovement()
+            if (m_follow == null)
             {
                 return false;
             }

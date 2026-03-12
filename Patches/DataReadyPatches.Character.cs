@@ -15,7 +15,7 @@ namespace OfTamingAndBreeding.Patches
             // we temporarly need to change the original returned value
             if (StaticContext.IsEnemyContext.Active && __instance == StaticContext.IsEnemyContext.TargetInstance)
             {
-                __result = false; // temporary untamed
+                __result = false; // temporary untamed to enable aggression
             }
         }
 

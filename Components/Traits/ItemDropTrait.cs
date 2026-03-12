@@ -1,5 +1,5 @@
 ﻿using OfTamingAndBreeding.Components.Base;
-using OfTamingAndBreeding.Utils;
+using OfTamingAndBreeding.OTABUtils;
 using System;
 
 namespace OfTamingAndBreeding.Components.Traits
@@ -17,22 +17,36 @@ namespace OfTamingAndBreeding.Components.Traits
             m_itemDrop = GetComponent<ItemDrop>();
         }
 
+        public bool TryGetValidItemDrop(out ItemDrop itemDrop)
+        {
+            var nview = m_nview;
+            if (nview && nview.IsValid())
+            {
+                itemDrop = m_itemDrop;
+                return true;
+            }
+            itemDrop = null;
+            return false;
+        }
+
         public void OnItemDropped()
         {
-            if (m_nview.IsValid() && m_nview.IsOwner())
+            var nview = m_nview;
+            if (nview.IsValid() && nview.IsOwner())
             {
                 // hint: we are inside Humanoid_DropItem_Patch
                 // Humanoid.DropItem() is calling: ItemDrop itemDrop = ItemDrop.DropItem(...)
                 var val = StaticContext.ItemDropContext.DroppedByPlayer;
-                ZNetUtils.SetInt(m_nview.GetZDO(), Plugin.ZDOVars.z_droppedByAnyPlayer, val);
+                ZNetUtils.SetInt(nview.GetZDO(), Plugin.ZDOVars.z_droppedByAnyPlayer, val);
             }
         }
 
         public void OnOneRemoved()
         {
-            if (m_nview.IsValid())
+            var nview = m_nview;
+            if (nview.IsValid())
             {
-                var zdo = m_nview.GetZDO();
+                var zdo = nview.GetZDO();
                 StaticContext.ItemConsumeContext.hasValue = true;
                 StaticContext.ItemConsumeContext.lastItemDroppedByAnyPlayer = zdo.GetInt(Plugin.ZDOVars.z_droppedByAnyPlayer, 0);
                 StaticContext.ItemConsumeContext.lastItemInstanceId = m_itemDrop.GetInstanceID();

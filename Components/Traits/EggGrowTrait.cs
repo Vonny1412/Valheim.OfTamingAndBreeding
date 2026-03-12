@@ -1,7 +1,6 @@
 ﻿using OfTamingAndBreeding.Components.Base;
 using OfTamingAndBreeding.Components.Extensions;
-using OfTamingAndBreeding.Data.Models;
-using OfTamingAndBreeding.Utils;
+using OfTamingAndBreeding.OTABUtils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,11 +11,63 @@ namespace OfTamingAndBreeding.Components.Traits
     public class EggGrowTrait : OTABComponent<EggGrowTrait>
     {
 
+        public class EggGrown : Common.WeightedRandom.IWeighted
+        {
+            public float Weight { get; }
+            public string Prefab { get; }
+            public bool Tamed { get; }
+            public bool ShowHatchEffect { get; }
+            public EggGrown(
+                string prefab,
+                float weight,
+                bool tamed,
+                bool showHatchEffect)
+            {
+                Prefab = prefab;
+                Weight = weight;
+                Tamed = tamed;
+                ShowHatchEffect = showHatchEffect;
+            }
+        }
+
+        [NonSerialized] private static readonly List<List<string[]>> _requireGlobalKeys;
+        [NonSerialized] private static readonly List<EggGrown[]> _grownListByIndex;
+
+        static EggGrowTrait()
+        {
+            _requireGlobalKeys = new List<List<string[]>>();
+            _grownListByIndex = new List<EggGrown[]>();
+
+            Net.NetworkSessionManager.Instance.OnClosed((dataLoaded) => {
+                _requireGlobalKeys.Clear();
+                _grownListByIndex.Clear();
+            });
+        }
+
+        private static readonly Dictionary<Heightmap.Biome, string> biomeLangKeys = new Dictionary<Heightmap.Biome, string>() {
+            { Heightmap.Biome.Meadows,      "$biome_meadows" },
+            { Heightmap.Biome.Swamp,        "$biome_swamp" },
+            { Heightmap.Biome.Mountain,     "$biome_mountain" },
+            { Heightmap.Biome.BlackForest,  "$biome_blackforest" },
+            { Heightmap.Biome.Plains,       "$biome_plains" },
+            { Heightmap.Biome.AshLands,     "$biome_ashlands" },
+            { Heightmap.Biome.DeepNorth,    "$biome_deepnorth" },
+            { Heightmap.Biome.Ocean,        "$biome_ocean" },
+            { Heightmap.Biome.Mistlands,    "$biome_mistlands" },
+        };
+
         // set in Start
         [NonSerialized] private ZNetView m_nview = null;
         [NonSerialized] private EggGrow m_eggGrow = null;
         [NonSerialized] private ItemDrop m_itemDrop = null;
         [NonSerialized] private float m_baseGrowTime = 60;
+
+        // set in registration
+        [SerializeField] public Heightmap.Biome m_requireBiome = Heightmap.Biome.None;
+        [SerializeField] public OTABUtils.EnvironmentUtils.LiquidTypeEx m_requireLiquid = OTABUtils.EnvironmentUtils.LiquidTypeEx.None;
+        [SerializeField] public float m_requireLiquidDepth = 0;
+        [SerializeField] private int m_requireGlobalKeysIndex = -1;
+        [SerializeField] private int m_grownListIndex = -1;
 
         private void Start()
         {
@@ -40,6 +91,109 @@ namespace OfTamingAndBreeding.Components.Traits
             return m_baseGrowTime;
         }
 
+        internal void SetRequiredGlobalKeys(List<string[]> orKeysList)
+        {
+            m_requireGlobalKeysIndex = _requireGlobalKeys.Count;
+            _requireGlobalKeys.Add(orKeysList);
+        }
+
+        public bool HasRequiredGlobalKeys(out List<string[]> orKeysList)
+        {
+            if (m_requireGlobalKeysIndex != -1)
+            {
+                orKeysList = _requireGlobalKeys[m_requireGlobalKeysIndex];
+                return true;
+            }
+            orKeysList = null;
+            return false;
+        }
+
+        public void SetCustomGrownList(EggGrown[] grownList)
+        {
+            m_grownListIndex = _grownListByIndex.Count;
+            _grownListByIndex.Add(grownList);
+        }
+
+        public bool HasCustomGrownList(out EggGrown[] grownList)
+        {
+            if (m_grownListIndex != -1)
+            {
+                grownList = _grownListByIndex[m_grownListIndex];
+                return true;
+            }
+            grownList = null;
+            return false;
+        }
+
+        public bool SolvesRequiredGlobalKeys()
+        {
+            if (HasRequiredGlobalKeys(out List<string[]> orKeysList))
+            {
+                return SolvesRequiredGlobalKeys(orKeysList);
+            }
+            return true;
+        }
+
+        private bool SolvesRequiredGlobalKeys(List<string[]> orKeysList)
+        {
+            foreach (var andKeys in orKeysList)
+            {
+                if (andKeys.All((key) => ZoneSystem.instance.GetGlobalKey(key)))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool InValidBiome(Vector3 position)
+        {
+            if (m_requireBiome == Heightmap.Biome.None)
+            {
+                return true;
+            }
+            return OTABUtils.EnvironmentUtils.IsInBiome(position, m_requireBiome);
+        }
+
+        public bool OnValidGround(Vector3 position)
+        {
+            if (m_requireLiquid == EnvironmentUtils.LiquidTypeEx.None)
+            {
+                return true;
+            }
+            var liquidType = m_requireLiquid;
+            var liquidDepth = m_requireLiquidDepth;
+            return liquidType switch
+            {
+                OTABUtils.EnvironmentUtils.LiquidTypeEx.Water => OTABUtils.EnvironmentUtils.IsInWater(position, liquidDepth),
+                OTABUtils.EnvironmentUtils.LiquidTypeEx.Tar => OTABUtils.EnvironmentUtils.IsInTar(position, liquidDepth),
+                // todo: lava?
+                _ => true,
+            };
+        }
+
+        public bool CanGrow()
+        {
+
+            if (SolvesRequiredGlobalKeys() == false)
+            {
+                return false;
+            }
+
+            var eggPosition = m_eggGrow.transform.position;
+
+            if (InValidBiome(eggPosition) == false)
+            {
+                return false;
+            }
+
+            if (OnValidGround(eggPosition) == false)
+            {
+                return false;
+            }
+
+            return true;
+        }
 
         public void UpdateGrowTime()
         {
@@ -84,19 +238,15 @@ namespace OfTamingAndBreeding.Components.Traits
             }
         }
 
-        private static readonly Dictionary<Heightmap.Biome, string> biomNames = new Dictionary<Heightmap.Biome, string>();
-        private static string selectedLanguage = null;
-
-        public string GetHoverExtraText()
+        public string GetEggGrowProgress()
         {
-            if (!m_nview.IsValid() || !m_eggGrow)
+            if (!m_eggGrow || !m_nview.IsValid())
             {
                 return "";
             }
 
             var zdo = m_nview.GetZDO();
 
-            string extraText = "";
             float growStart = zdo.GetFloat(ZDOVars.s_growStart);
             var canGrow = m_eggGrow.CanGrow();
 
@@ -115,81 +265,71 @@ namespace OfTamingAndBreeding.Components.Traits
 
                         float pct = Mathf.Floor(pctRaw * precision) / precision; // no "jumping forward"
                         var pctText = pct.ToString($"F{decimals}", System.Globalization.CultureInfo.InvariantCulture);
-                        extraText = $"({pctText}%)";
+                        return $"({pctText}%)";
                     }
                 }
-                else
-                {
-                    // unknown/secret grow time
-                    extraText = "(?)";
-                }
+
+                // unknown/secret grow time
+                return "";
             }
             else
             {
+                // logic:
+                //   (vanilla)itemstack > (vanilla)fire > (vanilla)roof > (otab)globalkeys > (otab)biome > (otab)liquid
+
                 if (m_itemDrop.m_itemData.m_stack > 1)
                 {
-                    extraText = Localization.instance.Localize("$item_chicken_egg_stacked");
+                    return Localization.instance.Localize("$item_chicken_egg_stacked");
                 }
-                else if (m_eggGrow.m_requireNearbyFire)
+
+                var position = transform.position;
+
+                if (m_eggGrow.m_requireNearbyFire && !EffectArea.IsPointInsideArea(position, EffectArea.Type.Heat, 0.5f))
                 {
-                    extraText = Localization.instance.Localize("$otab_egg_requires_heat");
+                    return Localization.instance.Localize("$otab_egg_requires_heat");
                 }
-                else if (m_eggGrow.m_requireUnderRoof)
+
+                if (m_eggGrow.m_requireUnderRoof)
                 {
-                    extraText = Localization.instance.Localize("$otab_egg_requires_roof");
-                }
-                else
-                {
-                    if (m_eggGrow.TryGetComponent<OTABEgg>(out var component))
+                    Cover.GetCoverForPoint(position, out var coverPercentage, out var underRoof, 0.1f);
+                    if (!underRoof || coverPercentage < m_eggGrow.m_requireCoverPercentige)
                     {
+                        return Localization.instance.Localize("$otab_egg_requires_roof");
+                    }
+                }
 
-                        var L = Localization.instance;
-                        if (selectedLanguage != L.GetSelectedLanguage())
-                        {
-                            selectedLanguage = L.GetSelectedLanguage();
-                            biomNames.Clear();
-                            biomNames[Heightmap.Biome.Meadows] = L.Localize("$biome_meadows");
-                            biomNames[Heightmap.Biome.Swamp] = L.Localize("$biome_swamp");
-                            biomNames[Heightmap.Biome.Mountain] = L.Localize("$biome_mountain");
-                            biomNames[Heightmap.Biome.BlackForest] = L.Localize("$biome_blackforest");
-                            biomNames[Heightmap.Biome.Plains] = L.Localize("$biome_plains");
-                            biomNames[Heightmap.Biome.AshLands] = L.Localize("$biome_ashlands");
-                            biomNames[Heightmap.Biome.DeepNorth] = L.Localize("$biome_deepnorth");
-                            biomNames[Heightmap.Biome.Ocean] = L.Localize("$biome_ocean");
-                            biomNames[Heightmap.Biome.Mistlands] = L.Localize("$biome_mistlands");
-                        }
+                if (HasRequiredGlobalKeys(out List<string[]> orKeysList) && !SolvesRequiredGlobalKeys(orKeysList))
+                {
+                    // just take first AND-list for now
+                    // todo: maybe display full list?
+                    var andList = orKeysList[0];
+                    var outList = String.Join(", ", andList.Select((k) => Localization.instance.Localize($"$OTAB_require_key_{k}")));
+                    return Localization.instance.Localize("$otab_egg_requires_key", outList);
+                }
 
-                        if (component.m_requireBiome != Heightmap.Biome.None)
-                        {
-                            var biomes = Utils.EnvironmentUtils.UnMaskBiomes(component.m_requireBiome);
-                            extraText = String.Join(" / ", biomes.Select((b) => biomNames[b])); // list of biomes
-                            extraText = L.Localize("$otab_egg_requires_biome", extraText);
-                        }
-                        else if (component.m_requireLiquid != EnvironmentUtils.LiquidTypeEx.None)
-                        {
-                            switch (component.m_requireLiquid)
-                            {
-                                case Utils.EnvironmentUtils.LiquidTypeEx.Water:
-                                    extraText = Localization.instance.Localize("$otab_egg_requires_water");
-                                    break;
-                                case Utils.EnvironmentUtils.LiquidTypeEx.Tar:
-                                    extraText = Localization.instance.Localize("$otab_egg_requires_tar");
-                                    break;
-                            }
-                        }
+                if (InValidBiome(position) == false)
+                {
+                    var biomes = OTABUtils.EnvironmentUtils.UnMaskBiomes(m_requireBiome);
+                    var outList = String.Join(" / ", biomes.Select((b) => Localization.instance.Localize(biomeLangKeys[b])));
+                    return Localization.instance.Localize("$otab_egg_requires_biome", outList);
+                }
+
+                if (OnValidGround(position) == false)
+                {
+                    switch (m_requireLiquid)
+                    {
+                        case OTABUtils.EnvironmentUtils.LiquidTypeEx.Water:
+                            return Localization.instance.Localize("$otab_egg_requires_water");
+
+                        case OTABUtils.EnvironmentUtils.LiquidTypeEx.Tar:
+                            return Localization.instance.Localize("$otab_egg_requires_tar");
 
                     }
-
                 }
 
-                if (string.IsNullOrEmpty(extraText))
-                {
-                    // default message
-                    extraText = Localization.instance.Localize("$item_chicken_egg_cold");
-                }
+                // default message
+                return Localization.instance.Localize("$item_chicken_egg_cold");
             }
-
-            return extraText;
         }
 
         public bool GrowUpdate()
@@ -215,10 +355,9 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 // determine behavior
 
-                var customEggComponent = m_eggGrow.GetComponent<OTABEgg>();
-                if (customEggComponent != null && customEggComponent.HasCustomGrownList(out var grownList))
+                if (HasCustomGrownList(out var grownList))
                 {
-                    var foundRandom = Data.Models.SubData.RandomData.FindRandom<EggData.EggGrowGrownData>(grownList, out EggData.EggGrowGrownData grownEntry);
+                    var foundRandom = Common.WeightedRandom.FindRandom<EggGrown>(grownList, out EggGrown grownEntry);
                     if (!foundRandom) // should not happen but whatever
                     {
                         z_EggBehavior = ZNetUtils.SetInt(zdo, Plugin.ZDOVars.z_EggBehavior, Plugin.ZDOVars.EggBehavior.Vanilla, z_EggBehavior);
@@ -294,10 +433,14 @@ namespace OfTamingAndBreeding.Components.Traits
 
                 }
 
+
                 if (showHatchEffect)
                 {
                     // just jiggle a lil bit
-                    rotation = Quaternion.Slerp(rotation, UnityEngine.Random.rotation, 0.08f);
+                    //rotation = Quaternion.Slerp(rotation, UnityEngine.Random.rotation, 0.04f);
+                    //position += Vector3.up * 0.05f;
+                    float jiggleYaw = UnityEngine.Random.Range(-10f, 10f);
+                    rotation *= Quaternion.Euler(0f, jiggleYaw, 0f);
                 }
 
                 GameObject spawned = UnityEngine.Object.Instantiate(m_eggGrow.m_grownPrefab, position, rotation);

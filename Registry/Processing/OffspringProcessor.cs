@@ -5,6 +5,7 @@ using OfTamingAndBreeding.Data.Models.SubData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using YamlDotNet.Core;
 
 namespace OfTamingAndBreeding.Registry.Processing
 {
@@ -44,21 +45,48 @@ namespace OfTamingAndBreeding.Registry.Processing
                     Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.Name)}: Missing field");
                     error = true;
                 }
-                if (data.Clone.MaxHealthFactor <= 0)
+                if (data.Clone.MaxHealthFactor.HasValue)
                 {
-                    Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.MaxHealthFactor)}: Zero or negative values not allowed");
-                    error = true;
-                }
-                if (data.Clone.MaxHealthFactor > 1)
-                {
-                    Plugin.LogWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.MaxHealthFactor)}: Offspring is getting increased max health");
-                }
-                if (data.Clone.RemoveEffects != null)
-                {
-                    if (data.Clone.RemoveEffects.Length == 0)
+                    if (data.Clone.MaxHealthFactor.Value <= 0)
                     {
-                        Plugin.LogWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.RemoveEffects)}: List is empty and will be set to null");
-                        data.Clone.RemoveEffects = null;
+                        Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.MaxHealthFactor)}: Zero or negative values not allowed");
+                        error = true;
+                    }
+                    else if (data.Clone.MaxHealthFactor.Value > 1)
+                    {
+                        Plugin.LogServerWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.MaxHealthFactor)}: Offspring is getting increased max health");
+                    }
+                }
+                if (data.Clone.RemoveEffects != null && data.Clone.RemoveEffects.Length == 0)
+                {
+                    Plugin.LogServerWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.RemoveEffects)}: List is empty and will be set to null");
+                    data.Clone.RemoveEffects = null;
+                }
+                if (data.Clone.Scale.HasValue)
+                {
+                    if (data.Clone.Scale.Value <= 0)
+                    {
+                        Plugin.LogServerWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.Scale)}: Negative or zero value not allowed - setting to null");
+                        data.Clone.Scale = null;
+                    }
+                    else if (data.Clone.Scale.Value == 1)
+                    {
+                        Plugin.LogServerInfo($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.Scale)}: Value of 1 will do nothing - setting to null");
+                        data.Clone.Scale = null;
+                    }
+                }
+                if (data.Clone.MaxHealthFactor.HasValue)
+                {
+                    if (data.Clone.MaxHealthFactor.Value < 0)
+                    {
+                        // maybe 0% could be fun? just allow it for now
+                        Plugin.LogServerWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.MaxHealthFactor)}: Negative value not allowed - setting to null");
+                        data.Clone.MaxHealthFactor = null;
+                    }
+                    else if (data.Clone.MaxHealthFactor.Value == 1)
+                    {
+                        Plugin.LogServerInfo($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.MaxHealthFactor)}: Value of 1 will do nothing - setting to null");
+                        data.Clone.MaxHealthFactor = null;
                     }
                 }
             }
@@ -78,7 +106,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 case ComponentBehavior.Inherit:
                     if (data.Growup != null)
                     {
-                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Growup)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
+                        Plugin.LogServerWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Growup)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
                     }
                     break;
             }
@@ -159,8 +187,6 @@ namespace OfTamingAndBreeding.Registry.Processing
                         Plugin.LogServerDebug($"{model}.{nameof(data.Clone)}: Reactivating cloned prefab for '{cloneFrom.name}'");
                         offspring = PrefabRegistry.Instance.ReactivateCustomPrefab(offspringName, cloneFrom.name);
                     }
-
-                    PrepareClone(offspringName, data, offspring);
                 }
                 else
                 {
@@ -171,6 +197,113 @@ namespace OfTamingAndBreeding.Registry.Processing
             }
 
             return true;
+        }
+
+        //------------------------------------------------
+        // VALIDATE PREFAB
+        //------------------------------------------------
+
+        public override bool ValidatePrefab(string offspringName, OffspringData data)
+        {
+            var model = $"{nameof(OffspringData)}.{offspringName}";
+            var error = false;
+
+            var offspring = PrefabRegistry.Instance.GetReservedPrefab(offspringName);
+            if (!offspring)
+            {
+                Plugin.LogError($"{model}: Prefab not found");
+                error = true;
+            }
+            else
+            {
+                if (!offspring.GetComponent<Character>())
+                {
+                    Plugin.LogError($"{model}: Prefab has no Character");
+                    error = true;
+                }
+            }
+
+            if (data.Growup != null && data.Components.Growup == ComponentBehavior.Patch)
+            {
+                // we already validated data.Growup.Grown != null
+                foreach (var (grownData, i) in data.Growup.Grown.Select((value, i) => (value, i)))
+                {
+                    if (!PrefabRegistry.Instance.PrefabExists(grownData.Prefab))
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Growup)}.{nameof(data.Growup.Grown)}.{i}.{nameof(grownData.Prefab)}: '{grownData.Prefab}' not found");
+                        error = true;
+                    }
+                }
+            }
+
+            return error == false;
+        }
+
+        //------------------------------------------------
+        // REGISTER PREFAB
+        //------------------------------------------------
+
+        public override void RegisterPrefab(string offspringName, OffspringData data)
+        {
+            var model = $"{nameof(OffspringData)}.{offspringName}";
+
+            if (PrefabRegistry.IsCustomPrefab(offspringName))
+            {
+                Plugin.LogServerDebug($"{model}: Registering prefab");
+                var offspring = PrefabRegistry.Instance.GetReservedPrefab(offspringName);
+                PrefabManager.Instance.RegisterToZNetScene(offspring);
+            }
+        }
+
+        //------------------------------------------------
+        // EDIT PREFAB
+        //------------------------------------------------
+
+        public override void EditPrefab(string offspringName, OffspringData data)
+        {
+            var model = $"{nameof(OffspringData)}.{offspringName}";
+
+            var offspring = PrefabRegistry.Instance.GetReservedPrefab(offspringName);
+
+            if (PrefabRegistry.IsCustomPrefab(offspringName))
+            {
+                PrepareClone(offspringName, data, offspring);
+            }
+
+            //
+            // Growup
+            //
+
+            if (data.Components.Growup == ComponentBehavior.Patch)
+            {
+                if (data.Growup != null)
+                {
+
+                    var offspringGrowup = PrefabRegistry.Instance.GetOrAddComponent<Growup>(offspringName, offspring);
+                    Plugin.LogServerDebug($"{model}.{nameof(data.Growup)}: Setting Growup values");
+
+                    if (data.Growup.GrowTime != null) offspringGrowup.m_growTime = (float)data.Growup.GrowTime;
+                    if (data.Growup.InheritTame != null) offspringGrowup.m_inheritTame = (bool)data.Growup.InheritTame;
+                    
+                    offspringGrowup.m_grownPrefab = null; // never use explicite prefab, always use list - stick to the system
+                    offspringGrowup.m_altGrownPrefabs = new List<Growup.GrownEntry>();
+                    foreach (var grownData in data.Growup.Grown)
+                    {
+                        offspringGrowup.m_altGrownPrefabs.Add(new Growup.GrownEntry
+                        {
+                            m_prefab = PrefabRegistry.Instance.GetOriginalPrefab(grownData.Prefab),
+                            m_weight = grownData.Weight,
+                        });
+                    }
+
+                }
+            }
+            else if (data.Components.Growup == ComponentBehavior.Remove)
+            {
+                Plugin.LogServerDebug($"{model}.{nameof(Growup)}: Removing Growup component (if exist)");
+                PrefabRegistry.Instance.DestroyComponentIfExists<Growup>(offspringName, offspring);
+            }
+
         }
 
         private void PrepareClone(string offspringName, OffspringData data, UnityEngine.GameObject offspring)
@@ -275,16 +408,18 @@ namespace OfTamingAndBreeding.Registry.Processing
             offspringCharacter.m_boss = false;
             offspringCharacter.m_bossEvent = "";
             offspringCharacter.m_name = data.Clone.Name;
-            offspringCharacter.m_health = offspringCharacter.m_health * data.Clone.MaxHealthFactor;
-
+            if (data.Clone.MaxHealthFactor.HasValue)
+            {
+                offspringCharacter.m_health = offspringCharacter.m_health * data.Clone.MaxHealthFactor.Value;
+            }
 
             //
             // scaling
             //
 
-            if (data.Clone.Scale != 1 && data.Clone.Scale != 0)
+            if (data.Clone.Scale.HasValue)
             {
-                var setScale = data.Clone.Scale;
+                var setScale = data.Clone.Scale.Value;
 
                 Plugin.LogServerDebug($"{model}.{nameof(data.Clone)}: Setting custom scaling to {setScale}");
 
@@ -318,13 +453,13 @@ namespace OfTamingAndBreeding.Registry.Processing
                 }
 
                 Plugin.LogServerDebug($"{model}.{nameof(data.Clone)}: Setting vfx scaling");
-                Utils.VfxUtils.ScaleVfx(offspring, setScale); // scale model particles
+                OTABUtils.VfxUtils.ScaleVfx(offspring, setScale); // scale model particles
 
                 Plugin.LogServerDebug($"{model}.{nameof(data.Clone)}: Setting effects scaling");
 
                 var scaler = PrefabRegistry.Instance.GetOrAddComponent<ScaledCreature>(offspringName, offspring);
                 scaler.m_effectScale = setScale * setScale; // for some reasons setScale*setScale is required
-                scaler.m_animationScale = 1/setScale; // because we are using it as a multiplier
+                scaler.m_animationScale = 1 / setScale; // because we are using it as a multiplier
                 foreach (var eff in offspringCharacter.m_deathEffects.m_effectPrefabs)
                 {
                     eff.m_scale = true; // important
@@ -332,105 +467,6 @@ namespace OfTamingAndBreeding.Registry.Processing
                     eff.m_multiplyParentVisualScale = false;
                 }
 
-            }
-
-        }
-
-        //------------------------------------------------
-        // VALIDATE PREFAB
-        //------------------------------------------------
-
-        public override bool ValidatePrefab(string offspringName, OffspringData data)
-        {
-            var model = $"{nameof(OffspringData)}.{offspringName}";
-            var error = false;
-
-            var offspring = PrefabRegistry.Instance.GetReservedPrefab(offspringName);
-            if (!offspring)
-            {
-                Plugin.LogError($"{model}: Prefab not found");
-                error = true;
-            }
-            else
-            {
-                if (!offspring.GetComponent<Character>())
-                {
-                    Plugin.LogError($"{model}: Prefab has no Character");
-                    error = true;
-                }
-            }
-
-            if (data.Growup != null && data.Components.Growup == ComponentBehavior.Patch)
-            {
-                // we already validated data.Growup.Grown != null
-                foreach (var (grownData, i) in data.Growup.Grown.Select((value, i) => (value, i)))
-                {
-                    if (!PrefabRegistry.Instance.PrefabExists(grownData.Prefab))
-                    {
-                        Plugin.LogError($"{model}.{nameof(data.Growup)}.{nameof(data.Growup.Grown)}.{i}.{nameof(grownData.Prefab)}: '{grownData.Prefab}' not found");
-                        error = true;
-                    }
-                }
-            }
-
-            return error == false;
-        }
-
-        //------------------------------------------------
-        // REGISTER PREFAB
-        //------------------------------------------------
-
-        public override void RegisterPrefab(string offspringName, OffspringData data)
-        {
-            var model = $"{nameof(OffspringData)}.{offspringName}";
-
-            if (PrefabRegistry.IsCustomPrefab(offspringName))
-            {
-                Plugin.LogServerDebug($"{model}: Registering prefab");
-                var offspring = PrefabRegistry.Instance.GetReservedPrefab(offspringName);
-                PrefabManager.Instance.RegisterToZNetScene(offspring);
-            }
-        }
-
-        //------------------------------------------------
-        // EDIT PREFAB
-        //------------------------------------------------
-
-        public override void EditPrefab(string offspringName, OffspringData data)
-        {
-            var model = $"{nameof(OffspringData)}.{offspringName}";
-
-            var offspring = PrefabRegistry.Instance.GetReservedPrefab(offspringName);
-            var offspringComponent = PrefabRegistry.Instance.GetOrAddComponent<OTABCreature>(offspringName, offspring);
-
-            if (data.Components.Growup == ComponentBehavior.Patch)
-            {
-                if (data.Growup != null)
-                {
-
-                    var offspringGrowup = PrefabRegistry.Instance.GetOrAddComponent<Growup>(offspringName, offspring);
-                    Plugin.LogServerDebug($"{model}.{nameof(data.Growup)}: Setting Growup values");
-
-                    if (data.Growup.GrowTime != null) offspringGrowup.m_growTime = (float)data.Growup.GrowTime;
-                    if (data.Growup.InheritTame != null) offspringGrowup.m_inheritTame = (bool)data.Growup.InheritTame;
-                    
-                    offspringGrowup.m_grownPrefab = null; // WeakReference never use explicite prefab, always use list - stick to the system
-                    offspringGrowup.m_altGrownPrefabs = new List<Growup.GrownEntry>();
-                    foreach (var grownData in data.Growup.Grown)
-                    {
-                        offspringGrowup.m_altGrownPrefabs.Add(new Growup.GrownEntry
-                        {
-                            m_prefab = PrefabRegistry.Instance.GetOriginalPrefab(grownData.Prefab),
-                            m_weight = grownData.Weight,
-                        });
-                    }
-
-                }
-            }
-            else if (data.Components.Growup == ComponentBehavior.Remove)
-            {
-                Plugin.LogServerDebug($"{model}.{nameof(Growup)}: Removing Growup component (if exist)");
-                PrefabRegistry.Instance.DestroyComponentIfExists<Growup>(offspringName, offspring);
             }
 
         }

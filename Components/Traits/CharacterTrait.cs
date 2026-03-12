@@ -1,8 +1,12 @@
 ﻿using OfTamingAndBreeding.Components.Base;
 using OfTamingAndBreeding.Components.Extensions;
+using OfTamingAndBreeding.Data.Models.SubData;
+using OfTamingAndBreeding.ValheimAPI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
+using static UnityEngine.Networking.UnityWebRequest;
 
 namespace OfTamingAndBreeding.Components.Traits
 {
@@ -13,18 +17,48 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private ZNetView m_nview = null;
         [NonSerialized] private Character m_character = null;
         [NonSerialized] private MonsterAI m_monsterAI = null;
-        [NonSerialized] private ExtendedAnimaAI m_exAnimalAI = null;
+        [NonSerialized] private AnimalAITrait m_animalAITrait = null;
+        [NonSerialized] private TameableTrait m_tameableTrait = null;
+        [NonSerialized] private ProcreationTrait m_procreationTrait = null;
+        [NonSerialized] private BaseAITrait m_baseAITrait = null;
+
+        // set in registration
+        [SerializeField] public IsEnemyCondition m_canAttackTamed = IsEnemyCondition.Never;
+        [SerializeField] public IsEnemyCondition m_canBeAttackedByTamed = IsEnemyCondition.Never;
+        [SerializeField] public IsEnemyCondition m_canAttackPlayer = IsEnemyCondition.Never;
+        [SerializeField] public IsEnemyCondition m_canBeAttackedByPlayer = IsEnemyCondition.Never;
+        [SerializeField] public IsEnemyCondition m_canAttackGroup = IsEnemyCondition.Never;
+        [SerializeField] public IsEnemyCondition m_canBeAttackedByGroup = IsEnemyCondition.Never;
+        [SerializeField] public IsEnemyCondition m_canAttackFaction = IsEnemyCondition.Always;
+        [SerializeField] public IsEnemyCondition m_canBeAttackedByFaction = IsEnemyCondition.Always;
+        [SerializeField] public bool m_changeGroupWhenTamed = false;
+        [SerializeField] public string m_changeGroupWhenTamedTo = "";
+        [SerializeField] public bool m_changeFactionWhenTamed = false;
+        [SerializeField] public Character.Faction m_changeFactionWhenTamedTo = Character.Faction.Players;
 
         private void Awake()
         {
             m_nview = GetComponent<ZNetView>();
             m_character = GetComponent<Character>();
             m_monsterAI = GetComponent<MonsterAI>();
-            m_exAnimalAI = GetComponent<ExtendedAnimaAI>();
+            m_animalAITrait = GetComponent<AnimalAITrait>();
+            m_tameableTrait = GetComponent<TameableTrait>();
+            m_procreationTrait = GetComponent<ProcreationTrait>();
+            m_baseAITrait = GetComponent<BaseAITrait>();
 
             OnTamed();
         }
-        
+
+        public bool IsHungry()
+        {
+            return m_tameableTrait && m_tameableTrait.IsHungry();
+        }
+
+        public bool IsStarving()
+        {
+            return m_tameableTrait && m_tameableTrait.IsStarving();
+        }
+
         public void OnTamed()
         {
             if (m_character.IsTamed() == false)
@@ -47,18 +81,106 @@ namespace OfTamingAndBreeding.Components.Traits
                 baseAI.SetAlerted(alerted: false);
             }
 
-            if (m_character.TryGetComponent<OTABCreature>(out var custom))
+            if (m_changeGroupWhenTamed == true)
             {
-                if (custom.m_changeGroupWhenTamed == true)
-                {
-                    m_character.m_group = custom.m_changeGroupWhenTamedTo;
-                }
-                if (custom.m_changeFactionWhenTamed == true)
-                {
-                    m_character.m_faction = custom.m_changeFactionWhenTamedTo;
-                }
+                m_character.m_group = m_changeGroupWhenTamedTo;
+            }
+            if (m_changeFactionWhenTamed == true)
+            {
+                m_character.m_faction = m_changeFactionWhenTamedTo;
             }
         }
+
+        public string EditHoverText(string text)
+        {
+            var isTamed = m_character.IsTamed();
+
+            if (m_tameableTrait)
+            {
+
+                if (!isTamed && m_tameableTrait.IsTamingDisabled())
+                {
+                    text = m_tameableTrait.GetName();
+                }
+                else if (!isTamed && m_tameableTrait.CanBeTamed() == false)
+                {
+                    text = m_tameableTrait.GetName() + "\n" + m_tameableTrait.GetNotTameableReason();
+                }
+                else if (m_tameableTrait.IsFedTimerDisabled() == true)
+                {
+                    var hungry = Localization.instance.Localize("$hud_tamehungry");
+                    if (!string.IsNullOrEmpty(hungry))
+                    {
+                        var idx = text.IndexOf('\n');
+                        string firstLine;
+                        string rest;
+
+                        if (idx >= 0)
+                        {
+                            firstLine = text.Substring(0, idx);
+                            rest = text.Substring(idx); // includes \n
+                        }
+                        else
+                        {
+                            firstLine = text;
+                            rest = "";
+                        }
+
+                        // remove token in common placements
+                        firstLine = firstLine.Replace(", " + hungry, "");
+                        firstLine = firstLine.Replace(hungry + ", ", "");
+                        firstLine = firstLine.Replace(hungry, "");
+
+                        // cleanup spacing / punctuation artifacts
+                        firstLine = firstLine.Replace(",  ", ", ");
+                        firstLine = firstLine.Replace("  )", " )");
+                        firstLine = firstLine.Replace("(  ", "( ");
+
+                        // remove empty parentheses variants
+                        firstLine = firstLine.Replace(" ( )", "");
+                        firstLine = firstLine.Replace("( )", "");
+                        firstLine = firstLine.Replace("()", "");
+
+                        firstLine = firstLine.TrimEnd();
+
+                        text = firstLine + rest;
+                    }
+                }
+                else
+                {
+                    // taming enabled + eating enabled -> show fed timer
+                    var fedTimer = m_tameableTrait.GetFedTimerHoverText();
+                    if (fedTimer.Length != 0)
+                    {
+                        text += "\n" + fedTimer;
+                    }
+                }
+            }
+
+            var consumeText = GetConsumeHoverText();
+            if (consumeText.Length != 0)
+            {
+                text += "\n" + consumeText;
+            }
+  
+            if (isTamed && m_procreationTrait)
+            {
+                var procreationText = m_procreationTrait.GetProcreationHoverText();
+                if (procreationText.Length != 0)
+                {
+                    text += "\n" + procreationText;
+                }
+            }
+
+            return text;
+        }
+
+
+
+
+
+
+
 
         private static Character lastHoverTarget = null;
         private static string lastHoverConsumeText = "";
@@ -75,37 +197,35 @@ namespace OfTamingAndBreeding.Components.Traits
             if (lastHoverTarget != m_character)
             {
                 lastHoverTarget = m_character;
-                lastHoverConsumeText = BuildConsumeItemsBlock(L);
+                lastHoverConsumeText = "";
+
+                var displayItems = CollectConsumableDisplayItems(L);
+                if (displayItems.Count == 0)
+                {
+                    return "";
+                }
+
+                //return string.Format(l_consumeItems, Plugin.Configs.HoverColorNormal.Value, l_empty);
+                // disabled because we want to know "what creatures can eat what food" and not "what creatures cannot eat"
+                // todo: remove "$otab_hover_food_empty" from translations?
+                //var l_empty = L.Localize("$otab_hover_food_empty");
+
+                // Split into multiple lines based on approx length
+                const int maxLineLen = 30; // TODO: config?
+                var separator = L.Localize("$otab_hover_food_separator");
+                var displayLines = BuildWrappedItemLines(displayItems, separator, maxLineLen);
+
+                // First line gets the bullet, following lines get transparent bullet
+                lastHoverConsumeText = string.Join("\n", displayLines.Select((line, i) =>
+                    L.Localize(
+                        "$otab_hover_food",
+                        i == 0 ? Plugin.Configs.HoverColorNormal.Value : "#00000000",
+                        line
+                    )
+                ));
             }
 
             return lastHoverConsumeText;
-        }
-
-        private string BuildConsumeItemsBlock(Localization L)
-        {
-            var displayItems = CollectConsumableDisplayItems(L);
-
-            if (displayItems.Count == 0)
-                return "";
-
-            //return string.Format(l_consumeItems, Plugin.Configs.HoverColorNormal.Value, l_empty);
-            // disabled because we want to know "what creatures can eat what food" and not "what creatures cannot eat"
-            // todo: remove "$otab_hover_food_empty" from translations?
-            //var l_empty = L.Localize("$otab_hover_food_empty");
-
-            // Split into multiple lines based on approx length
-            const int maxLineLen = 30; // TODO: config?
-            var separator = L.Localize("$otab_hover_food_separator");
-            var displayLines = BuildWrappedItemLines(displayItems, separator, maxLineLen);
-
-            // First line gets the bullet, following lines get transparent bullet
-            return string.Join("\n", displayLines.Select((line, i) =>
-                L.Localize(
-                    "$otab_hover_food",
-                    i == 0 ? Plugin.Configs.HoverColorNormal.Value : "#00000000",
-                    line
-                )
-            ));
         }
 
         private struct ConsumableItemDisplay
@@ -117,85 +237,69 @@ namespace OfTamingAndBreeding.Components.Traits
         private List<ConsumableItemDisplay> CollectConsumableDisplayItems(Localization L)
         {
             var displayItems = new List<ConsumableItemDisplay>();
-
-            if (Plugin.IsServerDataLoaded())
+            if ((bool)m_baseAITrait == false)
             {
-                // otab feature
-                if (m_character.TryGetComponent<OTABCreature>(out var creature))
-                {
-                    if (creature.HasCustomConsumeItems(out var consumeItems))
-                    {
-                        AddDisplayItemsFromYaml(displayItems, consumeItems, L);
-                        return displayItems;
-                    }
-                }
+                // no ai afterall? weird
+                return displayItems;
             }
 
-            List<ItemDrop> m_consumeItems = null;
+            // otab feature
+            // no need to check if otab data has been loaded
+            // if no data loaded HasCustomConsumeItems() will return false
+            if (m_baseAITrait.HasCustomConsumeItems(out var customItems))
+            {
+                if (customItems.Length == 0)
+                {
+                    return displayItems;
+                }
+
+                // hard values seems to be better
+                float min = 0.33f; // consumeItems.Last().fedDurationFactor;
+                float max = 3.00f; // consumeItems.First().fedDurationFactor;
+
+                foreach (var item in customItems)
+                {
+                    var displayName = L.Localize(item.itemDrop.m_itemData.m_shared.m_name);
+                    var displayColor = OTABUtils.ColorUtils.GetColorBetween(
+                        Plugin.Configs.HoverColorBad.Value,
+                        Plugin.Configs.HoverColorNormal.Value,
+                        Plugin.Configs.HoverColorGood.Value,
+                        item.fedDurationFactor,
+                        min,
+                        max
+                    );
+                    displayItems.Add(new ConsumableItemDisplay { Name = displayName, Color = displayColor });
+                }
+
+                return displayItems;
+            }
+
+            List<ItemDrop> consumeItems = null;
             if (m_monsterAI)
             {
-                m_consumeItems = m_monsterAI.m_consumeItems;
+                consumeItems = m_monsterAI.m_consumeItems;
             }
-            else
+            else if (m_animalAITrait)
             {
-                if (Plugin.IsServerDataLoaded())
+                // otab feature
+                // no need to check if otab data has been loaded
+                // if no data loaded m_consumeItems is just empty
+                consumeItems = m_animalAITrait.m_consumeItems;
+                // wait... if its an animalAI it should be handled by HasCustomConsumeItems()
+                // well... use this as fallback
+            }
+
+            if (consumeItems != null && consumeItems.Count > 0)
+            {
+                string color = Plugin.Configs.HoverColorNormal.Value;
+                foreach (var itemDrop in consumeItems)
                 {
-                    if (m_exAnimalAI)
-                    {
-                        m_consumeItems = m_exAnimalAI.m_consumeItems;
-                    }
+                    var displayName = L.Localize(itemDrop.m_itemData.m_shared.m_name);
+                    displayItems.Add(new ConsumableItemDisplay { Name = displayName, Color = color });
                 }
-            }
-            if (m_consumeItems != null && m_consumeItems.Count > 0)
-            {
-                AddDisplayItemsFromItemDrops(displayItems, m_consumeItems, L);
             }
 
             return displayItems;
-        }
-
-        private void AddDisplayItemsFromYaml(List<ConsumableItemDisplay> displayItems, StaticContext.CreatureDataContext.ConsumeItem[] consumeItems, Localization L)
-        {
-            if (consumeItems.Length == 0)
-            {
-                return;
-            }
-
-            if (consumeItems.Length == 1)
-            {
-                var displayName = L.Localize(consumeItems[0].itemDrop.m_itemData.m_shared.m_name);
-                var displayColor = Plugin.Configs.HoverColorNormal.Value;
-                displayItems.Add(new ConsumableItemDisplay { Name = displayName, Color = displayColor });
-                return;
-            }
-
-            float min = 0.33f; // consumeItems.Last().fedDurationFactor;
-            float max = 3.00f; // consumeItems.First().fedDurationFactor;
-
-            foreach (var item in consumeItems)
-            {
-                var displayName = L.Localize(item.itemDrop.m_itemData.m_shared.m_name);
-                var displayColor = Utils.ColorUtils.GetColorBetween(
-                    Plugin.Configs.HoverColorBad.Value,
-                    Plugin.Configs.HoverColorNormal.Value,
-                    Plugin.Configs.HoverColorGood.Value,
-                    item.fedDurationFactor,
-                    min,
-                    max
-                );
-                displayItems.Add(new ConsumableItemDisplay { Name = displayName, Color = displayColor });
-            }
-        }
-
-        private void AddDisplayItemsFromItemDrops(List<ConsumableItemDisplay> displayItems, IEnumerable<ItemDrop> itemDrops, Localization L)
-        {
-            string color = Plugin.Configs.HoverColorNormal.Value;
-            foreach (var itemDrop in itemDrops)
-            {
-                if (itemDrop == null) continue;
-                var displayName = L.Localize(itemDrop.m_itemData.m_shared.m_name);
-                displayItems.Add(new ConsumableItemDisplay { Name = displayName, Color = color });
-            }
         }
 
         private List<string> BuildWrappedItemLines(List<ConsumableItemDisplay> displayItems, string separator, int maxLineLen)
@@ -208,6 +312,11 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 string displayName = displayItem.Name;
                 string displayColor = displayItem.Color;
+
+                if (string.IsNullOrEmpty(displayName))
+                {
+                    continue;
+                }
 
                 // only count name length (no separator)
                 lineLength += displayName.Length;

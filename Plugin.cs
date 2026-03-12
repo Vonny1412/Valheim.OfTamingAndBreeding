@@ -1,5 +1,6 @@
 ﻿using BepInEx;
 using BepInEx.Bootstrap;
+using Jotunn.Managers;
 using Jotunn.Utils;
 using OfTamingAndBreeding.Components.Base;
 using OfTamingAndBreeding.Components.Extensions;
@@ -15,9 +16,10 @@ namespace OfTamingAndBreeding
     [BepInDependency(Jotunn.Main.ModGuid)]
     [BepInDependency("com.ValheimModding.YamlDotNetDetector")]
 
-    [BepInDependency(WackyDBBridge.PluginGUID,  BepInDependency.DependencyFlags.SoftDependency)] // OTAB can post-register recipes
-    [BepInDependency(CllCBridge.PluginGUID,     BepInDependency.DependencyFlags.SoftDependency)] // lifecycle-aware CLLC inheritance
-    [BepInDependency("shudnal.Seasons",         BepInDependency.DependencyFlags.SoftDependency)] // Seasons mod can alter pregnancy durations on specific seasons
+    [BepInDependency(WackyDBBridge.PluginGUID,      BepInDependency.DependencyFlags.SoftDependency)] // OTAB can post-register recipes
+    [BepInDependency(CllCBridge.PluginGUID,         BepInDependency.DependencyFlags.SoftDependency)] // lifecycle-aware CLLC inheritance
+    [BepInDependency("shudnal.Seasons",             BepInDependency.DependencyFlags.SoftDependency)] // Seasons mod can alter pregnancy durations on specific seasons
+    [BepInDependency("digitalroot.mods.GoldBars", BepInDependency.DependencyFlags.SoftDependency)] // maybe used for recipes
 
     [NetworkCompatibility(CompatibilityLevel.ClientMustHaveMod, VersionStrictness.Minor)] // ensure client has this mod with correct version
 
@@ -27,8 +29,9 @@ namespace OfTamingAndBreeding
             CllCBridge.PluginGUID,
             WackyDBBridge.PluginGUID,
             "shudnal.Seasons",
+            "digitalroot.mods.GoldBars",
         };
-
+        
         private static readonly string[] toleratedMods = new string[] {
             "oldmankatan.mods.tamesfollow",
             "com.L3ca.Beyondthepen",
@@ -52,7 +55,16 @@ namespace OfTamingAndBreeding
         internal static void LogInfo(object data) => Instance.Logger.LogInfo(data);
         internal static void LogDebug(object data) => Instance.Logger.LogDebug(data);
 
-        internal static void LogServerMessage(object data) {
+        internal static void LogServerWarning(object data)
+        {
+            if (Net.NetworkSessionManager.Instance.IsServer())
+            {
+                Instance.Logger.LogWarning(data);
+            }
+        }
+
+        internal static void LogServerMessage(object data)
+        {
             if (Net.NetworkSessionManager.Instance.IsServer())
             {
                 Instance.Logger.LogMessage(data);
@@ -153,6 +165,10 @@ namespace OfTamingAndBreeding
             Registry.PrefabRegistryManager.CreateInstance();
             Net.NetworkSessionManager.CreateInstance();
 
+            Net.NetworkSessionManager.Instance.OnStarted(() => {
+                OnSessionStarted();
+            });
+
             Net.NetworkSessionManager.Instance.OnReady((dataLoaded) => {
                 if (dataLoaded)
                 {
@@ -167,6 +183,18 @@ namespace OfTamingAndBreeding
                     LogInfo("No server sync detected (timeout). Running in vanilla mode.");
                 }
 
+                // add trait components to all prefabs that are still missing these traits
+                // added trait types will be registered and latter removed when session is closing
+                AnimalAITrait.AddComponentToPrefabs(typeof(AnimalAI));
+                BaseAITrait.AddComponentToPrefabs(typeof(BaseAI));
+                CharacterTrait.AddComponentToPrefabs(typeof(Character), typeof(BaseAI));
+                EggGrowTrait.AddComponentToPrefabs(typeof(EggGrow));
+                GrowupTrait.AddComponentToPrefabs(typeof(Growup));
+                ItemDropTrait.AddComponentToPrefabs(typeof(ItemDrop));
+                MonsterAITrait.AddComponentToPrefabs(typeof(MonsterAI));
+                ProcreationTrait.AddComponentToPrefabs(typeof(Procreation));
+                TameableTrait.AddComponentToPrefabs(typeof(Tameable));
+
                 // unblock objects creation
                 ZNetSceneContext.blockObjectsCreation = false;
                 while (ZNetSceneContext.pending.Count > 0)
@@ -174,15 +202,6 @@ namespace OfTamingAndBreeding
                     var (near, distant) = ZNetSceneContext.pending.Dequeue();
                     ZNetScene.instance.CreateObjects(near, distant);
                 }
-
-                TameableTrait.AddComponentToPrefabs(typeof(Tameable));
-                EggGrowTrait.AddComponentToPrefabs(typeof(EggGrow));
-                GrowupTrait.AddComponentToPrefabs(typeof(Growup));
-                CharacterTrait.AddComponentToPrefabs(typeof(Character), typeof(BaseAI));
-                ProcreationTrait.AddComponentToPrefabs(typeof(Procreation));
-                BaseAITrait.AddComponentToPrefabs(typeof(BaseAI));
-                ItemDropTrait.AddComponentToPrefabs(typeof(ItemDrop));
-                MonsterAITrait.AddComponentToPrefabs(typeof(MonsterAI));
 
                 OnSessionReady(dataLoaded);
             });
@@ -204,6 +223,13 @@ namespace OfTamingAndBreeding
         {
             return Net.NetworkSessionManager.Instance != null && Net.NetworkSessionManager.Instance.IsServerDataLoaded();
         }
+        
+        public static void OnSessionStarted()
+        {
+            // todo: create a class to dump all existing original prefabs into cache, all components and public init fields
+            // todo: add yaml option to change taming speed multiply for multiple nearby players (especialy for abomination!)
+            // could be used as api
+        }
 
         public static void OnSessionReady(bool dataLoaded)
         {
@@ -222,4 +248,3 @@ namespace OfTamingAndBreeding
     }
 
 }
-

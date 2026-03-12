@@ -4,7 +4,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.Utils
+namespace OfTamingAndBreeding.OTABUtils
 {
     internal static partial class PrefabUtils
     {
@@ -263,18 +263,5 @@ namespace OfTamingAndBreeding.Utils
         }
         
         
-
-
-
-
-
-
-
-
-
-
-
-
-
     }
 }

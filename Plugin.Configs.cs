@@ -89,7 +89,7 @@ namespace OfTamingAndBreeding
 
                 section = Section_UI_Hovertext;
 
-                HoverShowConsumeItems = Config.BindConfigInOrder<bool>(section, "ShowConsumeItems", true, "Allow showing consumeable items in creature hover text.", synced: false);
+                HoverShowConsumeItems = Config.BindConfigInOrder<bool>(section, "ShowConsumeItems", true, "Allow showing consumable items in creature hover text.", synced: false);
                 HoverShowLovePoints = Config.BindConfigInOrder<bool>(section, "ShowLovePoints", true, "Allow showing love points in creature hover text.", synced: false);
                 HoverShowPregnancyTimer = Config.BindConfigInOrder<bool>(section, "ShowPregnancyTimer", true, "Allow showing pregnancy timer in hover text.", synced: false);
                 HoverShowFedTimer = Config.BindConfigInOrder<bool>(section, "ShowFedTimer", true, "Allow showing fed timer in hover text.", synced: false);

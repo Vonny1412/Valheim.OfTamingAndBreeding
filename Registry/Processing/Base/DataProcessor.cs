@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEngine;
 using YamlDotNet.Core;
 
 namespace OfTamingAndBreeding.Registry.Processing.Base
@@ -52,7 +53,7 @@ namespace OfTamingAndBreeding.Registry.Processing.Base
             }
             catch (YamlException e)
             {
-                Plugin.LogFatal(Utils.YamlUtils.FormatException(
+                Plugin.LogFatal(OTABUtils.YamlUtils.FormatException(
                     e,
                     yamlText,
                     $"Failed loading YAML for {typeof(T).Name} '{prefabName}'"
@@ -89,6 +90,62 @@ namespace OfTamingAndBreeding.Registry.Processing.Base
         public void ResetData()
         {
             DataBase<T>.DropAll();
+        }
+
+
+        //---------------------
+        // processor utils
+        //---------------------
+
+        protected static string ParseGlobalKey(string rawKey)
+        {
+            string[] keyParts = rawKey.Split(':');
+            switch (keyParts.Length)
+            {
+
+                case 1:
+                    {
+                        var key = keyParts[0].Trim();
+                        return key;
+                    }
+
+                case 2:
+                    {
+                        var mod = keyParts[0].Trim();
+                        var key = keyParts[1].Trim();
+                        if (ThirdParty.ThirdPartyManager.TryGetPluginMetadata(mod, out _))
+                        {
+                            return key;
+                        }
+                        break;
+                    }
+                default:
+                    // todo: warning
+                    break;
+
+            }
+            return null;
+        }
+
+        protected static List<string[]> ParseGlobalKeys(string[] rawKeys)
+        {
+            var orList = new List<string[]>();
+            foreach (var unsplitted in rawKeys)
+            {
+                var splitted = unsplitted.Split(',')
+                    .Select(ParseGlobalKey)
+                    .Where((key) => !string.IsNullOrEmpty(key))
+                    .ToArray();
+                if (splitted.Length > 0)
+                {
+                    orList.Add(splitted);
+                }
+                else
+                {
+                    // todo: warning
+                }
+            }
+            return orList;
         }
 
         //---------------------

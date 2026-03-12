@@ -1,36 +1,35 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.StaticContext
 {
-    internal static class EggDataContext
+    internal class EggDataContext
     {
 
-
-
-        public static readonly List<Data.Models.EggData.EggGrowGrownData[]> grownListByIndex;
-        public static readonly HashSet<int> sharedNameHashes;
+        [NonSerialized] private static readonly HashSet<int> _sharedNameHashes;
 
         static EggDataContext()
         {
-            grownListByIndex = new List<Data.Models.EggData.EggGrowGrownData[]>();
-            sharedNameHashes = new HashSet<int>();
+            _sharedNameHashes = new HashSet<int>();
 
             Net.NetworkSessionManager.Instance.OnClosed((dataLoaded) => {
-                grownListByIndex.Clear();
-                sharedNameHashes.Clear();
+                _sharedNameHashes.Clear();
             });
         }
 
         public static void RegisterEggSharedName(GameObject egg)
         {
-            sharedNameHashes.Add(egg.GetComponent<ItemDrop>().m_itemData.m_shared.m_name.GetStableHashCode());
+            _sharedNameHashes.Add(egg.GetComponent<ItemDrop>().m_itemData.m_shared.m_name.GetStableHashCode());
         }
 
         public static bool IsRegisteredEggSharedName(string sharedName)
         {
-            return sharedNameHashes.Contains(sharedName.GetStableHashCode());
+            return _sharedNameHashes.Contains(sharedName.GetStableHashCode());
         }
+
+
 
     }
 }

@@ -15,7 +15,7 @@ namespace OfTamingAndBreeding.Patches
 
             if (__instance.TryGetComponent<EggGrowTrait>(out var eggGrowTrait))
             {
-                var text = eggGrowTrait.GetHoverExtraText();
+                var text = eggGrowTrait.GetEggGrowProgress();
                 if (string.IsNullOrEmpty(text) == false)
                 {
                     __result = __result[..nl] + " " + text + __result[nl..];

@@ -1,50 +1,66 @@
 ﻿using OfTamingAndBreeding.Components.Base;
 using OfTamingAndBreeding.Components.Extensions;
-using OfTamingAndBreeding.Utils;
+using OfTamingAndBreeding.OTABUtils;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using static UnityEngine.Networking.UnityWebRequest;
 
 namespace OfTamingAndBreeding.Components.Traits
 {
     public class TameableTrait : OTABComponent<TameableTrait>
     {
+
+        [NonSerialized] private static readonly List<List<string[]>> _requireGlobalKeys;
+
+        static TameableTrait()
+        {
+            _requireGlobalKeys = new List<List<string[]>>();
+
+            Net.NetworkSessionManager.Instance.OnClosed((dataLoaded) => {
+                _requireGlobalKeys.Clear();
+            });
+        }
+
         // set by registry processor
         [SerializeField] public bool m_fedTimerDisabled = false;
         [SerializeField] public bool m_tamingDisabled = false;
         [SerializeField] public float m_starvingGraceFactor = -1; // todo: add bool m_useDefaultStarvingGraceFactor (?)
         [SerializeField] public Data.Models.SubData.InteractableCondition m_interactable = Data.Models.SubData.InteractableCondition.Always;
 
-
         // set in awake
         [NonSerialized] private ZNetView m_nview = null;
         [NonSerialized] private Tameable m_tameable = null;
         [NonSerialized] private BaseAI m_baseAI = null;
         [NonSerialized] private Character m_character = null;
-        [NonSerialized] private OTABCreature m_otabCreature = null;
-        [NonSerialized] private ExtendedAnimaAI m_exAnimalAI = null;
+        [NonSerialized] private AnimalAITrait m_animalAITrait = null;
         [NonSerialized] private CharacterTrait m_characterTrait = null;
+        [NonSerialized] private BaseAITrait m_baseAITrait = null;
         [NonSerialized] private float m_baseFedDuration = 600;
         [NonSerialized] private float m_baseTamingTime = 1800;
+
+        // set in registration
+        [SerializeField] private int m_requireGlobalKeysIndex = -1;
 
         private void Awake()
         {
             m_nview = GetComponent<ZNetView>();
             m_tameable = GetComponent<Tameable>();
             m_baseAI = GetComponent<BaseAI>();
-            m_otabCreature = GetComponent<OTABCreature>();
             m_character = GetComponent<Character>();
-            m_exAnimalAI = GetComponent<ExtendedAnimaAI>();
+            m_animalAITrait = GetComponent<AnimalAITrait>();
             m_characterTrait = GetComponent<CharacterTrait>();
+            m_baseAITrait = GetComponent<BaseAITrait>();
 
             if (m_nview.IsValid())
             {
                 m_nview.Register<float>("RPC_UpdateFedDuration", RPC_UpdateFedDuration);
             }
 
-            if (TryGetComponent<ExtendedAnimaAI>(out var exAnimalAI))
+            if (m_animalAITrait)
             {
-                exAnimalAI.m_onConsumedItem = (Action<ItemDrop>)Delegate.Combine(exAnimalAI.m_onConsumedItem, new Action<ItemDrop>(m_tameable.OnConsumedItem));
+                m_animalAITrait.m_onConsumedItem = (Action<ItemDrop>)Delegate.Combine(m_animalAITrait.m_onConsumedItem, new Action<ItemDrop>(m_tameable.OnConsumedItem));
             }
 
             m_baseFedDuration = m_tameable.m_fedDuration;
@@ -52,6 +68,64 @@ namespace OfTamingAndBreeding.Components.Traits
 
             UpdateFedDuration();
             UpdateTamingTime();
+        }
+
+        internal void SetRequiredGlobalKeys(List<string[]> orKeysList)
+        {
+            m_requireGlobalKeysIndex = _requireGlobalKeys.Count;
+            _requireGlobalKeys.Add(orKeysList);
+        }
+
+        public bool HasRequiredGlobalKeys(out List<string[]> orKeysList)
+        {
+            if (m_requireGlobalKeysIndex != -1)
+            {
+                orKeysList = _requireGlobalKeys[m_requireGlobalKeysIndex];
+                return true;
+            }
+            orKeysList = null;
+            return false;
+        }
+
+        public bool SolvesRequiredGlobalKeys()
+        {
+            if (HasRequiredGlobalKeys(out List<string[]> orKeysList))
+            {
+                foreach (var andKeys in orKeysList)
+                {
+                    if (andKeys.All((key) => ZoneSystem.instance.GetGlobalKey(key)))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            return true;
+        }
+
+        public bool CanBeTamed()
+        {
+            if (SolvesRequiredGlobalKeys() == false)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        public string GetNotTameableReason()
+        {
+            if (SolvesRequiredGlobalKeys() == false)
+            {
+                if (HasRequiredGlobalKeys(out List<string[]> orKeysList))
+                {
+                    // just take first AND-list for now
+                    // todo: maybe display full list?
+                    var andList = orKeysList[0];
+                    var outList = String.Join(", ", andList.Select((k) => Localization.instance.Localize($"$OTAB_require_key_{k}")));
+                    return Localization.instance.Localize("$otab_taming_requires_key", outList);
+                }
+            }
+            return "";
         }
 
         public float GetBaseFedDuration()
@@ -72,6 +146,18 @@ namespace OfTamingAndBreeding.Components.Traits
         public bool IsTamingDisabled()
         {
             return m_tamingDisabled == true;
+        }
+
+        public bool IsInteractable()
+        {
+            return m_interactable switch
+            {
+                Data.Models.SubData.InteractableCondition.Always => true,
+                Data.Models.SubData.InteractableCondition.Never => false,
+                Data.Models.SubData.InteractableCondition.WhenFed => IsHungry() == false,
+                Data.Models.SubData.InteractableCondition.WhenNotStarving => IsStarving() == false,
+                _ => true,
+            };
         }
 
         private void RPC_UpdateFedDuration(long sender, float totalFactor)
@@ -142,14 +228,33 @@ namespace OfTamingAndBreeding.Components.Traits
                 return true;
             }
 
+            if (m_tameable.IsTamed() == false && !(IsTamingDisabled() == false && CanBeTamed()))
+            {
+                return true;
+            }
+
             var customFactor = m_nview.GetZDO().GetFloat(Plugin.ZDOVars.z_fedDurationFactor, 1f);
 
-            if (m_otabCreature && m_otabCreature.HasCustomConsumeItems(out var consumeItems))
+            if (m_baseAITrait && m_baseAITrait.HasCustomConsumeItems(out var consumeItems))
             {
                 var sharedName = item.m_itemData.m_shared.m_name;
                 var newFactor = 1f;
+
                 foreach (var consumeItem in consumeItems)
                 {
+
+                    if (StaticContext.SpecialPrefabContext.IsSpecialPrefab(consumeItem.itemDrop.gameObject.name))
+                    {
+                        if (consumeItem.itemDrop.TryGetComponent<StaticContext.SpecialPrefabs.OTABSpecialConsumableItem>(out var comparer))
+                        {
+                            if (comparer.Compare(item))
+                            {
+                                newFactor *= consumeItem.fedDurationFactor;
+                                continue;
+                            }
+                        }
+                    }
+
                     if (consumeItem.itemDrop.m_itemData.m_shared.m_name == sharedName)
                     {
                         newFactor *= consumeItem.fedDurationFactor;
@@ -238,7 +343,7 @@ namespace OfTamingAndBreeding.Components.Traits
             return (float)secLeft;
         }
 
-        public void GetFedTimerHoverText(List<string> lines)
+        public string GetFedTimerHoverText()
         {
             var zdo = m_nview.GetZDO();
             var L = Localization.instance;
@@ -249,7 +354,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 // is fed
                 if (Plugin.Configs.HoverShowFedTimer.Value)
                 {
-                    lines.Add(Utils.StringUtils.FormatRelativeTime(
+                    return OTABUtils.StringUtils.FormatRelativeTime(
                         secondsFedLeft,
                         labelPositive:      "$otab_hover_fed",
                         labelPositiveAlt:   "$otab_hover_fed_alt",
@@ -257,7 +362,7 @@ namespace OfTamingAndBreeding.Components.Traits
                         labelNegativeAlt:   "$otab_hover_hungry_alt",
                         colorPositive:      Plugin.Configs.HoverColorGood.Value,
                         colorNegative:      Plugin.Configs.HoverColorBad.Value
-                    ));
+                    );
                 }
             }
             else
@@ -274,7 +379,7 @@ namespace OfTamingAndBreeding.Components.Traits
                         var now = ZNet.instance.GetTime();
                         var secondsUntillStarving = (new DateTime(z_starvingAfter) - now).TotalSeconds;
 
-                        lines.Add(Utils.StringUtils.FormatRelativeTime(
+                        return OTABUtils.StringUtils.FormatRelativeTime(
                             secondsUntillStarving,
                             labelPositive:      "$otab_hover_starving",
                             labelPositiveAlt:   "$otab_hover_starving_alt",
@@ -282,10 +387,11 @@ namespace OfTamingAndBreeding.Components.Traits
                             labelNegativeAlt:   "$otab_hover_starving_alt",
                             colorPositive:      Plugin.Configs.HoverColorBad.Value,
                             colorNegative:      Plugin.Configs.HoverColorBad.Value
-                        ));
+                        );
                     }
                 }
             }
+            return "";
         }
 
         public float GetRemainingTimeDecreaseFactor()
@@ -302,20 +408,27 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public bool OnTamingUpdate()
         {
-            if (m_tamingDisabled == true)
+            if (IsTamingDisabled() == true)
             {
                 // taming completly disabled
-                return true;
+                return true; // handled
             }
 
-            if (TryGetComponent<ExtendedAnimaAI>(out var exAnimalAI))
+            if (CanBeTamed() == false)
             {
-                if (m_nview.IsValid() && m_nview.IsOwner() && !m_tameable.IsTamed() && !m_tameable.IsHungry() && !exAnimalAI.IsAlerted())
+                // currently not allowed
+                return true; // handled
+            }
+
+            if (m_animalAITrait)
+            {
+                if (m_nview.IsValid() && m_nview.IsOwner() && !m_tameable.IsTamed() && !m_tameable.IsHungry() && !m_animalAITrait.IsAlerted())
                 {
                     m_tameable.DecreaseRemainingTime(3f); // valheim is also using 3f
                     if (m_tameable.GetRemainingTime() <= 0f)
                     {
                         m_tameable.Tame();
+                        // note: calling Tameable.Tame() will trigger OnTame() and OnTamed() of this component
                     }
                     else
                     {
@@ -325,6 +438,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 }
                 return true;
             }
+
             return false;
         }
 
@@ -360,6 +474,11 @@ namespace OfTamingAndBreeding.Components.Traits
                 }
             }
             return zdo.GetLong(Plugin.ZDOVars.z_starvingAfter, -1);
+        }
+
+        public bool IsTamed()
+        {
+            return m_tameable.IsTamed();
         }
 
         public bool IsHungry()
@@ -419,13 +538,13 @@ namespace OfTamingAndBreeding.Components.Traits
             // even if taming is disabled for the tameable
             // disabling taming will only disable the taming process, not the Tame() event
             // afterall its called "m_tamingDisabled" (tamING) and not "m_disableGettingTamed"
-            if (m_exAnimalAI)
+            if (m_animalAITrait)
             {
                 Game.instance.IncrementPlayerStat(PlayerStatType.CreatureTamed);
 
                 if (m_nview.IsValid() && m_nview.IsOwner() && (bool)m_character && !m_tameable.IsTamed())
                 {
-                    m_exAnimalAI.MakeTame();
+                    m_animalAITrait.MakeTame();
                     m_tameable.m_tamedEffect?.Create(m_tameable.transform.position, m_tameable.transform.rotation); // only for owner is okay
                     Player closestPlayer = Player.GetClosestPlayer(m_tameable.transform.position, 30f);
                     if ((bool)closestPlayer)
@@ -445,7 +564,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public bool RPC_Command(long sender, ZDOID characterID, bool message)
         {
-            if (m_exAnimalAI)
+            if (m_animalAITrait)
             {
                 Player player = m_tameable.GetPlayer(characterID);
                 if (player == null)
@@ -453,10 +572,10 @@ namespace OfTamingAndBreeding.Components.Traits
                     return false;
                 }
 
-                if ((bool)m_exAnimalAI.GetFollowTarget())
+                if ((bool)m_animalAITrait.GetFollowTarget())
                 {
-                    m_exAnimalAI.SetFollowTarget(null);
-                    m_exAnimalAI.SetPatrolPoint();
+                    m_animalAITrait.SetFollowTarget(null);
+                    m_animalAITrait.SetPatrolPoint();
                     if (m_nview.IsOwner())
                     {
                         m_nview.GetZDO().Set(ZDOVars.s_follow, "");
@@ -469,8 +588,8 @@ namespace OfTamingAndBreeding.Components.Traits
                 }
                 else
                 {
-                    m_exAnimalAI.ResetPatrolPoint();
-                    m_exAnimalAI.SetFollowTarget(player.gameObject);
+                    m_animalAITrait.ResetPatrolPoint();
+                    m_animalAITrait.SetFollowTarget(player.gameObject);
                     if (m_nview.IsOwner())
                     {
                         m_nview.GetZDO().Set(ZDOVars.s_follow, player.GetPlayerName());
@@ -498,7 +617,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public string GetTamingProgress(float precision, int decimals)
         {
-            if (m_tameable.IsTamed() || m_tamingDisabled == true)
+            if (!m_tameable || m_tameable.IsTamed() || IsTamingDisabled() == true)
             {
                 return "";
             }
@@ -521,6 +640,11 @@ namespace OfTamingAndBreeding.Components.Traits
             }
 
             return "";
+        }
+
+        public string GetName()
+        {
+            return m_tameable.GetName();
         }
 
     }

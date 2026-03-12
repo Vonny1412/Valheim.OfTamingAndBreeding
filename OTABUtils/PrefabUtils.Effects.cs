@@ -2,7 +2,7 @@
 using System.Linq;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.Utils
+namespace OfTamingAndBreeding.OTABUtils
 {
     internal static partial class PrefabUtils
     {
@@ -143,8 +143,8 @@ vfx_boar_birth
                 Plugin.LogError($"GetEffectData(): Unknown prefab '{prefabName}'");
                 return null;
             }
-            T procreation = prefab.GetComponent<T>();
-            if (!procreation)
+            T component = prefab.GetComponent<T>();
+            if (!component)
             {
                 Plugin.LogError($"GetEffectData(): No Component '{nameof(T)}' for prefab '{prefabName}'");
                 return null;
@@ -155,7 +155,7 @@ vfx_boar_birth
                 Plugin.LogError($"GetEffectData(): No Component Field '{nameof(T)}.{fieldName}' for prefab '{prefabName}'");
                 return null;
             }
-            return (EffectList)fieldInfo.GetValue(procreation);
+            return (EffectList)fieldInfo.GetValue(component);
         }
 
         internal static GameObject FindEffectPrefab<T>(string prefabName, string fieldName, int index) where T : UnityEngine.Object

@@ -1,7 +1,7 @@
 ﻿using System;
 using YamlDotNet.Core;
 
-namespace OfTamingAndBreeding.Utils
+namespace OfTamingAndBreeding.OTABUtils
 {
     internal class YamlUtils
     {

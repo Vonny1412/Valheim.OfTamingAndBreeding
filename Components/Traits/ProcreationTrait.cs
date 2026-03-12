@@ -1,14 +1,73 @@
 ﻿using OfTamingAndBreeding.Components.Base;
 using OfTamingAndBreeding.Components.Extensions;
-using OfTamingAndBreeding.Data.Models.SubData;
-using OfTamingAndBreeding.Utils;
+using OfTamingAndBreeding.OTABUtils;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Components.Traits
 {
     public class ProcreationTrait : OTABComponent<ProcreationTrait>
     {
+        public class ProcreationPartner : Common.WeightedRandom.IWeighted
+        {
+            public float Weight { get; }
+            public string Prefab { get; }
+            public ProcreationPartner(
+                string prefab,
+                float weight
+                )
+            {
+                Prefab = prefab;
+                Weight = weight;
+            }
+        }
+
+        public class ProcreationOffspring : Common.WeightedRandom.IWeighted
+        {
+            public string Prefab { get; }
+            public float Weight { get; }
+            public bool NeedPartner { get; }
+            public string NeedPartnerPrefab { get; }
+            public float? LevelUpChance { get; }
+            public int? MaxLevel { get; }
+            public bool SpawnTamed { get; }
+            public ProcreationOffspring(
+                string prefab,
+                float weight,
+                bool needPartner,
+                string needPartnerPrefab,
+                float levelUpChance,
+                int maxLevel,
+                bool spawnTamed
+            )
+            {
+                Prefab = prefab;
+                Weight = weight;
+                NeedPartner = needPartner;
+                NeedPartnerPrefab = needPartnerPrefab;
+                LevelUpChance = levelUpChance;
+                MaxLevel = maxLevel;
+                SpawnTamed = spawnTamed;
+            }
+        }
+
+        private static readonly List<ProcreationPartner[]> _partnerData;
+        private static readonly List<ProcreationOffspring[]> _offspringData;
+        private static readonly List<string[]> _maxCreaturesPrefabs;
+
+        static ProcreationTrait()
+        {
+            _partnerData = new List<ProcreationPartner[]>();
+            _offspringData = new List<ProcreationOffspring[]>();
+            _maxCreaturesPrefabs = new List<string[]>();
+
+            Net.NetworkSessionManager.Instance.OnClosed((dataLoaded) => {
+                _partnerData.Clear();
+                _offspringData.Clear();
+                _maxCreaturesPrefabs.Clear();
+            });
+        }
 
         // set in awake
         [NonSerialized] private ZNetView m_nview = null;
@@ -18,6 +77,15 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private BaseAI m_baseAI = null;
         [NonSerialized] private float m_basePregnancyDuration = 60;
         [NonSerialized] private float m_realPregnancyDuration = 0;
+
+        // set in registration
+        [SerializeField] public long m_partnerRecheckTicks = 0;
+        [SerializeField] public bool m_procreateWhileSwimming = true;
+        [SerializeField] public int m_maxSiblingsPerPregnancy = 0;
+        [SerializeField] public float m_extraSiblingChance = 0;
+        [SerializeField] private int m_partnerListIndex = -1;
+        [SerializeField] private int m_offspringListIndex = -1;
+        [SerializeField] private int m_maxCreaturesPrefabsIndex = -1;
 
         private void Awake()
         {
@@ -40,6 +108,57 @@ namespace OfTamingAndBreeding.Components.Traits
             }
 
             UpdatePregnancyDuration();
+        }
+
+        public void SetPartnerList(ProcreationPartner[] partnerList)
+        {
+            m_partnerListIndex = _partnerData.Count;
+            _partnerData.Add(partnerList);
+        }
+
+        public bool HasPartnerList(out ProcreationPartner[] partnerList)
+        {
+            if (m_partnerListIndex != -1)
+            {
+                partnerList = _partnerData[m_partnerListIndex];
+                return true;
+            }
+            partnerList = null;
+            return false;
+        }
+
+        public void SetOffspringList(ProcreationOffspring[] offspringList)
+        {
+            m_offspringListIndex = _offspringData.Count;
+            _offspringData.Add(offspringList);
+        }
+
+        public bool HasOffspringList(out ProcreationOffspring[] offspringList)
+        {
+            if (m_offspringListIndex != -1)
+            {
+                offspringList = _offspringData[m_offspringListIndex];
+                return true;
+            }
+            offspringList = null;
+            return false;
+        }
+
+        public void SetMaxCreaturesPrefabs(string[] prefabNames)
+        {
+            m_maxCreaturesPrefabsIndex = _maxCreaturesPrefabs.Count;
+            _maxCreaturesPrefabs.Add(prefabNames);
+        }
+
+        public bool HasMaxCreaturesPrefabs(out string[] prefabNames)
+        {
+            if (m_maxCreaturesPrefabsIndex != -1)
+            {
+                prefabNames = _maxCreaturesPrefabs[m_maxCreaturesPrefabsIndex];
+                return true;
+            }
+            prefabNames = null;
+            return false;
         }
 
         public void SetRealPregnancyDuration(float duration)
@@ -110,7 +229,7 @@ namespace OfTamingAndBreeding.Components.Traits
             var duration = GetRealPregnancyDuration();
             double secLeft = duration - (zTime - dateTime).TotalSeconds;
 
-            return Utils.StringUtils.FormatRelativeTime(
+            return OTABUtils.StringUtils.FormatRelativeTime(
                 secLeft,
                 labelPositive: "$otab_hover_pregnancy_due",
                 labelPositiveAlt: "$otab_hover_pregnancy_due_alt",
@@ -165,20 +284,11 @@ namespace OfTamingAndBreeding.Components.Traits
             return partnerCharacter.m_name;
         }
 
-
-
-
-
-
-
-
-
         public bool OnProcreate()
         {
-
-            // why doing this? because Procreation component COULD work without Tameable component
+            // Procreation component COULD work without Tameable component
             // maybe one day I gonna add non-tameable procration feature
-            // but that would also mean to build a feeding/hungry workaround 3- maybe in far future
+            // but that would also mean to build a feeding/hungry workaround - maybe in far future
             var __isTamed = m_tameable ? m_tameable.IsTamed() : (m_character ? m_character.IsTamed() : false);
 
             if (!m_nview.IsValid() || !m_nview.IsOwner() || !__isTamed)
@@ -186,6 +296,19 @@ namespace OfTamingAndBreeding.Components.Traits
                 // note: valheim also immediatly returns if its not the owner
                 return true; // return as handled
             }
+
+            // check if procreation is disabled while swimming
+            if (m_procreateWhileSwimming == false && m_character && m_character.IsSwimming())
+            {
+                return true; // return as handled
+            }
+
+            DoProcreate(); // code block separated because from now on we only return "true"
+            return true; // we did the job
+        }
+
+        private void DoProcreate()
+        {
             var zdo = m_nview.GetZDO();
 
             var m_myPrefab = m_procreation.GetMyPrefab();
@@ -197,18 +320,6 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 m_myPrefab = ZNetScene.instance.GetPrefab(zdo.GetPrefab());
                 m_procreation.SetMyPrefab(m_myPrefab);
-            }
-
-            // todo: remove (?)
-            if (!m_procreation.TryGetComponent<OTABCreature>(out var creature))
-            {
-                return false; // not a creature we care about
-            }
-
-            // check if procreation is disabled while swimming
-            if (creature.m_procreateWhileSwimming == false && m_character && m_character.IsSwimming())
-            {
-                return true; // return as handled
             }
 
             // "__" => pseudo constants - do not change the values!
@@ -295,7 +406,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 }
                 else
                 {
-                    if (creature.m_partnerRecheckTicks > 0) // this feature can be turned off by setting it to 0 but would result in less pregnancies
+                    if (m_partnerRecheckTicks > 0) // this feature can be turned off by setting it to 0 but would result in less pregnancies
                     {
                         if (z_partnerNotSeenSince == 0L)
                         {
@@ -303,7 +414,7 @@ namespace OfTamingAndBreeding.Components.Traits
                             z_partnerNotSeenSince = ZNetUtils.SetLong(zdo, Plugin.ZDOVars.z_partnerNotSeenSince, __nowTicks, z_partnerNotSeenSince);
                         }
 
-                        bool expired = z_partnerNotSeenSince != 0L && (__nowTicks - z_partnerNotSeenSince) > creature.m_partnerRecheckTicks;
+                        bool expired = z_partnerNotSeenSince != 0L && (__nowTicks - z_partnerNotSeenSince) > m_partnerRecheckTicks;
                         if (expired) // creature is mourning to have lost the partner it just found =(
                         {
                             // this will trigger a new search for partner
@@ -317,9 +428,9 @@ namespace OfTamingAndBreeding.Components.Traits
             //if (m_seperatePartner == null && z_needPartner==1)
             if (m_procreation.m_seperatePartner == null) // always try to find new partner if its still empty
             {
-                if (creature.HasPartnerList(out var partnerList))
+                if (HasPartnerList(out var partnerList))
                 {
-                    var foundPartner = RandomData.FindRandom<Data.Models.CreatureData.ProcreationPartnerData>(partnerList, out Data.Models.CreatureData.ProcreationPartnerData partnerEntry, entry =>
+                    var foundPartner = Common.WeightedRandom.FindRandom<ProcreationPartner>(partnerList, out ProcreationPartner partnerEntry, entry =>
                     {
                         var prefab = __zNetScene.GetPrefab(entry.Prefab);
                         if (prefab == null) return 0; // zero weight => skip this one
@@ -379,18 +490,17 @@ namespace OfTamingAndBreeding.Components.Traits
             }
 
             // still empty? search for new offspring
-            if (m_offspringPrefab == null && creature.HasOffspringList(out var offspringList))
+            if (m_offspringPrefab == null && HasOffspringList(out var offspringList))
             {
 
                 // search for random offspring
                 var partnerName = m_procreation.m_seperatePartner?.name;
-                var foundOffspring = RandomData.FindRandom<Data.Models.CreatureData.ProcreationOffspringData>(offspringList, out Data.Models.CreatureData.ProcreationOffspringData randomOffspring, entry =>
+                var foundOffspring = Common.WeightedRandom.FindRandom<ProcreationOffspring>(offspringList, out ProcreationOffspring randomOffspring, entry =>
                 {
-                    var validPartner = entry.NeedPartner == false || (entry.NeedPartner && partnerName != null && (
-                        (entry.NeedPartnerPrefab == null)
-                        ||
-                        (entry.NeedPartnerPrefab != null && partnerName == entry.NeedPartnerPrefab)
-                    ));
+                    var validPartner = 
+                        entry.NeedPartner==false || 
+                        (string.IsNullOrEmpty(partnerName)==false && (string.IsNullOrEmpty(entry.NeedPartnerPrefab) || partnerName == entry.NeedPartnerPrefab)
+                        );
                     return validPartner ? entry.Weight : 0;
                 });
 
@@ -419,7 +529,7 @@ namespace OfTamingAndBreeding.Components.Traits
                     // because the fate will be determined before creature gets pregnant
                     // but i want to store neither offspring-entry-index nor levelup-values into zdo
                     // so just roll the dice here...
-                    if (randomOffspring.LevelUpChance != null && randomOffspring.MaxLevel != null)
+                    if (randomOffspring.LevelUpChance > 0 && randomOffspring.MaxLevel > levelOld)
                     {
                         var levelUpChance = (float)randomOffspring.LevelUpChance;
                         var levelUpMax = (int)randomOffspring.MaxLevel;
@@ -429,10 +539,6 @@ namespace OfTamingAndBreeding.Components.Traits
                             if (chance <= levelUpChance)
                             {
                                 levelNew = levelNew + 1;
-                                if (levelNew > levelUpMax)
-                                {
-                                    levelNew = levelUpMax;
-                                }
                                 Plugin.LogServerDebug($"Offspring '{offspring.name}' level up: {levelOld} -> {levelNew}");
                             }
                         }
@@ -447,7 +553,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 // also abort getting siblings
                 z_siblingsCounter = ZNetUtils.SetInt(zdo, Plugin.ZDOVars.z_siblingsCounter, 0, z_siblingsCounter);
 
-                return true; // but return as handled
+                return;
             }
 
             //------------------------------------------------------
@@ -464,9 +570,9 @@ namespace OfTamingAndBreeding.Components.Traits
 
             if (m_procreation.m_seperatePartner == null) // this is not fatal! it just says that no partner is currently nearby
             {
-                // just return as handled
+                // just return
                 // the creature will surely find a lovly partner one day
-                return true;
+                return;
             }
 
             //------------------------------------------------------
@@ -525,9 +631,9 @@ namespace OfTamingAndBreeding.Components.Traits
                     //---------------------------------
 
                     {
-                        bool unlimited = creature.m_maxSiblingsPerPregnancy < 0; // -1
-                        bool canHaveMore = unlimited || z_siblingsCounter < creature.m_maxSiblingsPerPregnancy;
-                        if (canHaveMore && UnityEngine.Random.value <= creature.m_extraSiblingChance)
+                        bool unlimited = m_maxSiblingsPerPregnancy < 0; // -1
+                        bool canHaveMore = unlimited || z_siblingsCounter < m_maxSiblingsPerPregnancy;
+                        if (canHaveMore && UnityEngine.Random.value <= m_extraSiblingChance)
                         {
                             ZNetUtils.SetLong(zdo, ZDOVars.s_pregnant, __nowTicks - TimeSpan.FromSeconds(m_procreation.m_pregnancyDuration).Ticks);
                             z_siblingsCounter = ZNetUtils.SetInt(zdo, Plugin.ZDOVars.z_siblingsCounter, z_siblingsCounter + 1);
@@ -548,7 +654,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 {
                     // max creatures check: only using m_seperatePartner + offspring (never m_myPrefab)
                     int totalAround = 0;
-                    if (creature.HasMaxCreaturesPrefabs(out var prefabNames))
+                    if (HasMaxCreaturesPrefabs(out var prefabNames))
                     {
                         foreach (var prefabName in prefabNames)
                         {
@@ -565,7 +671,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
                     if (totalAround >= m_procreation.m_maxCreatures)
                     {
-                        return false;
+                        return;
                     }
 
                     int partnersInRange = GetNearbyCountExcludeMyself(m_procreation.m_seperatePartner, __myPartnerCheckRange);
@@ -605,7 +711,6 @@ namespace OfTamingAndBreeding.Components.Traits
                 m_offspringPrefab = null;
             }
 
-            return true; // handled, do not run original, we did the job
         }
 
     }

@@ -34,14 +34,14 @@ namespace OfTamingAndBreeding.Data.Models
             public string Group { get; set; } = null;
             public string GroupWhenTamed { get; set; } = null;
             public Character.Faction? FactionWhenTamed { get; set; } = null;
-            public IsEnemyCondition TamedCanAttackTamed { get; set; } = IsEnemyCondition.Never; // OTAB feature
-            public IsEnemyCondition TamedCanBeAttackedByTamed { get; set; } = IsEnemyCondition.Never; // OTAB feature
-            public IsEnemyCondition TamedCanAttackPlayer { get; set; } = IsEnemyCondition.Never; // OTAB feature
-            public IsEnemyCondition TamedCanBeAttackedByPlayer { get; set; } = IsEnemyCondition.Never; // OTAB feature
-            public IsEnemyCondition TamedCanAttackGroup { get; set; } = IsEnemyCondition.Never; // OTAB feature
-            public IsEnemyCondition TamedCanBeAttackedByGroup { get; set; } = IsEnemyCondition.Never; // OTAB feature
-            public IsEnemyCondition TamedCanAttackFaction { get; set; } = IsEnemyCondition.Always; // OTAB feature
-            public IsEnemyCondition TamedCanBeAttackedByFaction { get; set; } = IsEnemyCondition.Always; // OTAB feature
+            public IsEnemyCondition CanAttackTamed { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public IsEnemyCondition CanBeAttackedByTamed { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public IsEnemyCondition CanAttackPlayer { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public IsEnemyCondition CanBeAttackedByPlayer { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public IsEnemyCondition CanAttackGroup { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public IsEnemyCondition CanBeAttackedByGroup { get; set; } = IsEnemyCondition.Never; // OTAB feature
+            public IsEnemyCondition CanAttackFaction { get; set; } = IsEnemyCondition.Always; // OTAB feature
+            public IsEnemyCondition CanBeAttackedByFaction { get; set; } = IsEnemyCondition.Always; // OTAB feature
         }
 
         [Serializable]
@@ -61,7 +61,7 @@ namespace OfTamingAndBreeding.Data.Models
             public float? ConsumeSearchRange { get; set; } = null;
             public float? ConsumeSearchInterval { get; set; } = null;
             public string ConsumeAnimation { get; set; } = null;
-            public bool? TamedStayNearSpawn { get; set; } = null; // otab feature
+            public bool TamedStayNearSpawn { get; set; } = false; // otab feature
         }
 
         [Serializable]
@@ -72,41 +72,43 @@ namespace OfTamingAndBreeding.Data.Models
             public float? FedDuration { get; set; } = null;
             public bool? Commandable { get; set; } = null;
             public InteractableCondition Interactable { get; set; } = InteractableCondition.Always; // OTAB feature
-            public float? StarvingGraceFactor { get; set; } = null;
-        }
-
-        [Serializable]
-        [CanBeNull]
-        public class ProcreationOffspringData : IRandomData
-        {
-            public string Prefab { get; set; } = null;
-            public float Weight { get; set; } = 1;
-
-            public bool NeedPartner { get; set; } = true; // true = vanilla
-            public string NeedPartnerPrefab { get; set; } = null; // OTAB feature
-
-            public float? LevelUpChance { get; set; } = null; // OTAB feature
-            public int? MaxLevel { get; set; } = null;
-
-            public bool SpawnTamed { get; set; } = true; // OTAB feature
-        }
-
-        [Serializable]
-        [CanBeNull]
-        public class ProcreationPartnerData : IRandomData
-        {
-            public string Prefab { get; set; } = null;
-            public float Weight { get; set; } = 1;
+            public float? StarvingGraceFactor { get; set; } = null; // OTAB feature
+            public string[] RequireGlobalKeys { get; set; } = null; // OTAB feature
         }
 
         [Serializable]
         [CanBeNull]
         public class ProcreationData
         {
+
+            [Serializable]
+            [CanBeNull]
+            public class PartnerData
+            {
+                public string Prefab { get; set; } = null;
+                public float Weight { get; set; } = 1;
+            }
+
+            [Serializable]
+            [CanBeNull]
+            public class OffspringData
+            {
+                public string Prefab { get; set; } = null;
+                public float Weight { get; set; } = 1;
+
+                public bool NeedPartner { get; set; } = true; // true = vanilla
+                public string NeedPartnerPrefab { get; set; } = null; // OTAB feature
+
+                public float? LevelUpChance { get; set; } = null; // OTAB feature
+                public int? MaxLevel { get; set; } = null;
+
+                public bool SpawnTamed { get; set; } = true; // OTAB feature
+            }
+
             public float? UpdateInterval { get; set; } = null;
             public float? TotalCheckRange { get; set; } = null;
 
-            public ProcreationPartnerData[] Partner { get; set; } = null;
+            public PartnerData[] Partner { get; set; } = null;
             public float? PartnerRecheckSeconds { get; set; } = null; // OTAB feature
             public float? PartnerCheckRange { get; set; } = null;
             public int? RequiredLovePoints { get; set; } = null;
@@ -126,7 +128,7 @@ namespace OfTamingAndBreeding.Data.Models
             public float ExtraSiblingChance { get; set; } = 0.0f; // OTAB feature
             public int MaxSiblingsPerPregnancy { get; set; } = 0; // OTAB feature
 
-            public ProcreationOffspringData[] Offspring { get; set; } = null;
+            public OffspringData[] Offspring { get; set; } = null;
 
         }
 

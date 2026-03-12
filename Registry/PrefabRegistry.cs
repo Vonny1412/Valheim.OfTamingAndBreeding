@@ -1,6 +1,6 @@
 ﻿using Jotunn;
 using Jotunn.Managers;
-using OfTamingAndBreeding.Utils;
+using OfTamingAndBreeding.OTABUtils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -316,14 +316,14 @@ namespace OfTamingAndBreeding.Registry
         public void RestorePrefab(string prefabName, Action<GameObject, GameObject> cb)
         {
             var current = GetReservedPrefab(prefabName);
-            if (current == null)
+            if (!(bool)current)
             {
                 return;
             }
 
             if (IsOriginalPrefab(prefabName))
             {
-                if (originalPrefabBackups.TryGetValue(prefabName, out var backup) && backup.IsValid())
+                if (originalPrefabBackups.TryGetValue(prefabName, out var backup) && (bool)backup)
                 {
                     Plugin.LogServerDebug($"Restoring original prefab {prefabName} ({backup.name})");
                     cb?.Invoke(current, backup);
@@ -336,7 +336,7 @@ namespace OfTamingAndBreeding.Registry
             }
             else
             {
-                if (currentCustomPrefabBackup.TryGetValue(prefabName, out var backup) && backup.IsValid())
+                if (currentCustomPrefabBackup.TryGetValue(prefabName, out var backup) && (bool)backup)
                 {
                     Plugin.LogServerDebug($"Restoring cloned prefab {prefabName} ({backup.name})");
                     cb?.Invoke(current, backup);

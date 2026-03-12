@@ -2,7 +2,7 @@
 using System.Linq;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.Utils
+namespace OfTamingAndBreeding.OTABUtils
 {
     internal static class AnimationUtils
     {

@@ -1,5 +1,20 @@
 ![Of Taming and Breeding](https://github.com/Vonny1412/Valheim.OfTamingAndBreeding/blob/main/_Assets/banner.png)
 
+> ⚠️ **Project Status: Alpha**
+>
+> OTAB is currently in **active alpha development**.
+>
+> There is **no official release version available yet**.
+>
+> Documentation, configuration options and gameplay behavior may still change
+> as the project evolves. Some texts may contain mistakes or incomplete
+> explanations and will be improved over time.
+>
+> The current repositories and wikis primarily document the **ongoing design
+> and development progress** of the project.
+>
+> If you are reading this early, thank you for your interest and patience.
+
 # Of Taming and Breeding (OTAB)
 
 Ever wanted a tamed Abomination walking by your side?  
@@ -114,4 +129,4 @@ It provides structure and control for long-lived worlds.
 Many systems evolved through experimentation and iteration while exploring Valheim’s internals.  
 Stability, clarity and long-term maintainability are guiding goals — not absolute guarantees.*
 
-*Created with ♥️*
+*Created with ♥️ — and AI-assisted tools as a supporting tool*

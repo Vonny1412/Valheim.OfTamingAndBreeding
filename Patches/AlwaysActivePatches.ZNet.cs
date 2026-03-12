@@ -22,18 +22,13 @@ namespace OfTamingAndBreeding.Patches
                 Plugin.LogError("ZNet.instance is still null on ZNet.RPC_PeerInfo");
                 return;
             }
+            // using ZNet.RPC_PeerInfo as anchor because
+            // we need to handshake AFTER client login on server
             if (!ZNet.instance.IsServer())
             {
                 Net.NetworkSessionManager.Instance.RequestHandshakeWithServer();
             }
         }
-
-        [HarmonyPatch(typeof(ZNet), "OnDestroy")]
-        [HarmonyPrefix]
-        private static void ZNet_OnDestroy_Prefix()
-        {
-            Net.NetworkSessionManager.Instance.CloseSession();
-        }
-
+        
     }
 }

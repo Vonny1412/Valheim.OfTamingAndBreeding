@@ -1,6 +1,6 @@
 ﻿using OfTamingAndBreeding.Components.Base;
 using OfTamingAndBreeding.Components.Extensions;
-using OfTamingAndBreeding.Utils;
+using OfTamingAndBreeding.OTABUtils;
 using System;
 using UnityEngine;
 
@@ -105,7 +105,7 @@ namespace OfTamingAndBreeding.Components.Traits
                     if (oldFedDuration > 0 && newFedDuration > 0)
                     {
                         var lastFeeding = zdo.GetLong(ZDOVars.s_tameLastFeeding, 0L);
-                        Utils.ZNetUtils.SetLong(zdo2, ZDOVars.s_tameLastFeeding, lastFeeding);
+                        OTABUtils.ZNetUtils.SetLong(zdo2, ZDOVars.s_tameLastFeeding, lastFeeding);
                     }
 
                 }
@@ -136,7 +136,7 @@ namespace OfTamingAndBreeding.Components.Traits
                                 progress = Mathf.Clamp01(progress);
 
                                 var newLeft = (newTotal <= 0f) ? 0f : (1f - progress) * newTotal;
-                                Utils.ZNetUtils.SetFloat(zdo2, ZDOVars.s_tameTimeLeft, newLeft);
+                                OTABUtils.ZNetUtils.SetFloat(zdo2, ZDOVars.s_tameTimeLeft, newLeft);
                             }
                         }
                     }
@@ -165,6 +165,11 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public string GetGrowupProgress(float precision, int decimals)
         {
+            if (!m_growup)
+            {
+                return "";
+            }
+
             var growTime = m_growup.m_growTime;
             var remainingTime = growTime - (float)m_baseAI.GetTimeSinceSpawned().TotalSeconds;
 

@@ -1,21 +1,16 @@
-﻿using Jotunn;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace OfTamingAndBreeding.Components.Base
 {
     internal static class OTABComponentRegistry
     {
-        public static readonly HashSet<Type> registeredTypes = new HashSet<Type>();
+        internal static readonly HashSet<Type> registeredTypes = new HashSet<Type>();
 
         public static void RemoveComponentsFromPrefabs()
         {
             foreach (var prefab in ZNetScene.instance.m_prefabs)
             {
-                if (!prefab.IsValid())
-                {
-                    continue;
-                }
                 // dirty AND effective
                 foreach (Type t in registeredTypes)
                 {
@@ -27,6 +22,7 @@ namespace OfTamingAndBreeding.Components.Base
                     }
                 }
             }
+            registeredTypes.Clear();
         }
 
     }

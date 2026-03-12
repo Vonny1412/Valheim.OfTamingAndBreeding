@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.Utils
+namespace OfTamingAndBreeding.OTABUtils
 {
-    internal static class EnvironmentUtils
+    public static class EnvironmentUtils
     {
 
         /*
@@ -30,7 +30,7 @@ public enum LiquidType
         {
             float surface = Floating.GetLiquidLevel(pos, waveFactor: 1f, type: type);
             if (surface <= -10000f) return false;
-            return pos.y < surface - LiquidEpsilon - depth;
+            return pos.y < surface +LiquidEpsilon -depth;
         }
 
         public static bool IsInWater(UnityEngine.Vector3 pos, float depth = 0f)

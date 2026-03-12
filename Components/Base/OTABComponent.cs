@@ -8,6 +8,21 @@ namespace OfTamingAndBreeding.Components.Base
         where T : OTABComponent<T>
     {
 
+        public static T GetOrAddComponent(GameObject prefab, params Type[] requiredTypes)
+        {
+            var component = prefab.GetComponent<T>();
+            if (!component)
+            {
+                if (requiredTypes.All((t) => (bool)prefab.GetComponent(t)))
+                {
+                    Plugin.LogServerDebug($"Adding OTABComponent '{nameof(T)}' to prefab '{prefab.name}'");
+                    component = prefab.AddComponent<T>();
+                    OTABComponentRegistry.registeredTypes.Add(typeof(T));
+                }
+            }
+            return component;
+        }
+
         public static void AddComponentToPrefabs(params Type[] requiredTypes)
         {
             foreach (var prefab in ZNetScene.instance.m_prefabs)

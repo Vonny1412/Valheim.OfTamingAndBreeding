@@ -18,7 +18,7 @@ namespace OfTamingAndBreeding.Net
             PrefabRegistryManager.Instance.OnFinished(() => {
                 serverDataLoaded = true;
                 CancelClientTimeout();
-                RunOnReadyCallback(true);
+                RunOnReadyCallbacks(true);
             });
             PrefabRegistryManager.Instance.OnReset(() => {
                 serverDataLoaded = false;
@@ -27,11 +27,13 @@ namespace OfTamingAndBreeding.Net
 
         protected override void OnDestroy()
         {
+            Plugin.LogFatal($"NetworkSessionManager.Instance has been destroyed");
             CloseSession();
         }
 
         //--------------------------------------------------
 
+        private readonly List<Action> onSessionStarted = new List<Action>();
         private readonly List<Action<bool>> onSessionReady = new List<Action<bool>>();
         private readonly List<Action<bool>> onSessionClosed = new List<Action<bool>>();
 
@@ -49,6 +51,11 @@ namespace OfTamingAndBreeding.Net
             return isServer;
         }
 
+        public void OnStarted(Action cb)
+        {
+            onSessionStarted.Add(cb);
+        }
+
         public void OnReady(Action<bool> cb)
         {
             onSessionReady.Add(cb);
@@ -57,6 +64,30 @@ namespace OfTamingAndBreeding.Net
         public void OnClosed(Action<bool> cb)
         {
             onSessionClosed.Add(cb);
+        }
+
+        private void RunOnStartedCallbacks()
+        {
+            foreach (var cb in onSessionStarted)
+            {
+                cb();
+            }
+        }
+
+        private void RunOnReadyCallbacks(bool isServerDataLoaded)
+        {
+            foreach (var cb in onSessionReady)
+            {
+                cb(isServerDataLoaded);
+            }
+        }
+
+        private void RunOnClosedCallbacks(bool wasServerDataLoaded)
+        {
+            foreach (var cb in onSessionClosed)
+            {
+                cb(wasServerDataLoaded);
+            }
         }
 
         public void StartSession()
@@ -74,6 +105,7 @@ namespace OfTamingAndBreeding.Net
                 ZNetSceneContext.blockObjectsCreation = true;
                 RPCContext.InitClientSession(isLocal);
             }
+            RunOnStartedCallbacks();
         }
 
         public void RequestHandshakeWithServer()
@@ -85,6 +117,8 @@ namespace OfTamingAndBreeding.Net
 
         public void CloseSession()
         {
+            Plugin.LogServerInfo($"Closing session");
+
             // called for client and server
             var wasServerDataLoaded = serverDataLoaded;
 
@@ -94,7 +128,8 @@ namespace OfTamingAndBreeding.Net
             ZNetSceneContext.Clear();
             CancelClientTimeout();
 
-            RunOnClosedCallback(wasServerDataLoaded);
+            Plugin.LogServerInfo($"Session closed");
+            RunOnClosedCallbacks(wasServerDataLoaded);
         }
 
         public void StartClientTimeout(float seconds)
@@ -102,31 +137,6 @@ namespace OfTamingAndBreeding.Net
             if (clientTimeoutRoutine == null)
             {
                 clientTimeoutRoutine = Plugin.Instance.StartCoroutine(RunClientTimeout(seconds));
-            }
-        }
-
-        public void CancelClientTimeout()
-        {
-            if (clientTimeoutRoutine != null)
-            {
-                Plugin.Instance.StopCoroutine(clientTimeoutRoutine);
-                clientTimeoutRoutine = null;
-            }
-        }
-
-        private void RunOnReadyCallback(bool isServerDataLoaded)
-        {
-            foreach (var cb in onSessionReady)
-            {
-                cb(isServerDataLoaded);
-            }
-        }
-
-        private void RunOnClosedCallback(bool wasServerDataLoaded)
-        {
-            foreach (var cb in onSessionClosed)
-            {
-                cb(wasServerDataLoaded);
             }
         }
 
@@ -142,7 +152,16 @@ namespace OfTamingAndBreeding.Net
                 yield return null;
             }
             clientTimeoutRoutine = null;
-            RunOnReadyCallback(false);
+            RunOnReadyCallbacks(false);
+        }
+
+        public void CancelClientTimeout()
+        {
+            if (clientTimeoutRoutine != null)
+            {
+                Plugin.Instance.StopCoroutine(clientTimeoutRoutine);
+                clientTimeoutRoutine = null;
+            }
         }
 
     }

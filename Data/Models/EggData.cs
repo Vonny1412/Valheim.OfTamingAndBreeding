@@ -1,4 +1,5 @@
 ﻿using JetBrains.Annotations;
+using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Data.Models.SubData;
 using System;
 
@@ -19,19 +20,33 @@ namespace OfTamingAndBreeding.Data.Models
 
         [Serializable]
         [CanBeNull]
-        internal class CloneData : ICloneData
+        public class CloneData
         {
             public string From { get; set; } = null;
+
             public string Name { get; set; } = null;
             public string Description { get; set; } = null;
+            public string ItemType { get; set; } = null;
+
             public float? Scale { get; set; } = null;
+            public float? Weight { get; set; } = null;
+            public bool? Teleportable { get; set; } = null;
+
+            public string CustomIconName { get; set; } = null;
+
+            public string ItemTintRgb { get; set; } = null;
+            public string ParticlesTintRgb { get; set; } = null;
+            public string LightsTintRgb { get; set; } = null;
+            public float? LightsScale { get; set; } = null;
+
+            public bool? DisableParticles { get; set; } = null;
         }
 
         [Serializable]
         [CanBeNull]
         public class ComponentsData
         {
-            public ComponentBehavior Item { get; set; } = ComponentBehavior.Patch; // cannot be removed
+            public ComponentBehavior Item { get; set; } = ComponentBehavior.Inherit;
             public ComponentBehavior Floating { get; set; } = ComponentBehavior.Inherit;
             public ComponentBehavior EggGrow { get; set; } = ComponentBehavior.Patch;
         }
@@ -40,49 +55,34 @@ namespace OfTamingAndBreeding.Data.Models
         [CanBeNull]
         public class ItemData
         {
-            public string CustomIconName { get; set; } = null;
-
-            public string ItemType { get; set; } = null;
-            public float? Weight { get; set; } = null;
-
-            public int? Value { get; set; } = null;
-            public bool? Teleportable { get; set; } = null;
             public int? MaxStackSize { get; set; } = null;
-
             public int? MaxQuality { get; set; } = null;
             public float? ScaleByQuality { get; set; } = null;
             public float? ScaleWeightByQuality { get; set; } = null;
-
-            public string ItemTintRgb { get; set; } = null;
-            public string ParticlesTintRgb { get; set; } = null;
-            public string LightsTintRgb { get; set; } = null;
-            public float LightsScale { get; set; } = 1;
-            public bool DisableParticles { get; set; } = false;
-
-
         }
 
         [Serializable]
         [CanBeNull]
         public class FloatingData
         {
-            public float WaterLevelOffset { get; set; } = 0.5f; // init value required
-        }
-
-        [Serializable]
-        [CanBeNull]
-        public class EggGrowGrownData : SubData.IRandomData
-        {
-            public string Prefab { get; set; } = null;
-            public float Weight { get; set; } = 1;
-            public bool Tamed { get; set; } = true;
-            public bool ShowHatchEffect { get; set; } = true;
+            public float? WaterLevelOffset { get; set; } = null;
         }
 
         [Serializable]
         [CanBeNull]
         public class EggGrowData
         {
+
+            [Serializable]
+            [CanBeNull]
+            public class GrownData
+            {
+                public string Prefab { get; set; } = null;
+                public float Weight { get; set; } = 1;
+                public bool Tamed { get; set; } = true;
+                public bool ShowHatchEffect { get; set; } = true;
+            }
+
             public float? GrowTime { get; set; } = null;
             public float? UpdateInterval { get; set; } = null;
 
@@ -91,10 +91,11 @@ namespace OfTamingAndBreeding.Data.Models
             public float? RequireCoverPercentige { get; set; } = null;
 
             public Heightmap.Biome[] RequireAnyBiome { get; set; } = null; // OTAB feature
-            public Utils.EnvironmentUtils.LiquidTypeEx? RequireLiquid { get; set; } = null; // OTAB feature
+            public OTABUtils.EnvironmentUtils.LiquidTypeEx? RequireLiquid { get; set; } = null; // OTAB feature
             public float? RequireLiquidDepth { get; set; } = null; // OTAB feature
+            public string[] RequireGlobalKeys { get; set; } = null; // OTAB feature
 
-            public EggGrowGrownData[] Grown { get; set; } = null;
+            public GrownData[] Grown { get; set; } = null;
         }
 
     }

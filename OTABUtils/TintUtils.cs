@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.Utils
+namespace OfTamingAndBreeding.OTABUtils
 {
     internal static class TintUtils
     {

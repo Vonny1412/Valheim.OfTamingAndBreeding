@@ -7,6 +7,39 @@ namespace OfTamingAndBreeding.Patches
     internal partial class DataReadyPatches
     {
 
+        /*
+    [HarmonyPatch(typeof(Tameable), "IsHungry")]
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.Last)]
+    private static bool Tameable_IsHungry_Prefix(Tameable __instance, ref bool __result)
+    {
+        if (__result == false)
+        {
+            return false;
+        }
+
+        // WARNING: dont do the following
+        // because creatures that are not hungry wont eat anything
+        var isTamed = __instance.IsTamed();
+        if (isTamed == false)
+        {
+            var trait = __instance.GetComponent<TameableTrait>();
+            if (trait.IsTamingDisabled())
+            {
+                __result = false;
+                return false;
+            }
+            if (trait.CanBeTamed() == false)
+            {
+                __result = false;
+                return false;
+            }
+        }
+
+        return true;
+    }
+        */
+
         [HarmonyPatch(typeof(Tameable), "OnConsumedItem")]
         [HarmonyPrefix]
         private static bool Tameable_OnConsumedItem_Prefix(Tameable __instance, ItemDrop item)
@@ -49,6 +82,10 @@ namespace OfTamingAndBreeding.Patches
             {
                 return false;
             }
+            if (trait.CanBeTamed() == false)
+            {
+                return false;
+            }
             time *= trait.GetRemainingTimeDecreaseFactor();
             return true;
         }
@@ -75,6 +112,26 @@ namespace OfTamingAndBreeding.Patches
             trait.OnTamed();
         }
 
+        [HarmonyPatch(typeof(Tameable), "Interact")]
+        [HarmonyPrefix]
+        [HarmonyPriority(Priority.First)]
+        private static bool Tameable_Interact_Prefix(Tameable __instance, Humanoid user, bool __runOriginal)
+        {
+            var trait = __instance.GetComponent<TameableTrait>();
+            if (trait.IsInteractable() == false)
+            {
+                var hoverName = __instance.GetHoverName();
+                //var characterName = Localization.instance.Localize(__instance.GetComponent<Character>().name);
+                var msg = Localization.instance.Localize("$otab_message_not_interactable", hoverName);
+                if (!string.IsNullOrEmpty(msg))
+                {
+                    user.Message(MessageHud.MessageType.Center, msg);
+                }
+                return false;
+            }
+            return true;
+        }
+
         [HarmonyPatch(typeof(Tameable), "RPC_Command")]
         [HarmonyPrefix]
         private static bool Tameable_RPC_Command_Prefix(Tameable __instance, long sender, ZDOID characterID, bool message)
@@ -84,80 +141,6 @@ namespace OfTamingAndBreeding.Patches
             {
                 return false;
             }
-            return true;
-        }
-
-        [HarmonyPatch(typeof(Tameable), "Interact")]
-        [HarmonyPrefix]
-        [HarmonyPriority(Priority.First)]
-        private static bool Tameable_Interact_Prefix(Tameable __instance, Humanoid user, bool __runOriginal)
-        {
-            var forbid = false;
-
-            var trait = __instance.GetComponent<TameableTrait>();
-            switch (trait.m_interactable)
-            {
-                case Data.Models.SubData.InteractableCondition.Never:
-                    forbid = true;
-                    break;
-                case Data.Models.SubData.InteractableCondition.WhenFed:
-                    forbid = __instance.IsHungry();
-                    break;
-            }
-
-            if (forbid)
-            {
-                var characterName = Localization.instance.Localize(__instance.GetComponent<Character>().name);
-                var msg = Localization.instance.Localize("$otab_message_not_interactable", characterName);
-                if (!string.IsNullOrEmpty(msg))
-                {
-                    user.Message(MessageHud.MessageType.Center, msg);
-                }
-                return false;
-            }
-
-            return true;
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // todo: continue cleanup
-
-
-
-
-
-
-        /* // todo: replaced
-        [HarmonyPatch(typeof(Tameable), "Awake")]
-        [HarmonyPostfix]
-        [HarmonyPriority(Priority.Last)]
-        private static void Tameable_Awake_Postfix(Tameable __instance)
-        {
-            __instance.Awake_PatchPostfix();
-        }
-        */
-
-        [HarmonyPatch(typeof(Tameable), "IsHungry")]
-        [HarmonyPrefix]
-        [HarmonyPriority(Priority.Last)]
-        private static bool Tameable_IsHungry_Prefix(Tameable __instance)
-        {
-            // todo: remove me?
-            //__instance.UpdateFedDuration();
-            // i dont remember why i was updating the fed duration at this point
-            // maybe i dont need to?
             return true;
         }
 

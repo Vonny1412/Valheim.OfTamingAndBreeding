@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
 using OfTamingAndBreeding.Components;
 using OfTamingAndBreeding.Components.Traits;
-using OfTamingAndBreeding.Utils;
+using OfTamingAndBreeding.OTABUtils;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Patches
@@ -21,39 +21,10 @@ namespace OfTamingAndBreeding.Patches
                 return;
             }
 
-            var eggPosition = __instance.transform.position;
-
-            if (__instance.TryGetComponent<OTABEgg>(out var component))
+            var trait = __instance.GetComponent<EggGrowTrait>();
+            if (trait.CanGrow() == false)
             {
-                if (component.m_requireBiome != Heightmap.Biome.None && !Utils.EnvironmentUtils.IsInBiome(eggPosition, component.m_requireBiome))
-                {
-                    __result = false;
-                }
-
-                if (component.m_requireLiquid != EnvironmentUtils.LiquidTypeEx.None)
-                {
-                    var liquidType = component.m_requireLiquid;
-                    var liquidDepth = component.m_requireLiquidDepth;
-                    switch (liquidType)
-                    {
-                        case Utils.EnvironmentUtils.LiquidTypeEx.Water:
-                            if (!Utils.EnvironmentUtils.IsInWater(eggPosition, liquidDepth))
-                            {
-                                __result = false;
-                            }
-                            break;
-                        case Utils.EnvironmentUtils.LiquidTypeEx.Tar:
-                            if (!Utils.EnvironmentUtils.IsInTar(eggPosition, liquidDepth))
-                            {
-                                __result = false;
-                            }
-                            break;
-
-                            // todo: lava?
-                    }
-                }
-
-                // ... maybe more to come
+                __result = false;
             }
         }
 

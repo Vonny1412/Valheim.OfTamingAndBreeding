@@ -1,6 +1,6 @@
 ﻿using OfTamingAndBreeding.Data;
 using OfTamingAndBreeding.Registry;
-using OfTamingAndBreeding.Utils;
+using OfTamingAndBreeding.OTABUtils;
 using System;
 
 namespace OfTamingAndBreeding.Net

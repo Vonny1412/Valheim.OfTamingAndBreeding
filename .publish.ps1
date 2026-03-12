@@ -93,7 +93,7 @@ $assetsDir      = Join-Path $projectRoot "_Assets"
 $iconPath       = Join-Path $assetsDir "icon.png"
 $manifestTpl    = Join-Path $assetsDir "manifest.json"
 $readmePath     = Join-Path $projectRoot "README.md"
-$changelogPath  = Join-Path $projectRoot "CHANGELOG.txt"
+$changelogPath  = Join-Path $projectRoot "CHANGELOG.md"
 $licensePath    = Join-Path $projectRoot "LICENSE"
 
 if (-not (Test-Path $iconPath))       { Fail "icon missing" }
@@ -111,11 +111,11 @@ $publishDir = Join-Path $projectRoot ".publish"
 New-Item -ItemType Directory -Path $publishDir -Force | Out-Null
 
 $zipPath = Join-Path $publishDir ("{0}-{1}.zip" -f $guid, $ver)
-if (Test-Path $zipPath) { Fail "vergessen version zu updaten?" }
+if (Test-Path $zipPath) { Fail "Forget to update version?" }
 
 # --- Create staging folder in temp ---
 $tempBase = [System.IO.Path]::GetTempPath()
-$tempName = "htc_pack_" + [System.Guid]::NewGuid().ToString("N")
+$tempName = "otab_pack_" + [System.Guid]::NewGuid().ToString("N")
 $distRoot = Join-Path $tempBase $tempName
 New-Item -ItemType Directory -Path $distRoot -Force | Out-Null
 
@@ -134,7 +134,7 @@ Copy-Item $dllPath -Destination (Join-Path $pluginOutDir ("{0}.dll" -f $assembly
 # --- Copy meta files to zip root ---
 Copy-Item $iconPath       -Destination (Join-Path $distRoot "icon.png") -Force
 Copy-Item $readmePath     -Destination (Join-Path $distRoot "README.md") -Force
-Copy-Item $changelogPath  -Destination (Join-Path $distRoot "CHANGELOG.txt") -Force
+Copy-Item $changelogPath  -Destination (Join-Path $distRoot "CHANGELOG.md") -Force
 Copy-Item $licensePath    -Destination (Join-Path $distRoot "LICENSE") -Force
 
 # --- Load manifest template, patch version_number, write to dist root ---

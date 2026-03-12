@@ -1,29 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
 
-namespace OfTamingAndBreeding.Data.Models.SubData
+namespace OfTamingAndBreeding.Common
 {
-    internal static class RandomData
+    internal static class WeightedRandom
     {
+        public interface IWeighted
+        {
+            float Weight { get; }
+        }
+
         public static bool FindRandom<T>(
             IReadOnlyList<T> items,
             out T entry,
             Func<T, float> check = null
-        ) where T : IRandomData
+        ) where T : IWeighted
         {
             entry = default;
             if (items == null || items.Count == 0) return false;
             if (items.Count == 1) { entry = items[0]; return true; }
 
-            if (check == null) check = e => e.Weight;
-
+            check ??= e => e.Weight;
             float total = 0f;
             bool any = false;
 
             for (int i = 0; i < items.Count; i++)
             {
-                float w = Mathf.Max(0f, check(items[i]));
+                float w = check(items[i]);
                 if (w <= 0f) continue;
 
                 any = true;

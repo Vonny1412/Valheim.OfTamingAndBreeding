@@ -9,11 +9,8 @@ namespace OfTamingAndBreeding.Patches
 
         [HarmonyPatch(typeof(ZNetScene), "CreateObjects")]
         [HarmonyPrefix]
-        private static bool ZNetScene_CreateObjects_Prefix(ZNetScene __instance, List<ZDO> currentNearObjects, List<ZDO> currentDistantObjects)
+        private static bool ZNetScene_CreateObjects_Prefix(/* ZNetScene __instance, */ List<ZDO> currentNearObjects, List<ZDO> currentDistantObjects)
         {
-            // do not block even when otab is not ready
-            // because we need to cache objects while client is waiting for otab data from server
-
             // IMPORTANT: We must not let ZNetScene instantiate network objects before OTAB server data is applied.
             // Otherwise components (Awake/Start) would run with wrong vanilla values.
             // We therefore defer CreateObjects until DataOrchestrator marks dataLoaded == true.
@@ -24,6 +21,15 @@ namespace OfTamingAndBreeding.Patches
                 return false;
             }
             return true;
+        }
+
+        //[HarmonyPatch(typeof(ZNet), "OnDestroy")]
+        //private static void ZNet_OnDestroy_Prefix()
+        [HarmonyPatch(typeof(ZNetScene), "Shutdown")]
+        [HarmonyPrefix]
+        private static void ZNetScene_Shutdown_Prefix()
+        {
+            Net.NetworkSessionManager.Instance.CloseSession();
         }
 
     }
