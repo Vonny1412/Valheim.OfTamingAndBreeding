@@ -11,8 +11,8 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         private static bool BaseAI_IdleMovement_Prefix(BaseAI __instance, float dt)
         {
-            var trait = __instance.GetComponent<BaseAITrait>();
-            if (trait.IdleMovement(dt)) // handled by trait
+            var trait = BaseAITrait.GetUnsafe(__instance.gameObject);
+            if (trait.IdleMovement(dt))
             {
                 return false; // block original
             }

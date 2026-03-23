@@ -21,7 +21,8 @@ namespace OfTamingAndBreeding.Patches
                 return;
             }
 
-            var trait = __instance.GetComponent<EggGrowTrait>();
+            //var trait = __instance.GetComponent<EggGrowTrait>();
+            var trait = EggGrowTrait.GetUnsafe(__instance.gameObject);
             if (trait.CanGrow() == false)
             {
                 __result = false;
@@ -43,7 +44,8 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         private static bool EggGrow_GrowUpdate_Prefix(EggGrow __instance)
         {
-            if (__instance.TryGetComponent<EggGrowTrait>(out var trait) && trait.GrowUpdate())
+            var trait = EggGrowTrait.GetUnsafe(__instance.gameObject);
+            if (trait.GrowUpdate())
             {
                 return false;
             }

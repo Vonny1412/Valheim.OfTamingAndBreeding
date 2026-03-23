@@ -131,12 +131,23 @@ namespace OfTamingAndBreeding.OTABUtils
                 var baseCol = mat.GetColor("_Color");
                 mat.SetColor("_Color", multiply ? Multiply(baseCol, tint) : tint);
             }
+
             if (mat.HasProperty("_TintColor"))
             {
                 var baseCol = mat.GetColor("_TintColor");
                 mat.SetColor("_TintColor", multiply ? Multiply(baseCol, tint) : tint);
             }
-            // if (mat.HasProperty("_EmissionColor")) ...
+
+            if (mat.HasProperty("_EmissionColor"))
+            {
+                var baseCol = mat.GetColor("_EmissionColor");
+                mat.SetColor("_EmissionColor", multiply ? Multiply(baseCol, tint) : tint);
+
+                // sicherheitshalber
+                mat.EnableKeyword("_EMISSION");
+                // optional:
+                // mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+            }
         }
 
         //-------------------------

@@ -14,9 +14,9 @@ namespace OfTamingAndBreeding.StaticContext
         {
             _sharedNameHashes = new HashSet<int>();
 
-            Net.NetworkSessionManager.Instance.OnClosed((dataLoaded) => {
+            Net.NetworkSessionManager.Instance.OnSessionClosed += (netsess, dataLoaded) => {
                 _sharedNameHashes.Clear();
-            });
+            };
         }
 
         public static void RegisterEggSharedName(GameObject egg)

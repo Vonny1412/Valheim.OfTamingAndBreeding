@@ -1,17 +1,16 @@
 ﻿using System.Collections.Generic;
-using UnityEngine;
 
 namespace OfTamingAndBreeding.StaticContext
 {
     internal static class IconDataContext
     {
-        public static readonly Dictionary<string, Texture2D> iconTextures;
+        public static readonly Dictionary<string, UnityEngine.Texture2D> iconTextures;
 
         static IconDataContext()
         {
-            iconTextures = new Dictionary<string, Texture2D>();
+            iconTextures = new Dictionary<string, UnityEngine.Texture2D>();
 
-            Net.NetworkSessionManager.Instance.OnClosed((dataLoaded) => {
+            Net.NetworkSessionManager.Instance.OnSessionClosed += (netsess, dataLoaded) => {
                 foreach(var texture in iconTextures.Values)
                 {
                     if (texture)
@@ -20,7 +19,7 @@ namespace OfTamingAndBreeding.StaticContext
                     }
                 }
                 iconTextures.Clear();
-            });
+            };
         }
 
     }

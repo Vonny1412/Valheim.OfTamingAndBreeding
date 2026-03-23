@@ -310,9 +310,10 @@ namespace OfTamingAndBreeding.Registry.Processing
         {
             var model = $"{nameof(OffspringData)}.{offspringName}";
 
-            PrefabRegistry.Instance.DestroyComponentIfExists<ItemDrop>(offspringName, offspring); // offsprings are not items (wait, why am i even doing this? dont remember.. just keep it)
             PrefabRegistry.Instance.DestroyComponentIfExists<Procreation>(offspringName, offspring); // offsprings do not procreate
             PrefabRegistry.Instance.DestroyComponentIfExists<Tameable>(offspringName, offspring); // offsprings cannot be explicite tamed
+
+            // todo: one day, add clone-options "RemoveCharacterDrop" and "RemoveMonsterAI"
             PrefabRegistry.Instance.DestroyComponentIfExists<CharacterDrop>(offspringName, offspring); // offsprings do not drop items
             PrefabRegistry.Instance.DestroyComponentIfExists<MonsterAI>(offspringName, offspring); // offsprings do not attack
             PrefabRegistry.Instance.GetOrAddComponent<AnimalAI>(offspringName, offspring); // offsprings do act like passive animals
@@ -324,7 +325,7 @@ namespace OfTamingAndBreeding.Registry.Processing
             var levelFx = offspring.GetComponentInChildren<LevelEffects>(true);
             if (levelFx != null)
             {
-                UnityEngine.Object.Destroy(levelFx); // zur Laufzeit ok
+                UnityEngine.Object.Destroy(levelFx);
             }
 
 

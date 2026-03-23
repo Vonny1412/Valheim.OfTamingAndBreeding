@@ -2,14 +2,15 @@
 
 namespace OfTamingAndBreeding.Data.Models.SubData
 {
+    // todo: put me somewhere else
     [Serializable]
     public enum IsEnemyCondition
     {
-        NeverEver = -1,
-        Never = 0,
-        WhenFed = 1,
-        WhenHungry = 2,
-        WhenStarving = 4,
-        Always = 7,
+        Default = 0,
+        Never = 1,
+        Force = 2,
+        WhenFed = 3,
+        WhenHungry = 4,
+        WhenStarving = 5,
     }
 }

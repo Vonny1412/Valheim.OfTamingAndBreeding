@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using OfTamingAndBreeding.Components.Traits;
 using System;
 
 namespace OfTamingAndBreeding.Patches
@@ -6,16 +7,19 @@ namespace OfTamingAndBreeding.Patches
     internal partial class DataReadyPatches
     {
 
-        [HarmonyPatch(typeof(Character), "IsTamed", new Type[0])]
+        [HarmonyPatch(typeof(Character), "RPC_SetTamed")]
         [HarmonyPostfix]
-        private static void Character_IsTamed_Postfix(Character __instance, ref bool __result)
+        [HarmonyPriority(Priority.Last)]
+        private static void Character_RPC_SetTamed_Postfix(Character __instance, bool tamed)
         {
-            if (!__result) return; // not tamed by default
-
-            // we temporarly need to change the original returned value
-            if (StaticContext.IsEnemyContext.Active && __instance == StaticContext.IsEnemyContext.TargetInstance)
+            if (!tamed)
             {
-                __result = false; // temporary untamed to enable aggression
+                return;
+            }
+            //var trait = CharacterTrait.GetUnsafe(__instance.gameObject);
+            if (CharacterTrait.TryGet(__instance.gameObject, out var trait))
+            {
+                trait.OnTamed();
             }
         }
 

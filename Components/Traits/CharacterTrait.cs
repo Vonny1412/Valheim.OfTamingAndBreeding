@@ -1,7 +1,8 @@
-﻿using OfTamingAndBreeding.Components.Base;
+﻿using Jotunn;
+using Jotunn.Utils;
+using OfTamingAndBreeding.Components.Base;
 using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Data.Models.SubData;
-using OfTamingAndBreeding.ValheimAPI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +14,36 @@ namespace OfTamingAndBreeding.Components.Traits
     public class CharacterTrait : OTABComponent<CharacterTrait>
     {
 
+        private struct ConsumableItemDisplay
+        {
+            public string Name;
+            public string Color;
+        }
+
+        private static Character lastHoverTarget = null;
+        private static float lastHoverUpdateTime = 0;
+        private static string lastHoverConsumeText = "";
+
+        [Flags]
+        public enum HostilityMask : byte
+        {
+            None = 0,
+            Never = 1,
+            Attack = 2,
+            Skip = 4,
+        }
+
+        public HostilityMask TamedCanAttackPlayer { get; private set; } = HostilityMask.None;
+        public HostilityMask TamedCanBeAttackedByPlayer { get; private set; } = HostilityMask.None;
+        public HostilityMask TamedCanAttackTamed { get; private set; } = HostilityMask.None;
+        public HostilityMask TamedCanBeAttackedByTamed { get; private set; } = HostilityMask.None;
+        public HostilityMask TamedCanAttackWild { get; private set; } = HostilityMask.None;
+        public HostilityMask TamedCanBeAttackedByWild { get; private set; } = HostilityMask.None;
+        public HostilityMask TamedCanAttackGroup { get; private set; } = HostilityMask.None;
+        public HostilityMask TamedCanBeAttackedByGroup { get; private set; } = HostilityMask.None;
+        public HostilityMask TamedCanAttackFaction { get; private set; } = HostilityMask.None;
+        public HostilityMask TamedCanBeAttackedByFaction { get; private set; } = HostilityMask.None;
+
         // set in Awake
         [NonSerialized] private ZNetView m_nview = null;
         [NonSerialized] private Character m_character = null;
@@ -21,20 +52,25 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private TameableTrait m_tameableTrait = null;
         [NonSerialized] private ProcreationTrait m_procreationTrait = null;
         [NonSerialized] private BaseAITrait m_baseAITrait = null;
+        [NonSerialized] private GrowupTrait m_growupTrait = null;
 
         // set in registration
-        [SerializeField] public IsEnemyCondition m_canAttackTamed = IsEnemyCondition.Never;
-        [SerializeField] public IsEnemyCondition m_canBeAttackedByTamed = IsEnemyCondition.Never;
-        [SerializeField] public IsEnemyCondition m_canAttackPlayer = IsEnemyCondition.Never;
-        [SerializeField] public IsEnemyCondition m_canBeAttackedByPlayer = IsEnemyCondition.Never;
-        [SerializeField] public IsEnemyCondition m_canAttackGroup = IsEnemyCondition.Never;
-        [SerializeField] public IsEnemyCondition m_canBeAttackedByGroup = IsEnemyCondition.Never;
-        [SerializeField] public IsEnemyCondition m_canAttackFaction = IsEnemyCondition.Always;
-        [SerializeField] public IsEnemyCondition m_canBeAttackedByFaction = IsEnemyCondition.Always;
         [SerializeField] public bool m_changeGroupWhenTamed = false;
         [SerializeField] public string m_changeGroupWhenTamedTo = "";
         [SerializeField] public bool m_changeFactionWhenTamed = false;
         [SerializeField] public Character.Faction m_changeFactionWhenTamedTo = Character.Faction.Players;
+        [SerializeField] public IsEnemyCondition m_tamedCanAttackPlayer = IsEnemyCondition.Default;
+        [SerializeField] public IsEnemyCondition m_tamedCanBeAttackedByPlayer = IsEnemyCondition.Default;
+        [SerializeField] public IsEnemyCondition m_tamedCanAttackTamed = IsEnemyCondition.Default;
+        [SerializeField] public IsEnemyCondition m_tamedCanBeAttackedByTamed = IsEnemyCondition.Default;
+        [SerializeField] public IsEnemyCondition m_tamedCanAttackWild = IsEnemyCondition.Default;
+        [SerializeField] public IsEnemyCondition m_tamedCanBeAttackedByWild = IsEnemyCondition.Default;
+        [SerializeField] public IsEnemyCondition m_tamedCanAttackGroup = IsEnemyCondition.Default;
+        [SerializeField] public IsEnemyCondition m_tamedCanBeAttackedByGroup = IsEnemyCondition.Default;
+        [SerializeField] public IsEnemyCondition m_tamedCanAttackFaction = IsEnemyCondition.Default;
+        [SerializeField] public IsEnemyCondition m_tamedCanBeAttackedByFaction = IsEnemyCondition.Default;
+
+        
 
         private void Awake()
         {
@@ -45,27 +81,136 @@ namespace OfTamingAndBreeding.Components.Traits
             m_tameableTrait = GetComponent<TameableTrait>();
             m_procreationTrait = GetComponent<ProcreationTrait>();
             m_baseAITrait = GetComponent<BaseAITrait>();
+            m_growupTrait = GetComponent<GrowupTrait>();
 
-            OnTamed();
+            if (m_character.IsTamed())
+            {
+                OnTamed();
+            }
+
+            Register(this);
         }
 
-        public bool IsHungry()
+        private void OnDestroy()
         {
-            return m_tameableTrait && m_tameableTrait.IsHungry();
+            Unregister(this);
         }
 
-        public bool IsStarving()
+        public Character GetCharacter()
         {
-            return m_tameableTrait && m_tameableTrait.IsStarving();
+            return m_character;
+        }
+
+        public bool IsTamed()
+        {
+            return m_character.IsTamed();
+        }
+
+
+
+
+
+
+        public void UpdateHostilities()
+        {
+            bool isHungry = m_tameableTrait && m_tameableTrait.IsHungry();
+            bool isStarving = isHungry && m_tameableTrait.IsStarving();
+
+            switch (m_tamedCanAttackPlayer)
+            {
+                case IsEnemyCondition.Default: TamedCanAttackPlayer = HostilityMask.None; break;
+                case IsEnemyCondition.Force: TamedCanAttackPlayer = HostilityMask.Attack; break;
+                case IsEnemyCondition.Never: TamedCanAttackPlayer = HostilityMask.Never; break;
+                case IsEnemyCondition.WhenFed: TamedCanAttackPlayer = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedCanAttackPlayer = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenStarving: TamedCanAttackPlayer = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
+            }
+            switch (m_tamedCanBeAttackedByPlayer)
+            {
+                case IsEnemyCondition.Default: TamedCanBeAttackedByPlayer = HostilityMask.None; break;
+                case IsEnemyCondition.Force: TamedCanBeAttackedByPlayer = HostilityMask.Attack; break;
+                case IsEnemyCondition.Never: TamedCanBeAttackedByPlayer = HostilityMask.Never; break;
+                case IsEnemyCondition.WhenFed: TamedCanBeAttackedByPlayer = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedCanBeAttackedByPlayer = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenStarving: TamedCanBeAttackedByPlayer = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
+            }
+            switch (m_tamedCanAttackTamed)
+            {
+                case IsEnemyCondition.Default: TamedCanAttackTamed = HostilityMask.None; break;
+                case IsEnemyCondition.Force: TamedCanAttackTamed = HostilityMask.Attack; break;
+                case IsEnemyCondition.Never: TamedCanAttackTamed = HostilityMask.Never; break;
+                case IsEnemyCondition.WhenFed: TamedCanAttackTamed = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedCanAttackTamed = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenStarving: TamedCanAttackTamed = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
+            }
+            switch (m_tamedCanBeAttackedByTamed)
+            {
+                case IsEnemyCondition.Default: TamedCanBeAttackedByTamed = HostilityMask.None; break;
+                case IsEnemyCondition.Force: TamedCanBeAttackedByTamed = HostilityMask.Attack; break;
+                case IsEnemyCondition.Never: TamedCanBeAttackedByTamed = HostilityMask.Never; break;
+                case IsEnemyCondition.WhenFed: TamedCanBeAttackedByTamed = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedCanBeAttackedByTamed = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenStarving: TamedCanBeAttackedByTamed = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
+            }
+            switch (m_tamedCanAttackWild)
+            {
+                case IsEnemyCondition.Default: TamedCanAttackWild = HostilityMask.None; break;
+                case IsEnemyCondition.Force: TamedCanAttackWild = HostilityMask.Attack; break;
+                case IsEnemyCondition.Never: TamedCanAttackWild = HostilityMask.Never; break;
+                case IsEnemyCondition.WhenFed: TamedCanAttackWild = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedCanAttackWild = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenStarving: TamedCanAttackWild = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
+            }
+            switch (m_tamedCanBeAttackedByWild)
+            {
+                case IsEnemyCondition.Default: TamedCanBeAttackedByWild = HostilityMask.None; break;
+                case IsEnemyCondition.Force: TamedCanBeAttackedByWild = HostilityMask.Attack; break;
+                case IsEnemyCondition.Never: TamedCanBeAttackedByWild = HostilityMask.Never; break;
+                case IsEnemyCondition.WhenFed: TamedCanBeAttackedByWild = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedCanBeAttackedByWild = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenStarving: TamedCanBeAttackedByWild = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
+            }
+            switch (m_tamedCanAttackGroup)
+            {
+                case IsEnemyCondition.Default: TamedCanAttackGroup = HostilityMask.None; break;
+                case IsEnemyCondition.Force: TamedCanAttackGroup = HostilityMask.Attack; break;
+                case IsEnemyCondition.Never: TamedCanAttackGroup = HostilityMask.Never; break;
+                case IsEnemyCondition.WhenFed: TamedCanAttackGroup = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedCanAttackGroup = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenStarving: TamedCanAttackGroup = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
+            }
+            switch (m_tamedCanBeAttackedByGroup)
+            {
+                case IsEnemyCondition.Default: TamedCanBeAttackedByGroup = HostilityMask.None; break;
+                case IsEnemyCondition.Force: TamedCanBeAttackedByGroup = HostilityMask.Attack; break;
+                case IsEnemyCondition.Never: TamedCanBeAttackedByGroup = HostilityMask.Never; break;
+                case IsEnemyCondition.WhenFed: TamedCanBeAttackedByGroup = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedCanBeAttackedByGroup = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenStarving: TamedCanBeAttackedByGroup = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
+            }
+            switch (m_tamedCanAttackFaction)
+            {
+                case IsEnemyCondition.Default: TamedCanAttackFaction = HostilityMask.None; break;
+                case IsEnemyCondition.Force: TamedCanAttackFaction = HostilityMask.Attack; break;
+                case IsEnemyCondition.Never: TamedCanAttackFaction = HostilityMask.Never; break;
+                case IsEnemyCondition.WhenFed: TamedCanAttackFaction = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedCanAttackFaction = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenStarving: TamedCanAttackFaction = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
+            }
+            switch (m_tamedCanBeAttackedByFaction)
+            {
+                case IsEnemyCondition.Default: TamedCanBeAttackedByFaction = HostilityMask.None; break;
+                case IsEnemyCondition.Force: TamedCanBeAttackedByFaction = HostilityMask.Attack; break;
+                case IsEnemyCondition.Never: TamedCanBeAttackedByFaction = HostilityMask.Never; break;
+                case IsEnemyCondition.WhenFed: TamedCanBeAttackedByFaction = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedCanBeAttackedByFaction = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenStarving: TamedCanBeAttackedByFaction = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
+            }
+
         }
 
         public void OnTamed()
         {
-            if (m_character.IsTamed() == false)
-            {
-                return;
-            }
-
             if (m_character.m_boss == true)
             {
                 m_character.m_boss = false;
@@ -76,7 +221,8 @@ namespace OfTamingAndBreeding.Components.Traits
             var baseAI = m_character.GetComponent<BaseAI>();
             if (baseAI && baseAI.HuntPlayer())
             {
-                // why here? because a character could be tamed without Tameable component
+                // is this even neccessary?
+                // alerted kreatues wont get tamed after all
                 baseAI.SetHuntPlayer(hunt: false);
                 baseAI.SetAlerted(alerted: false);
             }
@@ -89,9 +235,57 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 m_character.m_faction = m_changeFactionWhenTamedTo;
             }
+
+
+
+
+            // todo: create yaml option for that
+            if (gameObject.name.StartsWith("Hatchling"))
+            {
+                var m_baseAI = GetComponent<BaseAI>();
+                m_baseAI.m_idleSoundChance = 0;
+            }
         }
 
-        public string EditHoverText(string text)
+        public string GetHoverName()
+        {
+            if (!m_nview.IsValid())
+            {
+                return "";
+            }
+
+            var text = "";
+            var textSpacing = false;
+            var precision = 1f / Plugin.Configs.HudProgressPrecision.Value;
+            int decimals = Mathf.Max(0, Mathf.RoundToInt(-Mathf.Log10(precision)));
+
+            if ((bool)m_tameableTrait && Plugin.Configs.HudShowTamingProgress.Value)
+            {
+                var tamingProgress = m_tameableTrait.GetTamingProgress(precision, decimals);
+                if (tamingProgress.Length != 0)
+                {
+                    text += tamingProgress;
+                    textSpacing = true;
+                }
+            }
+
+            if ((bool)m_growupTrait && Plugin.Configs.HudShowOffspringGrowProgress.Value)
+            {
+                var growupProgress = m_growupTrait.GetGrowupProgress(precision, decimals);
+                if (growupProgress.Length != 0)
+                {
+                    if (textSpacing)
+                    {
+                        text += " ";
+                    }
+                    text += growupProgress;
+                }
+            }
+
+            return text;
+        }
+
+        public string GetHoverText(string text)
         {
             var isTamed = m_character.IsTamed();
 
@@ -106,54 +300,57 @@ namespace OfTamingAndBreeding.Components.Traits
                 {
                     text = m_tameableTrait.GetName() + "\n" + m_tameableTrait.GetNotTameableReason();
                 }
-                else if (m_tameableTrait.IsFedTimerDisabled() == true)
-                {
-                    var hungry = Localization.instance.Localize("$hud_tamehungry");
-                    if (!string.IsNullOrEmpty(hungry))
-                    {
-                        var idx = text.IndexOf('\n');
-                        string firstLine;
-                        string rest;
-
-                        if (idx >= 0)
-                        {
-                            firstLine = text.Substring(0, idx);
-                            rest = text.Substring(idx); // includes \n
-                        }
-                        else
-                        {
-                            firstLine = text;
-                            rest = "";
-                        }
-
-                        // remove token in common placements
-                        firstLine = firstLine.Replace(", " + hungry, "");
-                        firstLine = firstLine.Replace(hungry + ", ", "");
-                        firstLine = firstLine.Replace(hungry, "");
-
-                        // cleanup spacing / punctuation artifacts
-                        firstLine = firstLine.Replace(",  ", ", ");
-                        firstLine = firstLine.Replace("  )", " )");
-                        firstLine = firstLine.Replace("(  ", "( ");
-
-                        // remove empty parentheses variants
-                        firstLine = firstLine.Replace(" ( )", "");
-                        firstLine = firstLine.Replace("( )", "");
-                        firstLine = firstLine.Replace("()", "");
-
-                        firstLine = firstLine.TrimEnd();
-
-                        text = firstLine + rest;
-                    }
-                }
                 else
                 {
-                    // taming enabled + eating enabled -> show fed timer
-                    var fedTimer = m_tameableTrait.GetFedTimerHoverText();
-                    if (fedTimer.Length != 0)
+                    int newlineIndex = text.IndexOf('\n');
+                    string firstLine;
+                    string rest;
+
+                    if (newlineIndex >= 0)
                     {
-                        text += "\n" + fedTimer;
+                        firstLine = text[..newlineIndex];
+                        rest = text[newlineIndex..]; // includes '\n'
                     }
+                    else
+                    {
+                        firstLine = text;
+                        rest = "";
+                    }
+
+                    if (m_tameableTrait.IsFedTimerDisabled())
+                    {
+                        var hungry = Localization.instance.Localize("$hud_tamehungry");
+                        if (!string.IsNullOrEmpty(hungry))
+                        {
+                            // remove hungry token only from first line
+                            firstLine = firstLine.Replace(", " + hungry, "");
+                            firstLine = firstLine.Replace(hungry + ", ", "");
+                            firstLine = firstLine.Replace(hungry, "");
+
+                            // cleanup spacing / punctuation artifacts
+                            firstLine = firstLine.Replace(",  ", ", ");
+                            firstLine = firstLine.Replace("  )", " )");
+                            firstLine = firstLine.Replace("(  ", "( ");
+
+                            // remove empty parentheses variants
+                            firstLine = firstLine.Replace(" ( )", "");
+                            firstLine = firstLine.Replace("( )", "");
+                            firstLine = firstLine.Replace("()", "");
+
+                            firstLine = firstLine.TrimEnd();
+                            text = firstLine + rest;
+                        }
+                    }
+
+                    if (m_tameableTrait.m_petCommand.Length != 0)
+                    {
+                        var pet1 = "] " + Localization.instance.Localize("$hud_pet");
+                        var pet2 = "] " + Localization.instance.Localize(m_tameableTrait.m_petCommand);
+
+                        // only replace in first line
+                        text = text.Replace(pet1, pet2);
+                    }
+
                 }
             }
 
@@ -162,8 +359,17 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 text += "\n" + consumeText;
             }
-  
-            if (isTamed && m_procreationTrait)
+
+            if (m_tameableTrait)
+            {
+                var fedTimer = m_tameableTrait.GetFedTimerHoverText();
+                if (fedTimer.Length != 0)
+                {
+                    text += "\n" + fedTimer;
+                }
+            }
+
+            if (m_procreationTrait && isTamed)
             {
                 var procreationText = m_procreationTrait.GetProcreationHoverText();
                 if (procreationText.Length != 0)
@@ -172,18 +378,40 @@ namespace OfTamingAndBreeding.Components.Traits
                 }
             }
 
+            if (Plugin.IsAdmin() && Plugin.Configs.HoverShowAdminInfo.Value)
+            {
+
+                if (m_baseAITrait)
+                {
+                    var info = m_baseAITrait.GetAdminHoverInfoText();
+                    if (info.Length > 0)
+                    {
+                        text += "\n" + info;
+                    }
+                }
+
+                if (m_tameableTrait)
+                {
+                    var info = m_tameableTrait.GetAdminHoverInfoText();
+                    if (info.Length > 0)
+                    {
+                        text += "\n" + info;
+                    }
+                }
+
+                if (m_procreationTrait && isTamed)
+                {
+                    var info = m_procreationTrait.GetAdminHoverInfoText();
+                    if (info.Length > 0)
+                    {
+                        text += "\n" + info;
+                    }
+                }
+
+            }
+
             return text;
         }
-
-
-
-
-
-
-
-
-        private static Character lastHoverTarget = null;
-        private static string lastHoverConsumeText = "";
 
         public string GetConsumeHoverText()
         {
@@ -194,15 +422,19 @@ namespace OfTamingAndBreeding.Components.Traits
 
             var L = Localization.instance;
 
-            if (lastHoverTarget != m_character)
+
+            var tSecs = Time.time;
+            
+            if (lastHoverTarget != m_character || (tSecs - lastHoverUpdateTime) > 1f)
             {
                 lastHoverTarget = m_character;
+                lastHoverUpdateTime = tSecs;
                 lastHoverConsumeText = "";
 
                 var displayItems = CollectConsumableDisplayItems(L);
                 if (displayItems.Count == 0)
                 {
-                    return "";
+                    return ""; // todo: add special prefab: "@otab:NoItem;$otab_no_item" to display "Eats nothing" text
                 }
 
                 //return string.Format(l_consumeItems, Plugin.Configs.HoverColorNormal.Value, l_empty);
@@ -228,12 +460,6 @@ namespace OfTamingAndBreeding.Components.Traits
             return lastHoverConsumeText;
         }
 
-        private struct ConsumableItemDisplay
-        {
-            public string Name;
-            public string Color;
-        }
-
         private List<ConsumableItemDisplay> CollectConsumableDisplayItems(Localization L)
         {
             var displayItems = new List<ConsumableItemDisplay>();
@@ -252,10 +478,12 @@ namespace OfTamingAndBreeding.Components.Traits
                 {
                     return displayItems;
                 }
-
+                
                 // hard values seems to be better
                 float min = 0.33f; // consumeItems.Last().fedDurationFactor;
                 float max = 3.00f; // consumeItems.First().fedDurationFactor;
+
+                var fedTimerDisabled = m_tameableTrait && m_tameableTrait.IsFedTimerDisabled();
 
                 foreach (var item in customItems)
                 {
@@ -264,7 +492,8 @@ namespace OfTamingAndBreeding.Components.Traits
                         Plugin.Configs.HoverColorBad.Value,
                         Plugin.Configs.HoverColorNormal.Value,
                         Plugin.Configs.HoverColorGood.Value,
-                        item.fedDurationFactor,
+                        Plugin.Configs.HoverColorPassive.Value,
+                        fedTimerDisabled ? 0 : item.fedDurationFactor,
                         min,
                         max
                     );

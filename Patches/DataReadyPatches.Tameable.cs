@@ -44,7 +44,8 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPrefix]
         private static bool Tameable_OnConsumedItem_Prefix(Tameable __instance, ItemDrop item)
         {
-            var trait = __instance.GetComponent<TameableTrait>();
+            //var trait = __instance.GetComponent<TameableTrait>();
+            var trait = TameableTrait.GetUnsafe(__instance.gameObject);
             if (trait.OnConsumedItem(item))
             {
                 return false;
@@ -64,7 +65,8 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         private static bool Tameable_TamingUpdate_Prefix(Tameable __instance)
         {
-            var trait = __instance.GetComponent<TameableTrait>();
+            //var trait = __instance.GetComponent<TameableTrait>();
+            var trait = TameableTrait.GetUnsafe(__instance.gameObject);
             if (trait.OnTamingUpdate())
             {
                 return false;
@@ -77,7 +79,8 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         private static bool Tameable_DecreaseRemainingTime_Prefix(Tameable __instance, ref float time)
         {
-            var trait = __instance.GetComponent<TameableTrait>();
+            //var trait = __instance.GetComponent<TameableTrait>();
+            var trait = TameableTrait.GetUnsafe(__instance.gameObject);
             if (trait.IsTamingDisabled())
             {
                 return false;
@@ -91,24 +94,11 @@ namespace OfTamingAndBreeding.Patches
         }
 
         [HarmonyPatch(typeof(Tameable), "Tame")]
-        [HarmonyPrefix]
-        [HarmonyPriority(Priority.Last)]
-        private static bool Tameable_Tame_Prefix(Tameable __instance)
-        {
-            var trait = __instance.GetComponent<TameableTrait>();
-            if (trait.OnTame())
-            {
-                return false;
-            }
-            return true;
-        }
-
-        [HarmonyPatch(typeof(Tameable), "Tame")]
         [HarmonyPostfix]
         [HarmonyPriority(Priority.Last)]
         private static void Tameable_Tame_Postfix(Tameable __instance)
         {
-            var trait = __instance.GetComponent<TameableTrait>();
+            var trait = TameableTrait.GetUnsafe(__instance.gameObject);
             trait.OnTamed();
         }
 
@@ -117,8 +107,9 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.First)]
         private static bool Tameable_Interact_Prefix(Tameable __instance, Humanoid user, bool __runOriginal)
         {
-            var trait = __instance.GetComponent<TameableTrait>();
-            if (trait.IsInteractable() == false)
+            //var trait = __instance.GetComponent<TameableTrait>();
+            var trait = TameableTrait.GetUnsafe(__instance.gameObject);
+            if (trait.IsStarving())
             {
                 var hoverName = __instance.GetHoverName();
                 //var characterName = Localization.instance.Localize(__instance.GetComponent<Character>().name);
@@ -136,7 +127,7 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPrefix]
         private static bool Tameable_RPC_Command_Prefix(Tameable __instance, long sender, ZDOID characterID, bool message)
         {
-            var trait = __instance.GetComponent<TameableTrait>();
+            var trait = TameableTrait.GetUnsafe(__instance.gameObject);
             if (trait.RPC_Command(sender, characterID, message))
             {
                 return false;

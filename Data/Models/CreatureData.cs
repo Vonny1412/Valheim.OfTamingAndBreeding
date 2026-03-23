@@ -34,14 +34,17 @@ namespace OfTamingAndBreeding.Data.Models
             public string Group { get; set; } = null;
             public string GroupWhenTamed { get; set; } = null;
             public Character.Faction? FactionWhenTamed { get; set; } = null;
-            public IsEnemyCondition CanAttackTamed { get; set; } = IsEnemyCondition.Never; // OTAB feature
-            public IsEnemyCondition CanBeAttackedByTamed { get; set; } = IsEnemyCondition.Never; // OTAB feature
-            public IsEnemyCondition CanAttackPlayer { get; set; } = IsEnemyCondition.Never; // OTAB feature
-            public IsEnemyCondition CanBeAttackedByPlayer { get; set; } = IsEnemyCondition.Never; // OTAB feature
-            public IsEnemyCondition CanAttackGroup { get; set; } = IsEnemyCondition.Never; // OTAB feature
-            public IsEnemyCondition CanBeAttackedByGroup { get; set; } = IsEnemyCondition.Never; // OTAB feature
-            public IsEnemyCondition CanAttackFaction { get; set; } = IsEnemyCondition.Always; // OTAB feature
-            public IsEnemyCondition CanBeAttackedByFaction { get; set; } = IsEnemyCondition.Always; // OTAB feature
+
+            public IsEnemyCondition TamedCanAttackPlayer { get; set; } = IsEnemyCondition.Default; // OTAB feature
+            public IsEnemyCondition TamedCanBeAttackedByPlayer { get; set; } = IsEnemyCondition.Default; // OTAB feature
+            public IsEnemyCondition TamedCanAttackGroup { get; set; } = IsEnemyCondition.Default; // OTAB feature
+            public IsEnemyCondition TamedCanBeAttackedByGroup { get; set; } = IsEnemyCondition.Default; // OTAB feature
+            public IsEnemyCondition TamedCanAttackFaction { get; set; } = IsEnemyCondition.Default; // OTAB feature
+            public IsEnemyCondition TamedCanBeAttackedByFaction { get; set; } = IsEnemyCondition.Default; // OTAB feature
+            public IsEnemyCondition TamedCanAttackTamed { get; set; } = IsEnemyCondition.Default; // OTAB feature
+            public IsEnemyCondition TamedCanBeAttackedByTamed { get; set; } = IsEnemyCondition.Default; // OTAB feature
+            public IsEnemyCondition TamedCanAttackWild { get; set; } = IsEnemyCondition.Default; // OTAB feature
+            public IsEnemyCondition TamedCanBeAttackedByWild { get; set; } = IsEnemyCondition.Default; // OTAB feature
         }
 
         [Serializable]
@@ -61,6 +64,7 @@ namespace OfTamingAndBreeding.Data.Models
             public float? ConsumeSearchRange { get; set; } = null;
             public float? ConsumeSearchInterval { get; set; } = null;
             public string ConsumeAnimation { get; set; } = null;
+            // todo: add "ConsumeAnimationAlt" for food with 0 fedduration factor
             public bool TamedStayNearSpawn { get; set; } = false; // otab feature
         }
 
@@ -68,12 +72,17 @@ namespace OfTamingAndBreeding.Data.Models
         [CanBeNull]
         public class TameableData
         {
-            public float? TamingTime { get; set; } = null;
+            // todo: add explicite boolean options "TamingEnabled" and "FeedingEnabled" (?)
             public float? FedDuration { get; set; } = null;
+            public float? TamingTime { get; set; } = null;
+            public bool? TamingBoostEnabled { get; set; } = null;
+            // todo: add option for "m_startsTamed"
             public bool? Commandable { get; set; } = null;
-            public InteractableCondition Interactable { get; set; } = InteractableCondition.Always; // OTAB feature
             public float? StarvingGraceFactor { get; set; } = null; // OTAB feature
-            public string[] RequireGlobalKeys { get; set; } = null; // OTAB feature
+            public string PetCommandText { get; set; } = null; // OTAB feature // todo: needs wiki entry
+            public string PetAnswerText { get; set; } = null; // OTAB feature // todo: needs wiki entry
+            public bool? ShowPetEffect { get; set; } = null; // OTAB feature // todo: needs wiki entry
+            public string[] RequireGlobalKeys { get; set; } = null; // OTAB feature // todo: make this unneccessary and remove it + remove the zdo key
         }
 
         [Serializable]
@@ -112,6 +121,7 @@ namespace OfTamingAndBreeding.Data.Models
             public float? PartnerRecheckSeconds { get; set; } = null; // OTAB feature
             public float? PartnerCheckRange { get; set; } = null;
             public int? RequiredLovePoints { get; set; } = null;
+            // todo: wiki: RequiredLovePoints can be 0. love points wont be shown in hover text, 1 is still used for procreation logic
 
             public float? PregnancyChance { get; set; } = null;
             public float? PregnancyDuration { get; set; } = null;

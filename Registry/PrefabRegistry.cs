@@ -183,6 +183,7 @@ namespace OfTamingAndBreeding.Registry
         {
             var custom = customPrefabs[prefabName];
             var backup = GetUnusedCustomPrefabBackup(cloneFromName);
+            //Plugin.LogServerWarning($"--- {backup.name}");
             RestorePrefabFromBackup(custom, backup);
             SetCustomPrefabUsingBackup(prefabName, backup);
             return custom;
@@ -190,20 +191,20 @@ namespace OfTamingAndBreeding.Registry
 
         private void RestorePrefabFromBackup(GameObject current, GameObject backup)
         {
-            PrefabUtils.RestoreComponent<AnimalAI>(backup, current);
-            PrefabUtils.RestoreComponent<BaseAI>(backup, current);
-            PrefabUtils.RestoreComponent<Character>(backup, current);
-            PrefabUtils.RestoreComponent<CharacterDrop>(backup, current);
-            PrefabUtils.RestoreComponent<EggGrow>(backup, current);
-            PrefabUtils.RestoreComponent<Floating>(backup, current);
-            PrefabUtils.RestoreComponent<Growup>(backup, current);
-            PrefabUtils.RestoreComponent<ItemDrop>(backup, current);
-            PrefabUtils.RestoreComponent<MonsterAI>(backup, current);
-            PrefabUtils.RestoreComponent<Pet>(backup, current);
-            PrefabUtils.RestoreComponent<Procreation>(backup, current);
-            PrefabUtils.RestoreComponent<Ragdoll>(backup, current);
-            PrefabUtils.RestoreComponent<Sadle>(backup, current);
-            PrefabUtils.RestoreComponent<Tameable>(backup, current);
+            PrefabUtils.RestoreComponent<AnimalAI>(current, backup);
+            PrefabUtils.RestoreComponent<BaseAI>(current, backup);
+            PrefabUtils.RestoreComponent<Character>(current, backup);
+            PrefabUtils.RestoreComponent<CharacterDrop>(current, backup);
+            PrefabUtils.RestoreComponent<EggGrow>(current, backup);
+            PrefabUtils.RestoreComponent<Floating>(current, backup);
+            PrefabUtils.RestoreComponent<Growup>(current, backup);
+            PrefabUtils.RestoreComponent<ItemDrop>(current, backup);
+            PrefabUtils.RestoreComponent<MonsterAI>(current, backup);
+            PrefabUtils.RestoreComponent<Pet>(current, backup);
+            PrefabUtils.RestoreComponent<Procreation>(current, backup);
+            PrefabUtils.RestoreComponent<Ragdoll>(current, backup);
+            PrefabUtils.RestoreComponent<Sadle>(current, backup);
+            PrefabUtils.RestoreComponent<Tameable>(current, backup);
         }
 
         private GameObject MakeCustomBackup(string prefabName)
@@ -268,7 +269,7 @@ namespace OfTamingAndBreeding.Registry
         }
 
         //--------------------------------------------------
-        // reserve/register prefabs
+        // reserve/register/restore prefabs
 
         public GameObject GetReservedPrefab(string prefabName)
         {
@@ -284,9 +285,9 @@ namespace OfTamingAndBreeding.Registry
             reservedPrefabsByName.Add(prefabName, prefab);
         }
 
-        public bool PrefabExists(string prefabName, bool requireRegistered = false)
+        public bool PrefabExists(string prefabName)
         {
-            if (!requireRegistered && reservedPrefabsByName.TryGetValue(prefabName, out _))
+            if (reservedPrefabsByName.TryGetValue(prefabName, out _))
             {
                 return true;
             }
@@ -327,11 +328,11 @@ namespace OfTamingAndBreeding.Registry
                 {
                     Plugin.LogServerDebug($"Restoring original prefab {prefabName} ({backup.name})");
                     cb?.Invoke(current, backup);
+                    RestorePrefabFromBackup(current, backup);
                 }
                 else
                 {
                     // we got no backup data for that prefab
-                    // only restore prefabs with existing backups
                 }
             }
             else
@@ -340,11 +341,11 @@ namespace OfTamingAndBreeding.Registry
                 {
                     Plugin.LogServerDebug($"Restoring cloned prefab {prefabName} ({backup.name})");
                     cb?.Invoke(current, backup);
+                    RestorePrefabFromBackup(current, backup);
                 }
                 else
                 {
                     // we got no backup data for that prefab
-                    // only restore prefabs with existing backups
                 }
             }
 

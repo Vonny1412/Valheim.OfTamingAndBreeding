@@ -2,6 +2,7 @@
 using OfTamingAndBreeding.Components;
 using OfTamingAndBreeding.Components.Traits;
 using UnityEngine;
+using static UnityEngine.Networking.UnityWebRequest;
 
 namespace OfTamingAndBreeding.Patches
 {
@@ -12,12 +13,8 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPostfix]
         private static void ItemDrop_DropItem_Postfix(ItemDrop __instance, ItemDrop.ItemData item, int amount, Vector3 position, Quaternion rotation, ItemDrop __result)
         {
-            // do not use __instance !!!
-            // because __result is the item that has been dropped
-            if (__result.TryGetComponent<ItemDropTrait>(out var trait))
-            {
-                trait.OnItemDropped();
-            }
+            var trait = ItemDropTrait.GetUnsafe(__result.gameObject);
+            trait.OnItemDropped();
         }
 
         [HarmonyPatch(typeof(ItemDrop), "RemoveOne")]
@@ -27,10 +24,8 @@ namespace OfTamingAndBreeding.Patches
             // used for RequireFoodDroppedByPlayer-feature
             // because when a creature eats food with a stack size of 1 that item would be destroyed
             // thats why we need to patch this one to pass the flags to Tameable_OnConsumedItem_Patch
-            if (__instance.TryGetComponent<ItemDropTrait>(out var trait))
-            {
-                trait.OnOneRemoved();
-            }
+            var trait = ItemDropTrait.GetUnsafe(__instance.gameObject);
+            trait.OnOneRemoved();
             // do return nothing (always call original method)
         }
 
@@ -39,7 +34,8 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         private static void ItemDrop_SetQuality_Postfix(ItemDrop __instance)
         {
-            if (__instance.TryGetComponent<ScaledEgg>(out var scaler))
+            //if (__instance.TryGetComponent<ScaledEgg>(out var scaler))
+            if (ScaledEgg.TryGet(__instance.gameObject, out var scaler))
             {
                 // we need to multiply because localScale has already been set to variable scaling according to stuff like quality
                 __instance.transform.localScale *= scaler.m_scale;

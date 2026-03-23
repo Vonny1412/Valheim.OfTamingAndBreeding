@@ -1,10 +1,12 @@
 ﻿using OfTamingAndBreeding.Components;
+using OfTamingAndBreeding.Components.SpecialPrefabs;
 using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Data.Models.SubData;
 using OfTamingAndBreeding.OTABUtils;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using UnityEngine;
 
@@ -40,7 +42,7 @@ namespace OfTamingAndBreeding.Registry.Processing
             switch (data.Components.Character)
             {
                 case ComponentBehavior.Remove:
-                    Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Character)}({nameof(ComponentBehavior.Remove)}): Component cannot be removed");
+                    Plugin.LogServerWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Character)}({nameof(ComponentBehavior.Remove)}): Component cannot be removed");
                     break;
                 case ComponentBehavior.Patch:
                     if (data.Character == null)
@@ -52,7 +54,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 case ComponentBehavior.Inherit:
                     if (data.Character != null)
                     {
-                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Character)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
+                        Plugin.LogServerWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Character)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
                     }
                     break;
             }
@@ -60,7 +62,7 @@ namespace OfTamingAndBreeding.Registry.Processing
             switch (data.Components.MonsterAI)
             {
                 case ComponentBehavior.Remove:
-                    Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}({nameof(ComponentBehavior.Remove)}): Component cannot be removed");
+                    Plugin.LogServerWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}({nameof(ComponentBehavior.Remove)}): Component cannot be removed");
                     break;
                 case ComponentBehavior.Patch:
                     if (data.MonsterAI == null)
@@ -72,7 +74,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 case ComponentBehavior.Inherit:
                     if (data.MonsterAI != null)
                     {
-                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
+                        Plugin.LogServerWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
                     }
                     break;
             }
@@ -89,7 +91,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 case ComponentBehavior.Inherit:
                     if (data.Tameable != null)
                     {
-                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Tameable)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
+                        Plugin.LogServerWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Tameable)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
                     }
                     break;
             }
@@ -106,7 +108,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 case ComponentBehavior.Inherit:
                     if (data.Procreation != null)
                     {
-                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Procreation)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
+                        Plugin.LogServerWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Procreation)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
                     }
                     break;
             }
@@ -129,7 +131,7 @@ namespace OfTamingAndBreeding.Registry.Processing
             {
                 if (data.Tameable.StarvingGraceFactor.HasValue && data.Tameable.StarvingGraceFactor.Value < 0)
                 {
-                    Plugin.LogWarning($"{model}.{nameof(data.Tameable)}.{nameof(data.Tameable.StarvingGraceFactor)}: Negative values not allowed - Using null");
+                    Plugin.LogServerWarning($"{model}.{nameof(data.Tameable)}.{nameof(data.Tameable.StarvingGraceFactor)}: Negative values not allowed - Using null");
                     data.Tameable.StarvingGraceFactor = null;
                 }
             }
@@ -153,7 +155,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 }
                 else if (data.Procreation.Partner.Length == 0)
                 {
-                    Plugin.LogWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Partner)}: Field set to null (list was empty)");
+                    Plugin.LogServerWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Partner)}: Field set to null (list was empty)");
                     data.Procreation.Partner = null; // just clean it up
                 }
                 else
@@ -173,12 +175,12 @@ namespace OfTamingAndBreeding.Registry.Processing
                 {
                     if (data.Procreation.Partner == null)
                     {
-                        Plugin.LogWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.PartnerRecheckSeconds)}: Field set to null (Partner list is null or empty)");
+                        Plugin.LogServerWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.PartnerRecheckSeconds)}: Field set to null (Partner list is null or empty)");
                         data.Procreation.PartnerRecheckSeconds = null;
                     }
                     else if (data.Procreation.Partner.Length == 1)
                     {
-                        Plugin.LogWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.PartnerRecheckSeconds)}: Field set to null (Partner list only contains one prefab)");
+                        Plugin.LogServerWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.PartnerRecheckSeconds)}: Field set to null (Partner list only contains one prefab)");
                         data.Procreation.PartnerRecheckSeconds = null;
                     }
                 }
@@ -200,13 +202,13 @@ namespace OfTamingAndBreeding.Registry.Processing
                         }
                         if (offspringData.LevelUpChance != null && offspringData.MaxLevel == null)
                         {
-                            Plugin.LogWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.LevelUpChance)}: Field needs 'MaxLevel' to be set.");
+                            Plugin.LogServerWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.LevelUpChance)}: Field needs 'MaxLevel' to be set.");
                             offspringData.LevelUpChance = null;
                             // no error
                         }
                         if (offspringData.MaxLevel != null && offspringData.MaxLevel <= 0)
                         {
-                            Plugin.LogWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.MaxLevel)}: Invalid value '{offspringData.MaxLevel}' - Setting to 0");
+                            Plugin.LogServerWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.MaxLevel)}: Invalid value '{offspringData.MaxLevel}' - Setting to 0");
                             offspringData.MaxLevel = 1;
                             // no error
                         }
@@ -282,7 +284,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 bool wantTameableActive = data.Components.Tameable != ComponentBehavior.Remove && (hasTameable || data.Components.Tameable == ComponentBehavior.Patch);
                 if (wantProcreationActive && !wantTameableActive)
                 {
-                    Plugin.LogWarning($"{model}.{nameof(data.Procreation)}: Component requires {nameof(data.Tameable)}");
+                    Plugin.LogServerWarning($"{model}.{nameof(data.Procreation)}: Component requires {nameof(data.Tameable)}");
                     //error = true;
                 }
 
@@ -294,7 +296,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 {
                     data.MonsterAI.ConsumeItems = data.MonsterAI.ConsumeItems.Where((CreatureData.MonsterAIConsumItemData foodData, int i) => {
 
-                        if (StaticContext.SpecialPrefabContext.IsSpecialPrefabCommand(foodData.Prefab))
+                        if (SpecialPrefabRegistry.IsSpecialPrefabCommand(foodData.Prefab))
                         {
                             return true;
                         }
@@ -303,7 +305,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                                     ?? PrefabRegistry.Instance.GetOriginalPrefab(foodData.Prefab);
                         if (foodItem == null)
                         {
-                            Plugin.LogWarning($"{model}.{nameof(data.MonsterAI)}.{nameof(data.MonsterAI.ConsumeItems)}.{i}.{nameof(foodData.Prefab)}: '{foodData.Prefab}' not found");
+                            Plugin.LogServerWarning($"{model}.{nameof(data.MonsterAI)}.{nameof(data.MonsterAI.ConsumeItems)}.{i}.{nameof(foodData.Prefab)}: '{foodData.Prefab}' not found");
                             return false;
                         }
                         else
@@ -424,14 +426,16 @@ namespace OfTamingAndBreeding.Registry.Processing
                         characterTrait.m_changeFactionWhenTamedTo = data.Character.FactionWhenTamed.Value;
                     }
 
-                    characterTrait.m_canAttackTamed = data.Character.CanAttackTamed;
-                    characterTrait.m_canBeAttackedByTamed = data.Character.CanBeAttackedByTamed;
-                    characterTrait.m_canAttackPlayer = data.Character.CanAttackPlayer;
-                    characterTrait.m_canBeAttackedByPlayer = data.Character.CanBeAttackedByPlayer;
-                    characterTrait.m_canAttackGroup = data.Character.CanAttackGroup;
-                    characterTrait.m_canBeAttackedByGroup = data.Character.CanBeAttackedByGroup;
-                    characterTrait.m_canAttackFaction = data.Character.CanAttackFaction;
-                    characterTrait.m_canBeAttackedByFaction = data.Character.CanBeAttackedByFaction;
+                    characterTrait.m_tamedCanAttackPlayer = data.Character.TamedCanAttackPlayer;
+                    characterTrait.m_tamedCanBeAttackedByPlayer = data.Character.TamedCanBeAttackedByPlayer;
+                    characterTrait.m_tamedCanAttackTamed = data.Character.TamedCanAttackTamed;
+                    characterTrait.m_tamedCanBeAttackedByTamed = data.Character.TamedCanBeAttackedByTamed;
+                    characterTrait.m_tamedCanAttackWild = data.Character.TamedCanAttackWild;
+                    characterTrait.m_tamedCanBeAttackedByWild = data.Character.TamedCanBeAttackedByWild;
+                    characterTrait.m_tamedCanAttackGroup = data.Character.TamedCanAttackGroup;
+                    characterTrait.m_tamedCanBeAttackedByGroup = data.Character.TamedCanBeAttackedByGroup;
+                    characterTrait.m_tamedCanAttackFaction = data.Character.TamedCanAttackFaction;
+                    characterTrait.m_tamedCanBeAttackedByFaction = data.Character.TamedCanBeAttackedByFaction;
 
                 }
             }
@@ -457,12 +461,9 @@ namespace OfTamingAndBreeding.Registry.Processing
                             .Select((ci) =>
                             {
 
-                                if (StaticContext.SpecialPrefabContext.IsSpecialPrefabCommand(ci.Prefab))
+                                if (SpecialPrefabRegistry.IsSpecialPrefabCommand(ci.Prefab))
                                 {
-                                    if (StaticContext.SpecialPrefabContext.CreateSpecialPrefabFromCommand(ci.Prefab, out var specialPrefab))
-                                    {
-                                        // nothing todo if it has been created
-                                    }
+                                    SpecialPrefabRegistry.CreateSpecialPrefabFromCommand(ci.Prefab, out var specialPrefab);
                                     return new BaseAITrait.ConsumeItem
                                     {
                                         itemDrop = specialPrefab.GetComponent<ItemDrop>(),
@@ -539,12 +540,12 @@ namespace OfTamingAndBreeding.Registry.Processing
                         {
                             if (AnimationUtils.AnimationExists(creature, customAnimation, out AnimationClip animClip))
                             {
-                                var runner = PrefabRegistry.Instance.GetOrAddComponent<ConsumeAnimationClipOverlay>(creatureName, creature);
+                                var runner = PrefabRegistry.Instance.GetOrAddComponent<AnimationClipOverlay>(creatureName, creature);
                                 runner.m_animClipName = customAnimation;
                             }
                             else
                             {
-                                Plugin.LogWarning(
+                                Plugin.LogServerWarning(
                                     $"{model}.{nameof(MonsterAI)}.{nameof(data.MonsterAI.ConsumeAnimation)}: Animation '{customAnimation}' not found on prefab '{creatureName}'. Custom consume animation ignored."
                                 );
                             }
@@ -568,6 +569,15 @@ namespace OfTamingAndBreeding.Registry.Processing
                     var pet = PrefabRegistry.Instance.GetOrAddComponent<Pet>(creatureName, creature); // also neccessary
 
                     Plugin.LogServerDebug($"{model}.{nameof(data.Tameable)}: Setting Tameable values");
+
+                    if (data.Tameable.TamingBoostEnabled.HasValue)
+                    {
+                        if (data.Tameable.TamingBoostEnabled.Value == false)
+                        {
+                            tameable.m_tamingSpeedMultiplierRange = 0;
+                            tameable.m_tamingBoostMultiplier = 1;
+                        }
+                    }
 
                     if (data.Tameable.Commandable.HasValue)
                     {
@@ -613,8 +623,6 @@ namespace OfTamingAndBreeding.Registry.Processing
                         tameableTrait.m_starvingGraceFactor = data.Tameable.StarvingGraceFactor.Value;
                     }
 
-                    tameableTrait.m_interactable = data.Tameable.Interactable;
-
                     if (data.Tameable.RequireGlobalKeys != null)
                     {
                         var keysList = ParseGlobalKeys(data.Tameable.RequireGlobalKeys);
@@ -640,16 +648,41 @@ namespace OfTamingAndBreeding.Registry.Processing
                             })
                         };
                     }
-                    if (tameable.m_petEffect.m_effectPrefabs.Length == 0)
+
+                    tameable.m_petEffect ??= new EffectList(); // just to make sure
+                    if (data.Tameable.ShowPetEffect == false)
                     {
-                        tameable.m_petEffect = new EffectList
+                        tameable.m_petEffect.m_effectPrefabs = Array.Empty<EffectList.EffectData>();
+                    }
+                    else
+                    {
+                        if (tameable.m_petEffect.m_effectPrefabs == null || tameable.m_petEffect.m_effectPrefabs.Length == 0)
                         {
-                            m_effectPrefabs = OTABUtils.PrefabUtils.CreateEffectList(new UnityEngine.GameObject[] {
+                            tameable.m_petEffect.m_effectPrefabs = OTABUtils.PrefabUtils.CreateEffectList(new UnityEngine.GameObject[]
+                            {
                                 PrefabUtils.GetVisualOnlyEffect("fx_boar_pet", "otab_vfx_pet"),
                                 idleSoundPrefab,
-                            })
-                        };
+                            });
+                        }
                     }
+
+                    if (data.Tameable.PetAnswerText != null)
+                    {
+                        if (data.Tameable.PetAnswerText.Length == 0)
+                        {
+                            tameable.m_tameTextGetter = new Tameable.TextGetter(() => " ");
+                        }
+                        else
+                        {
+                            tameable.m_tameText = data.Tameable.PetAnswerText;
+                        }
+                    }
+
+                    if (data.Tameable.PetCommandText != null)
+                    {
+                        tameableTrait.m_petCommand = data.Tameable.PetCommandText;
+                    }
+                    
                 }
             }
             else if (data.Components.Tameable == ComponentBehavior.Remove)

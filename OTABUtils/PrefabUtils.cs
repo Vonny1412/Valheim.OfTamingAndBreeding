@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
@@ -36,7 +37,6 @@ namespace OfTamingAndBreeding.OTABUtils
                 }
             }
         }
-
 
         //------------------------------
         // single components
@@ -263,5 +263,77 @@ namespace OfTamingAndBreeding.OTABUtils
         }
         
         
+        public static void DumpPrefabs(string outputDir)
+        {
+            foreach (var prefab in ZNetScene.instance.m_prefabs)
+            {
+                string type = null;
+                if (prefab.GetComponent<ItemDrop>())
+                {
+                    type = "ItemDrop";
+                }
+                else if (prefab.GetComponent<BaseAI>())
+                {
+                    type = "BaseAI";
+                }
+                if (type == null)
+                {
+                    continue;
+                }
+
+                var file = Path.Combine(outputDir, type, $"{prefab.name}.txt");
+                var dir = Path.GetDirectoryName(file);
+                if (!Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+                if (System.IO.File.Exists(file))
+                {
+                    System.IO.File.Delete(file);
+                }
+                var appender = System.IO.File.AppendText(file);
+                foreach (var component in prefab.GetComponents<Component>())
+                {
+                    if (component == null)
+                    {
+                        continue;
+                    }
+
+                    Type t = component.GetType();
+                    while (t != null && t != typeof(object))
+                    {
+                        appender.WriteLine(t.Name);
+
+                        foreach (var f in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
+                        {
+                            if (f.IsInitOnly)
+                                continue;
+
+                            object value = null;
+
+                            try
+                            {
+                                value = f.GetValue(component);
+                            }
+                            catch (Exception ex)
+                            {
+                                value = $"<error: {ex.GetType().Name}>";
+                            }
+
+                            appender.WriteLine($"  {f.Name}: ({f.FieldType.Name}) {value}");
+                        }
+
+                        t = t.BaseType;
+                    }
+
+
+
+
+                    appender.WriteLine();
+                }
+                appender.Close();
+            }
+        }
+
     }
 }

@@ -1,240 +1,351 @@
 ﻿using HarmonyLib;
 using OfTamingAndBreeding.Components.Traits;
-using OfTamingAndBreeding.Data.Models.SubData;
-using System;
-using System.Runtime.CompilerServices;
+using static OfTamingAndBreeding.Components.Traits.CharacterTrait;
 
 namespace OfTamingAndBreeding.Patches
 {
     internal partial class DataReadyPatches
     {
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool EvaluateCondition(
-            IsEnemyCondition condition,
-            bool relevant,
-            bool isHungry,
-            bool isStarving,
-            ref bool neverEver)
-        {
-            switch (condition)
-            {
-                case IsEnemyCondition.Never:
-                    return false;
-                case IsEnemyCondition.Always:
-                    return true;
-                case IsEnemyCondition.WhenFed:
-                    return !isHungry;
-                case IsEnemyCondition.WhenHungry:
-                    return isHungry;
-                case IsEnemyCondition.WhenStarving:
-                    return isStarving;
-                case IsEnemyCondition.NeverEver:
-                    neverEver = true;
-                    return false;
-                default:
-                    return false;
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool HasFactionAlliance(Character.Faction a, Character.Faction b)
-        {
-            if (a == b)
-                return true;
-
-            if (a > b)
-            {
-#pragma warning disable IDE0180
-                var tmp = a;
-#pragma warning restore IDE0180
-                a = b;
-                b = tmp;
-            }
-
-            /* // current enum
-            public enum Faction {
-                Players,
-                AnimalsVeg,
-                ForestMonsters,
-                Undead,
-                Demon,
-                MountainMonsters,
-                SeaMonsters,
-                PlainsMonsters,
-                Boss,
-                MistlandsMonsters,
-                Dverger,
-                PlayerSpawned,
-                TrainingDummy
-            }
-            */
-
-            switch (a)
-            {
-                case Character.Faction.Players:
-                    return b == Character.Faction.Dverger;
-
-                case Character.Faction.AnimalsVeg:
-                    return b == Character.Faction.ForestMonsters
-                        || b == Character.Faction.MistlandsMonsters
-                        || b == Character.Faction.Dverger;
-
-                case Character.Faction.Undead:
-                    return b == Character.Faction.Demon
-                        || b == Character.Faction.Boss;
-
-                case Character.Faction.Demon:
-                    return b == Character.Faction.Boss;
-
-                case Character.Faction.ForestMonsters:
-                case Character.Faction.MountainMonsters:
-                case Character.Faction.SeaMonsters:
-                case Character.Faction.PlainsMonsters:
-                    return b == Character.Faction.Boss;
-
-                case Character.Faction.Boss:
-                    return b == Character.Faction.MistlandsMonsters
-                        || b == Character.Faction.Dverger;
-            }
-
-            return false;
-        }
-
         [HarmonyPatch(typeof(BaseAI), "IsEnemy", new[] { typeof(Character), typeof(Character) })]
-        [HarmonyPrefix]
-        // not using Last or First priority -> other mods may want to change behaviour
-        private static bool BaseAI_IsEnemy_Prefix(Character a, Character b, ref bool __result)
+        [HarmonyPrefix] // not using Last or First priority -> other mods may want to change behaviour
+        private static bool BaseAI_IsEnemy_Prefix(Character a, Character b, bool __runOriginal, ref bool __result)
         {
-            StaticContext.IsEnemyContext.Depth++;
-            bool isOuterMost = (StaticContext.IsEnemyContext.Depth == 1);
-            if (!isOuterMost)
+            // blocked by different mod
+            if (!__runOriginal)
             {
-                return true;
+                return false;
             }
 
-            if (a == b || !a || !b)
+            if (!a || !b || a == b)
             {
-                return true;
-            }
-
-            bool isPlayer1 = a.IsPlayer();
-            bool isPlayer2 = b.IsPlayer();
-            bool isTamed1 = a.IsTamed();
-            bool isTamed2 = b.IsTamed();
-
-            // (both wild || both player) let valheim decide
-            if ((!isTamed1 && !isTamed2) || (isPlayer1 && isPlayer2))
-            {
-                return true;
-            }
-
-            var trait1 = a.GetComponent<CharacterTrait>();
-            var trait2 = b.GetComponent<CharacterTrait>();
-
-            var isHungry1 = trait1 && trait1.IsHungry();
-            var isHungry2 = trait2 && trait2.IsHungry();
-            var isStarving1 = isHungry1 && trait1.IsStarving();
-            var isStarving2 = isHungry2 && trait2.IsStarving();
-
-            var neverEver = false;
-            var canAttack = false;
-
-            if (isPlayer2)
-            {
-                // aggression tamed vs player
-                canAttack |= EvaluateCondition(trait1.m_canAttackPlayer, isTamed1, isHungry1, isStarving1, ref neverEver);
-            }
-            else if (isPlayer1)
-            {
-                // aggression player vs tamed
-                canAttack |= EvaluateCondition(trait2.m_canBeAttackedByPlayer, isTamed2, isHungry2, isStarving2, ref neverEver);
-            }
-            else
-            {
-                Character.Faction faction1 = a.GetFaction();
-                Character.Faction faction2 = b.GetFaction();
-                string group1 = a.GetGroup();
-                string group2 = b.GetGroup();
-
-                var isBothTamed = isTamed1 && isTamed2;
-                var isSameGroup = !string.IsNullOrEmpty(group1) && group1 == group2;
-                var hasFactionAlliance = HasFactionAlliance(faction1, faction2);
-                var canAttackTamed = false;
-                var canAttackGroup = false;
-                var canAttackFaction = false;
-
-                // aggression tamed vs tamed (outgoing)
-                canAttackTamed |= EvaluateCondition(trait1.m_canAttackTamed, isBothTamed, isHungry1, isStarving1, ref neverEver);
-
-                // aggression tamed vs tamed (incoming)
-                canAttackTamed |= EvaluateCondition(trait2.m_canBeAttackedByTamed, isBothTamed, isHungry2, isStarving2, ref neverEver);
-
-                // aggression tamed vs group
-                canAttackGroup |= EvaluateCondition(trait1.m_canAttackGroup, isTamed1 && isSameGroup, isHungry1, isStarving1, ref neverEver);
-
-                // aggression group vs tamed
-                canAttackGroup |= EvaluateCondition(trait2.m_canBeAttackedByGroup, isTamed2 && isSameGroup, isHungry2, isStarving2, ref neverEver);
-
-                // aggression tamed vs faction
-                canAttackFaction |= EvaluateCondition(trait1.m_canAttackFaction, isTamed1 && hasFactionAlliance, isHungry1, isStarving1, ref neverEver);
-
-                // aggression faction vs tamed
-                canAttackFaction |= EvaluateCondition(trait2.m_canBeAttackedByFaction, isTamed2 && hasFactionAlliance, isHungry2, isStarving2, ref neverEver);
-
-                if (isSameGroup && canAttackGroup)
-                {
-                    // group aggression allowed
-                    if (isBothTamed == false || canAttackTamed)
-                    {
-                        // and not both are tamed OR tamed aggression allowed
-                        canAttack = true;
-                    }
-                }
-                else if (hasFactionAlliance && canAttackFaction)
-                {
-                    // faction aggression allowed
-                    if (isBothTamed == false || canAttackTamed)
-                    {
-                        // and not both are tamed OR tamed aggression allowed
-                        canAttack = true;
-                    }
-                }
-                else if (isBothTamed && canAttackTamed)
-                {
-                    // not the same group or faction
-                    // but both sides are tamed + aggression allowed
-                    // use IsEnemyContext to temporarly disable tamed status of b (the target beeing attacked by a)
-                    StaticContext.IsEnemyContext.Active = true;
-                    StaticContext.IsEnemyContext.TargetInstance = b;
-                    //hint: if neverEver is true the patch finalizer will clear the context states anyway
-                }
-
-            }
-
-            if (neverEver)
-            {
-                // neverever is a special case - always!
-                // it should only be used to make creatures passive all the time
-                // useful for animals like deers
+                // identical behavior to vanilla
                 __result = false;
                 return false;
             }
 
-            if (canAttack)
+            /*
+
+            WARNING - this is a hot path!
+            - return as early as possible
+            - hostility is getting evaluated inside BaseAI.UpdateAI patch
+            - hostilities are stored as bit masks to speed up rather than using multiple switches
+
+            */
+
+            bool isTamed1 = a.IsTamed();
+            bool isTamed2 = b.IsTamed();
+            var isOneTamed = isTamed1 || isTamed2;
+            var isBothTamed = isTamed1 && isTamed2;
+
+            // get traits only if needed
+            CharacterTrait trait1 = null;
+            CharacterTrait trait2 = null;
+            if (isTamed1)
+            {
+                //trait1 = a.GetComponent<CharacterTrait>();
+                trait1 = CharacterTrait.GetUnsafe(a.gameObject);
+            }
+            if (isTamed2)
+            {
+                //trait2 = b.GetComponent<CharacterTrait>();
+                trait2 = CharacterTrait.GetUnsafe(b.gameObject);
+            }
+
+            Character.Faction faction1 = a.GetFaction();
+            Character.Faction faction2 = b.GetFaction();
+
+            bool isPlayer1 = faction1 == Character.Faction.Players;
+            bool isPlayer2 = faction2 == Character.Faction.Players;
+            var isOnePlayer = isPlayer1 || isPlayer2;
+
+            bool aggra1 = a.GetBaseAI()?.IsAggravated() ?? false;
+            bool aggra2 = b.GetBaseAI()?.IsAggravated() ?? false;
+            // vanilla: aggravated creatures can become hostile towards players
+            // always comes before otab logic - aggravated also beats "never"
+            if (isOnePlayer && ((aggra1 && isPlayer2) || (aggra2 && isPlayer1)))
             {
                 __result = true;
                 return false;
             }
 
-            return true; // let valheim decide
-        }
+            string group1 = a.GetGroup();
+            var isSameGroup = group1.Length > 0 && group1 == b.GetGroup();
 
-        [HarmonyPatch(typeof(BaseAI), "IsEnemy", new[] { typeof(Character), typeof(Character) })]
-        [HarmonyFinalizer]
-        private static void BaseAI_IsEnemy_Finalizer(Exception __exception)
-        {
-            StaticContext.IsEnemyContext.Cleanup();
+            bool hasFactionAlliance;
+            if (faction1 == faction2)
+            {
+                hasFactionAlliance = true;
+            }
+            else
+            {
+                // vanilla faction alliances
+                // todo: make sure that the alliances are always up to date after any valheim update (keep this todo as reminder)
+                hasFactionAlliance = faction1 switch
+                {
+                    Character.Faction.AnimalsVeg =>         false,
+                    Character.Faction.PlayerSpawned =>      false,
+                    Character.Faction.Players =>            faction2 == Character.Faction.Dverger,
+                    Character.Faction.ForestMonsters =>     faction2 == Character.Faction.AnimalsVeg || faction2 == Character.Faction.Boss,
+                    Character.Faction.Undead =>             faction2 == Character.Faction.Demon || faction2 == Character.Faction.Boss,
+                    Character.Faction.Demon =>              faction2 == Character.Faction.Undead || faction2 == Character.Faction.Boss,
+                    Character.Faction.MountainMonsters =>   faction2 == Character.Faction.Boss,
+                    Character.Faction.SeaMonsters =>        faction2 == Character.Faction.Boss,
+                    Character.Faction.PlainsMonsters =>     faction2 == Character.Faction.Boss,
+                    Character.Faction.MistlandsMonsters =>  faction2 == Character.Faction.AnimalsVeg || faction2 == Character.Faction.Boss,
+                    Character.Faction.Dverger =>            faction2 == Character.Faction.AnimalsVeg || faction2 == Character.Faction.Boss || faction2 == Character.Faction.Players,
+                    Character.Faction.Boss =>               faction2 != Character.Faction.Players && faction2 != Character.Faction.PlayerSpawned,
+                    Character.Faction.TrainingDummy =>      faction2 != Character.Faction.Players,
+                    _ => false,
+                };
+            }
+
+            // at least one side has to be tamed for otab logic
+            // if none is tamed skip the while block and use vanilla
+            if (!isOneTamed)
+            {
+                goto VANILLA;
+            }
+
+            var skipVanilla = false;
+            var hostilityPlayer = CharacterTrait.HostilityMask.None;
+            var hostilityWild = CharacterTrait.HostilityMask.None;
+            var hostilityTamed = CharacterTrait.HostilityMask.None;
+            var hostilityGroup = CharacterTrait.HostilityMask.None;
+            var hostilityFaction = CharacterTrait.HostilityMask.None;
+
+            //
+            // build hostility bit masks
+            // early return if any "Never" appears
+            //
+
+            // prioritice inter-faction
+            // because most "Never" situations in otab are faction related
+            if (hasFactionAlliance)
+            {
+                if (isTamed1)
+                {
+                    // tamed -> faction
+                    hostilityFaction |= trait1.TamedCanAttackFaction;
+                }
+                if (isTamed2)
+                {
+                    // faction -> tamed
+                    hostilityFaction |= trait2.TamedCanBeAttackedByFaction;
+                }
+
+                if ((hostilityFaction & HostilityMask.Never) != 0)
+                {
+                    __result = false;
+                    return false;
+                }
+                if ((hostilityFaction & HostilityMask.Skip) != 0)
+                {
+                    skipVanilla = true;
+                }
+            }
+
+            // inter-group hostility could also be "Never" many times
+            if (isSameGroup)
+            {
+                if (isTamed1)
+                {
+                    // tamed -> group
+                    hostilityGroup |= trait1.TamedCanAttackGroup;
+                }
+                if (isTamed2)
+                {
+                    // group -> tamed
+                    hostilityGroup |= trait2.TamedCanBeAttackedByGroup;
+                }
+
+                if ((hostilityGroup & HostilityMask.Never) != 0)
+                {
+                    __result = false;
+                    return false;
+                }
+                if ((hostilityGroup & HostilityMask.Skip) != 0)
+                {
+                    skipVanilla = true;
+                }
+            }
+
+            // inter-tamed-hostility
+            if (isBothTamed)
+            {
+                // tamed -> tamed (outgoing)
+                hostilityTamed |= trait1.TamedCanAttackTamed;
+                // tamed -> tamed (incoming)
+                hostilityTamed |= trait2.TamedCanBeAttackedByTamed;
+
+                if ((hostilityTamed & HostilityMask.Never) != 0)
+                {
+                    __result = false;
+                    return false;
+                }
+                if ((hostilityTamed & HostilityMask.Skip) != 0)
+                {
+                    skipVanilla = true;
+                }
+            }
+            // tamed vs wild / wild vs tamed
+            else
+            {
+                // not both tamed, we only need to check each side on its own
+                if (isTamed1)
+                {
+                    // tamed -> wild
+                    hostilityWild |= trait1.TamedCanAttackWild;
+                }
+                else // isTamed2
+                {
+                    // wild -> tamed
+                    hostilityWild |= trait2.TamedCanBeAttackedByWild;
+                }
+
+                if ((hostilityWild & HostilityMask.Never) != 0)
+                {
+                    __result = false;
+                    return false;
+                }
+                if ((hostilityWild & HostilityMask.Skip) != 0)
+                {
+                    skipVanilla = true;
+                }
+            }
+
+            if (isOnePlayer)
+            {
+                if (isPlayer1)
+                {
+                    if (isTamed2) // do not remove this. isplayer can also mean it is player-faction
+                    {
+                        // player -> tamed
+                        hostilityPlayer |= trait2.TamedCanBeAttackedByPlayer;
+                    }
+                }
+                else // isPlayer2
+                {
+                    if (isTamed1) // do not remove this. isplayer can also mean it is player-faction
+                    {
+                        // tamed -> player
+                        hostilityPlayer |= trait1.TamedCanAttackPlayer;
+                    }
+                }
+
+                if ((hostilityPlayer & HostilityMask.Never) != 0)
+                {
+                    __result = false;
+                    return false;
+                }
+                if ((hostilityPlayer & HostilityMask.Skip) != 0)
+                {
+                    skipVanilla = true;
+                }
+            }
+
+            //
+            // evaluate hostility bit masks
+            //
+
+            var canAttackPlayer = (hostilityPlayer & HostilityMask.Attack) != 0;
+            var canAttackGroup = (hostilityGroup & HostilityMask.Attack) != 0;
+            var canAttackFaction = (hostilityFaction & HostilityMask.Attack) != 0;
+            var canAttackTamed = (hostilityTamed & HostilityMask.Attack) != 0;
+            var canAttackWild = (hostilityWild & HostilityMask.Attack) != 0;
+
+            // player > group > faction > tamed > wild
+            if (isOnePlayer)
+            {
+                // isPlayer ignores is-same-faction
+                // isPlayer ignores is-both-tamed
+                // isPlayer NOT ignores is-same-group
+                if (canAttackPlayer && (!isSameGroup || canAttackGroup))
+                {
+                    __result = true;
+                    return false;
+                }
+            }
+
+            // group > faction > tamed > wild
+            else if (isSameGroup)
+            {
+                // group aggression allowed
+                // and not both are tamed OR tamed aggression allowed
+                if (canAttackGroup && (!isBothTamed || canAttackTamed))
+                {
+                    __result = true;
+                    return false;
+                }
+            }
+
+            // faction > tamed > wild
+            else if (hasFactionAlliance)
+            {
+                // faction aggression allowed
+                // and not both are tamed OR tamed aggression allowed
+                if (canAttackFaction && (!isBothTamed || canAttackTamed))
+                {
+                    __result = true;
+                    return false;
+                }
+            }
+
+            // tamed > wild
+            else if (canAttackTamed)
+            {
+                // tame-vs-tame override by otab logic
+                // set target (character b) creature tame state to not-tamed
+                isTamed2 = false;
+                isBothTamed = false;
+                isOneTamed = isTamed1;
+                // now we got tamed-vs-wild
+                // continue with vanilla logic
+            }
+
+            // wild fallback
+            else if (canAttackWild)
+            {
+                __result = true;
+                return false;
+            }
+
+            // at least one otab hostility rule has been set
+            // but none has clearly demanded an attack
+            if (skipVanilla)
+            {
+                __result = false;
+                return false;
+            }
+            
+            //
+            // vanilla logic
+            //
+            VANILLA:
+
+            if (isSameGroup)
+            {
+                __result = false;
+                return false;
+            }
+
+            if (isOneTamed)
+            {
+                if (isBothTamed
+                || (isTamed1 && (isPlayer2 || (!aggra2 && faction2 == Character.Faction.Dverger)))
+                || (isTamed2 && (isPlayer1 || (!aggra1 && faction1 == Character.Faction.Dverger)))
+                )
+                {
+                    __result = false;
+                    return false;
+                }
+                __result = true;
+                return false;
+            }
+
+            // vanilla faction check
+            __result = !hasFactionAlliance;
+            return false;
         }
 
     }

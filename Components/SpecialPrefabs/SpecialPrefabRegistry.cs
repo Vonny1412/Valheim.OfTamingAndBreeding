@@ -1,41 +1,81 @@
 ﻿using Jotunn.Managers;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.StaticContext
+namespace OfTamingAndBreeding.Components.SpecialPrefabs
 {
-    internal static class SpecialPrefabContext
+    public static class SpecialPrefabRegistry
     {
         private const string SpecialPrefabPrefix = "@otab=";
         private const string SpecialPrefabName = "_OTAB_SPECIAL_PREFAB_";
-        private static readonly Dictionary<int, GameObject> specialPrefabs = new Dictionary<int, GameObject>();
+        private static readonly Dictionary<int, GameObject> specialPrefabs;
 
-        public static bool IsSpecialPrefab(string anyName)
+        static SpecialPrefabRegistry()
         {
-            return anyName != null && anyName.StartsWith(SpecialPrefabName, StringComparison.Ordinal); // allows also "_OTAB_SPECIAL_PREFAB_[hash](Clone)"
+            specialPrefabs = new Dictionary<int, GameObject>();
+
+            Net.NetworkSessionManager.Instance.OnSessionClosed += (netsess, dataLoaded) => {
+                // do not clear ! keep it as cache
+                //specialPrefabs.Clear();
+            };
+
+
+
+
+
+            // todo: "Decoy Bait"
+            // todo: "Admin Bait"
+
+
+
         }
 
-        public static bool IsSpecialPrefabCommand(string prefabName)
+        public static bool IsSpecialPrefabCommand(string command)
         {
-            return prefabName.StartsWith(SpecialPrefabPrefix, StringComparison.OrdinalIgnoreCase);
+            if (command == null)
+            {
+                return false;
+            }
+            if (command.Length == 0)
+            {
+                return false;
+            }
+            return command.StartsWith(SpecialPrefabPrefix, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public static bool IsSpecialPrefab(GameObject prefab)
+        {
+            if (!prefab)
+            {
+                return false;
+            }
+            var prefabName = prefab.name;
+            if (prefabName == null)
+            {
+                return false;
+            }
+            if (prefabName.Length == 0)
+            {
+                return false;
+            }
+            return prefabName.CustomStartsWith(SpecialPrefabName); // allows also "_OTAB_SPECIAL_PREFAB_[hash](Clone)"
         }
 
         // returns true if prefab has been created
         // returns false if prefab already exists
         public static bool CreateSpecialPrefabFromCommand(string command, out GameObject prefab)
         {
-            var nameHash = command.GetStableHashCode();
-            if (specialPrefabs.TryGetValue(nameHash, out prefab))
+            var commandHash = command.GetStableHashCode();
+            if (specialPrefabs.TryGetValue(commandHash, out prefab))
             {
                 return false;
             }
 
             // ---
 
-            var uniqueSpecialPrefabName = SpecialPrefabName + nameHash;
+            var uniqueSpecialPrefabName = SpecialPrefabName + commandHash;
             prefab = PrefabManager.Instance.CreateEmptyPrefab(uniqueSpecialPrefabName, false);
 
             foreach (var payload in SplitCommand(command[SpecialPrefabPrefix.Length..], '|'))
@@ -51,16 +91,12 @@ namespace OfTamingAndBreeding.StaticContext
                 {
 
                     case "anyitem":
-                        var itemDrop = prefab.AddComponent<ItemDrop>();
-                        var customSharedName = subCommandParts.Length > 1 ? subCommandParts[1].Trim() : string.Empty;
-                        itemDrop.m_itemData.m_shared = new ItemDrop.ItemData.SharedData
-                        {
-                            m_name = customSharedName,
-                        };
-                        var comparer = prefab.AddComponent<SpecialPrefabs.OTABSpecialConsumeAnyItem>();
+                        var sharedName = subCommandParts.Length > 1 ? subCommandParts[1].Trim() : string.Empty;
+                        var component = OTABSpecialConsumeAnyItem.AddComponentToSpecialPrefab(prefab, sharedName);
+                        OTABSpecialConsumeAnyItem.Register(component); // need to registter ourself because Awake never gets called
                         break;
 
-                    // more can be added here
+                    // more can be added
 
                     default:
                         Plugin.LogWarning($"Unknown special prefab command '{subCommand}'");
@@ -71,7 +107,7 @@ namespace OfTamingAndBreeding.StaticContext
 
             // ---
 
-            specialPrefabs.Add(nameHash, prefab);
+            specialPrefabs.Add(commandHash, prefab);
             return true;
         }
 

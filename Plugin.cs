@@ -1,10 +1,9 @@
 ﻿using BepInEx;
 using BepInEx.Bootstrap;
-using Jotunn.Managers;
 using Jotunn.Utils;
 using OfTamingAndBreeding.Components.Base;
-using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Components.Traits;
+using OfTamingAndBreeding.OTABUtils;
 using OfTamingAndBreeding.StaticContext;
 using OfTamingAndBreeding.ThirdParty.Mods;
 using System;
@@ -16,10 +15,13 @@ namespace OfTamingAndBreeding
     [BepInDependency(Jotunn.Main.ModGuid)]
     [BepInDependency("com.ValheimModding.YamlDotNetDetector")]
 
+
+
     [BepInDependency(WackyDBBridge.PluginGUID,      BepInDependency.DependencyFlags.SoftDependency)] // OTAB can post-register recipes
     [BepInDependency(CllCBridge.PluginGUID,         BepInDependency.DependencyFlags.SoftDependency)] // lifecycle-aware CLLC inheritance
     [BepInDependency("shudnal.Seasons",             BepInDependency.DependencyFlags.SoftDependency)] // Seasons mod can alter pregnancy durations on specific seasons
     [BepInDependency("digitalroot.mods.GoldBars", BepInDependency.DependencyFlags.SoftDependency)] // maybe used for recipes
+    [BepInDependency("Vonny1412.HoldToCommand", BepInDependency.DependencyFlags.SoftDependency)]
 
     [NetworkCompatibility(CompatibilityLevel.ClientMustHaveMod, VersionStrictness.Minor)] // ensure client has this mod with correct version
 
@@ -30,6 +32,7 @@ namespace OfTamingAndBreeding
             WackyDBBridge.PluginGUID,
             "shudnal.Seasons",
             "digitalroot.mods.GoldBars",
+            "",
         };
         
         private static readonly string[] toleratedMods = new string[] {
@@ -93,14 +96,14 @@ namespace OfTamingAndBreeding
             {
                 if (ThirdParty.ThirdPartyManager.TryGetPluginMetadata(guid, out var meta))
                 {
-                    Plugin.LogInfo($"Mod '{meta.Name}' is on board");
+                    LogInfo($"Mod '{meta.Name}' is on board");
                 }
             }
             foreach (var guid in toleratedMods)
             {
                 if (ThirdParty.ThirdPartyManager.TryGetPluginMetadata(guid, out var meta))
                 {
-                    Plugin.LogWarning($"Mod '{meta.Name}' may not be compatible with OTAB");
+                    LogWarning($"Mod '{meta.Name}' may not be compatible with OTAB");
                 }
             }
             var allOkay = true;
@@ -108,7 +111,7 @@ namespace OfTamingAndBreeding
             {
                 if (ThirdParty.ThirdPartyManager.TryGetPluginMetadata(guid, out var meta))
                 {
-                    Plugin.LogFatal($"Mod '{meta.Name}' is not compatible with OTAB");
+                    LogFatal($"Mod '{meta.Name}' is not compatible with OTAB");
                     allOkay = false;
                 }
             }
@@ -150,7 +153,7 @@ namespace OfTamingAndBreeding
             }
             catch (Exception ex)
             {
-                LogFatal(@"Patch validation failed. This OTAB build is broken.");
+                LogFatal("Patch validation failed. This OTAB build is broken.");
                 LogFatal(ex.ToString());
                 DisablePlugin();
                 throw;
@@ -164,70 +167,103 @@ namespace OfTamingAndBreeding
             Data.CacheManager.CreateInstance();
             Registry.PrefabRegistryManager.CreateInstance();
             Net.NetworkSessionManager.CreateInstance();
+            Net.NetworkSessionManager.Instance.OnSessionStarted += OnNetworkSessionStarted;
+            Net.NetworkSessionManager.Instance.OnSessionReady += OnNetworkSessionReady;
+            Net.NetworkSessionManager.Instance.OnSessionClosed += OnNetworkSessionClosed;
+        }
 
-            Net.NetworkSessionManager.Instance.OnStarted(() => {
-                OnSessionStarted();
-            });
-
-            Net.NetworkSessionManager.Instance.OnReady((dataLoaded) => {
-                if (dataLoaded)
+        private static void OnNetworkSessionStarted(Net.NetworkSessionManager netsess)
+        {
+            if (netsess.IsServer())
+            {
+                if (Configs.DumpPrefabsToCache.Value == true)
                 {
-                    Patches.DataReadyPatches.Install();
+                    PrefabUtils.DumpPrefabs(Path.Combine(CacheDir, "prefabs"));
+                }
+            }
+            else
+            {
+                ZNetSceneContext.Block();
+            }
+            OnSessionStarted();
+        }
+
+        private static void OnNetworkSessionReady(Net.NetworkSessionManager netsess, bool dataLoaded)
+        {
+
+            // add trait components to all prefabs that are still missing these traits
+            // added trait types will be registered and latter removed when session is closing
+            AnimalAITrait.AddComponentToPrefabs(typeof(AnimalAI));
+            BaseAITrait.AddComponentToPrefabs(typeof(BaseAI));
+            CharacterTrait.AddComponentToPrefabs(typeof(Character), typeof(BaseAI));
+            EggGrowTrait.AddComponentToPrefabs(typeof(EggGrow));
+            GrowupTrait.AddComponentToPrefabs(typeof(Growup));
+            ItemDropTrait.AddComponentToPrefabs(typeof(ItemDrop));
+            MonsterAITrait.AddComponentToPrefabs(typeof(MonsterAI));
+            ProcreationTrait.AddComponentToPrefabs(typeof(Procreation));
+            TameableTrait.AddComponentToPrefabs(typeof(Tameable));
+
+            if (dataLoaded)
+            {
+                Patches.DataReadyPatches.Install();
+                if (netsess.IsServer())
+                {
                     foreach (var p in Registry.PrefabRegistryManager.Instance.IterDataProcessors())
                     {
-                        LogServerInfo($"Loaded {p.GetLoadedDataCount()} {p.ModelTypeName} entries");
+                        LogInfo($"Loaded {p.GetLoadedDataCount()} {p.ModelTypeName} entries");
                     }
                 }
-                else
-                {
-                    LogInfo("No server sync detected (timeout). Running in vanilla mode.");
-                }
+                Features.LocalIdleAnimations.RemoveIdleEvents();
+            }
+            else
+            {
+                LogInfo("No server sync detected (timeout). Running in vanilla mode.");
+            }
 
-                // add trait components to all prefabs that are still missing these traits
-                // added trait types will be registered and latter removed when session is closing
-                AnimalAITrait.AddComponentToPrefabs(typeof(AnimalAI));
-                BaseAITrait.AddComponentToPrefabs(typeof(BaseAI));
-                CharacterTrait.AddComponentToPrefabs(typeof(Character), typeof(BaseAI));
-                EggGrowTrait.AddComponentToPrefabs(typeof(EggGrow));
-                GrowupTrait.AddComponentToPrefabs(typeof(Growup));
-                ItemDropTrait.AddComponentToPrefabs(typeof(ItemDrop));
-                MonsterAITrait.AddComponentToPrefabs(typeof(MonsterAI));
-                ProcreationTrait.AddComponentToPrefabs(typeof(Procreation));
-                TameableTrait.AddComponentToPrefabs(typeof(Tameable));
+            if (!netsess.IsServer())
+            {
+                ZNetSceneContext.Unblock();
+            }
+            OnSessionReady(dataLoaded);
+        }
 
-                // unblock objects creation
-                ZNetSceneContext.blockObjectsCreation = false;
-                while (ZNetSceneContext.pending.Count > 0)
-                {
-                    var (near, distant) = ZNetSceneContext.pending.Dequeue();
-                    ZNetScene.instance.CreateObjects(near, distant);
-                }
+        private static void OnNetworkSessionClosed(Net.NetworkSessionManager netsess, bool dataLoaded)
+        {
+            if (dataLoaded)
+            {
+                Patches.DataReadyPatches.Uninstall();
+            }
 
-                OnSessionReady(dataLoaded);
-            });
+            OTABComponentRegistry.RemoveComponentsFromPrefabs();
 
-            Net.NetworkSessionManager.Instance.OnClosed((dataLoaded) => {
-                if (dataLoaded)
-                {
-                    Patches.DataReadyPatches.Uninstall();
-                }
+            OnSessionClosed(dataLoaded);
+            isAdmin = false;
+        }
 
-                OTABComponentRegistry.RemoveComponentsFromPrefabs();
-
-                OnSessionClosed(dataLoaded);
-            });
-
+        private static bool? isAdmin = null;
+        internal static bool IsAdmin()
+        {
+            if (isAdmin.HasValue)
+            {
+                return isAdmin.Value;
+            }
+            ZNet znet = ZNet.instance;
+            if (znet == null)
+            {
+                return false;
+            }
+            var val = znet.LocalPlayerIsAdminOrHost();
+            isAdmin = val;
+            return val;
         }
 
         public static bool IsServerDataLoaded()
         {
-            return Net.NetworkSessionManager.Instance != null && Net.NetworkSessionManager.Instance.IsServerDataLoaded();
+            return Registry.PrefabRegistryManager.Instance != null && Registry.PrefabRegistryManager.Instance.IsDataLoaded();
         }
         
         public static void OnSessionStarted()
         {
-            // todo: create a class to dump all existing original prefabs into cache, all components and public init fields
-            // todo: add yaml option to change taming speed multiply for multiple nearby players (especialy for abomination!)
             // could be used as api
         }
 

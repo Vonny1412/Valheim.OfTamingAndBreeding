@@ -11,7 +11,8 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPrefix]
         private static void EffectList_Create_Prefix(Transform baseParent, ref float scale)
         {
-            if (baseParent && baseParent.TryGetComponent<ScaledCreature>(out var scaled))
+            //if (baseParent && baseParent.TryGetComponent<ScaledCreature>(out var scaled))
+            if (baseParent && ScaledCreature.TryGet(baseParent.gameObject, out var scaled))
             {
                 scale = scaled.m_effectScale;
             }

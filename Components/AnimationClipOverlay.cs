@@ -8,6 +8,7 @@ namespace OfTamingAndBreeding.Components
 {
     public class AnimationClipOverlay : OTABComponent<AnimationClipOverlay>
     {
+
         [SerializeField] public string m_animClipName;
 
         // Bridge-Tuning

@@ -7,5 +7,6 @@ namespace OfTamingAndBreeding.Patches
     {
         internal static new void Install() => Base.PatchGroup<AlwaysActivePatches>.Install();
         internal static new void Uninstall() => Base.PatchGroup<AlwaysActivePatches>.Uninstall();
+
     }
 }

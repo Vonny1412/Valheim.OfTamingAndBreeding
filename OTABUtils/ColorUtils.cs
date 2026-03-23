@@ -10,63 +10,57 @@ namespace OfTamingAndBreeding.OTABUtils
             string colorBad,
             string colorNormal,
             string colorGood,
+            string colorZero,
             float factor,
             float min,
             float max)
         {
-            // handle degenerate ranges
+            if (factor == 0f)
+                return colorZero;
+
             if (Mathf.Approximately(min, max))
                 return colorNormal;
 
-            // If "normal baseline" is intended to be factor == 1
-            // clamp baseline into the [min, max] interval just in case.
-            // (optional, but helps if configs use only >1 values)
-            float baseline = 1f;
+            const float baseline = 1f;
 
-            // fast outs
-            if (Mathf.Approximately(factor, baseline)) return colorNormal;
-            if (factor >= max) return colorGood;
-            if (factor <= min) return colorBad;
+            if (Mathf.Approximately(factor, baseline))
+                return colorNormal;
+
+            if (factor >= max)
+                return colorGood;
+
+            if (factor <= min)
+                return colorBad;
 
             bool goodSide = factor > baseline;
 
-            // If any needed color is not hex, bail out to the target end color (no lerp)
             if (goodSide)
             {
                 if (!IsHexColor(colorNormal) || !IsHexColor(colorGood))
                     return colorGood;
+
+                float denom = max - baseline;
+                if (Mathf.Approximately(denom, 0f))
+                    return colorGood;
+
+                float t = Mathf.Clamp01((factor - baseline) / denom);
+                return LerpHexFast(colorNormal, colorGood, t);
             }
             else
             {
                 if (!IsHexColor(colorNormal) || !IsHexColor(colorBad))
                     return colorBad;
-            }
 
-            // Compute normalized t in [0..1]
-            float t;
-            if (goodSide)
-            {
-                // baseline -> max maps to 0..1
-                float denom = (max - baseline);
-                if (Mathf.Approximately(denom, 0f)) return colorGood;
-                t = (factor - baseline) / denom;
-            }
-            else
-            {
-                // min -> baseline maps to 1..0 (so we invert)
-                float denom = (baseline - min);
-                if (Mathf.Approximately(denom, 0f)) return colorBad;
-                t = (baseline - factor) / denom;
-            }
+                float denom = baseline - min;
+                if (Mathf.Approximately(denom, 0f))
+                    return colorBad;
 
-            t = Mathf.Clamp01(t);
-
-            return goodSide
-                ? LerpHex(colorNormal, colorGood, t)
-                : LerpHex(colorNormal, colorBad, t);
+                float t = Mathf.Clamp01((baseline - factor) / denom);
+                return LerpHexFast(colorNormal, colorBad, t);
+            }
         }
 
-        public static string LerpHex(string a, string b, float t)
+        public static string LerpHexFast(string a, string b, float t)
         {
             int packedA = ParseHexPacked(a);
             int packedB = ParseHexPacked(b);
@@ -79,9 +73,9 @@ namespace OfTamingAndBreeding.OTABUtils
             int bg = (packedB >> 8) & 0xFF;
             int bb = packedB & 0xFF;
 
-            int rr = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(ar, br, t)), 0, 255);
-            int rg = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(ag, bg, t)), 0, 255);
-            int rb = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(ab, bb, t)), 0, 255);
+            int rr = ar + (int)((br - ar) * t + 0.5f);
+            int rg = ag + (int)((bg - ag) * t + 0.5f);
+            int rb = ab + (int)((bb - ab) * t + 0.5f);
 
             return $"#{rr:X2}{rg:X2}{rb:X2}";
         }
@@ -115,6 +109,11 @@ namespace OfTamingAndBreeding.OTABUtils
             }
             return true;
         }
+
+
+
+
+
 
         public static bool TryParseColor(string src, out Color color)
         {
@@ -178,7 +177,7 @@ namespace OfTamingAndBreeding.OTABUtils
             return true;
         }
 
-        private static bool TryParseHexByte(string s, int index, out byte value)
+        public static bool TryParseHexByte(string s, int index, out byte value)
         {
             value = 0;
             if (index + 2 > s.Length)
@@ -192,7 +191,7 @@ namespace OfTamingAndBreeding.OTABUtils
             );
         }
 
-        private static bool TryParseByte(string s, out byte value)
+        public static bool TryParseByte(string s, out byte value)
         {
             return byte.TryParse(s.Trim(), out value);
         }

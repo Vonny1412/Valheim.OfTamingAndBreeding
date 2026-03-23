@@ -1,9 +1,14 @@
 ﻿using OfTamingAndBreeding.Components.Base;
 using OfTamingAndBreeding.Components.Extensions;
+using OfTamingAndBreeding.Components.SpecialPrefabs;
 using OfTamingAndBreeding.OTABUtils;
+using OfTamingAndBreeding.ValheimAPI;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using YamlDotNet.Core;
+using static Unity.IO.LowLevel.Unsafe.AsyncReadManagerMetrics;
 
 namespace OfTamingAndBreeding.Components.Traits
 {
@@ -15,16 +20,18 @@ namespace OfTamingAndBreeding.Components.Traits
             public float fedDurationFactor;
         }
 
+        private static readonly int m_itemMask = LayerMask.GetMask("item");
+        private static readonly Collider[] colliders = new Collider[64];
+        private static readonly List<ConsumeItem[]> _consumeItemData;
+
         static BaseAITrait()
         {
             _consumeItemData = new List<ConsumeItem[]>();
 
-            Net.NetworkSessionManager.Instance.OnClosed((dataLoaded) => {
+            Net.NetworkSessionManager.Instance.OnSessionClosed += (netsess, dataLoaded) => {
                 _consumeItemData.Clear();
-            });
+            };
         }
-
-        private static readonly List<ConsumeItem[]> _consumeItemData;
 
         // set in awake
         [NonSerialized] private ZNetView m_nview = null;
@@ -32,8 +39,8 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private MonsterAI m_monsterAI = null;
         [NonSerialized] private TameableTrait m_tameableTrait = null;
         [NonSerialized] private AnimalAITrait m_animalAITrait = null;
-        [NonSerialized] private Character m_character = null;
-        [NonSerialized] private ConsumeAnimationClipOverlay m_consumeClip = null;
+        [NonSerialized] private CharacterTrait m_characterTrait = null;
+        [NonSerialized] private AnimationClipOverlay m_consumeClip = null;
 
         // set in registration
         [SerializeField] public bool m_tamedStayNearSpawn = false;
@@ -46,8 +53,17 @@ namespace OfTamingAndBreeding.Components.Traits
             m_monsterAI = GetComponent<MonsterAI>();
             m_tameableTrait = GetComponent<TameableTrait>();
             m_animalAITrait = GetComponent<AnimalAITrait>();
-            m_character = GetComponent<Character>();
-            m_consumeClip = GetComponent<ConsumeAnimationClipOverlay>();
+            m_characterTrait = GetComponent<CharacterTrait>();
+            m_consumeClip = GetComponent<AnimationClipOverlay>();
+
+            m_lastPosition = null;
+
+            Register(this);
+        }
+
+        private void OnDestroy()
+        {
+            Unregister(this);
         }
 
         public void SetCustomConsumeItems(ConsumeItem[] consumeItems)
@@ -67,9 +83,6 @@ namespace OfTamingAndBreeding.Components.Traits
             return false;
         }
 
-        private static readonly int m_itemMask = LayerMask.GetMask("item");
-        private static readonly Collider[] colliders = new Collider[256]; // 256 should be enough for now
-
         public static bool CanConsume(IReadOnlyList<ItemDrop> consumeList, ItemDrop checkItem)
         {
             var data = checkItem.m_itemData;
@@ -77,19 +90,13 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 return false;
             }
-            string checkItemName = data.m_shared.m_name;
 
+            string checkItemName = data.m_shared.m_name;
             foreach (ItemDrop consumeItem in consumeList)
             {
-                if (StaticContext.SpecialPrefabContext.IsSpecialPrefab(consumeItem.gameObject.name))
+                if (OTABSpecialConsumeAnyItem.TryGet(consumeItem.gameObject, out var component))
                 {
-                    if (consumeItem.TryGetComponent<StaticContext.SpecialPrefabs.OTABSpecialConsumableItem>(out var comparer))
-                    {
-                        if (comparer.Compare(checkItem) == true)
-                        {
-                            return true;
-                        }
-                    }
+                    return component.Compare(checkItem);
                 }
                 if (consumeItem.m_itemData.m_shared.m_name == checkItemName)
                 {
@@ -102,6 +109,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public ItemDrop FindClosestConsumableItem(float maxRange, IReadOnlyList<ItemDrop> consumeList)
         {
+
             var pos = m_baseAI.transform.position;
 
             int count = Physics.OverlapSphereNonAlloc(pos, maxRange, colliders, m_itemMask);
@@ -121,9 +129,10 @@ namespace OfTamingAndBreeding.Components.Traits
                 if (!rb)
                     continue;
 
+                // valheim is using GetComponent x2 per loop
+                // using ItemDropTrait it can be atleast reduced to 1x
                 if (!rb.TryGetComponent<ItemDropTrait>(out var trait))
                     continue;
-
                 if (trait.TryGetValidItemDrop(out var item) == false)
                     continue;
                 if (!CanConsume(consumeList, item))
@@ -173,9 +182,10 @@ namespace OfTamingAndBreeding.Components.Traits
                 if (!rb)
                     continue;
 
+                // valheim is using GetComponent x2 per loop
+                // using ItemDropTrait it can be atleast reduced to 1x
                 if (!rb.TryGetComponent<ItemDropTrait>(out var trait))
                     continue;
-
                 if (trait.TryGetValidItemDrop(out var item) == false)
                     continue;
                 if (!CanConsume(consumeList, item))
@@ -213,18 +223,34 @@ namespace OfTamingAndBreeding.Components.Traits
             return null;
         }
 
-        public bool UpdateStarvingMonsterAI(float dt)
+        public bool UpdateAI(float dt)
+        {
+            m_characterTrait.UpdateHostilities();
+
+            var tameableTrait = m_tameableTrait;
+            if (tameableTrait && tameableTrait.IsTamed() && tameableTrait.IsStarving())
+            {
+                UpdateCommandableAI();
+                if (UpdateStarvingMonsterAI(dt))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool UpdateStarvingMonsterAI(float dt)
         {
             // this is preventing monster-creatures from beeing stuck in aggression
             // if ppl dont like this behaviour they shall make sure their tames are fed!
             var monsterAI = m_monsterAI;
-            var tameableTrait = m_tameableTrait;
-            if (monsterAI && monsterAI.IsAlerted() && tameableTrait && tameableTrait.IsTamed() && tameableTrait.IsStarving())
+            if (monsterAI && monsterAI.IsAlerted())
             {
                 bool isInCombatWithTarget = monsterAI.GetTargetCreature() != null || monsterAI.GetStaticTarget() != null;
                 if (isInCombatWithTarget)
                 {
-                    if (monsterAI.UpdateConsumeItem((Humanoid)m_character, dt))
+                    if (monsterAI.UpdateConsumeItem((Humanoid)m_characterTrait.GetCharacter(), dt))
                     {
                         return true;
                     }
@@ -233,30 +259,31 @@ namespace OfTamingAndBreeding.Components.Traits
             return false;
         }
 
-        public void UpdateInteractableAI()
+        private void UpdateCommandableAI()
         {
-            var baseAI = m_baseAI;
-            var monsterAI = m_monsterAI;
             var tameableTrait = m_tameableTrait;
-            var animalAITrait = m_animalAITrait;
-            if (tameableTrait && tameableTrait.IsTamed())
+            if (tameableTrait.IsCommandable())
             {
+                var baseAI = m_baseAI;
+                var monsterAI = m_monsterAI;
+                var animalAITrait = m_animalAITrait;
+
                 if (monsterAI)
                 {
-                    var isCommanded = monsterAI.GetFollowTarget() != null || baseAI.GetPatrolPoint(out _);
-                    if (isCommanded && tameableTrait.IsInteractable() == false)
+                    var isFollowing = monsterAI.GetFollowTarget() != null;
+                    if (isFollowing)
                     {
                         monsterAI.SetFollowTarget(null);
-                        baseAI.ResetPatrolPoint();
+                        baseAI.SetPatrolPoint();
                     }
                 }
                 else if (animalAITrait)
                 {
-                    var isCommanded = animalAITrait.GetFollowTarget() != null || baseAI.GetPatrolPoint(out _);
-                    if (isCommanded && tameableTrait.IsInteractable() == false)
+                    var isFollowing = animalAITrait.GetFollowTarget() != null;
+                    if (isFollowing)
                     {
                         animalAITrait.SetFollowTarget(null);
-                        baseAI.ResetPatrolPoint();
+                        baseAI.SetPatrolPoint();
                     }
                 }
             }
@@ -264,6 +291,8 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public bool IdleMovement(float dt)
         {
+            IdleMovementAntiJam(dt);
+
             if (m_consumeClip && m_consumeClip.IsPlaying())
             {
                 // creature is eating - do not disturb!
@@ -277,43 +306,192 @@ namespace OfTamingAndBreeding.Components.Traits
                 return true;
             }
 
-            /* // original:
-            protected void IdleMovement(float dt)
+            if (RandomMovementNearSpawn(dt))
             {
-                Vector3 centerPoint = ((m_character.IsTamed() || HuntPlayer()) ? base.transform.position : m_spawnPoint);
-                if (GetPatrolPoint(out var point))
-                {
-                    centerPoint = point;
-                }
-
-                RandomMovement(dt, centerPoint, snapToGround: true);
-            }
-            */
-
-            if (m_tameableTrait && m_tameableTrait.IsTamed())
-            {
-
-                if (m_tamedStayNearSpawn == true)
-                {
-                    if (m_baseAI.GetPatrolPoint(out _))
-                    {
-                        // is commandable and currently not following
-                        // => bound to partol point
-                        return false; // let val do the job
-                    }
-                    var currentPoint = m_baseAI.transform.position;
-                    var spawnPoint = m_baseAI.GetSpawnPoint();
-                    var inRange = MathUtils.InRangeXZ(currentPoint, spawnPoint, m_baseAI.m_randomMoveRange * 10); // todo: factor 10 needs to be tested
-                    if (inRange)
-                    {
-                        m_baseAI.RandomMovement(dt, spawnPoint, snapToGround: true);
-                        return true;
-                    }
-                }
+                return true;
             }
 
             return false; // not handled
         }
+
+        private bool RandomMovementNearSpawn(float dt)
+        {
+            if (!m_tamedStayNearSpawn)
+            {
+                return false;
+            }
+
+            if (m_baseAI.GetRandomMoveUpdateTimer() > 0)
+            {
+                return false;
+            }
+
+            if (!m_characterTrait.IsTamed())
+            {
+                return false;
+            }
+
+            if (m_baseAI.GetPatrolPoint(out _))
+            {
+                return false;
+            }
+
+            var currentPoint = m_baseAI.transform.position;
+            var spawnPoint = m_baseAI.GetSpawnPoint();
+            var inRange = MathUtils.InRangeXZ(currentPoint, spawnPoint, m_baseAI.m_randomMoveRange * 10); // todo: factor 10 needs to be tested
+            if (inRange)
+            {
+                m_baseAI.RandomMovement(dt, spawnPoint, snapToGround: false);
+                return true;
+            }
+
+            return false;
+        }
+
+
+
+
+
+
+
+
+
+
+
+        [NonSerialized] private bool m_checkRandomMoveTimer = true;
+        [NonSerialized] private int m_idleMoveCheckCount = 4;
+        [NonSerialized] private Vector3? m_lastPosition;
+        [NonSerialized] private List<float> m_movedList = new List<float>();
+        [NonSerialized] private bool m_isJammed = false;
+        [NonSerialized] private float m_totalMovedDistance = 0f;
+
+        public bool IsJammed()
+        {
+            return m_isJammed;
+        }
+
+        public bool CheckIsJammed()
+        {
+            return m_totalMovedDistance < GetMinRequiredMoveRange();
+        }
+
+        private float GetMinRequiredMoveRange()
+        {
+            return m_baseAI.m_randomMoveRange;
+        }
+
+        private bool CanBecomeJammed()
+        {
+            if (!Plugin.IsServerDataLoaded())
+            {
+                return false;
+            }
+            if (Plugin.Configs.EnableAntiJammingSystem.Value == false)
+            {
+                return false;
+            }
+            if (!m_tameableTrait || !(m_tameableTrait.IsTamed() || m_tameableTrait.IsTamingStarted()))
+            {
+                return false;
+            }
+            return true;
+        }
+
+        private static EffectList m_emptyEffect = new EffectList();
+
+        public void AlertSilent()
+        {
+            var eff = m_baseAI.m_alertedEffects;
+            m_baseAI.m_alertedEffects = m_emptyEffect;
+            try
+            {
+                m_baseAI.SetAlerted(alerted: true);
+            }
+            finally
+            {
+                m_baseAI.m_alertedEffects = eff;
+            }
+        }
+
+        private void IdleMovementAntiJam(float dt)
+        {
+            if (!CanBecomeJammed())
+            {
+                return;
+            }
+
+            if (m_baseAI.GetRandomMoveUpdateTimer() <= 0)
+            {
+                if (m_checkRandomMoveTimer)
+                {
+                    m_checkRandomMoveTimer = false;
+
+                    // todo: add config option to enable/disable feature
+                    // todo: add config option for interval-count
+                    var curPosition = transform.position;
+                    if (m_lastPosition.HasValue)
+                    {
+                        float curDist = Vector3.Distance(m_lastPosition.Value, curPosition);
+                        m_movedList.Add(curDist);
+                    }
+                    m_lastPosition = curPosition;
+                    while (m_movedList.Count > m_idleMoveCheckCount)
+                    {
+                        m_movedList.RemoveAt(0);
+                    }
+                    m_totalMovedDistance = 0f;
+                    foreach (var v in m_movedList)
+                    {
+                        m_totalMovedDistance += v;
+                    }
+                    if (m_movedList.Count == m_idleMoveCheckCount)
+                    {
+                        var wasJammed = m_isJammed;
+                        m_isJammed = CheckIsJammed();
+                        if (m_isJammed)
+                        {
+                            AlertSilent();
+                        }
+                        else
+                        {
+                            if (wasJammed)
+                            {
+                                m_baseAI.SetAlerted(alerted: false);
+                            }
+                        }
+                    }
+                    return;
+                }
+            }
+            else
+            {
+                m_checkRandomMoveTimer = true;
+            }
+        }
+        
+        public string GetAdminHoverInfoText()
+        {
+            if (!m_nview.IsValid())
+            {
+                return "";
+            }
+
+            var text = "";
+
+            var movedDist = (float)(int)(m_totalMovedDistance * 10) / 10;
+            var movedParts = string.Join(" + ", m_movedList.Select((d) => (float)(int)(d * 10) / 10));
+            var movedText = $"Moved: {movedParts} = {movedDist} / {GetMinRequiredMoveRange()}";
+            text += "\n" + Localization.instance.Localize("$otab_hover_admin_info", movedText);
+
+            return text;
+        }
+
+
+
+
+
+
+
 
 
     }

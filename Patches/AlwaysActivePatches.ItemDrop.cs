@@ -5,7 +5,6 @@ namespace OfTamingAndBreeding.Patches
 {
     internal partial class AlwaysActivePatches
     {
-
         [HarmonyPatch(typeof(ItemDrop), "GetHoverText")]
         [HarmonyPostfix]
         private static void ItemDrop_GetHoverText_Postfix(ItemDrop __instance, ref string __result)

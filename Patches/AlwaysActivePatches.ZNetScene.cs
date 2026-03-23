@@ -15,16 +15,14 @@ namespace OfTamingAndBreeding.Patches
             // Otherwise components (Awake/Start) would run with wrong vanilla values.
             // We therefore defer CreateObjects until DataOrchestrator marks dataLoaded == true.
 
-            if (ZNetSceneContext.blockObjectsCreation)
+            if (ZNetSceneContext.IsBlocking())
             {
-                ZNetSceneContext.pending.Enqueue((new List<ZDO>(currentNearObjects), new List<ZDO>(currentDistantObjects)));
+                ZNetSceneContext.Enqueue(new List<ZDO>(currentNearObjects), new List<ZDO>(currentDistantObjects));
                 return false;
             }
             return true;
         }
 
-        //[HarmonyPatch(typeof(ZNet), "OnDestroy")]
-        //private static void ZNet_OnDestroy_Prefix()
         [HarmonyPatch(typeof(ZNetScene), "Shutdown")]
         [HarmonyPrefix]
         private static void ZNetScene_Shutdown_Prefix()

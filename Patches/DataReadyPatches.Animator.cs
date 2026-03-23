@@ -16,10 +16,10 @@ namespace OfTamingAndBreeding.Patches
             var character = __instance.GetComponentInParent<Character>();
             if (!character) return;
 
-            var prefabName = global::Utils.GetPrefabName(character.gameObject.name);
+            var prefabName = Utils.GetPrefabName(character.gameObject.name);
             if (string.IsNullOrEmpty(prefabName)) return;
 
-            var runner = character.GetComponent<ConsumeAnimationClipOverlay>();
+            var runner = character.GetComponent<AnimationClipOverlay>();
             if (runner)
             {
                 runner.PlayOverlay(__instance, speed: 1f);

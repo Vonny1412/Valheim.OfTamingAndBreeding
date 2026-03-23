@@ -50,13 +50,12 @@ namespace OfTamingAndBreeding.Patches
                 return; // invalid afterall
             }
 
-            var trait = __instance.GetComponent<BaseAITrait>();
-            trait.UpdateInteractableAI();
-            if (trait.UpdateStarvingMonsterAI(dt))
+            //var trait = __instance.GetComponent<BaseAITrait>();
+            var trait = BaseAITrait.GetUnsafe(__instance.gameObject);
+            if (trait.UpdateAI(dt))
             {
                 __result = false;
             }
-            
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -8,6 +9,29 @@ namespace OfTamingAndBreeding.Components.Base
         where T : OTABComponent<T>
     {
 
+        private static readonly Dictionary<GameObject, T> cache = new Dictionary<GameObject, T>();
+
+        internal static void Register(T component)
+        {
+            cache[component.gameObject] = component;
+        }
+
+        internal static void Unregister(T component)
+        {
+            cache.Remove(component.gameObject);
+            //Plugin.LogServerWarning($"traits count for {typeof(T).Name} : {_traits.Count()}");
+        }
+
+        public static T GetUnsafe(GameObject prefab)
+        {
+            return cache[prefab];
+        }
+
+        public static bool TryGet(GameObject prefab, out T component)
+        {
+            return cache.TryGetValue(prefab, out component);
+        }
+
         public static T GetOrAddComponent(GameObject prefab, params Type[] requiredTypes)
         {
             var component = prefab.GetComponent<T>();
@@ -15,7 +39,7 @@ namespace OfTamingAndBreeding.Components.Base
             {
                 if (requiredTypes.All((t) => (bool)prefab.GetComponent(t)))
                 {
-                    Plugin.LogServerDebug($"Adding OTABComponent '{nameof(T)}' to prefab '{prefab.name}'");
+                    Plugin.LogServerDebug($"Adding OTABComponent '{typeof(T).Name}' to prefab '{prefab.name}'");
                     component = prefab.AddComponent<T>();
                     OTABComponentRegistry.registeredTypes.Add(typeof(T));
                 }
@@ -31,7 +55,7 @@ namespace OfTamingAndBreeding.Components.Base
                 {
                     if (requiredTypes.All((t) => (bool)prefab.GetComponent(t)))
                     {
-                        Plugin.LogServerDebug($"Adding OTABComponent '{nameof(T)}' to prefab '{prefab.name}'");
+                        Plugin.LogServerDebug($"Adding OTABComponent '{typeof(T).Name}' to prefab '{prefab.name}'");
                         prefab.AddComponent<T>();
                         OTABComponentRegistry.registeredTypes.Add(typeof(T));
                     }
@@ -40,4 +64,5 @@ namespace OfTamingAndBreeding.Components.Base
         }
 
     }
+
 }

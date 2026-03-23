@@ -7,13 +7,16 @@ namespace OfTamingAndBreeding.Patches
 {
     internal partial class AlwaysActivePatches
     {
+
         [HarmonyPatch(typeof(Character), "GetHoverText")]
         [HarmonyPostfix]
         [HarmonyPriority(Priority.Last)]
         private static void Character_GetHoverText_Postfix(Character __instance, ref string __result)
         {
-            var trait = __instance.GetComponent<CharacterTrait>();
-            __result = trait.EditHoverText(__result);
+            //var trait = __instance.GetComponent<CharacterTrait>();
+            var trait = CharacterTrait.GetUnsafe(__instance.gameObject);
+            __result = trait.GetHoverText(__result);
         }
+
     }
 }

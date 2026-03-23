@@ -23,6 +23,11 @@ namespace OfTamingAndBreeding.Registry
 
         //--------------------------------------------------
 
+        public event Action OnRegistrationFinished;
+        public event Action OnReset;
+
+        private bool dataLoaded = false;
+
         private readonly IDataProcessor[] dataProcessors = new IDataProcessor[] {
             new IconProcessor(),
             new TranslationProcessor(),
@@ -32,17 +37,9 @@ namespace OfTamingAndBreeding.Registry
             new RecipeProcessor(),
         };
 
-        private readonly List<Action> onFinishedCallbacks = new List<Action>();
-        private readonly List<Action> onResetCallbacks = new List<Action>();
-
-        public void OnFinished(Action cb)
+        public bool IsDataLoaded()
         {
-            onFinishedCallbacks.Add(cb);
-        }
-
-        public void OnReset(Action cb)
-        {
-            onResetCallbacks.Add(cb);
+            return dataLoaded;
         }
 
         public IEnumerable<IDataProcessor> IterDataProcessors()
@@ -51,13 +48,13 @@ namespace OfTamingAndBreeding.Registry
                 yield return dh;
         }
 
-        // NOTE:
-        // Server data is authoritative.
-        // Client YAMLs are ignored once connected to a server.
-        // This ensures deterministic breeding/taming behavior in multiplayer.
-
-        public void LoadDataFromLocalFiles()
+        public bool LoadDataFromLocalFiles()
         {
+            if (dataLoaded)
+            {
+                // todo
+            }
+
             var zn = ZNet.instance;
             string worldName = zn.GetWorldName();
             Plugin.LogServerInfo($"Loading Data for world: '{worldName}'");
@@ -87,12 +84,12 @@ namespace OfTamingAndBreeding.Registry
                 if (!allokay)
                 {
                     // fatal error in data
-                    return;
+                    return false;
                 }
             }
 
             // just do it even with empty data
-            ValidateDataAndRegisterPrefabs();
+            return ValidateDataAndRegisterPrefabs();
         }
 
         private IEnumerable<string> EnumerateCategoryFiles(string worldRoot, string categoryFolderName)
@@ -138,8 +135,12 @@ namespace OfTamingAndBreeding.Registry
         // process routine
         //---------------------------
 
-        public void ValidateDataAndRegisterPrefabs()
+        public bool ValidateDataAndRegisterPrefabs()
         {
+            if (dataLoaded)
+            {
+                // todo
+            }
 
             PrefabRegistry.CreateInstance();
             PrefabRegistry.SaveOriginalPrefabNames();
@@ -172,7 +173,7 @@ namespace OfTamingAndBreeding.Registry
                     p.CallFinalizeProcess();
                 }
                 ResetRegistry();
-                return;
+                return false;
             }
 
             // from this point everything is okay
@@ -189,18 +190,14 @@ namespace OfTamingAndBreeding.Registry
             {
                 p.CallFinalizeProcess();
             }
-            foreach (var cb in onFinishedCallbacks)
-            {
-                cb();
-            }
+
+            dataLoaded = true;
+            OnRegistrationFinished?.Invoke();
+            return true;
         }
 
         public void ResetRegistry()
         {
-            foreach (var cb in onResetCallbacks)
-            {
-                cb();
-            }
 
             for (var i= dataProcessors.Length - 1; i >= 0; i--)
             {
@@ -218,6 +215,9 @@ namespace OfTamingAndBreeding.Registry
             }
 
             PrefabRegistry.DestroyInstance();
+
+            dataLoaded = false;
+            OnReset?.Invoke();
         }
 
     }

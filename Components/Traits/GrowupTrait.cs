@@ -26,6 +26,13 @@ namespace OfTamingAndBreeding.Components.Traits
             m_baseGrowTime = m_growup.m_growTime;
 
             UpdateGrowTime();
+
+            Register(this);
+        }
+
+        private void OnDestroy()
+        {
+            Unregister(this);
         }
 
         public float GetBaseGrowTime()
@@ -72,14 +79,25 @@ namespace OfTamingAndBreeding.Components.Traits
 
             // ready to grow up
 
-            GameObject spawned = UnityEngine.Object.Instantiate(m_growup.GetPrefab(), m_growup.transform.position, m_growup.transform.rotation);
+            var t = transform;
+
+            GameObject spawned = UnityEngine.Object.Instantiate(m_growup.GetPrefab(), t.position, t.rotation);
             Character spawnedCharacter = spawned.GetComponent<Character>();
 
             var zdo = m_nview.GetZDO();
-            var zdo2 = spawned.GetComponent<ZNetView>().GetZDO();
+            var nview2 = spawned.GetComponent<ZNetView>();
+            var zdo2 = nview2.GetZDO();
 
             if ((bool)spawnedCharacter)
             {
+
+                // keep old spawnpoint
+                if (nview2.IsOwner())
+                {
+                    var spawnPoint = zdo.GetVec3(ZDOVars.s_spawnPoint, t.position);
+                    zdo2.Set(ZDOVars.s_spawnPoint, spawnPoint);
+                }
+
                 Tameable tameable1 = m_growup.GetComponent<Tameable>();
                 Tameable tameable2 = spawned.GetComponent<Tameable>();
                 if (tameable1 && tameable2)
@@ -141,10 +159,6 @@ namespace OfTamingAndBreeding.Components.Traits
                         }
                     }
                 }
-                else
-                {
-                    spawnedCharacter.SetTamed(false);
-                }
                 spawnedCharacter.SetLevel(m_character.GetLevel());
             }
             else
@@ -165,7 +179,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public string GetGrowupProgress(float precision, int decimals)
         {
-            if (!m_growup)
+            if (!m_growup || !m_nview.IsValid())
             {
                 return "";
             }

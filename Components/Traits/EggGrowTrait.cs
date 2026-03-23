@@ -38,10 +38,10 @@ namespace OfTamingAndBreeding.Components.Traits
             _requireGlobalKeys = new List<List<string[]>>();
             _grownListByIndex = new List<EggGrown[]>();
 
-            Net.NetworkSessionManager.Instance.OnClosed((dataLoaded) => {
+            Net.NetworkSessionManager.Instance.OnSessionClosed += (netsess, dataLoaded) => {
                 _requireGlobalKeys.Clear();
                 _grownListByIndex.Clear();
-            });
+            };
         }
 
         private static readonly Dictionary<Heightmap.Biome, string> biomeLangKeys = new Dictionary<Heightmap.Biome, string>() {
@@ -84,6 +84,13 @@ namespace OfTamingAndBreeding.Components.Traits
             }
 
             UpdateGrowTime();
+
+            Register(this);
+        }
+
+        private void OnDestroy()
+        {
+            Unregister(this);
         }
 
         public float GetBaseGrowTime()

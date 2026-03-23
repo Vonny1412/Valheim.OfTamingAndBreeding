@@ -15,12 +15,18 @@ namespace OfTamingAndBreeding.Components.Traits
         {
             m_nview = GetComponent<ZNetView>();
             m_itemDrop = GetComponent<ItemDrop>();
+
+            Register(this);
+        }
+
+        private void OnDestroy()
+        {
+            Unregister(this);
         }
 
         public bool TryGetValidItemDrop(out ItemDrop itemDrop)
         {
-            var nview = m_nview;
-            if (nview && nview.IsValid())
+            if (m_nview && m_nview.IsValid())
             {
                 itemDrop = m_itemDrop;
                 return true;
@@ -43,10 +49,9 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public void OnOneRemoved()
         {
-            var nview = m_nview;
-            if (nview.IsValid())
+            if (m_nview.IsValid())
             {
-                var zdo = nview.GetZDO();
+                var zdo = m_nview.GetZDO();
                 StaticContext.ItemConsumeContext.hasValue = true;
                 StaticContext.ItemConsumeContext.lastItemDroppedByAnyPlayer = zdo.GetInt(Plugin.ZDOVars.z_droppedByAnyPlayer, 0);
                 StaticContext.ItemConsumeContext.lastItemInstanceId = m_itemDrop.GetInstanceID();

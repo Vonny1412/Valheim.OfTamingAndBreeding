@@ -2,7 +2,6 @@
 using OfTamingAndBreeding.Registry;
 using OfTamingAndBreeding.StaticContext;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Net
@@ -15,14 +14,13 @@ namespace OfTamingAndBreeding.Net
 
         protected override void OnCreate()
         {
-            PrefabRegistryManager.Instance.OnFinished(() => {
-                serverDataLoaded = true;
+            PrefabRegistryManager.Instance.OnRegistrationFinished += () => {
                 CancelClientTimeout();
-                RunOnReadyCallbacks(true);
-            });
-            PrefabRegistryManager.Instance.OnReset(() => {
-                serverDataLoaded = false;
-            });
+                OnSessionReady?.Invoke(Instance, true);
+            };
+            PrefabRegistryManager.Instance.OnReset += () => {
+                // todo: remove me if unneccessary
+            };
         }
 
         protected override void OnDestroy()
@@ -33,61 +31,16 @@ namespace OfTamingAndBreeding.Net
 
         //--------------------------------------------------
 
-        private readonly List<Action> onSessionStarted = new List<Action>();
-        private readonly List<Action<bool>> onSessionReady = new List<Action<bool>>();
-        private readonly List<Action<bool>> onSessionClosed = new List<Action<bool>>();
+        public event Action<NetworkSessionManager> OnSessionStarted;
+        public event Action<NetworkSessionManager, bool> OnSessionReady;
+        public event Action<NetworkSessionManager, bool> OnSessionClosed;
 
-        private bool serverDataLoaded = false;
         private bool isServer = false;
         private Coroutine clientTimeoutRoutine;
-
-        public bool IsServerDataLoaded()
-        {
-            return serverDataLoaded;
-        }
 
         public bool IsServer()
         {
             return isServer;
-        }
-
-        public void OnStarted(Action cb)
-        {
-            onSessionStarted.Add(cb);
-        }
-
-        public void OnReady(Action<bool> cb)
-        {
-            onSessionReady.Add(cb);
-        }
-
-        public void OnClosed(Action<bool> cb)
-        {
-            onSessionClosed.Add(cb);
-        }
-
-        private void RunOnStartedCallbacks()
-        {
-            foreach (var cb in onSessionStarted)
-            {
-                cb();
-            }
-        }
-
-        private void RunOnReadyCallbacks(bool isServerDataLoaded)
-        {
-            foreach (var cb in onSessionReady)
-            {
-                cb(isServerDataLoaded);
-            }
-        }
-
-        private void RunOnClosedCallbacks(bool wasServerDataLoaded)
-        {
-            foreach (var cb in onSessionClosed)
-            {
-                cb(wasServerDataLoaded);
-            }
         }
 
         public void StartSession()
@@ -95,17 +48,17 @@ namespace OfTamingAndBreeding.Net
             var zn = ZNet.instance;
             var isLocal = zn.IsLocalInstance();
             isServer = zn.IsServer();
+
+            OnSessionStarted?.Invoke(Instance);
+
             if (isServer)
             {
-                ZNetSceneContext.blockObjectsCreation = false;
                 RPCContext.InitServerSession(isLocal);
             }
             else
             {
-                ZNetSceneContext.blockObjectsCreation = true;
                 RPCContext.InitClientSession(isLocal);
             }
-            RunOnStartedCallbacks();
         }
 
         public void RequestHandshakeWithServer()
@@ -120,7 +73,7 @@ namespace OfTamingAndBreeding.Net
             Plugin.LogServerInfo($"Closing session");
 
             // called for client and server
-            var wasServerDataLoaded = serverDataLoaded;
+            var wasServerDataLoaded = PrefabRegistryManager.Instance.IsDataLoaded();
 
             PrefabRegistryManager.Instance.ResetRegistry();
             RPCContext.DestroySession();
@@ -129,7 +82,7 @@ namespace OfTamingAndBreeding.Net
             CancelClientTimeout();
 
             Plugin.LogServerInfo($"Session closed");
-            RunOnClosedCallbacks(wasServerDataLoaded);
+            OnSessionClosed?.Invoke(Instance, wasServerDataLoaded);
         }
 
         public void StartClientTimeout(float seconds)
@@ -145,14 +98,14 @@ namespace OfTamingAndBreeding.Net
             float start = Time.time;
             while (Time.time - start < seconds)
             {
-                if (serverDataLoaded)
+                if (PrefabRegistryManager.Instance.IsDataLoaded())
                 {
                     yield break;
                 }
                 yield return null;
             }
             clientTimeoutRoutine = null;
-            RunOnReadyCallbacks(false);
+            OnSessionReady?.Invoke(Instance, false);
         }
 
         public void CancelClientTimeout()

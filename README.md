@@ -1,5 +1,3 @@
-![Of Taming and Breeding](https://github.com/Vonny1412/Valheim.OfTamingAndBreeding/blob/main/_Assets/banner.png)
-
 > ⚠️ **Project Status: Alpha**
 >
 > OTAB is currently in **active alpha development**.
@@ -14,8 +12,33 @@
 > and development progress** of the project.
 >
 > If you are reading this early, thank you for your interest and patience.
+>
+> Todo:
+> - Git Technical Wiki
+> - User Gameplay Wiki
+>
+> Data Packs:
+> [ ] _Boss
+> [ ] BossAspect
+> [ ] Demon
+> [ ] Dvergr
+> [ ] Forest
+> [ ] Forest-GreydwarfFamily
+> [ ] Forest-GrowingStoneGolem
+> [ ] Mistlands (MistlandsMonsters)
+> [ ] Mountain
+> [ ] Mountain-Lycanthropes
+> [ ] Plains
+> [ ] Plains-FulingFamily
+> [ ] Sea
+> [ ] Undead
+> [ ] Undead-GrowingAbomination
+
+![Of Taming and Breeding](https://github.com/Vonny1412/Valheim.OfTamingAndBreeding/blob/main/_Assets/banner.png)
 
 # Of Taming and Breeding (OTAB)
+
+[GitHub Repository](https://github.com/Vonny1412/Valheim.OfTamingAndBreeding)
 
 Ever wanted a tamed Abomination walking by your side?  
 Pettable offspring?  

@@ -27,6 +27,7 @@ namespace OfTamingAndBreeding.Data.Models
             public string Name { get; set; } = null;
             public string Description { get; set; } = null;
             public string ItemType { get; set; } = null;
+            public bool? IsGaldrRitual { get; set; } = null; // todo: needs wiki enttry
 
             public float? Scale { get; set; } = null;
             public float? Weight { get; set; } = null;

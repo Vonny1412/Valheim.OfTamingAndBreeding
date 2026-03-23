@@ -21,8 +21,8 @@ namespace OfTamingAndBreeding.Net
             var inFunc1 = $"{nameof(RPCContext)}.{nameof(RPCContext.InitServerSession)}";
             Plugin.LogServerDebug($"[{inFunc1}] Start");
 
-            PrefabRegistryManager.Instance.LoadDataFromLocalFiles();
-            if (NetworkSessionManager.Instance.IsServerDataLoaded() == false)
+            var dataLoaded = PrefabRegistryManager.Instance.LoadDataFromLocalFiles();
+            if (!dataLoaded)
             {
                 DestroySession();
                 return;

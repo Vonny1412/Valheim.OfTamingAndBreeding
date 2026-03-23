@@ -13,6 +13,8 @@ namespace OfTamingAndBreeding
 
             private const string Section_UI_Hovertext = "UI - Hovertext";
 
+            public static ConfigEntry<bool> HoverShowAdminInfo { get; private set; }
+
             public static ConfigEntry<bool> HoverShowConsumeItems { get; private set; }
             public static ConfigEntry<bool> HoverShowLovePoints { get; private set; }
             public static ConfigEntry<bool> HoverShowPregnancyTimer { get; private set; }
@@ -25,6 +27,7 @@ namespace OfTamingAndBreeding
             public static ConfigEntry<string> HoverColorGood { get; private set; }
             public static ConfigEntry<string> HoverColorNormal { get; private set; }
             public static ConfigEntry<string> HoverColorBad { get; private set; }
+            public static ConfigEntry<string> HoverColorPassive { get; private set; }
 
 
             private const string Section_UI_Hud = "UI - Hud";
@@ -48,10 +51,14 @@ namespace OfTamingAndBreeding
             public static ConfigEntry<string> CacheFileName { get; private set; }
             public static ConfigEntry<string> CacheFileCryptKey { get; private set; }
             public static ConfigEntry<bool> ExportIconsToCache { get; private set; }
+            public static ConfigEntry<bool> DumpPrefabsToCache { get; private set; }
 
 
             private const string Section_Server_Gameplay = "Server - Gameplay";
 
+            public static ConfigEntry<bool> EnableAntiJammingSystem { get; private set; } // todo: needs wiki entry
+
+            public static ConfigEntry<bool> EnableStarvationSystem { get; private set; } // todo: needs wiki entry
             public static ConfigEntry<float> DefaultStarvingGraceFactor { get; private set; }
 
             public static ConfigEntry<float> GlobalPregnancyDurationFactor { get; private set; }
@@ -89,6 +96,9 @@ namespace OfTamingAndBreeding
 
                 section = Section_UI_Hovertext;
 
+                HoverShowAdminInfo = Config.BindConfigInOrder<bool>(section, "ShowAdminInfo", true, "Allow showing admin/debug creature info in hover text for local admins or hosts only.", synced: false);
+                // todo: ShowAdminInfo needs wiki entry
+
                 HoverShowConsumeItems = Config.BindConfigInOrder<bool>(section, "ShowConsumeItems", true, "Allow showing consumable items in creature hover text.", synced: false);
                 HoverShowLovePoints = Config.BindConfigInOrder<bool>(section, "ShowLovePoints", true, "Allow showing love points in creature hover text.", synced: false);
                 HoverShowPregnancyTimer = Config.BindConfigInOrder<bool>(section, "ShowPregnancyTimer", true, "Allow showing pregnancy timer in hover text.", synced: false);
@@ -98,9 +108,10 @@ namespace OfTamingAndBreeding
                 HoverShowSeconds = Config.BindConfigInOrder<bool>(section, "ShowSeconds", false, "Show seconds in hover timers (otherwise only days/hours/minutes).", synced: false);
                 HoverUseIngameTime = Config.BindConfigInOrder<bool>(section, "UseIngameTime", true, "Format timers using Valheim in-game time (day length) instead of real time.", synced: false);
 
-                HoverColorGood = Config.BindConfigInOrder<string>(section, "ColorGood", "#00FF00", "Color used for positive/healthy hover states (hex color/color name).", synced: false);
+                HoverColorGood = Config.BindConfigInOrder<string>(section, "ColorGood", "#44FF00", "Color used for positive/healthy hover states (hex color/color name).", synced: false);
                 HoverColorNormal = Config.BindConfigInOrder<string>(section, "ColorNormal", "#EEEEEE", "Color used for neutral hover states (hex color/color name).", synced: false);
-                HoverColorBad = Config.BindConfigInOrder<string>(section, "ColorBad", "#FFA500", "Color used for negative/critical hover states (hex color/color name).", synced: false);
+                HoverColorBad = Config.BindConfigInOrder<string>(section, "ColorBad", "#FF4400", "Color used for negative/critical hover states (hex color/color name).", synced: false);
+                HoverColorPassive = Config.BindConfigInOrder<string>(section, "ColorPassive", "#AAAAAA", "Color used for passive hover states that have no active effect. (hex color/color name).", synced: false);
 
 
                 section = Section_UI_Hud;
@@ -124,10 +135,15 @@ namespace OfTamingAndBreeding
                 CacheFileName = Config.BindConfigInOrder<string>(section, "CacheFileName", "local-{world}-{seed}", "Template for the cache file name (server-resolved). Supports placeholders like {world} and {seed}. Read on world/server start and not synchronized during runtime.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
                 CacheFileCryptKey = Config.BindConfigInOrder<string>(section, "CacheFileCryptKey", "", "Key used to obfuscate the cache contents. This is NOT secure encryption - do NOT use real passwords or personal secrets! Read on world/server start and not synchronized during runtime.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
                 ExportIconsToCache = Config.BindConfigInOrder<bool>(section, "ExportIconsToCache", false, "When enabled, item icons are written to the server cache directory for customization or debug purposes.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
+                DumpPrefabsToCache = Config.BindConfigInOrder<bool>(section, "DumpPrefabsToCache", false, "", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
+                //todo: DumpPrefabsToCache need descr and wiki entry
 
 
                 section = Section_Server_Gameplay;
 
+                EnableAntiJammingSystem = Config.BindConfigInOrder<bool>(section, "EnableAntiJammingSystem", true, "Enabled/disables the whole anti-jamming system of OTAB", synced: true);
+
+                EnableStarvationSystem = Config.BindConfigInOrder<bool>(section, "EnableStarvationSystem", true, "Enabled/disables the whole starvation system of OTAB", synced: true);
                 DefaultStarvingGraceFactor = Config.BindConfigInOrder<float>(section, "DefaultStarvingGraceFactor", 5f, "Global fallback StarvingGraceFactor used when a creature does not define one in YAML. Multiplies fed duration before entering Starving state.", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
 
                 GlobalPregnancyDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalPregnancyDurationFactor", 1f, "Global multiplier for PregnancyDuration.  Applies immediately; lowering it can instantly finish ongoing pregnancy on the next update.", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);

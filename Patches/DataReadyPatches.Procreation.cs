@@ -12,7 +12,8 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         private static void Procreation_IsDue_Prefix(Procreation __instance)
         {
-            var trait = __instance.GetComponent<ProcreationTrait>();
+            //var trait = __instance.GetComponent<ProcreationTrait>();
+            var trait = ProcreationTrait.GetUnsafe(__instance.gameObject);
             trait.SetRealPregnancyDuration(__instance.m_pregnancyDuration);
         }
 
@@ -21,18 +22,12 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         private static bool Procreation_Procreate_Prefix(Procreation __instance)
         {
-            try
+            var trait = ProcreationTrait.GetUnsafe(__instance.gameObject);
+            if (trait.OnProcreate())
             {
-                if (__instance.TryGetComponent<ProcreationTrait>(out var trait) && trait.OnProcreate() == true)
-                {
-                    return false; // block
-                }
+                return false;
             }
-            catch (Exception ex)
-            {
-                Plugin.LogFatal($"Procreation_Procreate_Prefix: {ex}");
-            }
-            return true; // fail-open: allow vanilla + other mods
+            return true;
         }
 
     }

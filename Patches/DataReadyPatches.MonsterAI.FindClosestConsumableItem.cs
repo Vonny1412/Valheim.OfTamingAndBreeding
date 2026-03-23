@@ -15,19 +15,9 @@ namespace OfTamingAndBreeding.Patches
             // -> BaseAITrait.IdleMovement() -> if (m_animalAITrait && m_animalAITrait.IdleMovement(dt))
             // -> AnimalAITrait.IdleMovement() -> if (UpdateConsumeItem(dt)) return true;
 
-            if (__instance.TryGetComponent<BaseAITrait>(out var trait))
-            {
-                if (Plugin.Configs.UseBetterSearchForFood.Value == true)
-                {
-                    __result = trait.FindNearbyConsumableItem(__instance.m_consumeSearchRange, __instance.m_consumeItems);
-                }
-                else
-                {
-                    __result = trait.FindClosestConsumableItem(__instance.m_consumeSearchRange, __instance.m_consumeItems);
-                }
-                return false;
-            }
-            return true;
+            var trait = MonsterAITrait.GetUnsafe(__instance.gameObject);
+            __result = trait.FindConsumeableItem();
+            return false;
         }
 
     }

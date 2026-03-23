@@ -500,7 +500,12 @@ namespace OfTamingAndBreeding.Registry.Processing
 
             if (data.Clone.Description != null)
             {
-                eggItemDataShared.m_description = data.Clone.Description;
+                var descr = data.Clone.Description;
+                if (data.Clone.IsGaldrRitual.HasValue && data.Clone.IsGaldrRitual.Value == true)
+                {
+                    descr = "<color=#b58df3>[Galdr]</color> " + descr; // todo: add common translation
+                }
+                eggItemDataShared.m_description = descr;
             }
 
             if (data.Clone.ItemType != null && Enum.TryParse<ItemDrop.ItemData.ItemType>(data.Clone.ItemType, ignoreCase: true, out var result))
@@ -516,6 +521,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     var component = PrefabRegistry.Instance.GetOrAddComponent<ScaledEgg>(eggName, egg);
                     component.m_scale = customScale;
                 }
+
             }
 
             if (data.Clone.Weight.HasValue)

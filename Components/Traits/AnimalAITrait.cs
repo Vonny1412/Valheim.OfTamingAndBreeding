@@ -37,36 +37,61 @@ namespace OfTamingAndBreeding.Components.Traits
             m_character = GetComponent<Character>();
             m_baseAITrait = GetComponent<BaseAITrait>();
             m_animator = GetComponent<ZSyncAnimation>();
-        }
-        
-        public bool IsAlerted()
-        {
-            return m_animalAI.IsAlerted();
+
+            Register(this);
         }
 
+        private void OnDestroy()
+        {
+            Unregister(this);
+        }
+
+        public bool IsAlerted()
+        {
+            return m_animalAI.IsAlerted(); // direct field return
+        }
+        
         public void SetPatrolPoint()
         {
-            m_animalAI.SetPatrolPoint();
+            m_animalAI.SetPatrolPoint(); // direct field setter, sets zdo, BaseAI
         }
 
         public void ResetPatrolPoint()
         {
-            m_animalAI.ResetPatrolPoint();
+            m_animalAI.ResetPatrolPoint(); // direct field setter, sets zdo, BaseAI
+        }
+
+        public GameObject GetFollowTarget()
+        {
+            return m_follow;
+        }
+        
+        public void SetFollowTarget(GameObject go)
+        {
+            m_follow = go;
+        }
+
+        public void MakeTame()
+        {
+            m_character.SetTamed(tamed: true); // sends rpc
+            m_animalAI.SetAlerted(alert: false); // complex, sets zdo
         }
 
         public bool IdleMovement(float dt)
         {
-            if (!m_nview.IsValid() || !m_nview.IsOwner())
+            if (!m_nview.IsValid())
             {
                 return false;
             }
 
-            if (m_animalAI.IsAlerted() == false)
+            if (m_animalAI.IsAlerted())
             {
-                if (UpdateConsumeItem(dt)) return true;
-                if (UpdateFollowTarget(dt)) return true;
+                return false;
             }
-  
+
+            if (UpdateConsumeItem(dt)) return true;
+            if (UpdateFollowTarget(dt)) return true;
+
             return false;
         }
 
@@ -79,7 +104,7 @@ namespace OfTamingAndBreeding.Components.Traits
             }
 
             m_consumeSearchTimer += dt;
-            if (m_consumeSearchTimer > m_consumeSearchInterval)
+            if (!m_consumeTarget && m_consumeSearchTimer > m_consumeSearchInterval)
             {
                 m_consumeSearchTimer = 0f;
                 if ((bool)m_tameable && !m_tameable.IsHungry())
@@ -97,7 +122,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 }
             }
 
-            if ((bool)m_consumeTarget)
+            if (m_consumeTarget)
             {
                 if (m_animalAI.MoveTo(dt, m_consumeTarget.transform.position, m_consumeRange, run: false))
                 {
@@ -110,7 +135,6 @@ namespace OfTamingAndBreeding.Components.Traits
                         m_consumeTarget = null;
                     }
                 }
-
                 return true;
             }
 
@@ -119,29 +143,12 @@ namespace OfTamingAndBreeding.Components.Traits
 
         private bool UpdateFollowTarget(float dt)
         {
-            // note: IsOwner checked in IdleMovement()
             if (m_follow == null)
             {
                 return false;
             }
             m_animalAI.Follow(m_follow, dt);
             return true;
-        }
-
-        public void MakeTame()
-        {
-            m_character.SetTamed(tamed: true);
-            m_animalAI.SetAlerted(alert: false);
-        }
-
-        public GameObject GetFollowTarget()
-        {
-            return m_follow;
-        }
-
-        public void SetFollowTarget(GameObject go)
-        {
-            m_follow = go;
         }
 
     }

@@ -29,7 +29,8 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPrefix]
         private static void ZSyncAnimation_SetFloat_Prefix(ZSyncAnimation __instance, int hash, ref float value)
         {
-            if (__instance && __instance.TryGetComponent<ScaledCreature>(out var scaled))
+            //if (__instance && __instance.TryGetComponent<ScaledCreature>(out var scaled))
+            if (__instance && ScaledCreature.TryGet(__instance.gameObject, out var scaled))
             {
                 value *= scaled.m_animationScale;
             }
