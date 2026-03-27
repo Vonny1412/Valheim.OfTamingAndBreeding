@@ -16,7 +16,7 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private Character m_character = null;
         [NonSerialized] private float m_baseGrowTime = 600;
         
-        private void Start()
+        private void Awake()
         {
             m_nview = GetComponent<ZNetView>();
             m_growup = GetComponent<Growup>();

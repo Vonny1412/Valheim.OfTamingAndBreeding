@@ -24,6 +24,5 @@ namespace OfTamingAndBreeding.Patches
                 hover.SetVerticesDirty();
             }
         }
-
     }
 }

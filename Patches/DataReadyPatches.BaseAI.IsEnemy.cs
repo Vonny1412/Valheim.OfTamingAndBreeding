@@ -6,7 +6,6 @@ namespace OfTamingAndBreeding.Patches
 {
     internal partial class DataReadyPatches
     {
-
         [HarmonyPatch(typeof(BaseAI), "IsEnemy", new[] { typeof(Character), typeof(Character) })]
         [HarmonyPrefix] // not using Last or First priority -> other mods may want to change behaviour
         private static bool BaseAI_IsEnemy_Prefix(Character a, Character b, bool __runOriginal, ref bool __result)

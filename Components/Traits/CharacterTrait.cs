@@ -70,8 +70,6 @@ namespace OfTamingAndBreeding.Components.Traits
         [SerializeField] public IsEnemyCondition m_tamedCanAttackFaction = IsEnemyCondition.Default;
         [SerializeField] public IsEnemyCondition m_tamedCanBeAttackedByFaction = IsEnemyCondition.Default;
 
-        
-
         private void Awake()
         {
             m_nview = GetComponent<ZNetView>();
@@ -83,12 +81,15 @@ namespace OfTamingAndBreeding.Components.Traits
             m_baseAITrait = GetComponent<BaseAITrait>();
             m_growupTrait = GetComponent<GrowupTrait>();
 
+            Register(this);
+        }
+
+        private void Start()
+        {
             if (m_character.IsTamed())
             {
-                OnTamed();
+                SetTamedCharacteristics();
             }
-
-            Register(this);
         }
 
         private void OnDestroy()
@@ -105,11 +106,6 @@ namespace OfTamingAndBreeding.Components.Traits
         {
             return m_character.IsTamed();
         }
-
-
-
-
-
 
         public void UpdateHostilities()
         {
@@ -209,22 +205,28 @@ namespace OfTamingAndBreeding.Components.Traits
 
         }
 
-        public void OnTamed()
+        public void RPC_SetTamed(bool tamed)
+        {
+            if (tamed)
+            {
+                // re-setting spawn point is important for tamed creatures that use stay-near-spawn-point
+                m_baseAITrait.SetSpawnPoint();
+
+                // is this even neccessary?
+                // alerted kreatues wont get tamed after all
+                m_baseAITrait.StopPlayerHunt();
+
+                SetTamedCharacteristics();
+            }
+        }
+        
+        public void SetTamedCharacteristics()
         {
             if (m_character.m_boss == true)
             {
                 m_character.m_boss = false;
                 m_character.m_bossEvent = "";
                 EnemyHud.instance.RemoveCharacterHud(m_character);
-            }
-
-            var baseAI = m_character.GetComponent<BaseAI>();
-            if (baseAI && baseAI.HuntPlayer())
-            {
-                // is this even neccessary?
-                // alerted kreatues wont get tamed after all
-                baseAI.SetHuntPlayer(hunt: false);
-                baseAI.SetAlerted(alerted: false);
             }
 
             if (m_changeGroupWhenTamed == true)
@@ -236,10 +238,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 m_character.m_faction = m_changeFactionWhenTamedTo;
             }
 
-
-
-
-            // todo: create yaml option for that
+            // todo: create yaml option "DisableIdleSounds"
             if (gameObject.name.StartsWith("Hatchling"))
             {
                 var m_baseAI = GetComponent<BaseAI>();

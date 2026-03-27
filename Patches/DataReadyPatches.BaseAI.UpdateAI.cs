@@ -40,14 +40,29 @@ namespace OfTamingAndBreeding.Patches
     }
 
         */
+
+
+
+        /*
+        [HarmonyPatch(typeof(BaseAI), "UpdateAI")]
+        [HarmonyPrefix]
+        [HarmonyPriority(Priority.First)]
+        private static bool BaseAI_UpdateAI_Prefix(BaseAI __instance, float dt, ref bool __result)
+        {
+            __result = false;
+            return false;
+        }
+        */
+
+
+
         [HarmonyPatch(typeof(BaseAI), "UpdateAI")]
         [HarmonyPostfix] // this makes sure the rest of baseai is getting run
-        [HarmonyPriority(Priority.Last)]
         private static void BaseAI_UpdateAI_Postfix(BaseAI __instance, float dt, ref bool __result)
         {
             if (__result == false)
             {
-                return; // invalid afterall
+                return; // invalid afterall or blocked by other mod
             }
 
             //var trait = __instance.GetComponent<BaseAITrait>();

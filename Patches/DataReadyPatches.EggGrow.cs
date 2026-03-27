@@ -11,7 +11,6 @@ namespace OfTamingAndBreeding.Patches
 
         [HarmonyPatch(typeof(EggGrow), "CanGrow")]
         [HarmonyPostfix]
-        [HarmonyPriority(Priority.Last)]
         private static void EggGrow_CanGrow_Postfix(EggGrow __instance, ref bool __result)
         {
             // postfix = less calls
@@ -41,9 +40,13 @@ namespace OfTamingAndBreeding.Patches
 
         [HarmonyPatch(typeof(EggGrow), "GrowUpdate")]
         [HarmonyPrefix]
-        [HarmonyPriority(Priority.Last)]
-        private static bool EggGrow_GrowUpdate_Prefix(EggGrow __instance)
+        private static bool EggGrow_GrowUpdate_Prefix(EggGrow __instance, bool __runOriginal)
         {
+            if (!__runOriginal)
+            {
+                return false;
+            }
+
             var trait = EggGrowTrait.GetUnsafe(__instance.gameObject);
             if (trait.GrowUpdate())
             {

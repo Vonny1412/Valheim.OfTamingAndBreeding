@@ -69,7 +69,7 @@ namespace OfTamingAndBreeding.Components.Traits
         [SerializeField] private int m_requireGlobalKeysIndex = -1;
         [SerializeField] private int m_grownListIndex = -1;
 
-        private void Start()
+        private void Awake()
         {
             m_nview = GetComponent<ZNetView>();
             m_eggGrow = GetComponent<EggGrow>();
@@ -281,6 +281,11 @@ namespace OfTamingAndBreeding.Components.Traits
             }
             else
             {
+                if (!Plugin.IsServerDataLoaded())
+                {
+                    return "";
+                }
+
                 // logic:
                 //   (vanilla)itemstack > (vanilla)fire > (vanilla)roof > (otab)globalkeys > (otab)biome > (otab)liquid
 
@@ -309,7 +314,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 {
                     // just take first AND-list for now
                     // todo: maybe display full list?
-                    var andList = orKeysList[0];
+                    var andList = orKeysList[0].Where((key) => !ZoneSystem.instance.GetGlobalKey(key));
                     var outList = String.Join(", ", andList.Select((k) => Localization.instance.Localize($"$OTAB_require_key_{k}")));
                     return Localization.instance.Localize("$otab_egg_requires_key", outList);
                 }

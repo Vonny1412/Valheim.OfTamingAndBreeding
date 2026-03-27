@@ -95,9 +95,7 @@ namespace OfTamingAndBreeding.Components.Traits
                             zdo.Set(ZDOVars.s_tameTimeLeft, tamingTime);
                         }
                     }
-
                 }
-
             }
 
             if (m_animalAITrait)
@@ -558,24 +556,13 @@ namespace OfTamingAndBreeding.Components.Traits
             return m_isStarving;
         }
 
-        public void OnTamed()
+        public void OnTame()
         {
-            /*
-        private void Tameable.Tame()
-        {
-            Game.instance.IncrementPlayerStat(PlayerStatType.CreatureTamed);
-            if (m_nview.IsValid() && m_nview.IsOwner() && (bool)m_monsterAI && (bool)m_character && !IsTamed())
-            {
-                m_monsterAI.MakeTame();
-                m_tamedEffect.Create(base.transform.position, base.transform.rotation);
-                Player closestPlayer = Player.GetClosestPlayer(base.transform.position, 30f);
-                if ((bool)closestPlayer)
-                {
-                    closestPlayer.Message(MessageHud.MessageType.Center, m_character.m_name + " $hud_tamedone");
-                }
-            }
+            TameAnimal();
         }
-            */
+       
+        private void TameAnimal()
+        {
             if (m_animalAITrait && m_nview.IsValid() && m_nview.IsOwner() && (bool)m_character && !m_tameable.IsTamed())
             {
                 m_animalAITrait.MakeTame();

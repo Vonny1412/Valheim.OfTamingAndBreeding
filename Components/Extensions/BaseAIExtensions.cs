@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Mono.Cecil.Cil;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -87,6 +88,18 @@ namespace OfTamingAndBreeding.Components.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector3 GetSpawnPoint(this BaseAI that)
             => ValheimAPI.BaseAI.__IAPI_m_spawnPoint_Invoker.Get(that);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void MoveToWater(this BaseAI that, float dt, float maxRange)
+            => ValheimAPI.BaseAI.__IAPI_MoveToWater_Invoker1.Invoke(that, dt, maxRange);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Flee(this BaseAI that, float dt, Vector3 from)
+            => ValheimAPI.BaseAI.__IAPI_Flee_Invoker1.Invoke(that, dt, from);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SetSpawnPoint(this BaseAI that, Vector3 point)
+            => ValheimAPI.BaseAI.__IAPI_m_spawnPoint_Invoker.Set(that, point);
 
     }
 }

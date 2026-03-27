@@ -8,9 +8,13 @@ namespace OfTamingAndBreeding.Patches
 
         [HarmonyPatch(typeof(BaseAI), "IdleMovement")]
         [HarmonyPrefix]
-        [HarmonyPriority(Priority.Last)]
-        private static bool BaseAI_IdleMovement_Prefix(BaseAI __instance, float dt)
+        private static bool BaseAI_IdleMovement_Prefix(BaseAI __instance, bool __runOriginal, float dt)
         {
+            if (!__runOriginal)
+            {
+                return false;
+            }
+
             var trait = BaseAITrait.GetUnsafe(__instance.gameObject);
             if (trait.IdleMovement(dt))
             {

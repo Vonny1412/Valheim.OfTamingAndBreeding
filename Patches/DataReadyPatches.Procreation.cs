@@ -20,8 +20,13 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPatch(typeof(Procreation), "Procreate")]
         [HarmonyPrefix]
         [HarmonyPriority(Priority.Last)]
-        private static bool Procreation_Procreate_Prefix(Procreation __instance)
+        private static bool Procreation_Procreate_Prefix(Procreation __instance, bool __runOriginal)
         {
+            if (!__runOriginal)
+            {
+                return false;
+            }
+
             var trait = ProcreationTrait.GetUnsafe(__instance.gameObject);
             if (trait.OnProcreate())
             {

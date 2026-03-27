@@ -1,4 +1,7 @@
 
+.publish.bat
+.publish.ps1
+
 # Build Output
 bin/
 obj/

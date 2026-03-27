@@ -8,9 +8,13 @@ namespace OfTamingAndBreeding.Patches
 
         [HarmonyPatch(typeof(Growup), "GrowUpdate")]
         [HarmonyPrefix]
-        [HarmonyPriority(Priority.Last)]
-        private static bool Growup_GrowUpdate_Prefix(Growup __instance)
+        private static bool Growup_GrowUpdate_Prefix(Growup __instance, bool __runOriginal)
         {
+            if (!__runOriginal)
+            {
+                return false;
+            }
+
             var trait = GrowupTrait.GetUnsafe(__instance.gameObject);
             if (trait.GrowUpdate())
             {

@@ -1,7 +1,10 @@
 ﻿using Jotunn.Managers;
 using OfTamingAndBreeding.Components;
+using OfTamingAndBreeding.Components.Base;
+using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Data.Models.SubData;
+using OfTamingAndBreeding.OTABUtils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -313,10 +316,59 @@ namespace OfTamingAndBreeding.Registry.Processing
             PrefabRegistry.Instance.DestroyComponentIfExists<Procreation>(offspringName, offspring); // offsprings do not procreate
             PrefabRegistry.Instance.DestroyComponentIfExists<Tameable>(offspringName, offspring); // offsprings cannot be explicite tamed
 
-            // todo: one day, add clone-options "RemoveCharacterDrop" and "RemoveMonsterAI"
-            PrefabRegistry.Instance.DestroyComponentIfExists<CharacterDrop>(offspringName, offspring); // offsprings do not drop items
-            PrefabRegistry.Instance.DestroyComponentIfExists<MonsterAI>(offspringName, offspring); // offsprings do not attack
-            PrefabRegistry.Instance.GetOrAddComponent<AnimalAI>(offspringName, offspring); // offsprings do act like passive animals
+            //PrefabRegistry.Instance.DestroyComponentIfExists<CharacterDrop>(offspringName, offspring);
+            if (offspring.TryGetComponent<CharacterDrop>(out var charDrop))
+            {
+                foreach(var drop in charDrop.m_drops)
+                {
+                    var isTrophy = drop.m_prefab.name.StartsWith("trophy", StringComparison.OrdinalIgnoreCase);
+                    var isSpecial = drop.m_onePerPlayer || isTrophy;
+                    if (isSpecial)
+                    {
+                        drop.m_amountMin = 0;
+                        drop.m_amountMax = 0;
+                        drop.m_chance = 0;
+                    }
+                    else
+                    {
+                        drop.m_amountMin = 0;
+                        drop.m_chance /= 2;
+                        drop.m_levelMultiplier = false;
+                        drop.m_dontScale = true;
+                        if (drop.m_amountMax > 1)
+                        {
+                            drop.m_amountMax = (int)(((float)drop.m_amountMax / 2) + 0.5f);
+                        }
+                    }
+                }
+            }
+
+
+
+
+
+
+            if (offspring.TryGetComponent<MonsterAI>(out var monsterAI))
+            {
+                // BaseAI fields
+                var baseAISnapshot = new Common.FieldsSnapshot<BaseAI>(monsterAI);
+
+                // MonsterAI fields
+                var m_avoidLand = monsterAI.m_avoidLand;
+                var m_fleeInLava = monsterAI.m_fleeInLava;
+
+                PrefabRegistry.Instance.DestroyComponentIfExists<MonsterAI>(offspringName, offspring);
+                var animalAI = PrefabRegistry.Instance.GetOrAddComponent<AnimalAI>(offspringName, offspring);
+
+                // BaseAI fields
+                baseAISnapshot.ApplyTo(animalAI);
+
+                // MonsterAI fields
+                var animalAITrait = AnimalAITrait.GetOrAddComponent(offspring);
+                animalAITrait.m_avoidLand = m_avoidLand;
+                animalAITrait.m_fleeInLava = m_fleeInLava;
+
+            }
 
             //
             // display higher level creatures always as level 1 creature
@@ -469,7 +521,6 @@ namespace OfTamingAndBreeding.Registry.Processing
                 }
 
             }
-
         }
 
         //------------------------------------------------

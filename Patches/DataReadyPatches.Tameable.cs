@@ -63,8 +63,13 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPatch(typeof(Tameable), "TamingUpdate")]
         [HarmonyPrefix]
         [HarmonyPriority(Priority.Last)]
-        private static bool Tameable_TamingUpdate_Prefix(Tameable __instance)
+        private static bool Tameable_TamingUpdate_Prefix(Tameable __instance, bool __runOriginal)
         {
+            if (!__runOriginal)
+            {
+                return false;
+            }
+
             //var trait = __instance.GetComponent<TameableTrait>();
             var trait = TameableTrait.GetUnsafe(__instance.gameObject);
             if (trait.OnTamingUpdate())
@@ -77,8 +82,13 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPatch(typeof(Tameable), "DecreaseRemainingTime")]
         [HarmonyPrefix]
         [HarmonyPriority(Priority.Last)]
-        private static bool Tameable_DecreaseRemainingTime_Prefix(Tameable __instance, ref float time)
+        private static bool Tameable_DecreaseRemainingTime_Prefix(Tameable __instance, bool __runOriginal, ref float time)
         {
+            if (!__runOriginal)
+            {
+                return false;
+            }
+
             //var trait = __instance.GetComponent<TameableTrait>();
             var trait = TameableTrait.GetUnsafe(__instance.gameObject);
             if (trait.IsTamingDisabled())
@@ -99,13 +109,13 @@ namespace OfTamingAndBreeding.Patches
         private static void Tameable_Tame_Postfix(Tameable __instance)
         {
             var trait = TameableTrait.GetUnsafe(__instance.gameObject);
-            trait.OnTamed();
+            trait.OnTame();
         }
 
         [HarmonyPatch(typeof(Tameable), "Interact")]
         [HarmonyPrefix]
         [HarmonyPriority(Priority.First)]
-        private static bool Tameable_Interact_Prefix(Tameable __instance, Humanoid user, bool __runOriginal)
+        private static bool Tameable_Interact_Prefix(Tameable __instance, Humanoid user)
         {
             //var trait = __instance.GetComponent<TameableTrait>();
             var trait = TameableTrait.GetUnsafe(__instance.gameObject);

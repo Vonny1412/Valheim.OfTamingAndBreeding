@@ -7,9 +7,13 @@ namespace OfTamingAndBreeding.Patches
     {
         [HarmonyPatch(typeof(MonsterAI), "FindClosestConsumableItem")]
         [HarmonyPrefix]
-        [HarmonyPriority(Priority.Last)]
-        private static bool MonsterAI_FindClosestConsumableItem_Prefix(MonsterAI __instance, ref ItemDrop __result)
+        private static bool MonsterAI_FindClosestConsumableItem_Prefix(MonsterAI __instance, bool __runOriginal, ref ItemDrop __result)
         {
+            if (!__runOriginal)
+            {
+                return false;
+            }
+
             // note: for animals the find-consume-item logic is handled here:
             // BaseAI_IdleMovement_Prefix -> if (trait.IdleMovement(dt))
             // -> BaseAITrait.IdleMovement() -> if (m_animalAITrait && m_animalAITrait.IdleMovement(dt))

@@ -58,6 +58,9 @@ namespace OfTamingAndBreeding.ValheimAPI
 
         public static readonly Core.Invokers.VoidMethodInvoker __IAPI_UpdateTakeoffLanding_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(BaseAI_Alias), "UpdateTakeoffLanding", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(float), false) });
 
+        public static readonly Core.Invokers.VoidMethodInvoker __IAPI_MoveToWater_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(BaseAI_Alias), "MoveToWater", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(float), false), new Core.Signatures.NonGenericParamSig(typeof(float), false) });
+
+        public static readonly Core.Invokers.TypedMethodInvoker<bool> __IAPI_Flee_Invoker1 = new Core.Invokers.TypedMethodInvoker<bool>(typeof(BaseAI_Alias), "Flee", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(float), false), new Core.Signatures.NonGenericParamSig(typeof(UnityEngine_Vector3_Alias), false) });
 
     }
 }

@@ -193,15 +193,17 @@ namespace OfTamingAndBreeding
 
             // add trait components to all prefabs that are still missing these traits
             // added trait types will be registered and latter removed when session is closing
-            AnimalAITrait.AddComponentToPrefabs(typeof(AnimalAI));
+
             BaseAITrait.AddComponentToPrefabs(typeof(BaseAI));
+            AnimalAITrait.AddComponentToPrefabs(typeof(AnimalAI));
+            MonsterAITrait.AddComponentToPrefabs(typeof(MonsterAI));
+
             CharacterTrait.AddComponentToPrefabs(typeof(Character), typeof(BaseAI));
             EggGrowTrait.AddComponentToPrefabs(typeof(EggGrow));
             GrowupTrait.AddComponentToPrefabs(typeof(Growup));
             ItemDropTrait.AddComponentToPrefabs(typeof(ItemDrop));
-            MonsterAITrait.AddComponentToPrefabs(typeof(MonsterAI));
-            ProcreationTrait.AddComponentToPrefabs(typeof(Procreation));
             TameableTrait.AddComponentToPrefabs(typeof(Tameable));
+            ProcreationTrait.AddComponentToPrefabs(typeof(Procreation));
 
             if (dataLoaded)
             {

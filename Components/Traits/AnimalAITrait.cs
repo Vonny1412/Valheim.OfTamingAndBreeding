@@ -14,10 +14,12 @@ namespace OfTamingAndBreeding.Components.Traits
         [SerializeField] public float m_consumeRange = 2f;
         [SerializeField] public float m_consumeSearchRange = 5f;
         [SerializeField] public float m_consumeSearchInterval = 10f;
+        [SerializeField] public bool m_avoidLand = false;
+        [SerializeField] public bool m_fleeInLava = true;
 
         // used by TameableTrait
         [NonSerialized] public Action<ItemDrop> m_onConsumedItem = null;
-
+        
         // set in awake
         [NonSerialized] private ZNetView m_nview = null;
         [NonSerialized] private AnimalAI m_animalAI = null;
@@ -75,6 +77,23 @@ namespace OfTamingAndBreeding.Components.Traits
         {
             m_character.SetTamed(tamed: true); // sends rpc
             m_animalAI.SetAlerted(alert: false); // complex, sets zdo
+        }
+
+        public bool UpdateAI(float dt)
+        {
+            if (m_avoidLand && !m_character.IsSwimming())
+            {
+                m_animalAI.MoveToWater(dt, 20f);
+                return true;
+            }
+
+            if (m_fleeInLava && m_character.InLava())
+            {
+                m_animalAI.Flee(dt, m_character.transform.position - m_character.transform.forward);
+                return true;
+            }
+
+            return false;
         }
 
         public bool IdleMovement(float dt)

@@ -4,6 +4,7 @@ using OfTamingAndBreeding.Components.SpecialPrefabs;
 using OfTamingAndBreeding.OTABUtils;
 using OfTamingAndBreeding.ValheimAPI;
 using System;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -226,15 +227,16 @@ namespace OfTamingAndBreeding.Components.Traits
         public bool UpdateAI(float dt)
         {
             m_characterTrait.UpdateHostilities();
+            UpdateCommandableAI();
 
-            var tameableTrait = m_tameableTrait;
-            if (tameableTrait && tameableTrait.IsTamed() && tameableTrait.IsStarving())
+            if (m_animalAITrait && m_animalAITrait.UpdateAI(dt))
             {
-                UpdateCommandableAI();
-                if (UpdateStarvingMonsterAI(dt))
-                {
-                    return true;
-                }
+                return true;
+            }
+
+            if (UpdateStarvingMonsterAI(dt))
+            {
+                return true;
             }
 
             return false;
@@ -242,6 +244,11 @@ namespace OfTamingAndBreeding.Components.Traits
 
         private bool UpdateStarvingMonsterAI(float dt)
         {
+            if (!m_characterTrait.IsTamed() || !m_tameableTrait || !m_tameableTrait.IsStarving())
+            {
+                return false;
+            }
+
             // this is preventing monster-creatures from beeing stuck in aggression
             // if ppl dont like this behaviour they shall make sure their tames are fed!
             var monsterAI = m_monsterAI;
@@ -262,28 +269,25 @@ namespace OfTamingAndBreeding.Components.Traits
         private void UpdateCommandableAI()
         {
             var tameableTrait = m_tameableTrait;
-            if (tameableTrait.IsCommandable())
+            if (tameableTrait && tameableTrait.IsCommandable() && tameableTrait.IsStarving())
             {
                 var baseAI = m_baseAI;
                 var monsterAI = m_monsterAI;
                 var animalAITrait = m_animalAITrait;
-
                 if (monsterAI)
                 {
-                    var isFollowing = monsterAI.GetFollowTarget() != null;
-                    if (isFollowing)
+                    if ((bool)monsterAI.GetFollowTarget())
                     {
                         monsterAI.SetFollowTarget(null);
-                        baseAI.SetPatrolPoint();
+                        m_baseAI.SetPatrolPoint();
                     }
                 }
                 else if (animalAITrait)
                 {
-                    var isFollowing = animalAITrait.GetFollowTarget() != null;
-                    if (isFollowing)
+                    if ((bool)animalAITrait.GetFollowTarget())
                     {
                         animalAITrait.SetFollowTarget(null);
-                        baseAI.SetPatrolPoint();
+                        m_baseAI.SetPatrolPoint();
                     }
                 }
             }
@@ -291,13 +295,13 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public bool IdleMovement(float dt)
         {
-            IdleMovementAntiJam(dt);
-
             if (m_consumeClip && m_consumeClip.IsPlaying())
             {
                 // creature is eating - do not disturb!
                 return true;
             }
+
+            IdleMovementAntiJam(dt);
 
             if (m_animalAITrait && m_animalAITrait.IdleMovement(dt))
             {
@@ -349,6 +353,30 @@ namespace OfTamingAndBreeding.Components.Traits
         }
 
 
+        public bool IsAlerted()
+        {
+            return m_baseAI.IsAlerted();
+        }
+
+        public void StopPlayerHunt()
+        {
+            // i dunno if this is neccessary
+            if (m_baseAI && m_baseAI.HuntPlayer())
+            {
+                m_baseAI.SetHuntPlayer(hunt: false);
+                m_baseAI.SetAlerted(alerted: false);
+            }
+        }
+
+        public void SetSpawnPoint()
+        {
+            var point = transform.position;
+            m_baseAI.SetSpawnPoint(point);
+            if (m_nview.IsValid() && m_nview.IsOwner())
+            {
+                m_nview.GetZDO().Set(ZDOVars.s_spawnPoint, point);
+            }
+        }
 
 
 
@@ -357,9 +385,8 @@ namespace OfTamingAndBreeding.Components.Traits
 
 
 
-
-        [NonSerialized] private bool m_checkRandomMoveTimer = true;
-        [NonSerialized] private int m_idleMoveCheckCount = 4;
+        [NonSerialized] private float m_checkRandomMoveTimer = 0;
+        [NonSerialized] private const int m_idleMoveCheckCount = 4; // todo: add config option for interval-count
         [NonSerialized] private Vector3? m_lastPosition;
         [NonSerialized] private List<float> m_movedList = new List<float>();
         [NonSerialized] private bool m_isJammed = false;
@@ -390,17 +417,22 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 return false;
             }
-            if (!m_tameableTrait || !(m_tameableTrait.IsTamed() || m_tameableTrait.IsTamingStarted()))
+            //if (!m_tameableTrait || !(m_tameableTrait.IsTamed() || m_tameableTrait.IsTamingStarted()))
+            if (!m_characterTrait.IsTamed())
             {
                 return false;
             }
             return true;
         }
 
-        private static EffectList m_emptyEffect = new EffectList();
+        private static readonly EffectList m_emptyEffect = new EffectList();
 
         public void AlertSilent()
         {
+            if (m_baseAI.IsAlerted())
+            {
+                return;
+            }
             var eff = m_baseAI.m_alertedEffects;
             m_baseAI.m_alertedEffects = m_emptyEffect;
             try
@@ -417,55 +449,44 @@ namespace OfTamingAndBreeding.Components.Traits
         {
             if (!CanBecomeJammed())
             {
+                m_isJammed = false;
                 return;
             }
 
-            if (m_baseAI.GetRandomMoveUpdateTimer() <= 0)
+            m_checkRandomMoveTimer -= dt;
+            if (m_checkRandomMoveTimer <= 0)
             {
-                if (m_checkRandomMoveTimer)
-                {
-                    m_checkRandomMoveTimer = false;
+                m_checkRandomMoveTimer = m_baseAI.m_randomMoveInterval;
 
-                    // todo: add config option to enable/disable feature
-                    // todo: add config option for interval-count
-                    var curPosition = transform.position;
-                    if (m_lastPosition.HasValue)
-                    {
-                        float curDist = Vector3.Distance(m_lastPosition.Value, curPosition);
-                        m_movedList.Add(curDist);
-                    }
-                    m_lastPosition = curPosition;
-                    while (m_movedList.Count > m_idleMoveCheckCount)
-                    {
-                        m_movedList.RemoveAt(0);
-                    }
-                    m_totalMovedDistance = 0f;
-                    foreach (var v in m_movedList)
-                    {
-                        m_totalMovedDistance += v;
-                    }
-                    if (m_movedList.Count == m_idleMoveCheckCount)
-                    {
-                        var wasJammed = m_isJammed;
-                        m_isJammed = CheckIsJammed();
-                        if (m_isJammed)
-                        {
-                            AlertSilent();
-                        }
-                        else
-                        {
-                            if (wasJammed)
-                            {
-                                m_baseAI.SetAlerted(alerted: false);
-                            }
-                        }
-                    }
-                    return;
+                var curPosition = transform.position;
+                if (m_lastPosition.HasValue)
+                {
+                    float curDist = Vector3.Distance(m_lastPosition.Value, curPosition);
+                    m_movedList.Add(curDist);
                 }
-            }
-            else
-            {
-                m_checkRandomMoveTimer = true;
+                m_lastPosition = curPosition;
+                while (m_movedList.Count > m_idleMoveCheckCount)
+                {
+                    m_movedList.RemoveAt(0);
+                }
+                m_totalMovedDistance = 0f;
+                foreach (var v in m_movedList)
+                {
+                    m_totalMovedDistance += v;
+                }
+                if (m_movedList.Count == m_idleMoveCheckCount)
+                {
+                    var wasJammed = m_isJammed;
+                    m_isJammed = CheckIsJammed();
+                    if (m_isJammed)
+                    {
+                        AlertSilent();
+                    }
+                    else if (wasJammed)
+                    {
+                        m_baseAI.SetAlerted(alerted: false);
+                    }
+                }
             }
         }
         

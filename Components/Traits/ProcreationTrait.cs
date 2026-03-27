@@ -75,7 +75,7 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private Procreation m_procreation = null;
         [NonSerialized] private Tameable m_tameable = null;
         [NonSerialized] private Character m_character = null;
-        [NonSerialized] private BaseAI m_baseAI = null;
+        [NonSerialized] private BaseAITrait m_baseAITrait = null;
         [NonSerialized] private float m_basePregnancyDuration = 60;
         [NonSerialized] private float m_realPregnancyDuration = 0;
         [NonSerialized] private GameObject m_myPrefab = null;
@@ -99,7 +99,7 @@ namespace OfTamingAndBreeding.Components.Traits
             m_procreation = GetComponent<Procreation>();
             m_tameable = GetComponent<Tameable>();
             m_character = GetComponent<Character>();
-            m_baseAI = GetComponent<BaseAI>();
+            m_baseAITrait = GetComponent<BaseAITrait>();
 
             m_basePregnancyDuration = m_procreation.m_pregnancyDuration;
             m_realPregnancyDuration = m_procreation.m_pregnancyDuration;
@@ -335,8 +335,14 @@ namespace OfTamingAndBreeding.Components.Traits
             }
             else
             {
-                totalInRange += SpawnSystem.GetNrOfInstances(m_partnerPrefab, myPosition, m_procreation.m_totalCheckRange);
-                totalInRange += SpawnSystem.GetNrOfInstances(m_offspringPrefab, myPosition, m_procreation.m_totalCheckRange);
+                if (m_partnerPrefab)
+                {
+                    totalInRange += SpawnSystem.GetNrOfInstances(m_partnerPrefab, myPosition, m_procreation.m_totalCheckRange);
+                }
+                if (m_offspringPrefab)
+                {
+                    totalInRange += SpawnSystem.GetNrOfInstances(m_offspringPrefab, myPosition, m_procreation.m_totalCheckRange);
+                }
             }
 
             text += "\n" + Localization.instance.Localize("$otab_hover_admin_info", "Partner prefab: " + partnerPrefab + " (found:"+ (partnerFound ? "true" : "false") + ")");
@@ -354,25 +360,25 @@ namespace OfTamingAndBreeding.Components.Traits
         
         public bool OnProcreate()
         {
+
             // Procreation component COULD work without Tameable component
             // maybe one day I gonna add non-tameable procration feature
             // but that would also mean to build a feeding/hungry workaround - maybe in far future
-            var __isTamed = m_tameable ? m_tameable.IsTamed() : (m_character ? m_character.IsTamed() : false);
-
-            if (!m_nview.IsValid() || !m_nview.IsOwner() || !__isTamed)
+            var isTamed = m_tameable ? m_tameable.IsTamed() : (m_character ? m_character.IsTamed() : false);
+            if (!isTamed || !m_nview.IsValid() || !m_nview.IsOwner())
             {
                 // note: valheim also immediatly returns if its not the owner
-                return true; // return as handled
+                return true; // handled
             }
 
             // check if procreation is disabled while swimming
             if (m_procreateWhileSwimming == false && m_character && m_character.IsSwimming())
             {
-                return true; // return as handled
+                return true; // handled
             }
 
-            DoProcreate(); // code block separated because from now on we only return "true"
-            return true; // we did the job
+            DoProcreate();
+            return true; // handled
         }
 
 
@@ -405,15 +411,15 @@ namespace OfTamingAndBreeding.Components.Traits
                 m_procreation.SetMyPrefab(m_myPrefab);
             }
 
-            // "__" => pseudo constants - do not change the values!
-            var __myPosition = m_procreation.transform.position;
-            var __myPartnerCheckRange = m_procreation.m_partnerCheckRange;
-            var __myTotalCheckRange = m_procreation.m_totalCheckRange;
-            var __myPrefabName = Utils.GetPrefabName(m_myPrefab.name);
-            var __nowTicks = ZNet.instance.GetTime().Ticks;
-            var __zNetScene = ZNetScene.instance;
-            bool __isPregnant = m_procreation.IsPregnant();
-            bool __isDue = m_procreation.IsDue();
+            // "c_" => pseudo constants - do not change the values!
+            var c_myPosition = m_procreation.transform.position;
+            var c_myPartnerCheckRange = m_procreation.m_partnerCheckRange;
+            var c_myTotalCheckRange = m_procreation.m_totalCheckRange;
+            var c_myPrefabName = Utils.GetPrefabName(m_myPrefab.name);
+            var c_nowTicks = ZNet.instance.GetTime().Ticks;
+            var c_zNetScene = ZNetScene.instance;
+            bool c_isPregnant = m_procreation.IsPregnant();
+            bool c_isDue = m_procreation.IsDue();
             
             // s_ => valheim zdo vars
             int s_lovePoints = zdo.GetInt(ZDOVars.s_lovePoints);
@@ -438,7 +444,7 @@ namespace OfTamingAndBreeding.Components.Traits
             // partner is stored in zdo
             if (!m_partnerPrefab && z_partnerPrefab.Length != 0)
             {
-                var prefab = __zNetScene.GetPrefab(z_partnerPrefab);
+                var prefab = c_zNetScene.GetPrefab(z_partnerPrefab);
                 if (prefab)
                 {
                     // use value in zdo as partner
@@ -464,7 +470,7 @@ namespace OfTamingAndBreeding.Components.Traits
             if (m_partnerPrefab && z_needPartner == 1)
             {
                 bool keepPartner;
-                if (__isPregnant)
+                if (c_isPregnant)
                 {
                     // always keep while beeing pregnant
                     keepPartner = true;
@@ -473,7 +479,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 {
                     // i am using __myTotalCheckRange instead of __myPartnerCheckRange
                     // so the old partner wont get abendoned if it just stays outside the smaller partner check range for too long
-                    int count = GetNearbyCountExcludeMyself(m_partnerPrefab, __myPosition, __myTotalCheckRange);
+                    int count = GetNearbyCountExcludeMyself(m_partnerPrefab, c_myPosition, c_myTotalCheckRange);
                     keepPartner = count >= z_needPartner;
                 }
 
@@ -487,11 +493,11 @@ namespace OfTamingAndBreeding.Components.Traits
                     if (z_partnerNotSeenSince == 0L)
                     {
                         // only set this value if it has not been set yet!
-                        z_partnerNotSeenSince = ZNetUtils.SetLong(zdo, Plugin.ZDOVars.z_partnerNotSeenSince, __nowTicks, z_partnerNotSeenSince);
+                        z_partnerNotSeenSince = ZNetUtils.SetLong(zdo, Plugin.ZDOVars.z_partnerNotSeenSince, c_nowTicks, z_partnerNotSeenSince);
                     }
                     else
                     {
-                        bool expired = (__nowTicks - z_partnerNotSeenSince) > m_partnerRecheckTicks;
+                        bool expired = (c_nowTicks - z_partnerNotSeenSince) > m_partnerRecheckTicks;
                         if (expired) // creature is mourning - lets find some one new!
                         {
                             // this will trigger a new search for partner
@@ -512,13 +518,13 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 var foundPartner = Common.WeightedRandom.FindRandom<ProcreationPartner>(partnerList, out ProcreationPartner partnerEntry, entry =>
                 {
-                    var prefab = __zNetScene.GetPrefab(entry.Prefab);
+                    var prefab = c_zNetScene.GetPrefab(entry.Prefab);
                     if (prefab == null) return 0; // zero weight => skip this one
-                    return entry.Weight * GetNearbyCountExcludeMyself(prefab, __myPosition, __myPartnerCheckRange);
+                    return entry.Weight * GetNearbyCountExcludeMyself(prefab, c_myPosition, c_myPartnerCheckRange);
                 });
                 if (foundPartner)
                 {
-                    m_partnerPrefab = __zNetScene.GetPrefab(partnerEntry.Prefab);
+                    m_partnerPrefab = c_zNetScene.GetPrefab(partnerEntry.Prefab);
                     z_partnerPrefab = ZNetUtils.SetString(zdo, Plugin.ZDOVars.z_partnerPrefab, m_partnerPrefab.name, z_partnerPrefab);
                     z_partnerNotSeenSince = ZNetUtils.SetLong(zdo, Plugin.ZDOVars.z_partnerNotSeenSince, 0L, z_partnerNotSeenSince);
                     searchNewOffspring = true;
@@ -534,7 +540,7 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 if (!m_offspringPrefab && z_offspringPrefab.Length != 0)
                 {
-                    var prefab = __zNetScene.GetPrefab(z_offspringPrefab);
+                    var prefab = c_zNetScene.GetPrefab(z_offspringPrefab);
                     if (prefab)
                     {
                         m_offspringPrefab = prefab;
@@ -569,7 +575,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
                 if (foundOffspring)
                 {
-                    var offspring = __zNetScene.GetPrefab(randomOffspring.Prefab);
+                    var offspring = c_zNetScene.GetPrefab(randomOffspring.Prefab);
 
                     z_offspringPrefab = ZNetUtils.SetString(zdo, Plugin.ZDOVars.z_offspringPrefab, offspring.name, z_offspringPrefab);
                     m_offspringPrefab = offspring;
@@ -626,9 +632,12 @@ namespace OfTamingAndBreeding.Components.Traits
             //-- procreation
             //------------------------------------------------------
 
-            if (!__isPregnant)
+            if (!c_isPregnant)
             {
-                bool canProcreate = UnityEngine.Random.value <= m_procreation.m_pregnancyChance && !m_baseAI.IsAlerted() && !m_tameable.IsHungry();
+                bool canProcreate = UnityEngine.Random.value <= m_procreation.m_pregnancyChance
+                    && !m_baseAITrait.IsAlerted()
+                    && !m_baseAITrait.IsJammed()
+                    && !m_tameable.IsHungry();
                 if (canProcreate)
                 {
                     // max creatures check: only using m_partnerPrefab + offspring (never m_myPrefab)
@@ -637,21 +646,21 @@ namespace OfTamingAndBreeding.Components.Traits
                     {
                         foreach (var prefabName in prefabNames)
                         {
-                            maxCreaturesLeft -= SpawnSystem.GetNrOfInstances(__zNetScene.GetPrefab(prefabName), __myPosition, __myTotalCheckRange);
+                            maxCreaturesLeft -= SpawnSystem.GetNrOfInstances(c_zNetScene.GetPrefab(prefabName), c_myPosition, c_myTotalCheckRange);
                             if (maxCreaturesLeft <= 0) return; // early return
                         }
                     }
                     else
                     {
                         // partners
-                        maxCreaturesLeft -= SpawnSystem.GetNrOfInstances(m_partnerPrefab, __myPosition, __myTotalCheckRange);
+                        maxCreaturesLeft -= SpawnSystem.GetNrOfInstances(m_partnerPrefab, c_myPosition, c_myTotalCheckRange);
                         if (maxCreaturesLeft <= 0) return; // early return
                         // offsprings
-                        maxCreaturesLeft -= SpawnSystem.GetNrOfInstances(m_offspringPrefab, __myPosition, __myTotalCheckRange);
+                        maxCreaturesLeft -= SpawnSystem.GetNrOfInstances(m_offspringPrefab, c_myPosition, c_myTotalCheckRange);
                         if (maxCreaturesLeft <= 0) return; // early return
                     }
 
-                    int partnersInRange = GetNearbyCountExcludeMyself(m_partnerPrefab, __myPosition, __myPartnerCheckRange);
+                    int partnersInRange = GetNearbyCountExcludeMyself(m_partnerPrefab, c_myPosition, c_myPartnerCheckRange);
                     if (partnersInRange >= z_needPartner)
                     {
                         if (z_needPartner == 1)
@@ -666,15 +675,15 @@ namespace OfTamingAndBreeding.Components.Traits
                         {
                             m_procreation.MakePregnant();
                             s_lovePoints = 0;
-                            __isPregnant = m_procreation.IsPregnant();
-                            __isDue = m_procreation.IsDue();
+                            c_isPregnant = m_procreation.IsPregnant();
+                            c_isDue = m_procreation.IsDue();
                         }
                         s_lovePoints = ZNetUtils.SetInt(zdo, ZDOVars.s_lovePoints, s_lovePoints);
                     }
                 }
             }
 
-            if (__isDue)
+            if (c_isDue)
             {
                 m_procreation.ResetPregnancy();
 
@@ -692,7 +701,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
                 GameObject spawned = UnityEngine.Object.Instantiate(
                     m_offspringPrefab,
-                    __myPosition - dir * offset,
+                    c_myPosition - dir * offset,
                     Quaternion.LookRotation(-forward, Vector3.up));
 
                 Character spawnedCharacter = spawned.GetComponent<Character>();
@@ -721,7 +730,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 bool canHaveMore = unlimited || z_siblingsCounter < m_maxSiblingsPerPregnancy;
                 if (canHaveMore && UnityEngine.Random.value <= m_extraSiblingChance)
                 {
-                    ZNetUtils.SetLong(zdo, ZDOVars.s_pregnant, __nowTicks - TimeSpan.FromSeconds(m_procreation.m_pregnancyDuration).Ticks);
+                    ZNetUtils.SetLong(zdo, ZDOVars.s_pregnant, c_nowTicks - TimeSpan.FromSeconds(m_procreation.m_pregnancyDuration).Ticks);
                     z_siblingsCounter = ZNetUtils.SetInt(zdo, Plugin.ZDOVars.z_siblingsCounter, z_siblingsCounter + 1);
                 }
                 else
