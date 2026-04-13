@@ -386,7 +386,8 @@ namespace OfTamingAndBreeding.Components.Traits
 
 
         [NonSerialized] private float m_checkRandomMoveTimer = 0;
-        [NonSerialized] private const int m_idleMoveCheckCount = 4; // todo: add config option for interval-count
+        [NonSerialized] private const int m_idleMoveCheckCount = 3; // todo: add config option for interval-count
+        [NonSerialized] private const float m_idleMoveCheckDistMul = 0.5f; // todo: add config option
         [NonSerialized] private Vector3? m_lastPosition;
         [NonSerialized] private List<float> m_movedList = new List<float>();
         [NonSerialized] private bool m_isJammed = false;
@@ -404,7 +405,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
         private float GetMinRequiredMoveRange()
         {
-            return m_baseAI.m_randomMoveRange;
+            return m_baseAI.m_randomMoveRange * m_idleMoveCheckDistMul;
         }
 
         private bool CanBecomeJammed()
