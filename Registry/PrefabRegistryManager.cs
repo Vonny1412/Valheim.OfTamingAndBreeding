@@ -69,7 +69,7 @@ namespace OfTamingAndBreeding.Registry
 
             if (!Directory.Exists(worldRoot))
             {
-                Plugin.LogServerInfo($"No data directory found. Continuing without data...");
+                Plugin.LogServerInfo($"No data directory found.");
             }
             else
             {
@@ -88,8 +88,7 @@ namespace OfTamingAndBreeding.Registry
                 }
             }
 
-            // just do it even with empty data
-            return ValidateDataAndRegisterPrefabs();
+            return true;
         }
 
         private IEnumerable<string> EnumerateCategoryFiles(string worldRoot, string categoryFolderName)
@@ -139,7 +138,7 @@ namespace OfTamingAndBreeding.Registry
         {
             if (dataLoaded)
             {
-                // todo
+                return true;
             }
 
             PrefabRegistry.CreateInstance();
@@ -198,6 +197,10 @@ namespace OfTamingAndBreeding.Registry
 
         public void ResetRegistry()
         {
+            if (!dataLoaded)
+            {
+                return;
+            }
 
             for (var i= dataProcessors.Length - 1; i >= 0; i--)
             {

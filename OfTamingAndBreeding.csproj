@@ -11,7 +11,7 @@
 	<PropertyGroup>
 		<VersionMajor>0</VersionMajor>
 		<VersionMinor>9</VersionMinor>
-		<VersionPatch>1</VersionPatch>
+		<VersionPatch>2</VersionPatch>
 		<VersionSuffix>alpha</VersionSuffix>
 		<Authors>Yvonne Pautz</Authors>
 		<Product>Of Taming and Breeding</Product>
@@ -27,6 +27,11 @@
 	<PropertyGroup>
 		<CopyToPluginsSubDirectory>Vonny1412.OfTamingAndBreeding</CopyToPluginsSubDirectory>
 	</PropertyGroup>
+
+	<ItemGroup>
+	  <None Remove=".publish.bat" />
+	  <None Remove=".publish.ps1" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<Reference Include="Jotunn">

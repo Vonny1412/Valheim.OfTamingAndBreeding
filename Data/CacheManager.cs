@@ -112,9 +112,9 @@ namespace OfTamingAndBreeding.Data
         {
             try
             {
+                PrefabRegistryManager.Instance.ResetRegistry();
                 var cacheFilePlain = encryptKey == null ? crypted : DeterministicStringCrypto.DecryptFromBase64(crypted, encryptKey);
                 var cacheFile = SerializeableData.Deserialize<Models.CacheFile>(cacheFilePlain);
-                PrefabRegistryManager.Instance.ResetRegistry();
                 var allokay = true;
                 foreach(var p in PrefabRegistryManager.Instance.IterDataProcessors())
                 {

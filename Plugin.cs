@@ -56,13 +56,13 @@ namespace OfTamingAndBreeding
         internal static void LogWarning(object data) => Instance.Logger.LogWarning(data);
         internal static void LogMessage(object data) => Instance.Logger.LogMessage(data);
         internal static void LogInfo(object data) => Instance.Logger.LogInfo(data);
-        internal static void LogDebug(object data) => Instance.Logger.LogDebug(data);
+        internal static void LogDebug(object data) => Instance.Logger.LogInfo(data);
 
         internal static void LogServerWarning(object data)
         {
             if (Net.NetworkSessionManager.Instance.IsServer())
             {
-                Instance.Logger.LogWarning(data);
+                LogWarning(data);
             }
         }
 
@@ -70,7 +70,7 @@ namespace OfTamingAndBreeding
         {
             if (Net.NetworkSessionManager.Instance.IsServer())
             {
-                Instance.Logger.LogMessage(data);
+                LogMessage(data);
             }
         }
 
@@ -78,7 +78,7 @@ namespace OfTamingAndBreeding
         {
             if (Net.NetworkSessionManager.Instance.IsServer())
             {
-                Instance.Logger.LogInfo(data);
+                LogInfo(data);
             }
         }
 
@@ -86,7 +86,7 @@ namespace OfTamingAndBreeding
         {
             if (Net.NetworkSessionManager.Instance.IsServer())
             {
-                Instance.Logger.LogDebug(data);
+                LogDebug(data);
             }
         }
 
@@ -134,8 +134,12 @@ namespace OfTamingAndBreeding
         private void Awake()
         {
             Instance = this;
-            ServerDataDir = Path.Combine(BepInEx.Paths.PluginPath, Plugin.ModGuid, "Data");
+            //ServerDataDir = Path.Combine(BepInEx.Paths.PluginPath, Plugin.ModGuid, "Data");
+            ServerDataDir = Path.Combine(BepInEx.Paths.ConfigPath, Plugin.ModGuid);
             CacheDir = Path.Combine(BepInEx.Paths.CachePath, Plugin.ModGuid);
+
+            Directory.CreateDirectory(ServerDataDir);
+            Directory.CreateDirectory(CacheDir);
 
             if (CheckModsInChainloader() == false)
             {
@@ -183,8 +187,9 @@ namespace OfTamingAndBreeding
             }
             else
             {
-                ZNetSceneContext.Block();
+                //ZNetSceneContext.Block();
             }
+            ZNetSceneContext.Block();
             OnSessionStarted();
         }
 
@@ -193,11 +198,10 @@ namespace OfTamingAndBreeding
 
             // add trait components to all prefabs that are still missing these traits
             // added trait types will be registered and latter removed when session is closing
-
+            // important: they also need to be removed when restoring prefab inside PrefabRegistry::RestorePrefabFromBackup()
             BaseAITrait.AddComponentToPrefabs(typeof(BaseAI));
             AnimalAITrait.AddComponentToPrefabs(typeof(AnimalAI));
             MonsterAITrait.AddComponentToPrefabs(typeof(MonsterAI));
-
             CharacterTrait.AddComponentToPrefabs(typeof(Character), typeof(BaseAI));
             EggGrowTrait.AddComponentToPrefabs(typeof(EggGrow));
             GrowupTrait.AddComponentToPrefabs(typeof(Growup));
@@ -207,7 +211,6 @@ namespace OfTamingAndBreeding
 
             if (dataLoaded)
             {
-                Patches.DataReadyPatches.Install();
                 if (netsess.IsServer())
                 {
                     foreach (var p in Registry.PrefabRegistryManager.Instance.IterDataProcessors())
@@ -215,6 +218,7 @@ namespace OfTamingAndBreeding
                         LogInfo($"Loaded {p.GetLoadedDataCount()} {p.ModelTypeName} entries");
                     }
                 }
+                Patches.DataReadyPatches.Install();
                 Features.LocalIdleAnimations.RemoveIdleEvents();
             }
             else
@@ -224,8 +228,9 @@ namespace OfTamingAndBreeding
 
             if (!netsess.IsServer())
             {
-                ZNetSceneContext.Unblock();
+                //ZNetSceneContext.Unblock();
             }
+            ZNetSceneContext.Unblock();
             OnSessionReady(dataLoaded);
         }
 

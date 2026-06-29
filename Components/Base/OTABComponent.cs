@@ -75,6 +75,18 @@ namespace OfTamingAndBreeding.Components.Base
             }
         }
 
+        public static void RemoveComponentFromPrefabs()
+        {
+            foreach (var prefab in ZNetScene.instance.m_prefabs)
+            {
+                var c = prefab.GetComponent<T>();
+                if (c != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(c);
+                }
+            }
+        }
+
     }
 
 }

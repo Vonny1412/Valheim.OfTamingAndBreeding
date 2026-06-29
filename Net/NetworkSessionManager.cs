@@ -14,19 +14,31 @@ namespace OfTamingAndBreeding.Net
 
         protected override void OnCreate()
         {
+            /*
             PrefabRegistryManager.Instance.OnRegistrationFinished += () => {
                 CancelClientTimeout();
                 OnSessionReady?.Invoke(Instance, true);
             };
-            PrefabRegistryManager.Instance.OnReset += () => {
-                // todo: remove me if unneccessary
-            };
+            */
         }
 
         protected override void OnDestroy()
         {
             Plugin.LogFatal($"NetworkSessionManager.Instance has been destroyed");
             CloseSession();
+        }
+
+        //--------------------------------------------------
+
+        public void OnServerReadyCallback()
+        {
+            OnSessionReady?.Invoke(Instance, true);
+        }
+
+        public void OnClientReadyCallback()
+        {
+            CancelClientTimeout();
+            OnSessionReady?.Invoke(Instance, true);
         }
 
         //--------------------------------------------------
@@ -57,7 +69,7 @@ namespace OfTamingAndBreeding.Net
             }
             else
             {
-                RPCContext.InitClientSession(isLocal);
+                RPCContext.InitClientSession();
             }
         }
 

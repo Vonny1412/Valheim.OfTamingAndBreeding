@@ -152,4 +152,4 @@ It provides structure and control for long-lived worlds.
 Many systems evolved through experimentation and iteration while exploring Valheim’s internals.  
 Stability, clarity and long-term maintainability are guiding goals — not absolute guarantees.*
 
-*Created with ♥️ — and AI-assisted tools as a supporting tool*
+*Created with ♥️ — and AI assistance*

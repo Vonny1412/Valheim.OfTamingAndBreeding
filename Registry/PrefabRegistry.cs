@@ -1,5 +1,6 @@
 ﻿using Jotunn;
 using Jotunn.Managers;
+using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.OTABUtils;
 using System;
 using System.Collections.Generic;
@@ -205,6 +206,16 @@ namespace OfTamingAndBreeding.Registry
             PrefabUtils.RestoreComponent<Ragdoll>(current, backup);
             PrefabUtils.RestoreComponent<Sadle>(current, backup);
             PrefabUtils.RestoreComponent<Tameable>(current, backup);
+
+            PrefabUtils.RestoreComponent<BaseAITrait>(current, backup);
+            PrefabUtils.RestoreComponent<AnimalAITrait>(current, backup);
+            PrefabUtils.RestoreComponent<MonsterAITrait>(current, backup);
+            PrefabUtils.RestoreComponent<CharacterTrait>(current, backup);
+            PrefabUtils.RestoreComponent<EggGrowTrait>(current, backup);
+            PrefabUtils.RestoreComponent<GrowupTrait>(current, backup);
+            PrefabUtils.RestoreComponent<ItemDropTrait>(current, backup);
+            PrefabUtils.RestoreComponent<TameableTrait>(current, backup);
+            PrefabUtils.RestoreComponent<ProcreationTrait>(current, backup);
         }
 
         private GameObject MakeCustomBackup(string prefabName)
@@ -317,7 +328,7 @@ namespace OfTamingAndBreeding.Registry
         public void RestorePrefab(string prefabName, Action<GameObject, GameObject> cb)
         {
             var current = GetReservedPrefab(prefabName);
-            if (!(bool)current)
+            if (current == null)
             {
                 return;
             }

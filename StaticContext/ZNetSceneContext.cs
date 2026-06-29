@@ -10,8 +10,6 @@ namespace OfTamingAndBreeding.StaticContext
         private static readonly Dictionary<uint, ZDO> nearObjects = new Dictionary<uint, ZDO>();
         private static readonly Dictionary<uint, ZDO> distantObjects = new Dictionary<uint, ZDO>();
 
-        //private static readonly Queue<(List<ZDO> near, List<ZDO> distant)> pending = new Queue<(List<ZDO> near, List<ZDO> distant)>();
-
         public static void Clear()
         {
             blockObjectsCreation = false;
@@ -23,6 +21,7 @@ namespace OfTamingAndBreeding.StaticContext
         public static void Block()
         {
             blockObjectsCreation = true;
+            Plugin.LogDebug("Blocking ZNetScene Objects");
         }
 
         public static bool IsBlocking()
@@ -32,7 +31,6 @@ namespace OfTamingAndBreeding.StaticContext
 
         public static void Enqueue(List<ZDO> near, List<ZDO> distant)
         {
-            //pending.Enqueue((near, distant));
             foreach (var n in near)
             {
                 nearObjects[n.m_uid.ID] = n;
@@ -49,15 +47,8 @@ namespace OfTamingAndBreeding.StaticContext
             {
                 return;
             }
+            Plugin.LogDebug("Unblocking ZNetScene Objects");
             blockObjectsCreation = false;
-            /*
-            while (pending.Count > 0)
-            {
-                var (near, distant) = pending.Dequeue();
-                ZNetScene.instance.CreateObjects(near, distant);
-            }
-            pending.Clear();
-            */
             ZNetScene.instance.CreateObjects(nearObjects.Values.ToList(), distantObjects.Values.ToList());
             nearObjects.Clear();
             distantObjects.Clear();

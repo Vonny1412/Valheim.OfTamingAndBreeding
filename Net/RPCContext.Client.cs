@@ -1,12 +1,14 @@
 ﻿using OfTamingAndBreeding.Data;
 using OfTamingAndBreeding.Registry;
 using OfTamingAndBreeding.OTABUtils;
+using System;
 using System.IO;
 
 namespace OfTamingAndBreeding.Net
 {
     internal partial class RPCContext
     {
+
 
         private class ClientSession
         {
@@ -16,7 +18,7 @@ namespace OfTamingAndBreeding.Net
             public string CacheCryptKey = null;
         }
 
-        public static void InitClientSession(bool isLocal)
+        public static void InitClientSession()
         {
             var inFunc1 = $"{nameof(RPCContext)}.{nameof(RPCContext.InitClientSession)}";
             Plugin.LogDebug($"[{inFunc1}] Start");
@@ -95,6 +97,10 @@ namespace OfTamingAndBreeding.Net
                     Plugin.LogDebug($"[{inFunc2}] requestCacheFile={requestCacheFile} UseCache={clientSession.UseCache} cacheFileName={clientSession.CacheFileName}");
                     CacheRPC.RequestFromServer();
                 }
+                else
+                {
+                    NetworkSessionManager.Instance.OnClientReadyCallback();
+                }
 
                 return true;
             });
@@ -138,6 +144,8 @@ namespace OfTamingAndBreeding.Net
                 {
                     Plugin.LogFatal($"Failed loading data from received cache");
                 }
+
+                NetworkSessionManager.Instance.OnClientReadyCallback();
                 return success;
             });
 

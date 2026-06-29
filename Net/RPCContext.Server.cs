@@ -16,7 +16,7 @@ namespace OfTamingAndBreeding.Net
             public string CacheContent = null;
         }
 
-        public static void InitServerSession(bool isLocal)
+        public static void InitServerSession(bool isDedicated)
         {
             var inFunc1 = $"{nameof(RPCContext)}.{nameof(RPCContext.InitServerSession)}";
             Plugin.LogServerDebug($"[{inFunc1}] Start");
@@ -36,12 +36,19 @@ namespace OfTamingAndBreeding.Net
                     .Replace("{world}", ZNet.instance.GetWorldName())
                     .Replace("{seed}", ZNet.World.m_seedName),
 
-                CacheCryptKey = Plugin.Configs.CacheFileCryptKey.Value
+                CacheCryptKey = Plugin.Configs.CacheFileCryptKey.Value.Trim()
             };
-            if (serverSession.CacheCryptKey.Trim() == "")
+            if (serverSession.CacheCryptKey == "")
             {
                 serverSession.CacheCryptKey = null;
             }
+
+
+
+
+
+
+            /*
 
             if (isLocal)
             {
@@ -78,8 +85,61 @@ namespace OfTamingAndBreeding.Net
                     Plugin.LogFatal($"[{inFunc1}] Failed building cache: Hashes mismatch");
                     PrefabRegistryManager.Instance.ResetRegistry();
                     DestroySession();
+                    return;
                 }
 
+            }
+
+            */
+
+
+
+            Plugin.LogServerDebug($"[{inFunc1}] WriteClientCacheFile={Plugin.Configs.WriteClientCacheFile.Value} CacheFileName='{serverSession.CacheFileName}' KeyLen={(serverSession.CacheCryptKey?.Length ?? -1)}");
+
+            Plugin.LogServerDebug($"[{inFunc1}] WriteCache #1");
+            var hash1 = CacheManager.Instance.BuildCache(serverSession.CacheFileName, serverSession.CacheCryptKey, false, out serverSession.CacheContent);
+            Plugin.LogServerDebug($"[{inFunc1}] LoadCacheFromCrypted");
+            if (!CacheManager.Instance.LoadCacheFromCrypted(serverSession.CacheContent, serverSession.CacheCryptKey))
+            {
+                Plugin.LogFatal($"[{inFunc1}] Cache #1 corrupted");
+                PrefabRegistryManager.Instance.ResetRegistry();
+                DestroySession();
+                return;
+            }
+            Plugin.LogServerDebug($"[{inFunc1}] WriteCache #2");
+            var hash2 = CacheManager.Instance.BuildCache(serverSession.CacheFileName, serverSession.CacheCryptKey, writeCacheFiles, out serverSession.CacheContent);
+            Plugin.LogServerDebug($"[{inFunc1}] Cache hash1={hash1} hash2={hash2} match={hash1 == hash2}");
+
+            if (hash1 == hash2)
+            {
+                serverSession.CacheFileHash = hash1;
+            }
+            else
+            {
+                Plugin.LogFatal($"[{inFunc1}] Cache Hashes mismatch");
+                PrefabRegistryManager.Instance.ResetRegistry();
+                DestroySession();
+                return;
+            }
+
+
+
+
+
+            //var hash1 = CacheManager.Instance.BuildCache(serverSession.CacheFileName, serverSession.CacheCryptKey, writeCacheFiles, out serverSession.CacheContent);
+            //serverSession.CacheFileHash = hash1;
+
+
+
+
+
+            if (PrefabRegistryManager.Instance.ValidateDataAndRegisterPrefabs())
+            {
+                NetworkSessionManager.Instance.OnServerReadyCallback();
+            }
+            else
+            {
+                Plugin.LogFatal($"[{inFunc1}] Error in Data");
             }
 
             Plugin.LogServerDebug($"[{inFunc1}] Done");
