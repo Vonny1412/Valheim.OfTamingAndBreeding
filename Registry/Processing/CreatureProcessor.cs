@@ -127,15 +127,6 @@ namespace OfTamingAndBreeding.Registry.Processing
                 }
             }
 
-            if (data.Tameable != null && data.Components.Tameable == ComponentBehavior.Patch)
-            {
-                if (data.Tameable.StarvingGraceFactor.HasValue && data.Tameable.StarvingGraceFactor.Value < 0)
-                {
-                    Plugin.LogServerWarning($"{model}.{nameof(data.Tameable)}.{nameof(data.Tameable.StarvingGraceFactor)}: Negative values not allowed - Using null");
-                    data.Tameable.StarvingGraceFactor = null;
-                }
-            }
-
             if (data.Procreation != null && data.Components.Procreation == ComponentBehavior.Patch)
             {
 
@@ -618,11 +609,6 @@ namespace OfTamingAndBreeding.Registry.Processing
                         tameable.m_fedDuration = 600; // we are using 600 as default, not 60
                     }
 
-                    if (data.Tameable.StarvingGraceFactor.HasValue)
-                    {
-                        tameableTrait.m_starvingGraceFactor = data.Tameable.StarvingGraceFactor.Value;
-                    }
-
                     if (data.Tameable.RequireGlobalKeys != null)
                     {
                         var keysList = ParseGlobalKeys(data.Tameable.RequireGlobalKeys);
@@ -664,6 +650,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                                 idleSoundPrefab,
                             });
                         }
+
                     }
 
                     if (data.Tameable.PetAnswerText != null)

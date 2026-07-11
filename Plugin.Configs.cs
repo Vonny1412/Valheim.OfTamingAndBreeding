@@ -19,7 +19,6 @@ namespace OfTamingAndBreeding
             public static ConfigEntry<bool> HoverShowLovePoints { get; private set; }
             public static ConfigEntry<bool> HoverShowPregnancyTimer { get; private set; }
             public static ConfigEntry<bool> HoverShowFedTimer { get; private set; }
-            public static ConfigEntry<bool> HoverShowStarvingTimer { get; private set; }
 
             public static ConfigEntry<bool> HoverShowSeconds { get; private set; }
             public static ConfigEntry<bool> HoverUseIngameTime { get; private set; }
@@ -57,9 +56,6 @@ namespace OfTamingAndBreeding
             private const string Section_Server_Gameplay = "Server - Gameplay";
 
             public static ConfigEntry<bool> EnableAntiJammingSystem { get; private set; } // todo: needs wiki entry
-
-            public static ConfigEntry<bool> EnableStarvationSystem { get; private set; } // todo: needs wiki entry
-            public static ConfigEntry<float> DefaultStarvingGraceFactor { get; private set; }
 
             public static ConfigEntry<float> GlobalPregnancyDurationFactor { get; private set; }
             public static ConfigEntry<float> GlobalFedDurationFactor { get; private set; }
@@ -103,7 +99,6 @@ namespace OfTamingAndBreeding
                 HoverShowLovePoints = Config.BindConfigInOrder<bool>(section, "ShowLovePoints", true, "Allow showing love points in creature hover text.", synced: false);
                 HoverShowPregnancyTimer = Config.BindConfigInOrder<bool>(section, "ShowPregnancyTimer", true, "Allow showing pregnancy timer in hover text.", synced: false);
                 HoverShowFedTimer = Config.BindConfigInOrder<bool>(section, "ShowFedTimer", true, "Allow showing fed timer in hover text.", synced: false);
-                HoverShowStarvingTimer = Config.BindConfigInOrder<bool>(section, "ShowStarvingTimer", true, "Displays a timer indicating when the creature will start starving in the hover text.\r\nThe timer is only shown if OTAB is also installed on the server.", synced: false);
 
                 HoverShowSeconds = Config.BindConfigInOrder<bool>(section, "ShowSeconds", false, "Show seconds in hover timers (otherwise only days/hours/minutes).", synced: false);
                 HoverUseIngameTime = Config.BindConfigInOrder<bool>(section, "UseIngameTime", true, "Format timers using Valheim in-game time (day length) instead of real time.", synced: false);
@@ -143,9 +138,6 @@ namespace OfTamingAndBreeding
 
                 EnableAntiJammingSystem = Config.BindConfigInOrder<bool>(section, "EnableAntiJammingSystem", true, "Enabled/disables the whole anti-jamming system of OTAB", synced: true);
 
-                EnableStarvationSystem = Config.BindConfigInOrder<bool>(section, "EnableStarvationSystem", true, "Enabled/disables the whole starvation system of OTAB", synced: true);
-                DefaultStarvingGraceFactor = Config.BindConfigInOrder<float>(section, "DefaultStarvingGraceFactor", 5f, "Global fallback StarvingGraceFactor used when a creature does not define one in YAML. Multiplies fed duration before entering Starving state.", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
-
                 GlobalPregnancyDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalPregnancyDurationFactor", 1f, "Global multiplier for PregnancyDuration.  Applies immediately; lowering it can instantly finish ongoing pregnancy on the next update.", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
                 GlobalPregnancyDurationFactor.SettingChanged += (object sender, EventArgs args) => {
                     foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
@@ -155,7 +147,7 @@ namespace OfTamingAndBreeding
                     }
                 };
 
-                GlobalFedDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalFedDurationFactor", 1f, "Global multiplier for FedDuration. Applies immediately (may flip Hungry/Starving state).", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
+                GlobalFedDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalFedDurationFactor", 1f, "Global multiplier for FedDuration. Applies immediately (may flip Hungry state).", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
                 GlobalFedDurationFactor.SettingChanged += (object sender, EventArgs args) => {
                     foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
                     {

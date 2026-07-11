@@ -37,32 +37,17 @@ namespace OfTamingAndBreeding.Patches
             var isOneTamed = isTamed1 || isTamed2;
             var isBothTamed = isTamed1 && isTamed2;
 
-            // get traits only if needed
-            CharacterTrait trait1 = null;
-            CharacterTrait trait2 = null;
-            if (isTamed1)
-            {
-                //trait1 = a.GetComponent<CharacterTrait>();
-                trait1 = CharacterTrait.GetUnsafe(a.gameObject);
-            }
-            if (isTamed2)
-            {
-                //trait2 = b.GetComponent<CharacterTrait>();
-                trait2 = CharacterTrait.GetUnsafe(b.gameObject);
-            }
-
             Character.Faction faction1 = a.GetFaction();
             Character.Faction faction2 = b.GetFaction();
-
-            bool isPlayer1 = faction1 == Character.Faction.Players;
-            bool isPlayer2 = faction2 == Character.Faction.Players;
-            var isOnePlayer = isPlayer1 || isPlayer2;
+            bool isPlayerFaction1 = faction1 == Character.Faction.Players;
+            bool isPlayerFaction2 = faction2 == Character.Faction.Players;
+            var isAnyPlayerFaction = isPlayerFaction1 || isPlayerFaction2;
 
             bool aggra1 = a.GetBaseAI()?.IsAggravated() ?? false;
             bool aggra2 = b.GetBaseAI()?.IsAggravated() ?? false;
             // vanilla: aggravated creatures can become hostile towards players
             // always comes before otab logic - aggravated also beats "never"
-            if (isOnePlayer && ((aggra1 && isPlayer2) || (aggra2 && isPlayer1)))
+            if (isAnyPlayerFaction && ((aggra1 && isPlayerFaction2) || (aggra2 && isPlayerFaction1)))
             {
                 __result = true;
                 return false;
@@ -112,6 +97,13 @@ namespace OfTamingAndBreeding.Patches
             var hostilityTamed = CharacterTrait.HostilityMask.None;
             var hostilityGroup = CharacterTrait.HostilityMask.None;
             var hostilityFaction = CharacterTrait.HostilityMask.None;
+
+            // get traits only if needed
+            // actual players are never tamed
+            CharacterTrait trait1 = null;
+            CharacterTrait trait2 = null;
+            if (isTamed1) trait1 = CharacterTrait.GetUnsafe(a.gameObject);
+            if (isTamed2) trait2 = CharacterTrait.GetUnsafe(b.gameObject);
 
             //
             // build hostility bit masks
@@ -213,11 +205,11 @@ namespace OfTamingAndBreeding.Patches
                 }
             }
 
-            if (isOnePlayer)
+            if (isAnyPlayerFaction)
             {
-                if (isPlayer1)
+                if (isPlayerFaction1)
                 {
-                    if (isTamed2) // do not remove this. isplayer can also mean it is player-faction
+                    if (isTamed2) // do not remove this. Player faction can also belong to a creature.
                     {
                         // player -> tamed
                         hostilityPlayer |= trait2.TamedCanBeAttackedByPlayer;
@@ -225,7 +217,7 @@ namespace OfTamingAndBreeding.Patches
                 }
                 else // isPlayer2
                 {
-                    if (isTamed1) // do not remove this. isplayer can also mean it is player-faction
+                    if (isTamed1) // do not remove this. Player faction can also belong to a creature.
                     {
                         // tamed -> player
                         hostilityPlayer |= trait1.TamedCanAttackPlayer;
@@ -254,7 +246,7 @@ namespace OfTamingAndBreeding.Patches
             var canAttackWild = (hostilityWild & HostilityMask.Attack) != 0;
 
             // player > group > faction > tamed > wild
-            if (isOnePlayer)
+            if (isAnyPlayerFaction)
             {
                 // isPlayer ignores is-same-faction
                 // isPlayer ignores is-both-tamed
@@ -331,8 +323,8 @@ namespace OfTamingAndBreeding.Patches
             if (isOneTamed)
             {
                 if (isBothTamed
-                || (isTamed1 && (isPlayer2 || (!aggra2 && faction2 == Character.Faction.Dverger)))
-                || (isTamed2 && (isPlayer1 || (!aggra1 && faction1 == Character.Faction.Dverger)))
+                || (isTamed1 && (isPlayerFaction2 || (!aggra2 && faction2 == Character.Faction.Dverger)))
+                || (isTamed2 && (isPlayerFaction1 || (!aggra1 && faction1 == Character.Faction.Dverger)))
                 )
                 {
                     __result = false;

@@ -1,12 +1,15 @@
 ﻿using BepInEx;
 using BepInEx.Bootstrap;
+using Jotunn.Managers;
 using Jotunn.Utils;
 using OfTamingAndBreeding.Components.Base;
 using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.OTABUtils;
+using OfTamingAndBreeding.Registry;
 using OfTamingAndBreeding.StaticContext;
 using OfTamingAndBreeding.ThirdParty.Mods;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace OfTamingAndBreeding
@@ -56,7 +59,7 @@ namespace OfTamingAndBreeding
         internal static void LogWarning(object data) => Instance.Logger.LogWarning(data);
         internal static void LogMessage(object data) => Instance.Logger.LogMessage(data);
         internal static void LogInfo(object data) => Instance.Logger.LogInfo(data);
-        internal static void LogDebug(object data) => Instance.Logger.LogInfo(data);
+        internal static void LogDebug(object data) => Instance.Logger.LogDebug(data);
 
         internal static void LogServerWarning(object data)
         {
@@ -208,6 +211,7 @@ namespace OfTamingAndBreeding
             ItemDropTrait.AddComponentToPrefabs(typeof(ItemDrop));
             TameableTrait.AddComponentToPrefabs(typeof(Tameable));
             ProcreationTrait.AddComponentToPrefabs(typeof(Procreation));
+            PetTrait.AddComponentToPrefabs(typeof(Pet));
 
             if (dataLoaded)
             {
@@ -279,6 +283,7 @@ namespace OfTamingAndBreeding
             // could be used as api
             // dataLoaded == true -> OTAB Mode
             // dataLoaded == false -> Vanilla Mode
+
         }
 
         public static void OnSessionClosed(bool dataLoaded)

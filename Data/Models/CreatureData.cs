@@ -78,7 +78,6 @@ namespace OfTamingAndBreeding.Data.Models
             public bool? TamingBoostEnabled { get; set; } = null;
             // todo: add option for "m_startsTamed"
             public bool? Commandable { get; set; } = null;
-            public float? StarvingGraceFactor { get; set; } = null; // OTAB feature
             public string PetCommandText { get; set; } = null; // OTAB feature // todo: needs wiki entry
             public string PetAnswerText { get; set; } = null; // OTAB feature // todo: needs wiki entry
             public bool? ShowPetEffect { get; set; } = null; // OTAB feature // todo: needs wiki entry

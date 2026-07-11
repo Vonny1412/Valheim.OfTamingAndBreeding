@@ -109,8 +109,8 @@ namespace OfTamingAndBreeding.Components.Traits
                 // sadly we need to wrap the target methods because valheim is doing this:
                 // > m_action.DynamicInvoke(ZNetView.Deserialize(rpc, m_action.Method.GetParameters(), pkg));
                 // the first param of the extension methods (this Procreation procreation) is making problems while deserializing
-                m_nview.Register("RPC_DisplayLoveEffect", (long sender) => RPC_DisplayLoveEffect(sender));
-                m_nview.Register<Vector3>("RPC_DisplayBirthEffect", (long sender, Vector3 position) => RPC_DisplayBirthEffect(sender, position));
+                //m_nview.Register("RPC_DisplayLoveEffect", (long sender) => RPC_DisplayLoveEffect(sender));
+                //m_nview.Register<Vector3>("RPC_DisplayBirthEffect", (long sender, Vector3 position) => RPC_DisplayBirthEffect(sender, position));
 
                 m_myPrefab = ZNetScene.instance.GetPrefab(m_nview.GetZDO().GetPrefab());
             }
@@ -666,8 +666,8 @@ namespace OfTamingAndBreeding.Components.Traits
                         if (z_needPartner == 1)
                         {
                             // only show for procreation with partner
-                            //m_loveEffects.Create(__myPosition, transform.rotation);
-                            m_nview.InvokeRPC(ZNetView.Everybody, "RPC_DisplayLoveEffect");
+                            //m_nview.InvokeRPC(ZNetView.Everybody, "RPC_DisplayLoveEffect");
+                            m_procreation.m_loveEffects?.Create(m_procreation.transform.position, m_procreation.transform.rotation);
                         }
 
                         s_lovePoints++;
@@ -716,8 +716,8 @@ namespace OfTamingAndBreeding.Components.Traits
                     spawned.GetComponent<ItemDrop>()?.SetQuality(level);
                 }
 
-                //m_birthEffects.Create(spawned.transform.position, Quaternion.identity);
-                m_nview.InvokeRPC(ZNetView.Everybody, "RPC_DisplayBirthEffect", spawned.transform.position);
+                //m_nview.InvokeRPC(ZNetView.Everybody, "RPC_DisplayBirthEffect", spawned.transform.position);
+                m_procreation.m_birthEffects.Create(spawned.transform.position, Quaternion.identity);
 
                 // CLLC traits (it also takes care if the spawned object is an egg or growup)
                 ThirdParty.Mods.CllCBridge.BequeathTraits(m_nview.GetComponent<Character>(), m_partnerPrefab, spawned);

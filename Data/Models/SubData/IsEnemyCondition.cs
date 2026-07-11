@@ -11,6 +11,5 @@ namespace OfTamingAndBreeding.Data.Models.SubData
         Force = 2,
         WhenFed = 3,
         WhenHungry = 4,
-        WhenStarving = 5,
     }
 }

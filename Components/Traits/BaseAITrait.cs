@@ -227,70 +227,13 @@ namespace OfTamingAndBreeding.Components.Traits
         public bool UpdateAI(float dt)
         {
             m_characterTrait.UpdateHostilities();
-            UpdateCommandableAI();
 
             if (m_animalAITrait && m_animalAITrait.UpdateAI(dt))
             {
                 return true;
             }
 
-            if (UpdateStarvingMonsterAI(dt))
-            {
-                return true;
-            }
-
             return false;
-        }
-
-        private bool UpdateStarvingMonsterAI(float dt)
-        {
-            if (!m_characterTrait.IsTamed() || !m_tameableTrait || !m_tameableTrait.IsStarving())
-            {
-                return false;
-            }
-
-            // this is preventing monster-creatures from beeing stuck in aggression
-            // if ppl dont like this behaviour they shall make sure their tames are fed!
-            var monsterAI = m_monsterAI;
-            if (monsterAI && monsterAI.IsAlerted())
-            {
-                bool isInCombatWithTarget = monsterAI.GetTargetCreature() != null || monsterAI.GetStaticTarget() != null;
-                if (isInCombatWithTarget)
-                {
-                    if (monsterAI.UpdateConsumeItem((Humanoid)m_characterTrait.GetCharacter(), dt))
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        private void UpdateCommandableAI()
-        {
-            var tameableTrait = m_tameableTrait;
-            if (tameableTrait && tameableTrait.IsCommandable() && tameableTrait.IsStarving())
-            {
-                var baseAI = m_baseAI;
-                var monsterAI = m_monsterAI;
-                var animalAITrait = m_animalAITrait;
-                if (monsterAI)
-                {
-                    if ((bool)monsterAI.GetFollowTarget())
-                    {
-                        monsterAI.SetFollowTarget(null);
-                        m_baseAI.SetPatrolPoint();
-                    }
-                }
-                else if (animalAITrait)
-                {
-                    if ((bool)animalAITrait.GetFollowTarget())
-                    {
-                        animalAITrait.SetFollowTarget(null);
-                        m_baseAI.SetPatrolPoint();
-                    }
-                }
-            }
         }
 
         public bool IdleMovement(float dt)

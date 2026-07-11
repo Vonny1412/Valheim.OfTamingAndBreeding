@@ -39,9 +39,23 @@ namespace OfTamingAndBreeding.OTABUtils
             {
                 return clone;
             }
+
             clone = PrefabManager.Instance.CreateClonedPrefab(cloneName, prefabName);
-            foreach (var zsfx in clone.GetComponentsInChildren<ZSFX>(true)) UnityEngine.Object.Destroy(zsfx);
-            foreach (var a in clone.GetComponentsInChildren<AudioSource>(true)) UnityEngine.Object.Destroy(a);
+
+            foreach (var zsfx in clone.GetComponentsInChildren<ZSFX>(true))
+                UnityEngine.Object.DestroyImmediate(zsfx);
+
+            foreach (var audioSource in clone.GetComponentsInChildren<AudioSource>(true))
+                UnityEngine.Object.DestroyImmediate(audioSource);
+
+            foreach (var nview in clone.GetComponentsInChildren<ZNetView>(true))
+                UnityEngine.Object.DestroyImmediate(nview);
+
+
+
+
+
+
             return clone;
         }
 

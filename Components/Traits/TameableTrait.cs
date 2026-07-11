@@ -27,7 +27,6 @@ namespace OfTamingAndBreeding.Components.Traits
         // set by registry processor
         [SerializeField] public bool m_fedTimerDisabled = false;
         [SerializeField] public bool m_tamingDisabled = false;
-        [SerializeField] public float m_starvingGraceFactor = -1; // todo: add bool m_useDefaultStarvingGraceFactor (?)
         [SerializeField] public string m_petCommand = null;
 
         // set in awake
@@ -40,10 +39,6 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private BaseAITrait m_baseAITrait = null;
         [NonSerialized] private float m_baseFedDuration = 600;
         [NonSerialized] private float m_baseTamingTime = 1800;
-
-        // helper fields
-        [NonSerialized] private bool m_isStarving = false;
-        [NonSerialized] private float m_starvingCheckTimer = 0;
 
         // set in registration
         [SerializeField] private int m_requireGlobalKeysIndex = -1;
@@ -65,25 +60,6 @@ namespace OfTamingAndBreeding.Components.Traits
                 if (m_nview.IsOwner())
                 {
                     var zdo = m_nview.GetZDO();
-
-                    // set missing starvation time point
-                    if (CanBecomeStarving())
-                    {
-                        var z_starvingAfter = zdo.GetLong(Plugin.ZDOVars.z_starvingAfter, -1);
-                        if (z_starvingAfter == -1)
-                        {
-                            var s_tameLastFeeding = zdo.GetLong(ZDOVars.s_tameLastFeeding, -1);
-                            if (s_tameLastFeeding != -1)
-                            {
-                                // how valheim stores time: m_nview.GetZDO().Set(ZDOVars.s_tameLastFeeding, ZNet.instance.GetTime().Ticks);
-                                z_starvingAfter = UpdateStarvingTimePoint(new DateTime(s_tameLastFeeding));
-                            }
-                            else
-                            {
-                                z_starvingAfter = UpdateStarvingTimePoint(ZNet.instance.GetTime() - m_baseAI.GetTimeSinceSpawned());
-                            }
-                        }
-                    }
 
                     // update invalid remaining taming time
                     if (!IsTamingDisabled())
@@ -312,11 +288,6 @@ namespace OfTamingAndBreeding.Components.Traits
             m_nview.InvokeRPC(ZNetView.Everybody, "RPC_UpdateFedDuration", totalFactor);
             UpdateFedDuration(totalFactor);
 
-            UpdateStarvingTimePoint(ZNet.instance.GetTime());
-            // calling UpdateStarvingTimePoint before RequireFoodDroppedByPlayer-check
-            // because every valid food should stop starvation
-            // RequireFoodDroppedByPlayer is only designed to prevent unwanted taming/breeding
-
             if (Plugin.Configs.RequireFoodDroppedByPlayer.Value)
             {
                 if (StaticContext.ItemConsumeContext.hasValue && item && StaticContext.ItemConsumeContext.lastItemInstanceId == item.GetInstanceID())
@@ -378,30 +349,6 @@ namespace OfTamingAndBreeding.Components.Traits
                     );
                 }
             }
-            else
-            {
-                if (CanBecomeStarving())
-                {
-                    var z_starvingAfter = zdo.GetLong(Plugin.ZDOVars.z_starvingAfter, -1);
-                    if (z_starvingAfter != -1 && Plugin.Configs.HoverShowStarvingTimer.Value)
-                    {
-                        // is starving
-                        // and starving point is set
-                        var now = ZNet.instance.GetTime();
-                        var secondsUntillStarving = (new DateTime(z_starvingAfter) - now).TotalSeconds;
-
-                        return OTABUtils.StringUtils.FormatRelativeTime(
-                            secondsUntillStarving,
-                            labelPositive:      "$otab_hover_starving",
-                            labelPositiveAlt:   "$otab_hover_starving_alt",
-                            labelNegative:      "$otab_hover_starving_alt",
-                            labelNegativeAlt:   "$otab_hover_starving_alt",
-                            colorPositive:      Plugin.Configs.HoverColorBad.Value,
-                            colorNegative:      Plugin.Configs.HoverColorBad.Value
-                        );
-                    }
-                }
-            }
             return "";
         }
 
@@ -454,67 +401,6 @@ namespace OfTamingAndBreeding.Components.Traits
         }
 
 
-        public bool CanBecomeStarving()
-        {
-            if (!Plugin.IsServerDataLoaded())
-            {
-                return false;
-            }
-
-            if (Plugin.Configs.EnableStarvationSystem.Value == false)
-            {
-                return false;
-            }
-
-            if (m_tameable.IsTamed() == false)
-            {
-                // starvation is a feature for tamed creatures only
-                return false;
-            }
-
-            if (m_fedTimerDisabled)
-            {
-                // creatures that do not eat at all wont get starving!
-                return false;
-            }
-
-            return true;
-        }
-
-        public float GetStarvingGraceFactor()
-        {
-            if (m_starvingGraceFactor >= 0)
-            {
-                return m_starvingGraceFactor;
-            }
-            return Plugin.Configs.DefaultStarvingGraceFactor.Value;
-        }
-
-        public long UpdateStarvingTimePoint(DateTime fedTime)
-        {
-            if (!CanBecomeStarving())
-            {
-                return 0L;
-            }
-
-            var zdo = m_nview.GetZDO();
-            if (m_nview.IsOwner())
-            {
-                if (m_tameable.m_fedDuration > 0)
-                {
-                    // food that does not feed the tameable
-                    // should not tregger a reset of starvation point
-
-                    var starvingGraceFactor = GetStarvingGraceFactor();
-                    var starvingAfter = fedTime.AddSeconds(m_tameable.m_fedDuration + m_tameable.m_fedDuration * starvingGraceFactor);
-                    var ticks = starvingAfter.Ticks;
-                    ZNetUtils.SetLong(zdo, Plugin.ZDOVars.z_starvingAfter, ticks);
-                    return ticks;
-                }
-            }
-            return zdo.GetLong(Plugin.ZDOVars.z_starvingAfter, -1);
-        }
-
         public bool IsTamed()
         {
             return m_tameable.IsTamed();
@@ -525,42 +411,23 @@ namespace OfTamingAndBreeding.Components.Traits
             return m_tameable.IsHungry();
         }
 
-        public bool IsStarving()
+        public bool IsHungry(float delay)
         {
-            if (!m_nview || !m_nview.IsValid())
-            {
-                return false;
-            }
+            if (!m_character) return false;
+            if (m_nview == null) return false;
 
-            if (!CanBecomeStarving())
-            {
-                return false;
-            }
-
-            var timeNow = Time.time;
-            if (timeNow - m_starvingCheckTimer < 1)
-            {
-                return m_isStarving;
-            }
-            m_starvingCheckTimer = timeNow;
-
-            var zdo = m_nview.GetZDO();
-            var z_starvingAfter = zdo.GetLong(Plugin.ZDOVars.z_starvingAfter, -1);
-            if (z_starvingAfter == -1)
-            {
-                m_isStarving = false;
-                return m_isStarving;
-            }
-
-            m_isStarving = z_starvingAfter < ZNet.instance.GetTime().Ticks;
-            return m_isStarving;
+            ZDO zDO = m_nview.GetZDO();
+            if (zDO == null) return false;
+            
+            DateTime dateTime = new DateTime(zDO.GetLong(ZDOVars.s_tameLastFeeding, 0L));
+            return (ZNet.instance.GetTime() - dateTime).TotalSeconds > m_tameable.m_fedDuration + delay;
         }
 
         public void OnTame()
         {
             TameAnimal();
         }
-       
+
         private void TameAnimal()
         {
             if (m_animalAITrait && m_nview.IsValid() && m_nview.IsOwner() && (bool)m_character && !m_tameable.IsTamed())

@@ -216,6 +216,7 @@ namespace OfTamingAndBreeding.Registry
             PrefabUtils.RestoreComponent<ItemDropTrait>(current, backup);
             PrefabUtils.RestoreComponent<TameableTrait>(current, backup);
             PrefabUtils.RestoreComponent<ProcreationTrait>(current, backup);
+            PrefabUtils.RestoreComponent<PetTrait>(current, backup);
         }
 
         private GameObject MakeCustomBackup(string prefabName)

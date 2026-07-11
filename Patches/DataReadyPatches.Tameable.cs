@@ -112,27 +112,6 @@ namespace OfTamingAndBreeding.Patches
             trait.OnTame();
         }
 
-        [HarmonyPatch(typeof(Tameable), "Interact")]
-        [HarmonyPrefix]
-        [HarmonyPriority(Priority.First)]
-        private static bool Tameable_Interact_Prefix(Tameable __instance, Humanoid user)
-        {
-            //var trait = __instance.GetComponent<TameableTrait>();
-            var trait = TameableTrait.GetUnsafe(__instance.gameObject);
-            if (trait.IsStarving())
-            {
-                var hoverName = __instance.GetHoverName();
-                //var characterName = Localization.instance.Localize(__instance.GetComponent<Character>().name);
-                var msg = Localization.instance.Localize("$otab_message_not_interactable", hoverName);
-                if (!string.IsNullOrEmpty(msg))
-                {
-                    user.Message(MessageHud.MessageType.Center, msg);
-                }
-                return false;
-            }
-            return true;
-        }
-
         [HarmonyPatch(typeof(Tameable), "RPC_Command")]
         [HarmonyPrefix]
         private static bool Tameable_RPC_Command_Prefix(Tameable __instance, long sender, ZDOID characterID, bool message)

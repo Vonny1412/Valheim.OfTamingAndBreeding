@@ -109,8 +109,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public void UpdateHostilities()
         {
-            bool isHungry = m_tameableTrait && m_tameableTrait.IsHungry();
-            bool isStarving = isHungry && m_tameableTrait.IsStarving();
+            bool isHungry = m_tameableTrait && m_tameableTrait.IsHungry(EnvMan.instance.m_dayLengthSec); // todo: add conf for delay
 
             switch (m_tamedCanAttackPlayer)
             {
@@ -119,7 +118,6 @@ namespace OfTamingAndBreeding.Components.Traits
                 case IsEnemyCondition.Never: TamedCanAttackPlayer = HostilityMask.Never; break;
                 case IsEnemyCondition.WhenFed: TamedCanAttackPlayer = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
                 case IsEnemyCondition.WhenHungry: TamedCanAttackPlayer = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenStarving: TamedCanAttackPlayer = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
             }
             switch (m_tamedCanBeAttackedByPlayer)
             {
@@ -128,7 +126,6 @@ namespace OfTamingAndBreeding.Components.Traits
                 case IsEnemyCondition.Never: TamedCanBeAttackedByPlayer = HostilityMask.Never; break;
                 case IsEnemyCondition.WhenFed: TamedCanBeAttackedByPlayer = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
                 case IsEnemyCondition.WhenHungry: TamedCanBeAttackedByPlayer = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenStarving: TamedCanBeAttackedByPlayer = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
             }
             switch (m_tamedCanAttackTamed)
             {
@@ -137,7 +134,6 @@ namespace OfTamingAndBreeding.Components.Traits
                 case IsEnemyCondition.Never: TamedCanAttackTamed = HostilityMask.Never; break;
                 case IsEnemyCondition.WhenFed: TamedCanAttackTamed = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
                 case IsEnemyCondition.WhenHungry: TamedCanAttackTamed = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenStarving: TamedCanAttackTamed = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
             }
             switch (m_tamedCanBeAttackedByTamed)
             {
@@ -146,7 +142,6 @@ namespace OfTamingAndBreeding.Components.Traits
                 case IsEnemyCondition.Never: TamedCanBeAttackedByTamed = HostilityMask.Never; break;
                 case IsEnemyCondition.WhenFed: TamedCanBeAttackedByTamed = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
                 case IsEnemyCondition.WhenHungry: TamedCanBeAttackedByTamed = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenStarving: TamedCanBeAttackedByTamed = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
             }
             switch (m_tamedCanAttackWild)
             {
@@ -155,7 +150,6 @@ namespace OfTamingAndBreeding.Components.Traits
                 case IsEnemyCondition.Never: TamedCanAttackWild = HostilityMask.Never; break;
                 case IsEnemyCondition.WhenFed: TamedCanAttackWild = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
                 case IsEnemyCondition.WhenHungry: TamedCanAttackWild = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenStarving: TamedCanAttackWild = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
             }
             switch (m_tamedCanBeAttackedByWild)
             {
@@ -164,7 +158,6 @@ namespace OfTamingAndBreeding.Components.Traits
                 case IsEnemyCondition.Never: TamedCanBeAttackedByWild = HostilityMask.Never; break;
                 case IsEnemyCondition.WhenFed: TamedCanBeAttackedByWild = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
                 case IsEnemyCondition.WhenHungry: TamedCanBeAttackedByWild = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenStarving: TamedCanBeAttackedByWild = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
             }
             switch (m_tamedCanAttackGroup)
             {
@@ -173,7 +166,6 @@ namespace OfTamingAndBreeding.Components.Traits
                 case IsEnemyCondition.Never: TamedCanAttackGroup = HostilityMask.Never; break;
                 case IsEnemyCondition.WhenFed: TamedCanAttackGroup = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
                 case IsEnemyCondition.WhenHungry: TamedCanAttackGroup = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenStarving: TamedCanAttackGroup = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
             }
             switch (m_tamedCanBeAttackedByGroup)
             {
@@ -182,7 +174,6 @@ namespace OfTamingAndBreeding.Components.Traits
                 case IsEnemyCondition.Never: TamedCanBeAttackedByGroup = HostilityMask.Never; break;
                 case IsEnemyCondition.WhenFed: TamedCanBeAttackedByGroup = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
                 case IsEnemyCondition.WhenHungry: TamedCanBeAttackedByGroup = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenStarving: TamedCanBeAttackedByGroup = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
             }
             switch (m_tamedCanAttackFaction)
             {
@@ -191,7 +182,6 @@ namespace OfTamingAndBreeding.Components.Traits
                 case IsEnemyCondition.Never: TamedCanAttackFaction = HostilityMask.Never; break;
                 case IsEnemyCondition.WhenFed: TamedCanAttackFaction = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
                 case IsEnemyCondition.WhenHungry: TamedCanAttackFaction = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenStarving: TamedCanAttackFaction = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
             }
             switch (m_tamedCanBeAttackedByFaction)
             {
@@ -200,7 +190,6 @@ namespace OfTamingAndBreeding.Components.Traits
                 case IsEnemyCondition.Never: TamedCanBeAttackedByFaction = HostilityMask.Never; break;
                 case IsEnemyCondition.WhenFed: TamedCanBeAttackedByFaction = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
                 case IsEnemyCondition.WhenHungry: TamedCanBeAttackedByFaction = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenStarving: TamedCanBeAttackedByFaction = isStarving ? HostilityMask.Attack : HostilityMask.Skip; break;
             }
 
         }
