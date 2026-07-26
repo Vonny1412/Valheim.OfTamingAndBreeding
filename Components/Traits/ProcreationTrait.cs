@@ -594,7 +594,8 @@ namespace OfTamingAndBreeding.Components.Traits
                     // because the fate will be determined before creature gets pregnant
                     // but i want to store neither offspring-entry-index nor levelup-values into zdo
                     // so just roll the dice here...
-                    if (randomOffspring.MaxLevel > levelOld && UnityEngine.Random.value < randomOffspring.LevelUpChance)
+                    var levelupChance = Plugin.Configs.GlobalBaseLevelUpChance.Value + randomOffspring.LevelUpChance;
+                    if (randomOffspring.MaxLevel > levelOld && UnityEngine.Random.value < levelupChance)
                     {
                         levelNew = levelNew + 1;
                         Plugin.LogServerDebug($"Offspring '{offspring.name}' level up: {levelOld} -> {levelNew}");

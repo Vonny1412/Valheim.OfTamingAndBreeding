@@ -109,7 +109,8 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public void UpdateHostilities()
         {
-            bool isHungry = m_tameableTrait && m_tameableTrait.IsHungry(EnvMan.instance.m_dayLengthSec); // todo: add conf for delay
+            // EnvMan.instance.m_dayLengthSec
+            bool isHungry = m_tameableTrait && m_tameableTrait.IsHungry(m_tameableTrait.GetBaseFedDuration() * 3); // todo: add conf for delay
 
             switch (m_tamedCanAttackPlayer)
             {
@@ -227,12 +228,15 @@ namespace OfTamingAndBreeding.Components.Traits
                 m_character.m_faction = m_changeFactionWhenTamedTo;
             }
 
+            var m_baseAI = GetComponent<BaseAI>();
+
             // todo: create yaml option "DisableIdleSounds"
             if (gameObject.name.StartsWith("Hatchling"))
             {
-                var m_baseAI = GetComponent<BaseAI>();
                 m_baseAI.m_idleSoundChance = 0;
             }
+
+            m_baseAI.m_aggravatable = false; // todo: maybe add yaml config option?
         }
 
         public string GetHoverName()

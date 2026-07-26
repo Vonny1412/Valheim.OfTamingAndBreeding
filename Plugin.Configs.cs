@@ -57,6 +57,7 @@ namespace OfTamingAndBreeding
 
             public static ConfigEntry<bool> EnableAntiJammingSystem { get; private set; } // todo: needs wiki entry
 
+            public static ConfigEntry<float> GlobalBaseLevelUpChance { get; private set; }
             public static ConfigEntry<float> GlobalPregnancyDurationFactor { get; private set; }
             public static ConfigEntry<float> GlobalFedDurationFactor { get; private set; }
             public static ConfigEntry<float> GlobalTamingTimeFactor { get; private set; }
@@ -137,6 +138,8 @@ namespace OfTamingAndBreeding
                 section = Section_Server_Gameplay;
 
                 EnableAntiJammingSystem = Config.BindConfigInOrder<bool>(section, "EnableAntiJammingSystem", true, "Enabled/disables the whole anti-jamming system of OTAB", synced: true);
+
+                GlobalBaseLevelUpChance = Config.BindConfigInOrder<float>(section, "GlobalBaseLevelUpChance", 0f, "Adds a global base chance to level up. This value is added to each creature's individual level up chance defined in the YAML files.", acceptableValues: new AcceptableValueRange<float>(0, 1), synced: true);
 
                 GlobalPregnancyDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalPregnancyDurationFactor", 1f, "Global multiplier for PregnancyDuration.  Applies immediately; lowering it can instantly finish ongoing pregnancy on the next update.", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
                 GlobalPregnancyDurationFactor.SettingChanged += (object sender, EventArgs args) => {

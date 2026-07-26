@@ -330,7 +330,10 @@ namespace OfTamingAndBreeding.Components.Traits
                 return "";
             }
 
-            var zdo = m_nview.GetZDO();
+            if (!m_nview.IsValid())
+            {
+                return "";
+            }
 
             float secondsFedLeft = GetFedTimeLeft();
             if (m_tameable.m_fedDuration > 0 && secondsFedLeft >= 0)

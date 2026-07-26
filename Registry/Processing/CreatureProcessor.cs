@@ -441,6 +441,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 {
                     var monsterAI = creature.GetComponent<MonsterAI>();
                     var animalAI = creature.GetComponent<AnimalAI>();
+                    //var baseAI = creature.GetComponent<BaseAI>();
                     var baseAITrait = BaseAITrait.GetOrAddComponent(creature);
 
                     BaseAITrait.ConsumeItem[] consumeItems = null;
@@ -517,7 +518,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     }
 
                     baseAITrait.m_tamedStayNearSpawn = data.MonsterAI.TamedStayNearSpawn;
-                    
+
 
                     if (data.MonsterAI.ConsumeAnimation != null)
                     {

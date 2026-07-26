@@ -26,7 +26,7 @@ namespace OfTamingAndBreeding
     [BepInDependency("digitalroot.mods.GoldBars", BepInDependency.DependencyFlags.SoftDependency)] // maybe used for recipes
     [BepInDependency("Vonny1412.HoldToCommand", BepInDependency.DependencyFlags.SoftDependency)]
 
-    [NetworkCompatibility(CompatibilityLevel.ClientMustHaveMod, VersionStrictness.Minor)] // ensure client has this mod with correct version
+    [NetworkCompatibility(CompatibilityLevel.ClientMustHaveMod, VersionStrictness.Patch)] // ensure client has this mod with correct version
 
     public sealed partial class Plugin : BaseUnityPlugin
     {
