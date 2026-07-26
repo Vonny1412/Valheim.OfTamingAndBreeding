@@ -428,6 +428,9 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public void OnTame()
         {
+            // remember: the original Tameable.Tame() method only gets called when the creature actually becomes tamed
+            // it does not get called for already tamed creates when loading the world
+            // use CharacterTrait.SetTamedCharacteristics() to apply changes for every tamed creature whether already or actualy tamed
             TameAnimal();
         }
 

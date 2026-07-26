@@ -52,7 +52,7 @@ namespace OfTamingAndBreeding.Net
                 // cache
 
                 clientSession.UseCache = inPkg.ReadBool();
-                clientSession.CacheFileName = inPkg.ReadString();
+                clientSession.CacheFileName = CacheManager.GetSafeCacheFileName(inPkg.ReadString());
                 clientSession.CacheFileHash = inPkg.ReadString();
 
                 var obf = inPkg.ReadString();
@@ -77,8 +77,11 @@ namespace OfTamingAndBreeding.Net
                             if (CacheManager.Instance.LoadCacheFromCrypted(File.ReadAllText(cacheFilePath), clientSession.CacheCryptKey))
                             {
                                 requestCacheFile = false;
-                                PrefabRegistryManager.Instance.ValidateDataAndRegisterPrefabs();
-                                Plugin.LogInfo($"Loaded data from existing cache");
+                                var dataLoaded = PrefabRegistryManager.Instance.ValidateDataAndRegisterPrefabs();
+                                if (dataLoaded)
+                                {
+                                    Plugin.LogInfo($"Loaded data from existing cache");
+                                }
                             }
                         }
                         else
@@ -126,6 +129,13 @@ namespace OfTamingAndBreeding.Net
                 var cacheContent = inPkg.ReadString();
                 Plugin.LogDebug($"[{inFunc2}] contentLen={cacheContent?.Length ?? -1} UseCache={clientSession.UseCache} file='{clientSession.CacheFileName}'");
 
+                var receivedHash = CacheManager.ComputeSha256StringHash(cacheContent);
+                if (receivedHash != clientSession.CacheFileHash)
+                {
+                    Plugin.LogFatal("Received cache hash does not match server handshake");
+                    return false;
+                }
+
                 if (clientSession.UseCache)
                 {
                     var cacheFile = CacheManager.GetCacheCryptedFile(clientSession.CacheFileName);
@@ -133,19 +143,20 @@ namespace OfTamingAndBreeding.Net
                     File.WriteAllText(cacheFile, cacheContent);
                 }
 
-                var success = CacheManager.Instance.LoadCacheFromCrypted(cacheContent, clientSession.CacheCryptKey);
+                var success =
+                    CacheManager.Instance.LoadCacheFromCrypted(cacheContent, clientSession.CacheCryptKey)
+                    && PrefabRegistryManager.Instance.ValidateDataAndRegisterPrefabs();
 
                 if (success)
                 {
-                    PrefabRegistryManager.Instance.ValidateDataAndRegisterPrefabs();
-                    Plugin.LogInfo($"Loaded data from received cache");
+                    Plugin.LogInfo("Loaded data from received cache");
+                    NetworkSessionManager.Instance.OnClientReadyCallback();
                 }
                 else
                 {
-                    Plugin.LogFatal($"Failed loading data from received cache");
+                    Plugin.LogFatal("Failed loading or registering data from received cache");
                 }
 
-                NetworkSessionManager.Instance.OnClientReadyCallback();
                 return success;
             });
 

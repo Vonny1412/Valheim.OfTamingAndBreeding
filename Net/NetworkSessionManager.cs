@@ -77,7 +77,7 @@ namespace OfTamingAndBreeding.Net
         {
             // only called for clients
             RPCContext.RequestHandshakeWithServer();
-            StartClientTimeout(5f);
+            StartClientTimeout(15f);
         }
 
         public void CloseSession()
@@ -97,6 +97,12 @@ namespace OfTamingAndBreeding.Net
             OnSessionClosed?.Invoke(Instance, wasServerDataLoaded);
         }
 
+        // TODO: Introduce an explicit client session state, e.g.
+        // WaitingForHandshake, LoadingCache, ReadyWithData, ReadyWithoutData and Closed.
+        // Once the client reaches ReadyWithoutData because of a timeout, late handshake
+        // or cache responses must be ignored. OnSessionReady must only be invoked once
+        // per session.
+
         public void StartClientTimeout(float seconds)
         {
             if (clientTimeoutRoutine == null)
@@ -112,6 +118,7 @@ namespace OfTamingAndBreeding.Net
             {
                 if (PrefabRegistryManager.Instance.IsDataLoaded())
                 {
+                    clientTimeoutRoutine = null;
                     yield break;
                 }
                 yield return null;

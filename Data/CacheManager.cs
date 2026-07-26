@@ -45,14 +45,17 @@ namespace OfTamingAndBreeding.Data
             var cacheDebugYamlFile = GetCacheYamlFile(serverName);
             var cacheCryptedFile = GetCacheCryptedFile(serverName);
 
-            if (Directory.Exists(cacheDebugFilesPath))
-                Directory.Delete(cacheDebugFilesPath, true);
+            if (writeFiles)
+            {
+                if (Directory.Exists(cacheDebugFilesPath))
+                    Directory.Delete(cacheDebugFilesPath, true);
 
-            if (File.Exists(cacheDebugYamlFile))
-                File.Delete(cacheDebugYamlFile);
+                if (File.Exists(cacheDebugYamlFile))
+                    File.Delete(cacheDebugYamlFile);
 
-            if (File.Exists(cacheCryptedFile))
-                File.Delete(cacheCryptedFile);
+                if (File.Exists(cacheCryptedFile))
+                    File.Delete(cacheCryptedFile);
+            }
 
             var cacheFile = new Models.CacheFile
             {
@@ -65,7 +68,10 @@ namespace OfTamingAndBreeding.Data
             foreach(var p in PrefabRegistryManager.Instance.IterDataProcessors())
             {
                 var writeToDir = Path.Combine(cacheDebugFilesPath, p.DirectoryName);
-                Directory.CreateDirectory(writeToDir);
+                if (writeFiles)
+                {
+                    Directory.CreateDirectory(writeToDir);
+                }
                 var data = new Dictionary<string, string>();
                 foreach (var kv in p.GetAllSerializedData())
                 {
@@ -191,6 +197,32 @@ namespace OfTamingAndBreeding.Data
                 sb.Append(bytes[i].ToString("x2")); // lowercase hex
 
             return sb.ToString();
+        }
+
+        public static string GetSafeCacheFileName(string value)
+        {
+            const string fallback = "otab-cache";
+            const string invalidChars = "<>:\"/\\|?*";
+
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return fallback;
+            }
+
+            var normalized = value.Replace('\\', '/');
+            var fileName = normalized.Substring(normalized.LastIndexOf('/') + 1).Trim();
+
+            fileName = new string(fileName
+                .Where(c => !char.IsControl(c) && !invalidChars.Contains(c))
+                .ToArray())
+                .Trim();
+
+            if (string.IsNullOrWhiteSpace(fileName) || fileName == "." || fileName == "..")
+            {
+                return fallback;
+            }
+
+            return fileName;
         }
 
     }
