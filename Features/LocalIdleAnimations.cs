@@ -9,7 +9,7 @@ namespace OfTamingAndBreeding.Features
     internal static class LocalIdleAnimations
     {
 
-        // todo: make seperate mod fot this
+        // todo: make seperate mod for this
 
         internal static void RemoveIdleEvents()
         {

@@ -23,7 +23,7 @@
 	<PropertyGroup>
 		<BepInExPath>$(GamePath)\BepInEx</BepInExPath>
 		<ManagedPath>$(GamePath)\valheim_Data\Managed</ManagedPath>
-		<UnstrippedPath>$(GamePath)\unstripped_libs</UnstrippedPath>
+		<UnstrippedPath>$(SolutionDir)\.unstripped_libs</UnstrippedPath>
 		<PluginsPath>$(GamePath)\BepInEx\plugins</PluginsPath>
 	</PropertyGroup>
 

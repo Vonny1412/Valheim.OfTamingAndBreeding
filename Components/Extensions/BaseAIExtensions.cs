@@ -101,5 +101,12 @@ namespace OfTamingAndBreeding.Components.Extensions
         public static void SetSpawnPoint(this BaseAI that, Vector3 point)
             => ValheimAPI.BaseAI.__IAPI_m_spawnPoint_Invoker.Set(that, point);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void GetWorldTimeDelta(this BaseAI that)
+            => ValheimAPI.BaseAI.__IAPI_GetWorldTimeDelta_Invoker1.Invoke(that);
+
+
+
+
     }
 }

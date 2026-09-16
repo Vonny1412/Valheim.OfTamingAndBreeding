@@ -35,26 +35,22 @@ namespace OfTamingAndBreeding.Components.Traits
             return false;
         }
 
-        public void OnItemDropped()
+        public bool IsDroppedByPlayer()
         {
-            var nview = m_nview;
-            if (nview.IsValid() && nview.IsOwner())
+            if (!m_nview.IsValid())
             {
-                // hint: we are inside Humanoid_DropItem_Patch
-                // Humanoid.DropItem() is calling: ItemDrop itemDrop = ItemDrop.DropItem(...)
-                var val = StaticContext.ItemDropContext.DroppedByPlayer;
-                ZNetUtils.SetInt(nview.GetZDO(), Plugin.ZDOVars.z_droppedByAnyPlayer, val);
+                return false;
             }
+            var zdo = m_nview.GetZDO();
+            var droppedByPlayer = zdo.GetInt(Plugin.ZDOVars.z_droppedByAnyPlayer, 0);
+            return droppedByPlayer > 0;
         }
 
-        public void OnOneRemoved()
+        public void SetDroppedByPlayer()
         {
-            if (m_nview.IsValid())
+            if (m_nview.IsValid() && m_nview.IsOwner())
             {
-                var zdo = m_nview.GetZDO();
-                StaticContext.ItemConsumeContext.hasValue = true;
-                StaticContext.ItemConsumeContext.lastItemDroppedByAnyPlayer = zdo.GetInt(Plugin.ZDOVars.z_droppedByAnyPlayer, 0);
-                StaticContext.ItemConsumeContext.lastItemInstanceId = m_itemDrop.GetInstanceID();
+                ZNetUtils.SetInt(m_nview.GetZDO(), Plugin.ZDOVars.z_droppedByAnyPlayer, 1);
             }
         }
 

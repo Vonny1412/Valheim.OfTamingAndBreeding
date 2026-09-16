@@ -2,20 +2,23 @@
 using OfTamingAndBreeding.Components;
 using OfTamingAndBreeding.Components.Base;
 using OfTamingAndBreeding.Components.Traits;
-using OfTamingAndBreeding.Data.Models;
-using OfTamingAndBreeding.Data.Models.SubData;
+using OfTamingAndBreeding.Data.Files;
+using OfTamingAndBreeding.Data.Files.SubData;
 using OfTamingAndBreeding.OTABUtils;
+using OfTamingAndBreeding.ValheimAPI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
+using UnityEngine;
 using YamlDotNet.Core;
 
 namespace OfTamingAndBreeding.Registry.Processing
 {
-    internal class OffspringProcessor : Base.DataProcessor<OffspringData>
+    internal class OffspringProcessor : Base.DataProcessor<OffspringFile>
     {
 
-        public override string DirectoryName => OffspringData.DirectoryName;
+        public override string DirectoryName => OffspringFile.DirectoryName;
 
         public override string PrefabTypeName => "creature";
 
@@ -36,9 +39,9 @@ namespace OfTamingAndBreeding.Registry.Processing
         // VALIDATE DATA
         //------------------------------------------------
 
-        public override bool ValidateData(string offspringName, OffspringData data)
+        public override bool ValidateData(string offspringName, OffspringFile data)
         {
-            var model = $"{nameof(OffspringData)}.{offspringName}";
+            var model = $"{nameof(OffspringFile)}.{offspringName}";
             var error = false;
 
             if (data.Clone != null)
@@ -74,7 +77,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     }
                     else if (data.Clone.Scale.Value == 1)
                     {
-                        Plugin.LogServerInfo($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.Scale)}: Value of 1 will do nothing - setting to null");
+                        Plugin.LogServerWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.Scale)}: Value of 1 will do nothing - setting to null");
                         data.Clone.Scale = null;
                     }
                 }
@@ -88,7 +91,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     }
                     else if (data.Clone.MaxHealthFactor.Value == 1)
                     {
-                        Plugin.LogServerInfo($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.MaxHealthFactor)}: Value of 1 will do nothing - setting to null");
+                        Plugin.LogServerWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.MaxHealthFactor)}: Value of 1 will do nothing - setting to null");
                         data.Clone.MaxHealthFactor = null;
                     }
                 }
@@ -142,15 +145,15 @@ namespace OfTamingAndBreeding.Registry.Processing
         // RESERVE PREFAB
         //------------------------------------------------
 
-        public override bool ReservePrefab(string offspringName, OffspringData data)
+        public override bool ReservePrefab(string offspringName, OffspringFile data)
         {
-            var model = $"{nameof(OffspringData)}.{offspringName}";
+            var model = $"{nameof(OffspringFile)}.{offspringName}";
 
-            var offspring = PrefabRegistry.Instance.GetReservedPrefab(offspringName);
+            var offspring = OTABRegistry.Instance.GetReservedPrefab(offspringName);
             if (offspring == null)
             {
-                var custom = PrefabRegistry.Instance.GetCustomPrefab(offspringName);
-                offspring = PrefabRegistry.Instance.GetOriginalPrefab(offspringName);
+                var custom = OTABRegistry.Instance.GetCustomPrefab(offspringName);
+                offspring = OTABRegistry.Instance.GetOriginalPrefab(offspringName);
                 if (offspring == null || custom != null) // need clone (not cloned yet / previously cloned, reactivate)
                 {
 
@@ -166,13 +169,13 @@ namespace OfTamingAndBreeding.Registry.Processing
                         return false;
                     }
 
-                    if (PrefabRegistry.IsCustomPrefab(data.Clone.From))
+                    if (OTABRegistry.IsCustomPrefab(data.Clone.From))
                     {
                         Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)}: Cannot clone from cloned prefab '{data.Clone.From}'");
                         return false;
                     }
 
-                    var cloneFrom = PrefabRegistry.Instance.GetOriginalPrefab(data.Clone.From);
+                    var cloneFrom = OTABRegistry.Instance.GetOriginalPrefab(data.Clone.From);
                     if (!cloneFrom)
                     {
                         Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)}: Prefab '{data.Clone.From}' not found");
@@ -182,21 +185,21 @@ namespace OfTamingAndBreeding.Registry.Processing
                     if (custom == null)
                     {
                         // not cloned yet
-                        offspring = PrefabRegistry.Instance.CreateCustomPrefab(offspringName, cloneFrom.name);
+                        offspring = OTABRegistry.Instance.CreateCustomPrefab(offspringName, cloneFrom.name);
                     }
                     else
                     {
                         // previously cloned - reactivate
                         Plugin.LogServerDebug($"{model}.{nameof(data.Clone)}: Reactivating cloned prefab for '{cloneFrom.name}'");
-                        offspring = PrefabRegistry.Instance.ReactivateCustomPrefab(offspringName, cloneFrom.name);
+                        offspring = OTABRegistry.Instance.ReactivateCustomPrefab(offspringName, cloneFrom.name);
                     }
                 }
                 else
                 {
-                    PrefabRegistry.Instance.MakeOriginalBackup(offspringName);
+                    OTABRegistry.Instance.MakeOriginalBackup(offspringName);
                 }
 
-                PrefabRegistry.Instance.ReservePrefab(offspringName, offspring);
+                OTABRegistry.Instance.ReservePrefab(offspringName, offspring);
             }
 
             return true;
@@ -206,12 +209,12 @@ namespace OfTamingAndBreeding.Registry.Processing
         // VALIDATE PREFAB
         //------------------------------------------------
 
-        public override bool ValidatePrefab(string offspringName, OffspringData data)
+        public override bool ValidatePrefab(string offspringName, OffspringFile data)
         {
-            var model = $"{nameof(OffspringData)}.{offspringName}";
+            var model = $"{nameof(OffspringFile)}.{offspringName}";
             var error = false;
 
-            var offspring = PrefabRegistry.Instance.GetReservedPrefab(offspringName);
+            var offspring = OTABRegistry.Instance.GetReservedPrefab(offspringName);
             if (!offspring)
             {
                 Plugin.LogError($"{model}: Prefab not found");
@@ -231,7 +234,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 // we already validated data.Growup.Grown != null
                 foreach (var (grownData, i) in data.Growup.Grown.Select((value, i) => (value, i)))
                 {
-                    if (!PrefabRegistry.Instance.PrefabExists(grownData.Prefab))
+                    if (!OTABRegistry.Instance.PrefabExists(grownData.Prefab))
                     {
                         Plugin.LogError($"{model}.{nameof(data.Growup)}.{nameof(data.Growup.Grown)}.{i}.{nameof(grownData.Prefab)}: '{grownData.Prefab}' not found");
                         error = true;
@@ -246,14 +249,14 @@ namespace OfTamingAndBreeding.Registry.Processing
         // REGISTER PREFAB
         //------------------------------------------------
 
-        public override void RegisterPrefab(string offspringName, OffspringData data)
+        public override void RegisterPrefab(string offspringName, OffspringFile data)
         {
-            var model = $"{nameof(OffspringData)}.{offspringName}";
+            var model = $"{nameof(OffspringFile)}.{offspringName}";
 
-            if (PrefabRegistry.IsCustomPrefab(offspringName))
+            if (OTABRegistry.IsCustomPrefab(offspringName))
             {
                 Plugin.LogServerDebug($"{model}: Registering prefab");
-                var offspring = PrefabRegistry.Instance.GetReservedPrefab(offspringName);
+                var offspring = OTABRegistry.Instance.GetReservedPrefab(offspringName);
                 PrefabManager.Instance.RegisterToZNetScene(offspring);
             }
         }
@@ -262,13 +265,13 @@ namespace OfTamingAndBreeding.Registry.Processing
         // EDIT PREFAB
         //------------------------------------------------
 
-        public override void EditPrefab(string offspringName, OffspringData data)
+        public override void EditPrefab(string offspringName, OffspringFile data)
         {
-            var model = $"{nameof(OffspringData)}.{offspringName}";
+            var model = $"{nameof(OffspringFile)}.{offspringName}";
 
-            var offspring = PrefabRegistry.Instance.GetReservedPrefab(offspringName);
+            var offspring = OTABRegistry.Instance.GetReservedPrefab(offspringName);
 
-            if (PrefabRegistry.IsCustomPrefab(offspringName))
+            if (OTABRegistry.IsCustomPrefab(offspringName))
             {
                 PrepareClone(offspringName, data, offspring);
             }
@@ -282,19 +285,19 @@ namespace OfTamingAndBreeding.Registry.Processing
                 if (data.Growup != null)
                 {
 
-                    var offspringGrowup = PrefabRegistry.Instance.GetOrAddComponent<Growup>(offspringName, offspring);
+                    var offspringGrowup = OTABRegistry.Instance.GetOrAddComponent<Growup>(offspringName, offspring);
                     Plugin.LogServerDebug($"{model}.{nameof(data.Growup)}: Setting Growup values");
 
                     if (data.Growup.GrowTime != null) offspringGrowup.m_growTime = (float)data.Growup.GrowTime;
                     if (data.Growup.InheritTame != null) offspringGrowup.m_inheritTame = (bool)data.Growup.InheritTame;
-                    
+
                     offspringGrowup.m_grownPrefab = null; // never use explicite prefab, always use list - stick to the system
                     offspringGrowup.m_altGrownPrefabs = new List<Growup.GrownEntry>();
                     foreach (var grownData in data.Growup.Grown)
                     {
                         offspringGrowup.m_altGrownPrefabs.Add(new Growup.GrownEntry
                         {
-                            m_prefab = PrefabRegistry.Instance.GetOriginalPrefab(grownData.Prefab),
+                            m_prefab = OTABRegistry.Instance.GetOriginalPrefab(grownData.Prefab),
                             m_weight = grownData.Weight,
                         });
                     }
@@ -304,22 +307,22 @@ namespace OfTamingAndBreeding.Registry.Processing
             else if (data.Components.Growup == ComponentBehavior.Remove)
             {
                 Plugin.LogServerDebug($"{model}.{nameof(Growup)}: Removing Growup component (if exist)");
-                PrefabRegistry.Instance.DestroyComponentIfExists<Growup>(offspringName, offspring);
+                OTABRegistry.Instance.DestroyComponentIfExists<Growup>(offspringName, offspring);
             }
 
         }
 
-        private void PrepareClone(string offspringName, OffspringData data, UnityEngine.GameObject offspring)
+        private void PrepareClone(string offspringName, OffspringFile data, UnityEngine.GameObject offspring)
         {
-            var model = $"{nameof(OffspringData)}.{offspringName}";
+            var model = $"{nameof(OffspringFile)}.{offspringName}";
 
-            PrefabRegistry.Instance.DestroyComponentIfExists<Procreation>(offspringName, offspring); // offsprings do not procreate
-            PrefabRegistry.Instance.DestroyComponentIfExists<Tameable>(offspringName, offspring); // offsprings cannot be explicite tamed
+            OTABRegistry.Instance.DestroyComponentIfExists<Procreation>(offspringName, offspring); // offsprings do not procreate
+            OTABRegistry.Instance.DestroyComponentIfExists<Tameable>(offspringName, offspring); // offsprings cannot be explicite tamed
 
             //PrefabRegistry.Instance.DestroyComponentIfExists<CharacterDrop>(offspringName, offspring);
             if (offspring.TryGetComponent<CharacterDrop>(out var charDrop))
             {
-                foreach(var drop in charDrop.m_drops)
+                foreach (var drop in charDrop.m_drops)
                 {
                     var isTrophy = drop.m_prefab.name.StartsWith("trophy", StringComparison.OrdinalIgnoreCase);
                     var isSpecial = drop.m_onePerPlayer || isTrophy;
@@ -357,8 +360,8 @@ namespace OfTamingAndBreeding.Registry.Processing
                 var m_avoidLand = monsterAI.m_avoidLand;
                 var m_fleeInLava = monsterAI.m_fleeInLava;
 
-                PrefabRegistry.Instance.DestroyComponentIfExists<MonsterAI>(offspringName, offspring);
-                var animalAI = PrefabRegistry.Instance.GetOrAddComponent<AnimalAI>(offspringName, offspring);
+                OTABRegistry.Instance.DestroyComponentIfExists<MonsterAI>(offspringName, offspring);
+                var animalAI = OTABRegistry.Instance.GetOrAddComponent<AnimalAI>(offspringName, offspring);
 
                 // BaseAI fields
                 baseAISnapshot.ApplyTo(animalAI);
@@ -497,30 +500,88 @@ namespace OfTamingAndBreeding.Registry.Processing
                 //offspringCharacter.m_swimTurnSpeed /= setScale; // dont use this
                 //offspringCharacter.m_flyTurnSpeed /= setScale; // dont use this
 
-                var col = offspring.GetComponent<UnityEngine.CapsuleCollider>();
-                if (col)
-                {
-                    //col.height *= setScale; // dont use this because the height will already get scaled. additional scaling will shrink the collision-box for hover-text
-                    //col.radius *= setScale; // dont use this because the radius will already get scaled. additional scaling will shrink the collision-box for hover-text
-                    col.center *= setScale;
-                }
-
                 Plugin.LogServerDebug($"{model}.{nameof(data.Clone)}: Setting vfx scaling");
                 OTABUtils.VfxUtils.ScaleVfx(offspring, setScale); // scale model particles
 
-                Plugin.LogServerDebug($"{model}.{nameof(data.Clone)}: Setting effects scaling");
-
-                var scaler = PrefabRegistry.Instance.GetOrAddComponent<ScaledCreature>(offspringName, offspring);
-                scaler.m_effectScale = setScale * setScale; // for some reasons setScale*setScale is required
-                scaler.m_animationScale = 1 / setScale; // because we are using it as a multiplier
-                foreach (var eff in offspringCharacter.m_deathEffects.m_effectPrefabs)
+                var col = offspring.GetComponent<UnityEngine.CapsuleCollider>();
+                if (col)
                 {
-                    eff.m_scale = true; // important
-                    eff.m_inheritParentScale = true; // important
-                    eff.m_multiplyParentVisualScale = false;
+                    // not used anymore
+                    // delete, if unneccessary
+                    //col.height *= setScale; // dont use this because the height will already get scaled. additional scaling will shrink the collision-box for hover-text
+                    //col.radius *= setScale; // dont use this because the radius will already get scaled. additional scaling will shrink the collision-box for hover-text
+                    //col.center *= setScale;
                 }
 
+                Plugin.LogServerDebug($"{model}.{nameof(data.Clone)}: Setting effects scaling");
+                foreach (var eff in offspringCharacter.m_deathEffects.m_effectPrefabs)
+                {
+
+                    var clonedEffectName = $"{offspringName}_{eff.m_prefab.gameObject.name}";
+                    var clonedEffect = PrefabManager.Instance.GetPrefab(clonedEffectName);
+                    if (clonedEffect == null)
+                    {
+                        clonedEffect = PrefabManager.Instance.CreateClonedPrefab(clonedEffectName, eff.m_prefab.gameObject.name);
+                    }
+                    eff.m_prefab = clonedEffect;
+
+                    var ragdoll = eff.m_prefab.GetComponent<Ragdoll>();
+                    if (ragdoll)
+                    {
+                        ragdoll.transform.localScale *= setScale;
+                        foreach (var eff2 in ragdoll.m_removeEffect.m_effectPrefabs)
+                        {
+                            OTABUtils.VfxUtils.ScaleVfx(eff2.m_prefab, setScale);
+                        }
+                    }
+                    else
+                    {
+                        OTABUtils.VfxUtils.ScaleVfx(eff.m_prefab, setScale);
+                    }
+                }
+
+                var scaler = OTABRegistry.Instance.GetOrAddComponent<ScaledCreature>(offspringName, offspring);
+                scaler.m_animationScale = 1 / setScale;
+
+                // do not hide the creature if we just go some steps away
+                var lodGroup = offspringCharacter.transform.Find("Visual")?.GetComponent<LODGroup>();
+                if (lodGroup)
+                {
+                    // todo: is this beeing restored correctly?
+                    lodGroup.size /= setScale;
+                }
             }
+
+
+
+            /*
+             * testing to make a creature pickable
+             * 
+            if (offspringName == "OTAB_Bat_pup")
+            {
+                var itemDrop = PrefabRegistry.Instance.GetOrAddComponent<ItemDrop>(
+                    offspringName,
+                    offspring
+                );
+
+                itemDrop.m_itemData = new ItemDrop.ItemData();
+                itemDrop.m_itemData.m_shared = new ItemDrop.ItemData.SharedData
+                {
+                    m_name = "$OTAB_enemy_bat_pup",
+                    m_description = ",
+                    m_itemType = ItemDrop.ItemData.ItemType.Misc,
+                    m_maxStackSize = 1,
+                    m_maxQuality = 1,
+                    m_weight = 2f,
+                    m_teleportable = true,
+                };
+
+                itemDrop.m_itemData.m_stack = 1;
+                itemDrop.m_itemData.m_quality = 1;
+                itemDrop.m_itemData.m_variant = 0;
+            }
+            */
+
         }
 
         //------------------------------------------------
@@ -537,11 +598,10 @@ namespace OfTamingAndBreeding.Registry.Processing
 
         public override void RestorePrefab(string offspringName)
         {
-            PrefabRegistry.Instance.RestorePrefab(offspringName, (current, backup) => {
-                //
+            OTABRegistry.Instance.RestorePrefab(offspringName, (current, backup) => {
             });
         }
-
+        
         //------------------------------------------------
         // CLEANUP
         //------------------------------------------------
@@ -553,3 +613,7 @@ namespace OfTamingAndBreeding.Registry.Processing
     }
 
 }
+
+
+
+

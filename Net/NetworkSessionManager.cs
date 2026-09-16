@@ -6,135 +6,68 @@ using UnityEngine;
 
 namespace OfTamingAndBreeding.Net
 {
-    internal class NetworkSessionManager : Common.SingletonClass<NetworkSessionManager>
+    internal static partial class NetworkSessionManager
     {
 
-        //--------------------------------------------------
-        // Singleton
+        private static BaseRPC HandshakeRPC;
+        private static BaseRPC CacheRPC;
 
-        protected override void OnCreate()
-        {
-            /*
-            PrefabRegistryManager.Instance.OnRegistrationFinished += () => {
-                CancelClientTimeout();
-                OnSessionReady?.Invoke(Instance, true);
-            };
-            */
-        }
+        public static event Action OnSessionStarted;
+        public static event Action OnSessionReady;
+        public static event Action OnSessionError;
+        public static event Action OnSessionClosed;
 
-        protected override void OnDestroy()
-        {
-            Plugin.LogFatal($"NetworkSessionManager.Instance has been destroyed");
-            CloseSession();
-        }
+        private static bool isServer = false;
+        private static Coroutine clientTimeoutRoutine;
 
-        //--------------------------------------------------
-
-        public void OnServerReadyCallback()
-        {
-            OnSessionReady?.Invoke(Instance, true);
-        }
-
-        public void OnClientReadyCallback()
-        {
-            CancelClientTimeout();
-            OnSessionReady?.Invoke(Instance, true);
-        }
-
-        //--------------------------------------------------
-
-        public event Action<NetworkSessionManager> OnSessionStarted;
-        public event Action<NetworkSessionManager, bool> OnSessionReady;
-        public event Action<NetworkSessionManager, bool> OnSessionClosed;
-
-        private bool isServer = false;
-        private Coroutine clientTimeoutRoutine;
-
-        public bool IsServer()
+        public static bool IsServer()
         {
             return isServer;
         }
 
-        public void StartSession()
+        public static void RegisterRPCs()
+        {
+            HandshakeRPC = new BaseRPC("OTAB_InitRPC");
+            CacheRPC = new BaseRPC("OTAB_CacheRPC");
+            RegisterServerCallbacks();
+            RegisterClientCallbacks();
+        }
+
+        public static void StartSession()
         {
             var zn = ZNet.instance;
             var isLocal = zn.IsLocalInstance();
             isServer = zn.IsServer();
 
-            OnSessionStarted?.Invoke(Instance);
+            OnSessionStarted?.Invoke();
 
             if (isServer)
             {
-                RPCContext.InitServerSession(isLocal);
+                InitServerSession();
             }
             else
             {
-                RPCContext.InitClientSession();
+                InitClientSession();
             }
         }
 
-        public void RequestHandshakeWithServer()
+        public static void CloseSession()
         {
-            // only called for clients
-            RPCContext.RequestHandshakeWithServer();
-            StartClientTimeout(15f);
-        }
+            Plugin.LogInfo($"Closing session");
 
-        public void CloseSession()
-        {
-            Plugin.LogServerInfo($"Closing session");
-
-            // called for client and server
-            var wasServerDataLoaded = PrefabRegistryManager.Instance.IsDataLoaded();
-
-            PrefabRegistryManager.Instance.ResetRegistry();
-            RPCContext.DestroySession();
+            DataProcessingManager.ResetRegistry();
+            CacheRPC.ResetState();
+            HandshakeRPC.ResetState();
+            serverSession = null;
+            clientSession = null;
 
             ZNetSceneContext.Clear();
             CancelClientTimeout();
 
-            Plugin.LogServerInfo($"Session closed");
-            OnSessionClosed?.Invoke(Instance, wasServerDataLoaded);
-        }
-
-        // TODO: Introduce an explicit client session state, e.g.
-        // WaitingForHandshake, LoadingCache, ReadyWithData, ReadyWithoutData and Closed.
-        // Once the client reaches ReadyWithoutData because of a timeout, late handshake
-        // or cache responses must be ignored. OnSessionReady must only be invoked once
-        // per session.
-
-        public void StartClientTimeout(float seconds)
-        {
-            if (clientTimeoutRoutine == null)
-            {
-                clientTimeoutRoutine = Plugin.Instance.StartCoroutine(RunClientTimeout(seconds));
-            }
-        }
-
-        private System.Collections.IEnumerator RunClientTimeout(float seconds)
-        {
-            float start = Time.time;
-            while (Time.time - start < seconds)
-            {
-                if (PrefabRegistryManager.Instance.IsDataLoaded())
-                {
-                    clientTimeoutRoutine = null;
-                    yield break;
-                }
-                yield return null;
-            }
-            clientTimeoutRoutine = null;
-            OnSessionReady?.Invoke(Instance, false);
-        }
-
-        public void CancelClientTimeout()
-        {
-            if (clientTimeoutRoutine != null)
-            {
-                Plugin.Instance.StopCoroutine(clientTimeoutRoutine);
-                clientTimeoutRoutine = null;
-            }
+            Plugin.LogInfo($"Session closed");
+            OnSessionClosed?.Invoke();
         }
 
     }
+
 }

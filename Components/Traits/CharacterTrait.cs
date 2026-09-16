@@ -2,7 +2,7 @@
 using Jotunn.Utils;
 using OfTamingAndBreeding.Components.Base;
 using OfTamingAndBreeding.Components.Extensions;
-using OfTamingAndBreeding.Data.Models.SubData;
+using OfTamingAndBreeding.Data.Files.SubData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,16 +33,11 @@ namespace OfTamingAndBreeding.Components.Traits
             Skip = 4,
         }
 
-        public HostilityMask TamedCanAttackPlayer { get; private set; } = HostilityMask.None;
-        public HostilityMask TamedCanBeAttackedByPlayer { get; private set; } = HostilityMask.None;
-        public HostilityMask TamedCanAttackTamed { get; private set; } = HostilityMask.None;
-        public HostilityMask TamedCanBeAttackedByTamed { get; private set; } = HostilityMask.None;
-        public HostilityMask TamedCanAttackWild { get; private set; } = HostilityMask.None;
-        public HostilityMask TamedCanBeAttackedByWild { get; private set; } = HostilityMask.None;
-        public HostilityMask TamedCanAttackGroup { get; private set; } = HostilityMask.None;
-        public HostilityMask TamedCanBeAttackedByGroup { get; private set; } = HostilityMask.None;
-        public HostilityMask TamedCanAttackFaction { get; private set; } = HostilityMask.None;
-        public HostilityMask TamedCanBeAttackedByFaction { get; private set; } = HostilityMask.None;
+        public HostilityMask TamedVersusPlayerMask { get; private set; } = HostilityMask.None;
+        public HostilityMask TamedVersusGroupMask { get; private set; } = HostilityMask.None;
+        public HostilityMask TamedVersusFactionMask { get; private set; } = HostilityMask.None;
+        public HostilityMask TamedVersusTamedMask { get; private set; } = HostilityMask.None;
+        public HostilityMask TamedVersusWildMask { get; private set; } = HostilityMask.None;
 
         // set in Awake
         [NonSerialized] private ZNetView m_nview = null;
@@ -55,20 +50,16 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private GrowupTrait m_growupTrait = null;
 
         // set in registration
+        [SerializeField] public int m_maxLevel = 0;
         [SerializeField] public bool m_changeGroupWhenTamed = false;
         [SerializeField] public string m_changeGroupWhenTamedTo = "";
         [SerializeField] public bool m_changeFactionWhenTamed = false;
         [SerializeField] public Character.Faction m_changeFactionWhenTamedTo = Character.Faction.Players;
-        [SerializeField] public IsEnemyCondition m_tamedCanAttackPlayer = IsEnemyCondition.Default;
-        [SerializeField] public IsEnemyCondition m_tamedCanBeAttackedByPlayer = IsEnemyCondition.Default;
-        [SerializeField] public IsEnemyCondition m_tamedCanAttackTamed = IsEnemyCondition.Default;
-        [SerializeField] public IsEnemyCondition m_tamedCanBeAttackedByTamed = IsEnemyCondition.Default;
-        [SerializeField] public IsEnemyCondition m_tamedCanAttackWild = IsEnemyCondition.Default;
-        [SerializeField] public IsEnemyCondition m_tamedCanBeAttackedByWild = IsEnemyCondition.Default;
-        [SerializeField] public IsEnemyCondition m_tamedCanAttackGroup = IsEnemyCondition.Default;
-        [SerializeField] public IsEnemyCondition m_tamedCanBeAttackedByGroup = IsEnemyCondition.Default;
-        [SerializeField] public IsEnemyCondition m_tamedCanAttackFaction = IsEnemyCondition.Default;
-        [SerializeField] public IsEnemyCondition m_tamedCanBeAttackedByFaction = IsEnemyCondition.Default;
+        [SerializeField] public IsEnemyCondition m_tamedVersusPlayer = IsEnemyCondition.Default;
+        [SerializeField] public IsEnemyCondition m_tamedVersusGroup = IsEnemyCondition.Default;
+        [SerializeField] public IsEnemyCondition m_tamedVersusFaction = IsEnemyCondition.Default;
+        [SerializeField] public IsEnemyCondition m_tamedVersusTamed = IsEnemyCondition.Default;
+        [SerializeField] public IsEnemyCondition m_tamedVersusWild = IsEnemyCondition.Default;
 
         private void Awake()
         {
@@ -112,87 +103,46 @@ namespace OfTamingAndBreeding.Components.Traits
             // EnvMan.instance.m_dayLengthSec
             bool isHungry = m_tameableTrait && m_tameableTrait.IsHungry(m_tameableTrait.GetBaseFedDuration() * 3); // todo: add conf for delay
 
-            switch (m_tamedCanAttackPlayer)
+            switch (m_tamedVersusPlayer)
             {
-                case IsEnemyCondition.Default: TamedCanAttackPlayer = HostilityMask.None; break;
-                case IsEnemyCondition.Force: TamedCanAttackPlayer = HostilityMask.Attack; break;
-                case IsEnemyCondition.Never: TamedCanAttackPlayer = HostilityMask.Never; break;
-                case IsEnemyCondition.WhenFed: TamedCanAttackPlayer = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenHungry: TamedCanAttackPlayer = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.Default: TamedVersusPlayerMask = HostilityMask.None; break;
+                case IsEnemyCondition.Force: TamedVersusPlayerMask = HostilityMask.Attack; break;
+                case IsEnemyCondition.Never: TamedVersusPlayerMask = HostilityMask.Never; break;
+                case IsEnemyCondition.WhenFed: TamedVersusPlayerMask = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedVersusPlayerMask = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
             }
-            switch (m_tamedCanBeAttackedByPlayer)
+            switch (m_tamedVersusGroup)
             {
-                case IsEnemyCondition.Default: TamedCanBeAttackedByPlayer = HostilityMask.None; break;
-                case IsEnemyCondition.Force: TamedCanBeAttackedByPlayer = HostilityMask.Attack; break;
-                case IsEnemyCondition.Never: TamedCanBeAttackedByPlayer = HostilityMask.Never; break;
-                case IsEnemyCondition.WhenFed: TamedCanBeAttackedByPlayer = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenHungry: TamedCanBeAttackedByPlayer = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.Default: TamedVersusGroupMask = HostilityMask.None; break;
+                case IsEnemyCondition.Force: TamedVersusGroupMask = HostilityMask.Attack; break;
+                case IsEnemyCondition.Never: TamedVersusGroupMask = HostilityMask.Never; break;
+                case IsEnemyCondition.WhenFed: TamedVersusGroupMask = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedVersusGroupMask = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
             }
-            switch (m_tamedCanAttackTamed)
+            switch (m_tamedVersusFaction)
             {
-                case IsEnemyCondition.Default: TamedCanAttackTamed = HostilityMask.None; break;
-                case IsEnemyCondition.Force: TamedCanAttackTamed = HostilityMask.Attack; break;
-                case IsEnemyCondition.Never: TamedCanAttackTamed = HostilityMask.Never; break;
-                case IsEnemyCondition.WhenFed: TamedCanAttackTamed = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenHungry: TamedCanAttackTamed = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.Default: TamedVersusFactionMask = HostilityMask.None; break;
+                case IsEnemyCondition.Force: TamedVersusFactionMask = HostilityMask.Attack; break;
+                case IsEnemyCondition.Never: TamedVersusFactionMask = HostilityMask.Never; break;
+                case IsEnemyCondition.WhenFed: TamedVersusFactionMask = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedVersusFactionMask = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
             }
-            switch (m_tamedCanBeAttackedByTamed)
+            switch (m_tamedVersusTamed)
             {
-                case IsEnemyCondition.Default: TamedCanBeAttackedByTamed = HostilityMask.None; break;
-                case IsEnemyCondition.Force: TamedCanBeAttackedByTamed = HostilityMask.Attack; break;
-                case IsEnemyCondition.Never: TamedCanBeAttackedByTamed = HostilityMask.Never; break;
-                case IsEnemyCondition.WhenFed: TamedCanBeAttackedByTamed = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenHungry: TamedCanBeAttackedByTamed = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.Default: TamedVersusTamedMask = HostilityMask.None; break;
+                case IsEnemyCondition.Force: TamedVersusTamedMask = HostilityMask.Attack; break;
+                case IsEnemyCondition.Never: TamedVersusTamedMask = HostilityMask.Never; break;
+                case IsEnemyCondition.WhenFed: TamedVersusTamedMask = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedVersusTamedMask = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
             }
-            switch (m_tamedCanAttackWild)
+            switch (m_tamedVersusWild)
             {
-                case IsEnemyCondition.Default: TamedCanAttackWild = HostilityMask.None; break;
-                case IsEnemyCondition.Force: TamedCanAttackWild = HostilityMask.Attack; break;
-                case IsEnemyCondition.Never: TamedCanAttackWild = HostilityMask.Never; break;
-                case IsEnemyCondition.WhenFed: TamedCanAttackWild = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenHungry: TamedCanAttackWild = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.Default: TamedVersusWildMask = HostilityMask.None; break;
+                case IsEnemyCondition.Force: TamedVersusWildMask = HostilityMask.Attack; break;
+                case IsEnemyCondition.Never: TamedVersusWildMask = HostilityMask.Never; break;
+                case IsEnemyCondition.WhenFed: TamedVersusWildMask = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedVersusWildMask = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
             }
-            switch (m_tamedCanBeAttackedByWild)
-            {
-                case IsEnemyCondition.Default: TamedCanBeAttackedByWild = HostilityMask.None; break;
-                case IsEnemyCondition.Force: TamedCanBeAttackedByWild = HostilityMask.Attack; break;
-                case IsEnemyCondition.Never: TamedCanBeAttackedByWild = HostilityMask.Never; break;
-                case IsEnemyCondition.WhenFed: TamedCanBeAttackedByWild = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenHungry: TamedCanBeAttackedByWild = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-            }
-            switch (m_tamedCanAttackGroup)
-            {
-                case IsEnemyCondition.Default: TamedCanAttackGroup = HostilityMask.None; break;
-                case IsEnemyCondition.Force: TamedCanAttackGroup = HostilityMask.Attack; break;
-                case IsEnemyCondition.Never: TamedCanAttackGroup = HostilityMask.Never; break;
-                case IsEnemyCondition.WhenFed: TamedCanAttackGroup = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenHungry: TamedCanAttackGroup = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-            }
-            switch (m_tamedCanBeAttackedByGroup)
-            {
-                case IsEnemyCondition.Default: TamedCanBeAttackedByGroup = HostilityMask.None; break;
-                case IsEnemyCondition.Force: TamedCanBeAttackedByGroup = HostilityMask.Attack; break;
-                case IsEnemyCondition.Never: TamedCanBeAttackedByGroup = HostilityMask.Never; break;
-                case IsEnemyCondition.WhenFed: TamedCanBeAttackedByGroup = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenHungry: TamedCanBeAttackedByGroup = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-            }
-            switch (m_tamedCanAttackFaction)
-            {
-                case IsEnemyCondition.Default: TamedCanAttackFaction = HostilityMask.None; break;
-                case IsEnemyCondition.Force: TamedCanAttackFaction = HostilityMask.Attack; break;
-                case IsEnemyCondition.Never: TamedCanAttackFaction = HostilityMask.Never; break;
-                case IsEnemyCondition.WhenFed: TamedCanAttackFaction = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenHungry: TamedCanAttackFaction = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-            }
-            switch (m_tamedCanBeAttackedByFaction)
-            {
-                case IsEnemyCondition.Default: TamedCanBeAttackedByFaction = HostilityMask.None; break;
-                case IsEnemyCondition.Force: TamedCanBeAttackedByFaction = HostilityMask.Attack; break;
-                case IsEnemyCondition.Never: TamedCanBeAttackedByFaction = HostilityMask.Never; break;
-                case IsEnemyCondition.WhenFed: TamedCanBeAttackedByFaction = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenHungry: TamedCanBeAttackedByFaction = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-            }
-
         }
 
         public void RPC_SetTamed(bool tamed)

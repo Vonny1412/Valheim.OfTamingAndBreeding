@@ -1,9 +1,9 @@
 ﻿using System;
 
-namespace OfTamingAndBreeding.Data.Models
+namespace OfTamingAndBreeding.Data.Files
 {
     [Serializable]
-    internal class IconData : DataBase<IconData>
+    internal class IconFile : DataBase<IconFile>
     {
         public const string DirectoryName = "Icons";
 

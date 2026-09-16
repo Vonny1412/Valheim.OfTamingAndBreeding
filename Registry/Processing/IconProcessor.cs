@@ -1,14 +1,14 @@
-﻿using OfTamingAndBreeding.Data.Models;
-using OfTamingAndBreeding.Data.Models.SubData;
+﻿using OfTamingAndBreeding.Data.Files;
+using OfTamingAndBreeding.Data.Files.SubData;
 using OfTamingAndBreeding.OTABUtils;
 using System;
 using System.IO;
 
 namespace OfTamingAndBreeding.Registry.Processing
 {
-    internal class IconProcessor : Base.DataProcessor<IconData>
+    internal class IconProcessor : Base.DataProcessor<IconFile>
     {
-        public override string DirectoryName => IconData.DirectoryName;
+        public override string DirectoryName => IconFile.DirectoryName;
 
         public override string PrefabTypeName => null;
 
@@ -40,7 +40,7 @@ namespace OfTamingAndBreeding.Registry.Processing
 
             var bytes = File.ReadAllBytes(filePath);
             var base64 = Convert.ToBase64String(bytes);
-            var iconData = new IconData
+            var iconData = new IconFile
             {
                 Type = iconType,
                 Data = base64
@@ -57,9 +57,9 @@ namespace OfTamingAndBreeding.Registry.Processing
         {
         }
 
-        public override bool ValidateData(string iconName, IconData data)
+        public override bool ValidateData(string iconName, IconFile data)
         {
-            var model = $"{nameof(IconData)}.{iconName}";
+            var model = $"{nameof(IconFile)}.{iconName}";
             if (SpriteUtils.TryLoadValidImage(data.Data, out var texture))
             {
                 StaticContext.IconDataContext.iconTextures.Add(iconName, texture);
@@ -69,21 +69,21 @@ namespace OfTamingAndBreeding.Registry.Processing
             return false;
         }
 
-        public override bool ReservePrefab(string iconName, IconData data)
+        public override bool ReservePrefab(string iconName, IconFile data)
         {
             return true;
         }
 
-        public override bool ValidatePrefab(string iconName, IconData data)
+        public override bool ValidatePrefab(string iconName, IconFile data)
         {
             return true;
         }
 
-        public override void RegisterPrefab(string iconName, IconData data)
+        public override void RegisterPrefab(string iconName, IconFile data)
         {
         }
 
-        public override void EditPrefab(string iconName, IconData data)
+        public override void EditPrefab(string iconName, IconFile data)
         {
         }
 

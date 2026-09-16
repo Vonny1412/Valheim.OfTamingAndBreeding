@@ -7,48 +7,31 @@ using System.Linq;
 
 namespace OfTamingAndBreeding.Registry
 {
-    internal class PrefabRegistryManager : Common.SingletonClass<PrefabRegistryManager>
+    internal static class DataProcessingManager
     {
+        private static bool dataLoaded = false;
 
-        //--------------------------------------------------
-        // Singleton
-
-        protected override void OnCreate()
-        {
-        }
-
-        protected override void OnDestroy()
-        {
-        }
-
-        //--------------------------------------------------
-
-        public event Action OnRegistrationFinished;
-        public event Action OnReset;
-
-        private bool dataLoaded = false;
-
-        private readonly IDataProcessor[] dataProcessors = new IDataProcessor[] {
-            new IconProcessor(),
-            new TranslationProcessor(),
-            new OffspringProcessor(),
-            new EggProcessor(),
-            new CreatureProcessor(),
-            new RecipeProcessor(),
-        };
-
-        public bool IsDataLoaded()
+        public static bool IsDataLoaded()
         {
             return dataLoaded;
         }
 
-        public IEnumerable<IDataProcessor> IterDataProcessors()
+        private static readonly IDataProcessor[] dataProcessors = new IDataProcessor[] {
+            new IconProcessor(),
+            new TranslationProcessor(),
+            new OffspringProcessor(),
+            new ItemProcessor(),
+            new CreatureProcessor(),
+            new RecipeProcessor(),
+        };
+
+        public static IEnumerable<IDataProcessor> IterDataProcessors()
         {
             foreach (var dh in dataProcessors)
                 yield return dh;
         }
 
-        public bool LoadDataFromLocalFiles()
+        public static bool LoadDataFromLocalFiles()
         {
             if (dataLoaded)
             {
@@ -57,19 +40,19 @@ namespace OfTamingAndBreeding.Registry
 
             var zn = ZNet.instance;
             string worldName = zn.GetWorldName();
-            Plugin.LogServerInfo($"Loading Data for world: '{worldName}'");
+            Plugin.LogInfo($"Loading Data for world: '{worldName}'");
 
             // pick world root (worldName or fallback)
             string worldRoot = Path.Combine(Plugin.ServerDataDir, worldName);
             if (!Directory.Exists(worldRoot))
             {
                 worldRoot = Path.Combine(Plugin.ServerDataDir, Plugin.Configs.DefaultWorldDirectory.Value);
-                Plugin.LogServerInfo($"No data directory found for world '{worldName}', using fallback to '{Plugin.Configs.DefaultWorldDirectory.Value}'");
+                Plugin.LogInfo($"No data directory found for world '{worldName}', using fallback to '{Plugin.Configs.DefaultWorldDirectory.Value}'");
             }
 
             if (!Directory.Exists(worldRoot))
             {
-                Plugin.LogServerInfo($"No data directory found.");
+                Plugin.LogInfo($"No data directory found.");
             }
             else
             {
@@ -91,7 +74,7 @@ namespace OfTamingAndBreeding.Registry
             return true;
         }
 
-        private IEnumerable<string> EnumerateCategoryFiles(string worldRoot, string categoryFolderName)
+        private static IEnumerable<string> EnumerateCategoryFiles(string worldRoot, string categoryFolderName)
         {
             var stack = new Stack<string>();
             stack.Push(worldRoot);
@@ -134,15 +117,15 @@ namespace OfTamingAndBreeding.Registry
         // process routine
         //---------------------------
 
-        public bool ValidateDataAndRegisterPrefabs()
+        public static bool ValidateDataAndRegisterPrefabs()
         {
             if (dataLoaded)
             {
                 return true;
             }
 
-            PrefabRegistry.CreateInstance();
-            PrefabRegistry.SaveOriginalPrefabNames();
+            OTABRegistry.CreateInstance();
+            OTABRegistry.SaveOriginalPrefabNames();
 
             foreach (var p in dataProcessors)
             {
@@ -191,11 +174,10 @@ namespace OfTamingAndBreeding.Registry
             }
 
             dataLoaded = true;
-            OnRegistrationFinished?.Invoke();
             return true;
         }
 
-        public void ResetRegistry()
+        public static void ResetRegistry()
         {
             if (!dataLoaded)
             {
@@ -217,10 +199,9 @@ namespace OfTamingAndBreeding.Registry
                 dataProcessors[i].ResetData();
             }
 
-            PrefabRegistry.DestroyInstance();
+            OTABRegistry.DestroyInstance();
 
             dataLoaded = false;
-            OnReset?.Invoke();
         }
 
     }

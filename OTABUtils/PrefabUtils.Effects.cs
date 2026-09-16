@@ -29,8 +29,8 @@ namespace OfTamingAndBreeding.OTABUtils
         public static EffectList.EffectData[] CreateEffectList(string[] prefabNames)
             => prefabNames.Where((n) => n != null).Select(GetEffect).ToArray();
 
-        public static EffectList.EffectData[] CreateEffectList(GameObject[] prefabNames)
-            => prefabNames.Where((n) => n != null).Select(CreateEffectData).ToArray();
+        public static EffectList.EffectData[] CreateEffectList(GameObject[] prefabs)
+            => prefabs.Where((n) => n != null).Select(CreateEffectData).ToArray();
 
         public static GameObject GetVisualOnlyEffect(string prefabName, string cloneName)
         {
@@ -48,13 +48,10 @@ namespace OfTamingAndBreeding.OTABUtils
             foreach (var audioSource in clone.GetComponentsInChildren<AudioSource>(true))
                 UnityEngine.Object.DestroyImmediate(audioSource);
 
+            /*
             foreach (var nview in clone.GetComponentsInChildren<ZNetView>(true))
                 UnityEngine.Object.DestroyImmediate(nview);
-
-
-
-
-
+            */
 
             return clone;
         }

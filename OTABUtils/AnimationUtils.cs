@@ -6,18 +6,12 @@ namespace OfTamingAndBreeding.OTABUtils
 {
     internal static class AnimationUtils
     {
-        public static Animator FindAnimatorFromZSync(ZSyncAnimation zsa)
-        {
-            if (!zsa) return null;
-            var a = zsa.GetComponentInChildren<Animator>(true);
-            return a;
-        }
 
         public static void DumpZSyncAnim(ZSyncAnimation zsa, string tag = "")
         {
             if (!zsa) { Plugin.LogServerMessage($"{tag} ZSyncAnimation: <null>"); return; }
 
-            var a = FindAnimatorFromZSync(zsa);
+            var a = zsa.GetComponentInChildren<Animator>(true);
             Plugin.LogServerMessage($"{tag} ZSyncAnimation on {zsa.name}, Animator={(a ? a.name : "<null>")}");
 
             if (!a || !a.runtimeAnimatorController)

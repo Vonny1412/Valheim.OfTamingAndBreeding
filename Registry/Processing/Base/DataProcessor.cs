@@ -220,7 +220,7 @@ namespace OfTamingAndBreeding.Registry.Processing.Base
                 {
                     if (PrefabTypeName != null)
                     {
-                        if (PrefabRegistry.TryRegisterPrefabType(prefabName, PrefabTypeName, out string registeredTypeName) == false)
+                        if (OTABRegistry.TryRegisterPrefabType(prefabName, PrefabTypeName, out string registeredTypeName) == false)
                         {
                             Plugin.LogFatal($"Tried to register {typeof(T).Name} '{prefabName}' as type '{PrefabTypeName}' but has already been registered as type '{registeredTypeName}' before by an other OTAB instance. Rename your custom prefab to avoid prefab corruption");
                             DataBase<T>.Drop(prefabName);

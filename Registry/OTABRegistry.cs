@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace OfTamingAndBreeding.Registry
 {
-    internal class PrefabRegistry : Common.SingletonClass<PrefabRegistry>
+    internal class OTABRegistry
     {
 
         //--------------------------------------------------
@@ -100,6 +100,9 @@ namespace OfTamingAndBreeding.Registry
             originalPrefabsSaved = true;
             foreach (var prefab in ZNetScene.instance.m_prefabs)
             {
+                originalPrefabNames.Add(prefab.name);
+                // everything may be important
+                /*
                 var isImportant = false;
                 isImportant |= (bool)prefab.GetComponent<AnimalAI>();
                 isImportant |= (bool)prefab.GetComponent<BaseAI>();
@@ -114,6 +117,7 @@ namespace OfTamingAndBreeding.Registry
                 {
                     originalPrefabNames.Add(prefab.name);
                 }
+                */
             }
         }
 
@@ -130,16 +134,26 @@ namespace OfTamingAndBreeding.Registry
         //--------------------------------------------------
         // Singleton
 
-        protected override void OnCreate()
+
+        private static OTABRegistry _instance;
+        public static OTABRegistry Instance => _instance;
+
+        public static void CreateInstance()
+        {
+            _instance = new OTABRegistry();
+        }
+
+        public static void DestroyInstance()
+        {
+            _instance = null;
+        }
+
+        public OTABRegistry()
         {
             foreach (var kv in customPrefabBackups)
             {
                 unusedCustomPrefabBackups[kv.Key] = kv.Value.ToList();
             }
-        }
-
-        protected override void OnDestroy()
-        {
         }
 
         //--------------------------------------------------
@@ -193,14 +207,15 @@ namespace OfTamingAndBreeding.Registry
         private void RestorePrefabFromBackup(GameObject current, GameObject backup)
         {
             PrefabUtils.RestoreComponent<AnimalAI>(current, backup);
-            PrefabUtils.RestoreComponent<BaseAI>(current, backup);
+            PrefabUtils.RestoreComponent<MonsterAI>(current, backup);
+            PrefabUtils.RestoreBaseAI(current, backup);
+
             PrefabUtils.RestoreComponent<Character>(current, backup);
             PrefabUtils.RestoreComponent<CharacterDrop>(current, backup);
             PrefabUtils.RestoreComponent<EggGrow>(current, backup);
             PrefabUtils.RestoreComponent<Floating>(current, backup);
             PrefabUtils.RestoreComponent<Growup>(current, backup);
             PrefabUtils.RestoreComponent<ItemDrop>(current, backup);
-            PrefabUtils.RestoreComponent<MonsterAI>(current, backup);
             PrefabUtils.RestoreComponent<Pet>(current, backup);
             PrefabUtils.RestoreComponent<Procreation>(current, backup);
             PrefabUtils.RestoreComponent<Ragdoll>(current, backup);

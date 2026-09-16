@@ -1,5 +1,7 @@
 ﻿using HarmonyLib;
 using OfTamingAndBreeding.Components;
+using OfTamingAndBreeding.ValheimAPI;
+using TMPro;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Patches
@@ -22,6 +24,12 @@ namespace OfTamingAndBreeding.Patches
             var runner = character.GetComponent<AnimationClipOverlay>();
             if (runner)
             {
+                character.SetLookDir(character.transform.forward);
+                var baseAI = character.GetComponent<BaseAI>();
+                if (baseAI)
+                {
+                    baseAI.StopMoving();
+                }
                 runner.PlayOverlay(__instance, speed: 1f);
             }
 

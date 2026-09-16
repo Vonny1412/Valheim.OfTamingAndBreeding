@@ -7,39 +7,6 @@ namespace OfTamingAndBreeding.Patches
     internal partial class DataReadyPatches
     {
 
-        /*
-    [HarmonyPatch(typeof(Tameable), "IsHungry")]
-    [HarmonyPrefix]
-    [HarmonyPriority(Priority.Last)]
-    private static bool Tameable_IsHungry_Prefix(Tameable __instance, ref bool __result)
-    {
-        if (__result == false)
-        {
-            return false;
-        }
-
-        // WARNING: dont do the following
-        // because creatures that are not hungry wont eat anything
-        var isTamed = __instance.IsTamed();
-        if (isTamed == false)
-        {
-            var trait = __instance.GetComponent<TameableTrait>();
-            if (trait.IsTamingDisabled())
-            {
-                __result = false;
-                return false;
-            }
-            if (trait.CanBeTamed() == false)
-            {
-                __result = false;
-                return false;
-            }
-        }
-
-        return true;
-    }
-        */
-
         [HarmonyPatch(typeof(Tameable), "OnConsumedItem")]
         [HarmonyPrefix]
         private static bool Tameable_OnConsumedItem_Prefix(Tameable __instance, ItemDrop item)

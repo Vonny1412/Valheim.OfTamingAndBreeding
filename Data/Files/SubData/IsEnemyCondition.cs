@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace OfTamingAndBreeding.Data.Models.SubData
+namespace OfTamingAndBreeding.Data.Files.SubData
 {
     // todo: put me somewhere else
     [Serializable]

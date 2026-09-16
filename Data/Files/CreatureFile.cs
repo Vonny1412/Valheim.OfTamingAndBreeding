@@ -1,11 +1,11 @@
 ﻿using JetBrains.Annotations;
-using OfTamingAndBreeding.Data.Models.SubData;
+using OfTamingAndBreeding.Data.Files.SubData;
 using System;
 
-namespace OfTamingAndBreeding.Data.Models
+namespace OfTamingAndBreeding.Data.Files
 {
     [Serializable]
-    internal class CreatureData : DataBase<CreatureData>
+    internal class CreatureFile : DataBase<CreatureFile>
     {
 
         public const string DirectoryName = "Creatures";
@@ -31,20 +31,17 @@ namespace OfTamingAndBreeding.Data.Models
         [CanBeNull]
         public class CharacterAIData
         {
+            public int? MaxLevel { get; set; } = null;
+
             public string Group { get; set; } = null;
             public string GroupWhenTamed { get; set; } = null;
             public Character.Faction? FactionWhenTamed { get; set; } = null;
 
-            public IsEnemyCondition TamedCanAttackPlayer { get; set; } = IsEnemyCondition.Default; // OTAB feature
-            public IsEnemyCondition TamedCanBeAttackedByPlayer { get; set; } = IsEnemyCondition.Default; // OTAB feature
-            public IsEnemyCondition TamedCanAttackGroup { get; set; } = IsEnemyCondition.Default; // OTAB feature
-            public IsEnemyCondition TamedCanBeAttackedByGroup { get; set; } = IsEnemyCondition.Default; // OTAB feature
-            public IsEnemyCondition TamedCanAttackFaction { get; set; } = IsEnemyCondition.Default; // OTAB feature
-            public IsEnemyCondition TamedCanBeAttackedByFaction { get; set; } = IsEnemyCondition.Default; // OTAB feature
-            public IsEnemyCondition TamedCanAttackTamed { get; set; } = IsEnemyCondition.Default; // OTAB feature
-            public IsEnemyCondition TamedCanBeAttackedByTamed { get; set; } = IsEnemyCondition.Default; // OTAB feature
-            public IsEnemyCondition TamedCanAttackWild { get; set; } = IsEnemyCondition.Default; // OTAB feature
-            public IsEnemyCondition TamedCanBeAttackedByWild { get; set; } = IsEnemyCondition.Default; // OTAB feature
+            public IsEnemyCondition TamedVersusPlayer { get; set; } = IsEnemyCondition.Default; // OTAB feature
+            public IsEnemyCondition TamedVersusGroup { get; set; } = IsEnemyCondition.Default; // OTAB feature
+            public IsEnemyCondition TamedVersusFaction { get; set; } = IsEnemyCondition.Default; // OTAB feature
+            public IsEnemyCondition TamedVersusTamed { get; set; } = IsEnemyCondition.Default; // OTAB feature
+            public IsEnemyCondition TamedVersusWild { get; set; } = IsEnemyCondition.Default; // OTAB feature
         }
 
         [Serializable]
@@ -108,7 +105,6 @@ namespace OfTamingAndBreeding.Data.Models
                 public string NeedPartnerPrefab { get; set; } = null; // OTAB feature
 
                 public float? LevelUpChance { get; set; } = null; // OTAB feature
-                public int? MaxLevel { get; set; } = null;
 
                 public bool SpawnTamed { get; set; } = true; // OTAB feature
             }
@@ -117,10 +113,9 @@ namespace OfTamingAndBreeding.Data.Models
             public float? TotalCheckRange { get; set; } = null;
 
             public PartnerData[] Partner { get; set; } = null;
-            public float? PartnerRecheckSeconds { get; set; } = null; // OTAB feature
             public float? PartnerCheckRange { get; set; } = null;
             public int? RequiredLovePoints { get; set; } = null;
-            // todo: wiki: RequiredLovePoints can be 0. love points wont be shown in hover text, 1 is still used for procreation logic
+            // todo: RequiredLovePoints can be 0. love points wont be shown in hover text, 1 is still used for procreation logic
 
             public float? PregnancyChance { get; set; } = null;
             public float? PregnancyDuration { get; set; } = null;

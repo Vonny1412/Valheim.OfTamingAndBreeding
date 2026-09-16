@@ -1,15 +1,14 @@
 ﻿using JetBrains.Annotations;
-using OfTamingAndBreeding.Components.Traits;
-using OfTamingAndBreeding.Data.Models.SubData;
+using OfTamingAndBreeding.Data.Files.SubData;
 using System;
 
-namespace OfTamingAndBreeding.Data.Models
+namespace OfTamingAndBreeding.Data.Files
 {
     [Serializable]
-    internal class EggData : DataBase<EggData>
+    internal class ItemFile : DataBase<ItemFile>
     {
 
-        public const string DirectoryName = "Eggs";
+        public const string DirectoryName = "Items";
 
         public CloneData Clone = null;
         public ComponentsData Components = new ComponentsData();
@@ -23,11 +22,11 @@ namespace OfTamingAndBreeding.Data.Models
         public class CloneData
         {
             public string From { get; set; } = null;
-
+            public string VisualFrom { get; set; } = null;
+            
             public string Name { get; set; } = null;
             public string Description { get; set; } = null;
             public string ItemType { get; set; } = null;
-            public bool? IsGaldrRitual { get; set; } = null; // todo: needs wiki enttry
 
             public float? Scale { get; set; } = null;
             public float? Weight { get; set; } = null;
@@ -35,9 +34,14 @@ namespace OfTamingAndBreeding.Data.Models
 
             public string CustomIconName { get; set; } = null;
 
-            public string ItemTintRgb { get; set; } = null;
-            public string ParticlesTintRgb { get; set; } = null;
-            public string LightsTintRgb { get; set; } = null;
+
+            public float? ItemHueShift { get; set; } = null;
+            public float? ItemSaturationShift { get; set; } = null;
+            public float? ItemBrightnessShift { get; set; } = null;
+
+            public float? LightsHueShift { get; set; } = null;
+            public float? LightsSaturationShift { get; set; } = null;
+
             public float? LightsScale { get; set; } = null;
 
             public bool? DisableParticles { get; set; } = null;

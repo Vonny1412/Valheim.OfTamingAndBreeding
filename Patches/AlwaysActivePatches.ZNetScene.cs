@@ -6,17 +6,17 @@ namespace OfTamingAndBreeding.Patches
 {
     internal partial class AlwaysActivePatches
     {
+        // IMPORTANT: We must not let ZNetScene instantiate network objects before OTAB server data is applied.
+        // Otherwise components (Awake/Start) would run with wrong vanilla values.
+        // We therefore defer CreateObjects until DataOrchestrator marks dataLoaded == true.
 
         [HarmonyPatch(typeof(ZNetScene), "CreateObjects")]
         [HarmonyPrefix]
         private static bool ZNetScene_CreateObjects_Prefix(/* ZNetScene __instance, */ List<ZDO> currentNearObjects, List<ZDO> currentDistantObjects)
         {
-            // IMPORTANT: We must not let ZNetScene instantiate network objects before OTAB server data is applied.
-            // Otherwise components (Awake/Start) would run with wrong vanilla values.
-            // We therefore defer CreateObjects until DataOrchestrator marks dataLoaded == true.
-
             if (ZNetSceneContext.IsBlocking())
             {
+                Plugin.LogInfo("Blocking ZNetScene.CreateObjects()");
                 ZNetSceneContext.Enqueue(new List<ZDO>(currentNearObjects), new List<ZDO>(currentDistantObjects));
                 return false;
             }
@@ -27,7 +27,7 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPrefix]
         private static void ZNetScene_Shutdown_Prefix()
         {
-            Net.NetworkSessionManager.Instance.CloseSession();
+            Net.NetworkSessionManager.CloseSession();
         }
 
     }

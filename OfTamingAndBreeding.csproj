@@ -11,7 +11,7 @@
 	<PropertyGroup>
 		<VersionMajor>0</VersionMajor>
 		<VersionMinor>9</VersionMinor>
-		<VersionPatch>6</VersionPatch>
+		<VersionPatch>7</VersionPatch>
 		<VersionSuffix>alpha</VersionSuffix>
 		<Authors>Yvonne Pautz</Authors>
 		<Product>Of Taming and Breeding</Product>
@@ -25,7 +25,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<CopyToPluginsSubDirectory>Vonny1412.OfTamingAndBreeding</CopyToPluginsSubDirectory>
+		<CopyToPluginsSubDirectory>OfTamingAndBreeding</CopyToPluginsSubDirectory>
 	</PropertyGroup>
 
 	<ItemGroup>

@@ -30,8 +30,8 @@ namespace OfTamingAndBreeding.Net
             serverReady = false;
             if (clearCallbacks)
             {
-                OnServerReceive(null);
-                OnClientReceive(null);
+                onServerReceiveCB = null;
+                onClientReceiveCB = null;
             }
         }
 

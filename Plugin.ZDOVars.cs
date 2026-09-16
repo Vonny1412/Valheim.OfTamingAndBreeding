@@ -36,15 +36,10 @@ namespace OfTamingAndBreeding
             // because it can vary depending on randomly chosen offspring from data
             public static readonly int z_offspringPrefab = $"{Plugin.ModGuid}.z_offspringPrefab".GetStableHashCode();
 
-            // used to store current offspring level (we got a level-up feature, remember?)
-            // because it can vary depending on randomly chosen offspring from data
-            public static readonly int z_offspringLevel = $"{Plugin.ModGuid}.z_offspringLevel".GetStableHashCode();
+            public static readonly int z_offspringLevelUpChance = $"{Plugin.ModGuid}.z_offspringLevelUpChance".GetStableHashCode();
 
             // used to store current chosen partner for that parent
             public static readonly int z_partnerPrefab = $"{Plugin.ModGuid}.z_partnerPrefab".GetStableHashCode();
-
-            // used to store a delay timer for re-chosing partner if old one gets invalid (maybe killed, out of range)
-            public static readonly int z_partnerNotSeenSince = $"{Plugin.ModGuid}.z_partnerNotSeenSince".GetStableHashCode();
 
             // used to store if the upcoming offspring spawns tamed or not
             public static readonly int z_offspringTamed = $"{Plugin.ModGuid}.z_offspringTamed".GetStableHashCode();

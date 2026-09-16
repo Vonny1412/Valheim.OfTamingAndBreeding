@@ -1,9 +1,8 @@
 ﻿using OfTamingAndBreeding.Components.Base;
 using OfTamingAndBreeding.Components.Extensions;
-using OfTamingAndBreeding.Components.SpecialPrefabs;
 using OfTamingAndBreeding.OTABUtils;
+using OfTamingAndBreeding.ValheimAPI;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -19,7 +18,7 @@ namespace OfTamingAndBreeding.Components.Traits
         {
             _requireGlobalKeys = new List<List<string[]>>();
 
-            Net.NetworkSessionManager.Instance.OnSessionClosed += (netsess, dataLoaded) => {
+            Net.NetworkSessionManager.OnSessionClosed += () => {
                 _requireGlobalKeys.Clear();
             };
         }
@@ -251,23 +250,32 @@ namespace OfTamingAndBreeding.Components.Traits
                 return true;
             }
 
-            var customFactor = m_nview.GetZDO().GetFloat(Plugin.ZDOVars.z_fedDurationFactor, 1f);
+            if (Plugin.Configs.RequireFoodDroppedByPlayer.Value)
+            {
+                if (StaticContext.ItemConsumeContext.hasValue && item && StaticContext.ItemConsumeContext.lastItemInstanceID == item.GetInstanceID())
+                {
+                    var droppedByAnyPlayer = StaticContext.ItemConsumeContext.lastItemDroppedByPlayer;
+                    if (droppedByAnyPlayer == false)
+                    {
+                        // definitly not dropped by player
+                        // prevent ResetFeedingTimer
+                        return true;
+                    }
+                }
+            }
 
+            // prevent catch-up regeneration after feeding
+            // todo: add config for this? with true as default?
+            m_baseAI.GetWorldTimeDelta();
+
+            // calculate new fed duration based on consumed food
+            var customFactor = m_nview.GetZDO().GetFloat(Plugin.ZDOVars.z_fedDurationFactor, 1f);
             if (m_baseAITrait && m_baseAITrait.HasCustomConsumeItems(out var consumeItems))
             {
                 var sharedName = item.m_itemData.m_shared.m_name;
                 var newFactor = 1f;
-
                 foreach (var consumeItem in consumeItems)
                 {
-                    if (OTABSpecialConsumableItem.TryGet(consumeItem.itemDrop.gameObject, out var component))
-                    {
-                        if (component.Compare(item))
-                        {
-                            newFactor *= consumeItem.fedDurationFactor;
-                        }
-                        continue;
-                    }
                     if (consumeItem.itemDrop.m_itemData.m_shared.m_name == sharedName)
                     {
                         newFactor *= consumeItem.fedDurationFactor;
@@ -287,20 +295,6 @@ namespace OfTamingAndBreeding.Components.Traits
             ZNetUtils.SetFloat(m_nview.GetZDO(), Plugin.ZDOVars.z_fedDurationFactor, customFactor);
             m_nview.InvokeRPC(ZNetView.Everybody, "RPC_UpdateFedDuration", totalFactor);
             UpdateFedDuration(totalFactor);
-
-            if (Plugin.Configs.RequireFoodDroppedByPlayer.Value)
-            {
-                if (StaticContext.ItemConsumeContext.hasValue && item && StaticContext.ItemConsumeContext.lastItemInstanceId == item.GetInstanceID())
-                {
-                    var droppedByAnyPlayer = StaticContext.ItemConsumeContext.lastItemDroppedByAnyPlayer;
-                    if (droppedByAnyPlayer == 0)
-                    {
-                        // definitly not dropped by player
-                        // prevent ResetFeedingTimer
-                        return true;
-                    }
-                }
-            }
 
             // not handled, let valheim handle
             return false;

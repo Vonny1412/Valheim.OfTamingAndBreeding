@@ -38,7 +38,7 @@ namespace OfTamingAndBreeding.Components.Traits
             _requireGlobalKeys = new List<List<string[]>>();
             _grownListByIndex = new List<EggGrown[]>();
 
-            Net.NetworkSessionManager.Instance.OnSessionClosed += (netsess, dataLoaded) => {
+            Net.NetworkSessionManager.OnSessionClosed += () => {
                 _requireGlobalKeys.Clear();
                 _grownListByIndex.Clear();
             };
@@ -60,6 +60,7 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private ZNetView m_nview = null;
         [NonSerialized] private EggGrow m_eggGrow = null;
         [NonSerialized] private ItemDrop m_itemDrop = null;
+        [NonSerialized] private ItemDropTrait m_itemDropTrait = null;
         [NonSerialized] private float m_baseGrowTime = 60;
 
         // set in registration
@@ -74,6 +75,7 @@ namespace OfTamingAndBreeding.Components.Traits
             m_nview = GetComponent<ZNetView>();
             m_eggGrow = GetComponent<EggGrow>();
             m_itemDrop = GetComponent<ItemDrop>();
+            m_itemDropTrait = GetComponent<ItemDropTrait>();
 
             m_baseGrowTime = m_eggGrow.m_growTime;
 
@@ -109,7 +111,10 @@ namespace OfTamingAndBreeding.Components.Traits
             if (m_requireGlobalKeysIndex != -1)
             {
                 orKeysList = _requireGlobalKeys[m_requireGlobalKeysIndex];
-                return true;
+                if (orKeysList.Count > 0)
+                {
+                    return true;
+                }
             }
             orKeysList = null;
             return false;
@@ -181,6 +186,13 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public bool CanGrow()
         {
+            if (Plugin.Configs.RequireEggsDroppedByPlayer.Value == true)
+            {
+                if (m_itemDropTrait.IsDroppedByPlayer() == false)
+                {
+                    return false;
+                }
+            }
 
             if (SolvesRequiredGlobalKeys() == false)
             {
@@ -254,14 +266,13 @@ namespace OfTamingAndBreeding.Components.Traits
 
             var zdo = m_nview.GetZDO();
 
-            float growStart = zdo.GetFloat(ZDOVars.s_growStart);
             var canGrow = m_eggGrow.CanGrow();
-
             if (canGrow)
             {
                 var growTime = m_eggGrow.m_growTime;
                 if (growTime > 0) // has a grow time
                 {
+                    float growStart = zdo.GetFloat(ZDOVars.s_growStart);
                     if (growStart > 0) // is already growing
                     {
                         float precision = 1f / Plugin.Configs.HudProgressPrecision.Value;
@@ -287,7 +298,15 @@ namespace OfTamingAndBreeding.Components.Traits
                 }
 
                 // logic:
-                //   (vanilla)itemstack > (vanilla)fire > (vanilla)roof > (otab)globalkeys > (otab)biome > (otab)liquid
+                //   (otab)DroppedByPlayer > (vanilla)itemstack > (vanilla)fire > (vanilla)roof > (otab)globalkeys > (otab)biome > (otab)liquid
+
+                if (Plugin.Configs.RequireEggsDroppedByPlayer.Value == true)
+                {
+                    if (m_itemDropTrait.IsDroppedByPlayer() == false)
+                    {
+                        return "";
+                    }
+                }
 
                 if (m_itemDrop.m_itemData.m_stack > 1)
                 {
@@ -360,7 +379,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 return true; // handled
             }
 
-            var prefabName = global::Utils.GetPrefabName(m_eggGrow.gameObject.name);
+            var prefabName = Utils.GetPrefabName(m_eggGrow.gameObject.name);
 
             var z_EggBehavior = zdo.GetInt(Plugin.ZDOVars.z_EggBehavior, Plugin.ZDOVars.EggBehavior.Unknown);
             if (z_EggBehavior == Plugin.ZDOVars.EggBehavior.Unknown)
@@ -445,7 +464,6 @@ namespace OfTamingAndBreeding.Components.Traits
 
                 }
 
-
                 if (showHatchEffect)
                 {
                     // just jiggle a lil bit
@@ -457,15 +475,42 @@ namespace OfTamingAndBreeding.Components.Traits
 
                 GameObject spawned = UnityEngine.Object.Instantiate(m_eggGrow.m_grownPrefab, position, rotation);
                 Character spawnedCharacter = spawned.GetComponent<Character>();
+                var level = m_itemDrop.m_itemData.m_quality;
 
                 if ((bool)spawnedCharacter)
                 {
                     spawnedCharacter.SetTamed(m_eggGrow.m_tamed);
-                    spawnedCharacter.SetLevel(m_itemDrop.m_itemData.m_quality);
+
+                    var spawnedCharacterTrait = spawned.GetComponent<CharacterTrait>();
+                    if (spawnedCharacterTrait && spawnedCharacterTrait.m_maxLevel > 0)
+                    {
+                        if (level > spawnedCharacterTrait.m_maxLevel)
+                        {
+                            level = spawnedCharacterTrait.m_maxLevel;
+                        }
+                    }
+                    else
+                    {
+                        // important todo: warning, cannot varify level
+                        level = 1;
+                    }
+                    spawnedCharacter.SetLevel(level);
                 }
                 else
                 {
-                    spawned.GetComponent<ItemDrop>()?.SetQuality(m_itemDrop.m_itemData.m_quality);
+                    var spawnedItemDrop = spawned.GetComponent<ItemDrop>();
+                    if (spawnedItemDrop)
+                    {
+                        if (level > spawnedItemDrop.m_itemData.m_shared.m_maxQuality)
+                        {
+                            level = spawnedItemDrop.m_itemData.m_shared.m_maxQuality;
+                        }
+                        spawnedItemDrop.SetQuality(level);
+                    }
+                    else
+                    {
+                        // important todo: warning, cannot set level
+                    }
                 }
 
                 ThirdParty.Mods.CllCBridge.PassTraits(zdo, spawned);

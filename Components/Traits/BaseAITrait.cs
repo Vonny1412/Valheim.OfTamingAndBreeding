@@ -1,15 +1,12 @@
 ﻿using OfTamingAndBreeding.Components.Base;
 using OfTamingAndBreeding.Components.Extensions;
-using OfTamingAndBreeding.Components.SpecialPrefabs;
 using OfTamingAndBreeding.OTABUtils;
 using OfTamingAndBreeding.ValheimAPI;
 using System;
-using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Linq;
+using TMPro;
 using UnityEngine;
-using YamlDotNet.Core;
-using static Unity.IO.LowLevel.Unsafe.AsyncReadManagerMetrics;
 
 namespace OfTamingAndBreeding.Components.Traits
 {
@@ -29,7 +26,7 @@ namespace OfTamingAndBreeding.Components.Traits
         {
             _consumeItemData = new List<ConsumeItem[]>();
 
-            Net.NetworkSessionManager.Instance.OnSessionClosed += (netsess, dataLoaded) => {
+            Net.NetworkSessionManager.OnSessionClosed += () => {
                 _consumeItemData.Clear();
             };
         }
@@ -95,10 +92,6 @@ namespace OfTamingAndBreeding.Components.Traits
             string checkItemName = data.m_shared.m_name;
             foreach (ItemDrop consumeItem in consumeList)
             {
-                if (OTABSpecialConsumeAnyItem.TryGet(consumeItem.gameObject, out var component))
-                {
-                    return component.Compare(checkItem);
-                }
                 if (consumeItem.m_itemData.m_shared.m_name == checkItemName)
                 {
                     return true;

@@ -13,7 +13,6 @@ namespace OfTamingAndBreeding.StaticContext
         public static void Clear()
         {
             blockObjectsCreation = false;
-            //pending.Clear();
             nearObjects.Clear();
             distantObjects.Clear();
         }

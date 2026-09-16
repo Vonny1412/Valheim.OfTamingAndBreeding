@@ -25,7 +25,8 @@ namespace OfTamingAndBreeding.Patches.Base
             {
                 try
                 {
-                    _harmony.UnpatchAll(HarmonyId);
+                    //_harmony.UnpatchAll(HarmonyId);
+                    _harmony.UnpatchSelf();
                 }
                 catch
                 {
@@ -41,8 +42,9 @@ namespace OfTamingAndBreeding.Patches.Base
             {
                 return;
             }
-            
-            _harmony.UnpatchAll(HarmonyId);
+
+            //_harmony.UnpatchAll(HarmonyId);
+            _harmony.UnpatchSelf();
             _harmony = null;
         }
     }

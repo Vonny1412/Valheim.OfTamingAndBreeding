@@ -2,13 +2,13 @@
 using System.IO;
 using System.Linq;
 using Jotunn.Managers;
-using OfTamingAndBreeding.Data.Models;
+using OfTamingAndBreeding.Data.Files;
 
 namespace OfTamingAndBreeding.Registry.Processing
 {
-    internal class TranslationProcessor : Base.DataProcessor<TranslationData>
+    internal class TranslationProcessor : Base.DataProcessor<TranslationFile>
     {
-        public override string DirectoryName => TranslationData.DirectoryName;
+        public override string DirectoryName => TranslationFile.DirectoryName;
 
         public override string PrefabTypeName => null;
 
@@ -37,28 +37,28 @@ namespace OfTamingAndBreeding.Registry.Processing
         {
         }
 
-        public override bool ValidateData(string fileName, TranslationData data)
+        public override bool ValidateData(string fileName, TranslationFile data)
         {
             return true; // i dont care
         }
 
-        public override bool ReservePrefab(string fileName, TranslationData data)
+        public override bool ReservePrefab(string fileName, TranslationFile data)
         {
             return true; // i dont care
         }
 
-        public override bool ValidatePrefab(string fileName, TranslationData data)
+        public override bool ValidatePrefab(string fileName, TranslationFile data)
         {
             return true; // i dont care
         }
 
-        public override void RegisterPrefab(string fileName, TranslationData data)
+        public override void RegisterPrefab(string fileName, TranslationFile data)
         {
             var local = LocalizationManager.Instance.GetLocalization();
             local.AddTranslation(data.Language, data.Translations);
         }
 
-        public override void EditPrefab(string fileName, TranslationData data)
+        public override void EditPrefab(string fileName, TranslationFile data)
         {
         }
 

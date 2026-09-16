@@ -11,6 +11,7 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPostfix]
         private static void BaseAI_Awake_Postfix(BaseAI __instance)
         {
+
             // todo: add config for this or an ingame debug command
             /*
             var nview = __instance.GetZNetView();

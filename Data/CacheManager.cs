@@ -9,7 +9,7 @@ using OfTamingAndBreeding.Registry;
 
 namespace OfTamingAndBreeding.Data
 {
-    internal class CacheManager : Common.SingletonClass<CacheManager>
+    internal static class CacheManager
     {
 
         public static string GetCachePath(string serverName)
@@ -21,23 +21,10 @@ namespace OfTamingAndBreeding.Data
         public static string GetCacheCryptedFile(string serverName)
             => Path.Combine(Plugin.CacheDir, $"{serverName}.cache");
 
-        //--------------------------------------------------
-        // Singleton
-
-        protected override void OnCreate()
-        {
-        }
-
-        protected override void OnDestroy()
-        {
-        }
-
-        //--------------------------------------------------
-
-        public string BuildCache(string serverName, string encryptKey, bool writeFiles)
+        public static string BuildCache(string serverName, string encryptKey, bool writeFiles)
             => BuildCache(serverName, encryptKey, writeFiles, out string _);
 
-        public string BuildCache(string serverName, string encryptKey, bool writeFiles, out string cacheContent)
+        public static string BuildCache(string serverName, string encryptKey, bool writeFiles, out string cacheContent)
         {
             cacheContent = null;
 
@@ -57,7 +44,7 @@ namespace OfTamingAndBreeding.Data
                     File.Delete(cacheCryptedFile);
             }
 
-            var cacheFile = new Models.CacheFile
+            var cacheFile = new Files.CacheFile
             {
                 ModVersion = Plugin.Version,
                 CacheFileName = Plugin.Configs.CacheFileName.Value,
@@ -65,7 +52,7 @@ namespace OfTamingAndBreeding.Data
             };
 
 
-            foreach(var p in PrefabRegistryManager.Instance.IterDataProcessors())
+            foreach(var p in DataProcessingManager.IterDataProcessors())
             {
                 var writeToDir = Path.Combine(cacheDebugFilesPath, p.DirectoryName);
                 if (writeFiles)
@@ -106,23 +93,15 @@ namespace OfTamingAndBreeding.Data
             return hash;
         }
 
-        /*
-        public static bool LoadCacheFromFile(string serverName, string encryptKey)
-        {
-            var cacheCryptedFile = GetCacheCryptedFile(serverName);
-            return LoadCacheFromCrypted(File.ReadAllText(cacheCryptedFile), encryptKey);
-        }
-        */
-
-        public bool LoadCacheFromCrypted(string crypted, string encryptKey)
+        public static bool LoadCacheFromCrypted(string crypted, string encryptKey)
         {
             try
             {
-                PrefabRegistryManager.Instance.ResetRegistry();
+                DataProcessingManager.ResetRegistry();
                 var cacheFilePlain = encryptKey == null ? crypted : DeterministicStringCrypto.DecryptFromBase64(crypted, encryptKey);
-                var cacheFile = SerializeableData.Deserialize<Models.CacheFile>(cacheFilePlain);
+                var cacheFile = SerializeableData.Deserialize<Files.CacheFile>(cacheFilePlain);
                 var allokay = true;
-                foreach(var p in PrefabRegistryManager.Instance.IterDataProcessors())
+                foreach(var p in DataProcessingManager.IterDataProcessors())
                 {
                     foreach (var kv in cacheFile.Data[p.DirectoryName])
                     {

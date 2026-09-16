@@ -117,12 +117,12 @@ namespace OfTamingAndBreeding.Patches
                 if (isTamed1)
                 {
                     // tamed -> faction
-                    hostilityFaction |= trait1.TamedCanAttackFaction;
+                    hostilityFaction |= trait1.TamedVersusFactionMask;
                 }
                 if (isTamed2)
                 {
                     // faction -> tamed
-                    hostilityFaction |= trait2.TamedCanBeAttackedByFaction;
+                    hostilityFaction |= trait2.TamedVersusFactionMask;
                 }
 
                 if ((hostilityFaction & HostilityMask.Never) != 0)
@@ -142,12 +142,12 @@ namespace OfTamingAndBreeding.Patches
                 if (isTamed1)
                 {
                     // tamed -> group
-                    hostilityGroup |= trait1.TamedCanAttackGroup;
+                    hostilityGroup |= trait1.TamedVersusGroupMask;
                 }
                 if (isTamed2)
                 {
                     // group -> tamed
-                    hostilityGroup |= trait2.TamedCanBeAttackedByGroup;
+                    hostilityGroup |= trait2.TamedVersusGroupMask;
                 }
 
                 if ((hostilityGroup & HostilityMask.Never) != 0)
@@ -165,9 +165,9 @@ namespace OfTamingAndBreeding.Patches
             if (isBothTamed)
             {
                 // tamed -> tamed (outgoing)
-                hostilityTamed |= trait1.TamedCanAttackTamed;
+                hostilityTamed |= trait1.TamedVersusTamedMask;
                 // tamed -> tamed (incoming)
-                hostilityTamed |= trait2.TamedCanBeAttackedByTamed;
+                hostilityTamed |= trait2.TamedVersusTamedMask;
 
                 if ((hostilityTamed & HostilityMask.Never) != 0)
                 {
@@ -186,12 +186,12 @@ namespace OfTamingAndBreeding.Patches
                 if (isTamed1)
                 {
                     // tamed -> wild
-                    hostilityWild |= trait1.TamedCanAttackWild;
+                    hostilityWild |= trait1.TamedVersusWildMask;
                 }
                 else // isTamed2
                 {
                     // wild -> tamed
-                    hostilityWild |= trait2.TamedCanBeAttackedByWild;
+                    hostilityWild |= trait2.TamedVersusWildMask;
                 }
 
                 if ((hostilityWild & HostilityMask.Never) != 0)
@@ -212,7 +212,7 @@ namespace OfTamingAndBreeding.Patches
                     if (isTamed2) // do not remove this. Player faction can also belong to a creature.
                     {
                         // player -> tamed
-                        hostilityPlayer |= trait2.TamedCanBeAttackedByPlayer;
+                        hostilityPlayer |= trait2.TamedVersusPlayerMask;
                     }
                 }
                 else // isPlayer2
@@ -220,7 +220,7 @@ namespace OfTamingAndBreeding.Patches
                     if (isTamed1) // do not remove this. Player faction can also belong to a creature.
                     {
                         // tamed -> player
-                        hostilityPlayer |= trait1.TamedCanAttackPlayer;
+                        hostilityPlayer |= trait1.TamedVersusPlayerMask;
                     }
                 }
 

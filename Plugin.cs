@@ -1,51 +1,30 @@
 ﻿using BepInEx;
 using BepInEx.Bootstrap;
-using Jotunn.Managers;
 using Jotunn.Utils;
-using OfTamingAndBreeding.Components.Base;
 using OfTamingAndBreeding.Components.Traits;
-using OfTamingAndBreeding.OTABUtils;
-using OfTamingAndBreeding.Registry;
-using OfTamingAndBreeding.StaticContext;
 using OfTamingAndBreeding.ThirdParty.Mods;
 using System;
-using System.Collections.Generic;
 using System.IO;
 
 namespace OfTamingAndBreeding
 {
-    // required
     [BepInDependency(Jotunn.Main.ModGuid)]
     [BepInDependency("com.ValheimModding.YamlDotNetDetector")]
-
-
-
-    [BepInDependency(WackyDBBridge.PluginGUID,      BepInDependency.DependencyFlags.SoftDependency)] // OTAB can post-register recipes
-    [BepInDependency(CllCBridge.PluginGUID,         BepInDependency.DependencyFlags.SoftDependency)] // lifecycle-aware CLLC inheritance
-    [BepInDependency("shudnal.Seasons",             BepInDependency.DependencyFlags.SoftDependency)] // Seasons mod can alter pregnancy durations on specific seasons
-    [BepInDependency("digitalroot.mods.GoldBars", BepInDependency.DependencyFlags.SoftDependency)] // maybe used for recipes
-    [BepInDependency("Vonny1412.HoldToCommand", BepInDependency.DependencyFlags.SoftDependency)]
-
+    [BepInDependency(CllCBridge.PluginGUID, BepInDependency.DependencyFlags.SoftDependency)] // lifecycle-aware CLLC inheritance
+    [BepInDependency(ValheimPlusCompatibility.PluginGUID, BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("Vonny1412.HoldToCommand",     BepInDependency.DependencyFlags.SoftDependency)]
     [NetworkCompatibility(CompatibilityLevel.ClientMustHaveMod, VersionStrictness.Patch)] // ensure client has this mod with correct version
 
     public sealed partial class Plugin : BaseUnityPlugin
     {
-        private static readonly string[] supportedMods = new string[] {
-            CllCBridge.PluginGUID,
-            WackyDBBridge.PluginGUID,
-            "shudnal.Seasons",
-            "digitalroot.mods.GoldBars",
-            "",
-        };
-        
         private static readonly string[] toleratedMods = new string[] {
             "oldmankatan.mods.tamesfollow",
             "com.L3ca.Beyondthepen",
-            "maxfoxgaming.procreationplus",
         };
 
         private static readonly string[] incompatibleMods = new string[] {
             "meldurson.valheim.AllTameable",
+            "maxfoxgaming.procreationplus",
         };
 
         internal static Plugin Instance { get; private set; }
@@ -63,7 +42,7 @@ namespace OfTamingAndBreeding
 
         internal static void LogServerWarning(object data)
         {
-            if (Net.NetworkSessionManager.Instance.IsServer())
+            if (Net.NetworkSessionManager.IsServer())
             {
                 LogWarning(data);
             }
@@ -71,7 +50,7 @@ namespace OfTamingAndBreeding
 
         internal static void LogServerMessage(object data)
         {
-            if (Net.NetworkSessionManager.Instance.IsServer())
+            if (Net.NetworkSessionManager.IsServer())
             {
                 LogMessage(data);
             }
@@ -79,7 +58,7 @@ namespace OfTamingAndBreeding
 
         internal static void LogServerInfo(object data)
         {
-            if (Net.NetworkSessionManager.Instance.IsServer())
+            if (Net.NetworkSessionManager.IsServer())
             {
                 LogInfo(data);
             }
@@ -87,7 +66,7 @@ namespace OfTamingAndBreeding
 
         internal static void LogServerDebug(object data)
         {
-            if (Net.NetworkSessionManager.Instance.IsServer())
+            if (Net.NetworkSessionManager.IsServer())
             {
                 LogDebug(data);
             }
@@ -95,13 +74,6 @@ namespace OfTamingAndBreeding
 
         private bool CheckModsInChainloader()
         {
-            foreach (var guid in supportedMods)
-            {
-                if (ThirdParty.ThirdPartyManager.TryGetPluginMetadata(guid, out var meta))
-                {
-                    LogInfo($"Mod '{meta.Name}' is on board");
-                }
-            }
             foreach (var guid in toleratedMods)
             {
                 if (ThirdParty.ThirdPartyManager.TryGetPluginMetadata(guid, out var meta))
@@ -168,35 +140,30 @@ namespace OfTamingAndBreeding
 
             Configs.Initialize(Config);
 
-            Net.RPCContext.RegisterRPCs();
             ThirdParty.ThirdPartyManager.RegisterBridges();
 
-            Data.CacheManager.CreateInstance();
-            Registry.PrefabRegistryManager.CreateInstance();
-            Net.NetworkSessionManager.CreateInstance();
-            Net.NetworkSessionManager.Instance.OnSessionStarted += OnNetworkSessionStarted;
-            Net.NetworkSessionManager.Instance.OnSessionReady += OnNetworkSessionReady;
-            Net.NetworkSessionManager.Instance.OnSessionClosed += OnNetworkSessionClosed;
+            Net.NetworkSessionManager.RegisterRPCs();
+            Net.NetworkSessionManager.OnSessionStarted += OnNetworkSessionStarted;
+            Net.NetworkSessionManager.OnSessionReady += OnNetworkSessionReady;
+            Net.NetworkSessionManager.OnSessionClosed += OnNetworkSessionClosed;
+            Net.NetworkSessionManager.OnSessionError += OnNetworkSessionError;
         }
 
-        private static void OnNetworkSessionStarted(Net.NetworkSessionManager netsess)
+        private static void OnNetworkSessionStarted()
         {
-            if (netsess.IsServer())
+            if (Net.NetworkSessionManager.IsServer())
             {
                 if (Configs.DumpPrefabsToCache.Value == true)
                 {
-                    PrefabUtils.DumpPrefabs(Path.Combine(CacheDir, "prefabs"));
+                    OTABUtils.PrefabUtils.DumpPrefabs(Path.Combine(CacheDir, "prefabs"));
                 }
             }
-            else
-            {
-                //ZNetSceneContext.Block();
-            }
-            ZNetSceneContext.Block();
+
+            StaticContext.ZNetSceneContext.Block();
             OnSessionStarted();
         }
 
-        private static void OnNetworkSessionReady(Net.NetworkSessionManager netsess, bool dataLoaded)
+        private static void OnNetworkSessionReady()
         {
 
             // add trait components to all prefabs that are still missing these traits
@@ -213,14 +180,11 @@ namespace OfTamingAndBreeding
             ProcreationTrait.AddComponentToPrefabs(typeof(Procreation));
             PetTrait.AddComponentToPrefabs(typeof(Pet));
 
-            if (dataLoaded)
+            if (Registry.DataProcessingManager.IsDataLoaded())
             {
-                if (netsess.IsServer())
+                foreach (var p in Registry.DataProcessingManager.IterDataProcessors())
                 {
-                    foreach (var p in Registry.PrefabRegistryManager.Instance.IterDataProcessors())
-                    {
-                        LogInfo($"Loaded {p.GetLoadedDataCount()} {p.ModelTypeName} entries");
-                    }
+                    LogInfo($"Loaded {p.GetLoadedDataCount()} {p.ModelTypeName} entries");
                 }
                 Patches.DataReadyPatches.Install();
                 Features.LocalIdleAnimations.RemoveIdleEvents();
@@ -230,25 +194,23 @@ namespace OfTamingAndBreeding
                 LogInfo("No server sync detected (timeout). Running in vanilla mode.");
             }
 
-            if (!netsess.IsServer())
-            {
-                //ZNetSceneContext.Unblock();
-            }
-            ZNetSceneContext.Unblock();
-            OnSessionReady(dataLoaded);
+            StaticContext.ZNetSceneContext.Unblock();
+            OnSessionReady();
         }
 
-        private static void OnNetworkSessionClosed(Net.NetworkSessionManager netsess, bool dataLoaded)
+        private static void OnNetworkSessionClosed()
         {
-            if (dataLoaded)
-            {
-                Patches.DataReadyPatches.Uninstall();
-            }
+            Patches.DataReadyPatches.Uninstall();
+            Components.Base.OTABComponentRegistry.RemoveComponentsFromPrefabs();
 
-            OTABComponentRegistry.RemoveComponentsFromPrefabs();
-
-            OnSessionClosed(dataLoaded);
+            OnSessionClosed();
             isAdmin = false;
+        }
+
+        private static void OnNetworkSessionError()
+        {
+            StaticContext.ZNetSceneContext.Clear();
+            Game.instance.Logout(save: false, changeToStartScene: true);
         }
 
         private static bool? isAdmin = null;
@@ -270,27 +232,19 @@ namespace OfTamingAndBreeding
 
         public static bool IsServerDataLoaded()
         {
-            return Registry.PrefabRegistryManager.Instance != null && Registry.PrefabRegistryManager.Instance.IsDataLoaded();
+            return Registry.DataProcessingManager.IsDataLoaded();
         }
         
         public static void OnSessionStarted()
         {
-            // could be used as api
         }
 
-        public static void OnSessionReady(bool dataLoaded)
+        public static void OnSessionReady()
         {
-            // could be used as api
-            // dataLoaded == true -> OTAB Mode
-            // dataLoaded == false -> Vanilla Mode
-
         }
 
-        public static void OnSessionClosed(bool dataLoaded)
+        public static void OnSessionClosed()
         {
-            // could be used as api
-            // dataLoaded == true -> OTAB Mode
-            // dataLoaded == false -> Vanilla Mode
         }
 
     }

@@ -5,10 +5,10 @@ namespace OfTamingAndBreeding.StaticContext
     internal static class ItemDropContext
     {
         //[ThreadStatic] public static Humanoid Dropper;
-        [ThreadStatic] public static int DroppedByPlayer;
+        [ThreadStatic] public static bool DroppedByPlayer;
         public static void Clear()
         {
-            DroppedByPlayer = 0;
+            DroppedByPlayer = false;
         }
     }
 }

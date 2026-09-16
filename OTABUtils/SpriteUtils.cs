@@ -1,10 +1,22 @@
-﻿using System;
+﻿using Jotunn.Managers;
+using System;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.OTABUtils
 {
     internal static class SpriteUtils
     {
+
+        public static Sprite RenderGameObject(GameObject item)
+        {
+            var request = new RenderManager.RenderRequest(item)
+            {
+                Rotation = RenderManager.IsometricRotation,
+                UseCache = true
+            };
+            var icon = RenderManager.Instance.Render(request);
+            return icon;
+        }
 
         public static Sprite TextureToSprite(Texture2D tex)
         {

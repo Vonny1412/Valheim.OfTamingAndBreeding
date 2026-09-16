@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OfTamingAndBreeding.Common;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -59,6 +60,18 @@ namespace OfTamingAndBreeding.OTABUtils
                 dst = current.AddComponent<T>();
             }
             CopyPublicFields(src, dst);
+        }
+
+        public static void RestoreBaseAI(GameObject current, GameObject backup)
+        {
+            var sourceAI = backup.GetComponent<BaseAI>();
+            var targetAI = current.GetComponent<BaseAI>();
+
+            if (sourceAI == null || targetAI == null)
+                return;
+
+            var snapshot = new FieldsSnapshot<BaseAI>(sourceAI);
+            snapshot.ApplyTo(targetAI);
         }
 
         //------------------------------
@@ -132,6 +145,38 @@ namespace OfTamingAndBreeding.OTABUtils
                 cur.intensity = bak.intensity;
                 cur.spotAngle = bak.spotAngle;
                 cur.type = bak.type;
+            }
+        }
+
+
+
+
+        public static void RestoreChildParticleSystems(GameObject current, GameObject backup)
+        {
+            var bMap = MapByPath<ParticleSystem>(backup);
+            var cMap = MapByPath<ParticleSystem>(current);
+
+            foreach (var kv in cMap)
+            {
+                var path = kv.Key;
+                var cur = kv.Value;
+
+                if (!bMap.TryGetValue(path, out var bak) || !bak)
+                    continue;
+
+                var curMain = cur.main;
+                var bakMain = bak.main;
+                curMain.startColor = bakMain.startColor;
+
+                var curLifetime = cur.colorOverLifetime;
+                var bakLifetime = bak.colorOverLifetime;
+                if (curLifetime.enabled && bakLifetime.enabled)
+                    curLifetime.color = bakLifetime.color;
+
+                var curSpeed = cur.colorBySpeed;
+                var bakSpeed = bak.colorBySpeed;
+                if (curSpeed.enabled && bakSpeed.enabled)
+                    curSpeed.color = bakSpeed.color;
             }
         }
 
@@ -262,7 +307,6 @@ namespace OfTamingAndBreeding.OTABUtils
             }
         }
         
-        
         public static void DumpPrefabs(string outputDir)
         {
             foreach (var prefab in ZNetScene.instance.m_prefabs)
@@ -325,9 +369,6 @@ namespace OfTamingAndBreeding.OTABUtils
 
                         t = t.BaseType;
                     }
-
-
-
 
                     appender.WriteLine();
                 }

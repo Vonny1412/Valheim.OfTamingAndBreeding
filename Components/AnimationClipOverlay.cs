@@ -12,8 +12,8 @@ namespace OfTamingAndBreeding.Components
         [SerializeField] public string m_animClipName;
 
         // Bridge-Tuning
-        [SerializeField] public float m_endPoseHoldSeconds = 0.08f;
-        [SerializeField] public float m_endPoseFadeSeconds = 0.12f;
+        [SerializeField] public float m_endPoseHoldSeconds = 0.10f;
+        [SerializeField] public float m_endPoseFadeSeconds = 0.40f;
 
         // how close to the end we “freeze”
         [SerializeField] public float m_endPoseEpsilonSeconds = 0.02f;

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace OfTamingAndBreeding.Data.Models.SubData
+namespace OfTamingAndBreeding.Data.Files.SubData
 {
     [Serializable]
     internal enum ComponentBehavior

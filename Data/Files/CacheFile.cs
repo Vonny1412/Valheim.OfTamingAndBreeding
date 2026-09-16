@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace OfTamingAndBreeding.Data.Models
+namespace OfTamingAndBreeding.Data.Files
 {
     [Serializable]
     internal class CacheFile : SerializeableData

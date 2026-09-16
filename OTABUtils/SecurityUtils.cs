@@ -1,14 +1,29 @@
 ﻿using System;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace OfTamingAndBreeding.OTABUtils
 {
-    internal static class KeyMask
+    internal static class SecurityUtils
     {
-        static byte R(byte b, int r, bool l)
+        public static string GenerateCryptKey()
+        {
+            var bytes = new byte[16];
+
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(bytes);
+            }
+
+            return BitConverter.ToString(bytes)
+                .Replace("-", "")
+                .ToLowerInvariant();
+        }
+
+        private static byte R(byte b, int r, bool l)
             => (byte)(l ? (b << r) | (b >> (8 - r)) : (b >> r) | (b << (8 - r)));
 
-        static byte[] M(string s, int n)
+        private static byte[] M(string s, int n)
         {
             var a = Encoding.UTF8.GetBytes(s);
             var m = new byte[n];

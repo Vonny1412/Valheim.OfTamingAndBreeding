@@ -9,6 +9,8 @@ namespace OfTamingAndBreeding.Components.Traits
     public class AnimalAITrait : OTABComponent<AnimalAITrait>
     {
 
+        
+
         // set by registry processor
         [SerializeField] public List<ItemDrop> m_consumeItems = null;
         [SerializeField] public float m_consumeRange = 2f;

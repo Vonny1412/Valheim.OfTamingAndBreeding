@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using OfTamingAndBreeding.Components;
 using OfTamingAndBreeding.Components.Traits;
+using OfTamingAndBreeding.ValheimAPI;
 using UnityEngine;
 using static UnityEngine.Networking.UnityWebRequest;
 
@@ -13,8 +14,11 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPostfix]
         private static void ItemDrop_DropItem_Postfix(ItemDrop __instance, ItemDrop.ItemData item, int amount, Vector3 position, Quaternion rotation, ItemDrop __result)
         {
-            var trait = ItemDropTrait.GetUnsafe(__result.gameObject);
-            trait.OnItemDropped();
+            if (StaticContext.ItemDropContext.DroppedByPlayer)
+            {
+                var trait = ItemDropTrait.GetUnsafe(__result.gameObject);
+                trait.SetDroppedByPlayer();
+            }
         }
 
         [HarmonyPatch(typeof(ItemDrop), "RemoveOne")]
@@ -25,7 +29,11 @@ namespace OfTamingAndBreeding.Patches
             // because when a creature eats food with a stack size of 1 that item would be destroyed
             // thats why we need to patch this one to pass the flags to Tameable_OnConsumedItem_Patch
             var trait = ItemDropTrait.GetUnsafe(__instance.gameObject);
-            trait.OnOneRemoved();
+
+            StaticContext.ItemConsumeContext.hasValue = true;
+            StaticContext.ItemConsumeContext.lastItemDroppedByPlayer = trait.IsDroppedByPlayer();
+            StaticContext.ItemConsumeContext.lastItemInstanceID = __instance.GetInstanceID();
+
             // do return nothing (always call original method)
         }
 

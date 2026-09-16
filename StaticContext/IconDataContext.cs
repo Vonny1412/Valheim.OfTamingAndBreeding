@@ -10,7 +10,7 @@ namespace OfTamingAndBreeding.StaticContext
         {
             iconTextures = new Dictionary<string, UnityEngine.Texture2D>();
 
-            Net.NetworkSessionManager.Instance.OnSessionClosed += (netsess, dataLoaded) => {
+            Net.NetworkSessionManager.OnSessionClosed += () => {
                 foreach(var texture in iconTextures.Values)
                 {
                     if (texture)

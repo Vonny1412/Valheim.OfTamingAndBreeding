@@ -1,12 +1,12 @@
 ﻿using JetBrains.Annotations;
 using OfTamingAndBreeding.Common;
-using OfTamingAndBreeding.Data.Models.SubData;
+using OfTamingAndBreeding.Data.Files.SubData;
 using System;
 
-namespace OfTamingAndBreeding.Data.Models
+namespace OfTamingAndBreeding.Data.Files
 {
     [Serializable]
-    internal class OffspringData : DataBase<OffspringData>
+    internal class OffspringFile : DataBase<OffspringFile>
     {
 
         public const string DirectoryName = "Offsprings";

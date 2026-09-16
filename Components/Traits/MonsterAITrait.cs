@@ -1,5 +1,8 @@
 ﻿using OfTamingAndBreeding.Components.Base;
+using OfTamingAndBreeding.Components.Extensions;
+using OfTamingAndBreeding.ValheimAPI;
 using System;
+using TMPro;
 
 namespace OfTamingAndBreeding.Components.Traits
 {

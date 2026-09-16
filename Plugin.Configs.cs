@@ -48,7 +48,6 @@ namespace OfTamingAndBreeding
             public static ConfigEntry<bool> WriteClientCacheFile { get; private set; }
             public static ConfigEntry<bool> WriteServerCacheFiles { get; private set; }
             public static ConfigEntry<string> CacheFileName { get; private set; }
-            public static ConfigEntry<string> CacheFileCryptKey { get; private set; }
             public static ConfigEntry<bool> ExportIconsToCache { get; private set; }
             public static ConfigEntry<bool> DumpPrefabsToCache { get; private set; }
 
@@ -63,6 +62,7 @@ namespace OfTamingAndBreeding
             public static ConfigEntry<float> GlobalTamingTimeFactor { get; private set; }
             public static ConfigEntry<float> GlobalGrowTimeFactor { get; private set; }
 
+            public static ConfigEntry<bool> RequireEggsDroppedByPlayer { get; private set; }
             public static ConfigEntry<bool> RequireFoodDroppedByPlayer { get; private set; }
             public static ConfigEntry<bool> UseBetterSearchForFood { get; private set; }
             public static ConfigEntry<float> TamingSlowdownPerStar { get; private set; }
@@ -129,7 +129,6 @@ namespace OfTamingAndBreeding
                 WriteClientCacheFile = Config.BindConfigInOrder<bool>(section, "WriteClientCacheFile", true, "Allow clients to create and use a local OTAB cache file. This setting is read on world/server start and is not synchronized during runtime.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
                 WriteServerCacheFiles = Config.BindConfigInOrder<bool>(section, "WriteServerCacheFiles", true, "Write debug output on the server (cleaned YAML and an unencrypted cache file). This setting is read on world/server start and is not synchronized during runtime.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
                 CacheFileName = Config.BindConfigInOrder<string>(section, "CacheFileName", "local-{world}-{seed}", "Template for the cache file name (server-resolved). Supports placeholders like {world} and {seed}. Read on world/server start and not synchronized during runtime.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
-                CacheFileCryptKey = Config.BindConfigInOrder<string>(section, "CacheFileCryptKey", "", "Key used to obfuscate the cache contents. This is NOT secure encryption - do NOT use real passwords or personal secrets! Read on world/server start and not synchronized during runtime.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
                 ExportIconsToCache = Config.BindConfigInOrder<bool>(section, "ExportIconsToCache", false, "When enabled, item icons are written to the server cache directory for customization or debug purposes.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
                 DumpPrefabsToCache = Config.BindConfigInOrder<bool>(section, "DumpPrefabsToCache", false, "", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
                 //todo: DumpPrefabsToCache need descr and wiki entry
@@ -182,6 +181,7 @@ namespace OfTamingAndBreeding
                     }
                 };
 
+                RequireEggsDroppedByPlayer = Config.BindConfigInOrder<bool>(section, "RequireEggsDroppedByPlayer", true, "When enabled, only eggs dropped by players can grow or hatch. When disabled, eggs found in the world can also grow or hatch.", synced: true);
                 RequireFoodDroppedByPlayer = Config.BindConfigInOrder<bool>(section, "RequireFoodDroppedByPlayer", true, "When disabled, animals will also be tamed and stimulated to breed using food found in the world (not dropped by players).", synced: true);
                 UseBetterSearchForFood = Config.BindConfigInOrder<bool>(section, "UseBetterSearchForFood", true, "Uses a weighted food search instead of always picking the nearest item, resulting in more natural and less robotic animal behavior.", synced: true);
                 TamingSlowdownPerStar = Config.BindConfigInOrder<float>(section, "TamingSlowdownPerStar", 1f, "Slows down taming progress per star by reducing how much progress is applied each update.\n" +

@@ -14,6 +14,8 @@ namespace OfTamingAndBreeding.ValheimAPI
         {
         }
 
+        public static readonly Core.Invokers.VoidMethodInvoker __IAPI_GetWorldTimeDelta_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(BaseAI_Alias), "GetWorldTimeDelta", new Core.Signatures.ParamSig[] { });
+
         public static readonly Core.Invokers.FieldMutateInvoker<UnityEngine_Vector3_Alias> __IAPI_m_spawnPoint_Invoker = new Core.Invokers.FieldMutateInvoker<UnityEngine_Vector3_Alias>(typeof(BaseAI_Alias), "m_spawnPoint");
 
         public static readonly Core.Invokers.VoidMethodInvoker __IAPI_RandomMovement_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(BaseAI_Alias), "RandomMovement", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(float), false), new Core.Signatures.NonGenericParamSig(typeof(UnityEngine_Vector3_Alias), false), new Core.Signatures.NonGenericParamSig(typeof(bool), false) });
@@ -61,6 +63,7 @@ namespace OfTamingAndBreeding.ValheimAPI
         public static readonly Core.Invokers.VoidMethodInvoker __IAPI_MoveToWater_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(BaseAI_Alias), "MoveToWater", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(float), false), new Core.Signatures.NonGenericParamSig(typeof(float), false) });
 
         public static readonly Core.Invokers.TypedMethodInvoker<bool> __IAPI_Flee_Invoker1 = new Core.Invokers.TypedMethodInvoker<bool>(typeof(BaseAI_Alias), "Flee", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(float), false), new Core.Signatures.NonGenericParamSig(typeof(UnityEngine_Vector3_Alias), false) });
+
 
     }
 }
