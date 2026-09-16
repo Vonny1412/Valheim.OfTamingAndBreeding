@@ -28,7 +28,7 @@ namespace OfTamingAndBreeding.Patches
                 // item in slot is different, continue
                 return true;
             }
-            if (StaticContext.ItemDataContext.IsRegisteredEggSharedName(item.m_shared.m_name) == false)
+            if (Runtime.ItemDataContext.IsRegisteredEggSharedName(item.m_shared.m_name) == false)
             {
                 // is not a registered egg item, continue
                 return true;

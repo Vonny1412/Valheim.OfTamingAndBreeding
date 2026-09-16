@@ -10,14 +10,14 @@ namespace OfTamingAndBreeding.Patches
         private static void Humanoid_DropItem_Prefix(Humanoid __instance)
         {
             // entry point for RequireFoodDroppedByPlayer-feature
-            StaticContext.ItemDropContext.DroppedByPlayer = __instance.IsPlayer();
+            Runtime.ItemDropContext.DroppedByPlayer = __instance.IsPlayer();
         }
 
         [HarmonyPatch(typeof(Humanoid), "DropItem")]
         [HarmonyFinalizer]
         private static void Humanoid_DropItem_Finalizer()
         {
-            StaticContext.ItemDropContext.Clear();
+            Runtime.ItemDropContext.Clear();
         }
 
     }

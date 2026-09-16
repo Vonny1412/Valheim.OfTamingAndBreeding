@@ -1,4 +1,4 @@
-﻿using OfTamingAndBreeding.Components.Base;
+﻿using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.ValheimAPI;
 using System;

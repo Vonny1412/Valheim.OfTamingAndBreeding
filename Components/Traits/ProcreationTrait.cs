@@ -1,6 +1,6 @@
-﻿using OfTamingAndBreeding.Components.Base;
+﻿using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Extensions;
-using OfTamingAndBreeding.OTABUtils;
+using OfTamingAndBreeding.Utilities;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -59,7 +59,7 @@ namespace OfTamingAndBreeding.Components.Traits
             _offspringData = new List<ProcreationOffspring[]>();
             _maxCreaturesPrefabs = new List<string[]>();
 
-            Net.NetworkSessionManager.OnSessionClosed += () => {
+            Network.NetworkSessionManager.OnSessionClosed += () => {
                 _partnerData.Clear();
                 _offspringData.Clear();
                 _maxCreaturesPrefabs.Clear();
@@ -226,7 +226,7 @@ namespace OfTamingAndBreeding.Components.Traits
             var duration = GetRealPregnancyDuration();
             double secLeft = duration - (zTime - dateTime).TotalSeconds;
 
-            return OTABUtils.StringUtils.FormatRelativeTime(
+            return Utilities.StringUtils.FormatRelativeTime(
                 secLeft,
                 labelPositive: "$otab_hover_pregnancy_due",
                 labelPositiveAlt: "$otab_hover_pregnancy_due_alt",
@@ -687,7 +687,18 @@ namespace OfTamingAndBreeding.Components.Traits
                 m_procreation.m_birthEffects.Create(spawned.transform.position, Quaternion.identity);
 
                 // CLLC traits (it also takes care if the spawned object is an egg or growup)
-                ThirdParty.Mods.CllCBridge.BequeathTraits(m_nview.GetComponent<Character>(), m_partnerPrefab, spawned);
+                Integrations.Mods.CllCBridge.BequeathTraits(m_nview.GetComponent<Character>(), m_partnerPrefab, spawned);
+
+                // todo: problem:
+                // what happens when an egg gets stacked?
+                // Egg1 with trait1 gets stacked into Egg2 with trait2. Egg1 (and also trait1) gets destroyed
+                // Result: We now got to eggs (Egg2 with stacksize of 2) with trait2
+                // when does an item can get stacked?
+                // - user pick up item in invetory and drops on other item with same type
+                // - valheims auto stacking of dropped items
+                // - an other mod could just say: remove item 1 and set stacksize of item 2 to +1
+                // therefore: we cannot garuantee to pass correct traits over to eggs
+                // but wait... it that a problem otab should care about? cllc should handle it itself
 
                 //---------------------------------
                 // sibling handling & reset

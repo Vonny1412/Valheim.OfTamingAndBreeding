@@ -1,6 +1,6 @@
-﻿using OfTamingAndBreeding.Components.Base;
+﻿using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Extensions;
-using OfTamingAndBreeding.OTABUtils;
+using OfTamingAndBreeding.Utilities;
 using OfTamingAndBreeding.ValheimAPI;
 using System;
 using System.Collections.Generic;
@@ -26,7 +26,7 @@ namespace OfTamingAndBreeding.Components.Traits
         {
             _consumeItemData = new List<ConsumeItem[]>();
 
-            Net.NetworkSessionManager.OnSessionClosed += () => {
+            Network.NetworkSessionManager.OnSessionClosed += () => {
                 _consumeItemData.Clear();
             };
         }

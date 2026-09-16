@@ -2,7 +2,8 @@
 using BepInEx.Bootstrap;
 using Jotunn.Utils;
 using OfTamingAndBreeding.Components.Traits;
-using OfTamingAndBreeding.ThirdParty.Mods;
+using OfTamingAndBreeding.Processing.Core;
+using OfTamingAndBreeding.Integrations.Mods;
 using System;
 using System.IO;
 
@@ -14,14 +15,14 @@ namespace OfTamingAndBreeding
     [BepInDependency(ValheimPlusCompatibility.PluginGUID, BepInDependency.DependencyFlags.SoftDependency)]
     [BepInDependency("Vonny1412.HoldToCommand",     BepInDependency.DependencyFlags.SoftDependency)]
     [NetworkCompatibility(CompatibilityLevel.ClientMustHaveMod, VersionStrictness.Patch)] // ensure client has this mod with correct version
-
+    
     public sealed partial class Plugin : BaseUnityPlugin
     {
         private static readonly string[] toleratedMods = new string[] {
             "oldmankatan.mods.tamesfollow",
             "com.L3ca.Beyondthepen",
         };
-
+        
         private static readonly string[] incompatibleMods = new string[] {
             "meldurson.valheim.AllTameable",
             "maxfoxgaming.procreationplus",
@@ -40,43 +41,11 @@ namespace OfTamingAndBreeding
         internal static void LogInfo(object data) => Instance.Logger.LogInfo(data);
         internal static void LogDebug(object data) => Instance.Logger.LogDebug(data);
 
-        internal static void LogServerWarning(object data)
-        {
-            if (Net.NetworkSessionManager.IsServer())
-            {
-                LogWarning(data);
-            }
-        }
-
-        internal static void LogServerMessage(object data)
-        {
-            if (Net.NetworkSessionManager.IsServer())
-            {
-                LogMessage(data);
-            }
-        }
-
-        internal static void LogServerInfo(object data)
-        {
-            if (Net.NetworkSessionManager.IsServer())
-            {
-                LogInfo(data);
-            }
-        }
-
-        internal static void LogServerDebug(object data)
-        {
-            if (Net.NetworkSessionManager.IsServer())
-            {
-                LogDebug(data);
-            }
-        }
-
         private bool CheckModsInChainloader()
         {
             foreach (var guid in toleratedMods)
             {
-                if (ThirdParty.ThirdPartyManager.TryGetPluginMetadata(guid, out var meta))
+                if (Integrations.ThirdPartyManager.TryGetPluginMetadata(guid, out var meta))
                 {
                     LogWarning($"Mod '{meta.Name}' may not be compatible with OTAB");
                 }
@@ -84,7 +53,7 @@ namespace OfTamingAndBreeding
             var allOkay = true;
             foreach (var guid in incompatibleMods)
             {
-                if (ThirdParty.ThirdPartyManager.TryGetPluginMetadata(guid, out var meta))
+                if (Integrations.ThirdPartyManager.TryGetPluginMetadata(guid, out var meta))
                 {
                     LogFatal($"Mod '{meta.Name}' is not compatible with OTAB");
                     allOkay = false;
@@ -140,26 +109,26 @@ namespace OfTamingAndBreeding
 
             Configs.Initialize(Config);
 
-            ThirdParty.ThirdPartyManager.RegisterBridges();
+            Integrations.ThirdPartyManager.RegisterBridges();
 
-            Net.NetworkSessionManager.RegisterRPCs();
-            Net.NetworkSessionManager.OnSessionStarted += OnNetworkSessionStarted;
-            Net.NetworkSessionManager.OnSessionReady += OnNetworkSessionReady;
-            Net.NetworkSessionManager.OnSessionClosed += OnNetworkSessionClosed;
-            Net.NetworkSessionManager.OnSessionError += OnNetworkSessionError;
+            Network.NetworkSessionManager.RegisterRPCs();
+            Network.NetworkSessionManager.OnSessionStarted += OnNetworkSessionStarted;
+            Network.NetworkSessionManager.OnSessionReady += OnNetworkSessionReady;
+            Network.NetworkSessionManager.OnSessionClosed += OnNetworkSessionClosed;
+            Network.NetworkSessionManager.OnSessionError += OnNetworkSessionError;
         }
 
         private static void OnNetworkSessionStarted()
         {
-            if (Net.NetworkSessionManager.IsServer())
+            if (Network.NetworkSessionManager.IsServer())
             {
                 if (Configs.DumpPrefabsToCache.Value == true)
                 {
-                    OTABUtils.PrefabUtils.DumpPrefabs(Path.Combine(CacheDir, "prefabs"));
+                    Utilities.PrefabUtils.DumpPrefabs(Path.Combine(CacheDir, "prefabs"));
                 }
             }
 
-            StaticContext.ZNetSceneContext.Block();
+            Runtime.ZNetSceneContext.Block();
             OnSessionStarted();
         }
 
@@ -180,9 +149,9 @@ namespace OfTamingAndBreeding
             ProcreationTrait.AddComponentToPrefabs(typeof(Procreation));
             PetTrait.AddComponentToPrefabs(typeof(Pet));
 
-            if (Registry.DataProcessingManager.IsDataLoaded())
+            if (DataProcessingManager.IsDataLoaded())
             {
-                foreach (var p in Registry.DataProcessingManager.IterDataProcessors())
+                foreach (var p in DataProcessingManager.IterDataProcessors())
                 {
                     LogInfo($"Loaded {p.GetLoadedDataCount()} {p.ModelTypeName} entries");
                 }
@@ -194,14 +163,14 @@ namespace OfTamingAndBreeding
                 LogInfo("No server sync detected (timeout). Running in vanilla mode.");
             }
 
-            StaticContext.ZNetSceneContext.Unblock();
+            Runtime.ZNetSceneContext.Unblock();
             OnSessionReady();
         }
 
         private static void OnNetworkSessionClosed()
         {
             Patches.DataReadyPatches.Uninstall();
-            Components.Base.OTABComponentRegistry.RemoveComponentsFromPrefabs();
+            Components.Core.OTABComponentRegistry.RemoveComponentsFromPrefabs();
 
             OnSessionClosed();
             isAdmin = false;
@@ -209,8 +178,26 @@ namespace OfTamingAndBreeding
 
         private static void OnNetworkSessionError()
         {
-            StaticContext.ZNetSceneContext.Clear();
-            Game.instance.Logout(save: false, changeToStartScene: true);
+            static void Logout()
+            {
+                Runtime.ZNetSceneContext.Clear();
+                Game.instance.Logout(save: false, changeToStartScene: true);
+            }
+            if (UnifiedPopup.IsAvailable())
+            {
+                UnifiedPopup.Push(
+                    new WarningPopup(
+                        "Of Taming And Breeding",
+                        "There was an error loading OTAB data. Please check your LogOutput.log for details.",
+                        () => Logout(),
+                        false
+                    )
+                );
+            }
+            else
+            {
+                Logout();
+            }
         }
 
         private static bool? isAdmin = null;
@@ -232,7 +219,7 @@ namespace OfTamingAndBreeding
 
         public static bool IsServerDataLoaded()
         {
-            return Registry.DataProcessingManager.IsDataLoaded();
+            return DataProcessingManager.IsDataLoaded();
         }
         
         public static void OnSessionStarted()

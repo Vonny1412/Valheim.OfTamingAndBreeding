@@ -1,7 +1,7 @@
 ﻿using HarmonyLib;
 using OfTamingAndBreeding.Components;
 using OfTamingAndBreeding.Components.Traits;
-using OfTamingAndBreeding.OTABUtils;
+using OfTamingAndBreeding.Utilities;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Patches

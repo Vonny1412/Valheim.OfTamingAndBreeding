@@ -1,4 +1,4 @@
-﻿using OfTamingAndBreeding.Components.Base;
+﻿using OfTamingAndBreeding.Components.Core;
 using System;
 using System.Collections.Generic;
 using System.Text;

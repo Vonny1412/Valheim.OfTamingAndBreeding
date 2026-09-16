@@ -1,8 +1,8 @@
 ﻿using Jotunn;
 using Jotunn.Utils;
-using OfTamingAndBreeding.Components.Base;
+using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Extensions;
-using OfTamingAndBreeding.Data.Files.SubData;
+using OfTamingAndBreeding.Data.Models.SubData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -430,7 +430,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 foreach (var item in customItems)
                 {
                     var displayName = L.Localize(item.itemDrop.m_itemData.m_shared.m_name);
-                    var displayColor = OTABUtils.ColorUtils.GetColorBetween(
+                    var displayColor = Utilities.ColorUtils.GetColorBetween(
                         Plugin.Configs.HoverColorBad.Value,
                         Plugin.Configs.HoverColorNormal.Value,
                         Plugin.Configs.HoverColorGood.Value,

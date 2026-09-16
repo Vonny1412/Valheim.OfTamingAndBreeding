@@ -9,7 +9,7 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPostfix]
         private static void ZNet_Start_Postfix()
         {
-            Net.NetworkSessionManager.StartSession();
+            Network.NetworkSessionManager.StartSession();
         }
 
         [HarmonyPatch(typeof(ZNet), "RPC_PeerInfo")]
@@ -18,7 +18,7 @@ namespace OfTamingAndBreeding.Patches
         {
             // using ZNet.RPC_PeerInfo as anchor because
             // we need to handshake AFTER client login on server
-            Net.NetworkSessionManager.RequestHandshakeWithServer();
+            Network.NetworkSessionManager.RequestHandshakeWithServer();
         }
         
     }

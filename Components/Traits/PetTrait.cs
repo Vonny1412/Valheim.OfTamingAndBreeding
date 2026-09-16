@@ -1,5 +1,5 @@
-﻿using OfTamingAndBreeding.Components.Base;
-using OfTamingAndBreeding.OTABUtils;
+﻿using OfTamingAndBreeding.Components.Core;
+using OfTamingAndBreeding.Utilities;
 using OfTamingAndBreeding.ValheimAPI;
 using System;
 using System.Collections.Generic;

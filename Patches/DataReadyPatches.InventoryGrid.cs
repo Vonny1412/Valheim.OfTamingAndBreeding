@@ -16,7 +16,7 @@ namespace OfTamingAndBreeding.Patches
             if (item?.m_shared == null || itemAt?.m_shared == null) return true;
             if (item.m_shared.m_name != itemAt.m_shared.m_name) return true;
 
-            if (StaticContext.ItemDataContext.IsRegisteredEggSharedName(item.m_shared.m_name))
+            if (Runtime.ItemDataContext.IsRegisteredEggSharedName(item.m_shared.m_name))
             {
                 // both are otab-eggs
                 if (itemAt.m_quality != item.m_quality)

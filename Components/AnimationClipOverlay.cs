@@ -1,5 +1,5 @@
-﻿using OfTamingAndBreeding.Components.Base;
-using OfTamingAndBreeding.OTABUtils;
+﻿using OfTamingAndBreeding.Components.Core;
+using OfTamingAndBreeding.Utilities;
 using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;

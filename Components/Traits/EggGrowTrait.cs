@@ -1,10 +1,11 @@
-﻿using OfTamingAndBreeding.Components.Base;
+﻿using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Extensions;
-using OfTamingAndBreeding.OTABUtils;
+using OfTamingAndBreeding.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using static Version;
 
 namespace OfTamingAndBreeding.Components.Traits
 {
@@ -38,7 +39,7 @@ namespace OfTamingAndBreeding.Components.Traits
             _requireGlobalKeys = new List<List<string[]>>();
             _grownListByIndex = new List<EggGrown[]>();
 
-            Net.NetworkSessionManager.OnSessionClosed += () => {
+            Network.NetworkSessionManager.OnSessionClosed += () => {
                 _requireGlobalKeys.Clear();
                 _grownListByIndex.Clear();
             };
@@ -65,12 +66,17 @@ namespace OfTamingAndBreeding.Components.Traits
 
         // set in registration
         [SerializeField] public Heightmap.Biome m_requireBiome = Heightmap.Biome.None;
-        [SerializeField] public OTABUtils.EnvironmentUtils.LiquidTypeEx m_requireLiquid = OTABUtils.EnvironmentUtils.LiquidTypeEx.None;
+        [SerializeField] public Utilities.EnvironmentUtils.LiquidTypeEx m_requireLiquid = Utilities.EnvironmentUtils.LiquidTypeEx.None;
         [SerializeField] public float m_requireLiquidDepth = 0;
         [SerializeField] private int m_requireGlobalKeysIndex = -1;
         [SerializeField] private int m_grownListIndex = -1;
 
         private void Awake()
+        {
+            Register(this);
+        }
+
+        private void Start()
         {
             m_nview = GetComponent<ZNetView>();
             m_eggGrow = GetComponent<EggGrow>();
@@ -86,8 +92,6 @@ namespace OfTamingAndBreeding.Components.Traits
             }
 
             UpdateGrowTime();
-
-            Register(this);
         }
 
         private void OnDestroy()
@@ -164,7 +168,7 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 return true;
             }
-            return OTABUtils.EnvironmentUtils.IsInBiome(position, m_requireBiome);
+            return Utilities.EnvironmentUtils.IsInBiome(position, m_requireBiome);
         }
 
         public bool OnValidGround(Vector3 position)
@@ -177,8 +181,8 @@ namespace OfTamingAndBreeding.Components.Traits
             var liquidDepth = m_requireLiquidDepth;
             return liquidType switch
             {
-                OTABUtils.EnvironmentUtils.LiquidTypeEx.Water => OTABUtils.EnvironmentUtils.IsInWater(position, liquidDepth),
-                OTABUtils.EnvironmentUtils.LiquidTypeEx.Tar => OTABUtils.EnvironmentUtils.IsInTar(position, liquidDepth),
+                Utilities.EnvironmentUtils.LiquidTypeEx.Water => Utilities.EnvironmentUtils.IsInWater(position, liquidDepth),
+                Utilities.EnvironmentUtils.LiquidTypeEx.Tar => Utilities.EnvironmentUtils.IsInTar(position, liquidDepth),
                 // todo: lava?
                 _ => true,
             };
@@ -340,7 +344,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
                 if (InValidBiome(position) == false)
                 {
-                    var biomes = OTABUtils.EnvironmentUtils.UnMaskBiomes(m_requireBiome);
+                    var biomes = Utilities.EnvironmentUtils.UnMaskBiomes(m_requireBiome);
                     var outList = String.Join(" / ", biomes.Select((b) => Localization.instance.Localize(biomeLangKeys[b])));
                     return Localization.instance.Localize("$otab_egg_requires_biome", outList);
                 }
@@ -349,10 +353,10 @@ namespace OfTamingAndBreeding.Components.Traits
                 {
                     switch (m_requireLiquid)
                     {
-                        case OTABUtils.EnvironmentUtils.LiquidTypeEx.Water:
+                        case Utilities.EnvironmentUtils.LiquidTypeEx.Water:
                             return Localization.instance.Localize("$otab_egg_requires_water");
 
-                        case OTABUtils.EnvironmentUtils.LiquidTypeEx.Tar:
+                        case Utilities.EnvironmentUtils.LiquidTypeEx.Tar:
                             return Localization.instance.Localize("$otab_egg_requires_tar");
 
                     }
@@ -513,7 +517,7 @@ namespace OfTamingAndBreeding.Components.Traits
                     }
                 }
 
-                ThirdParty.Mods.CllCBridge.PassTraits(zdo, spawned);
+                Integrations.Mods.CllCBridge.PassTraits(zdo, spawned);
 
                 if (showHatchEffect)
                 {

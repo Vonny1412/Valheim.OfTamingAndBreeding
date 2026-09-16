@@ -14,7 +14,7 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPostfix]
         private static void ItemDrop_DropItem_Postfix(ItemDrop __instance, ItemDrop.ItemData item, int amount, Vector3 position, Quaternion rotation, ItemDrop __result)
         {
-            if (StaticContext.ItemDropContext.DroppedByPlayer)
+            if (Runtime.ItemDropContext.DroppedByPlayer)
             {
                 var trait = ItemDropTrait.GetUnsafe(__result.gameObject);
                 trait.SetDroppedByPlayer();
@@ -30,9 +30,9 @@ namespace OfTamingAndBreeding.Patches
             // thats why we need to patch this one to pass the flags to Tameable_OnConsumedItem_Patch
             var trait = ItemDropTrait.GetUnsafe(__instance.gameObject);
 
-            StaticContext.ItemConsumeContext.hasValue = true;
-            StaticContext.ItemConsumeContext.lastItemDroppedByPlayer = trait.IsDroppedByPlayer();
-            StaticContext.ItemConsumeContext.lastItemInstanceID = __instance.GetInstanceID();
+            Runtime.ItemConsumeContext.hasValue = true;
+            Runtime.ItemConsumeContext.lastItemDroppedByPlayer = trait.IsDroppedByPlayer();
+            Runtime.ItemConsumeContext.lastItemInstanceID = __instance.GetInstanceID();
 
             // do return nothing (always call original method)
         }

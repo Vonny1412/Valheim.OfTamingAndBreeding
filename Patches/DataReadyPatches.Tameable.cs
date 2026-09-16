@@ -24,7 +24,7 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyFinalizer]
         private static void Tameable_OnConsumedItem_Finalizer(Exception __exception)
         {
-            StaticContext.ItemConsumeContext.Clear();
+            Runtime.ItemConsumeContext.Clear();
         }
 
         [HarmonyPatch(typeof(Tameable), "TamingUpdate")]

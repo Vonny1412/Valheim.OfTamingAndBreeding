@@ -1,6 +1,6 @@
-﻿using OfTamingAndBreeding.Components.Base;
+﻿using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Extensions;
-using OfTamingAndBreeding.OTABUtils;
+using OfTamingAndBreeding.Utilities;
 using OfTamingAndBreeding.ValheimAPI;
 using System;
 using System.Collections.Generic;
@@ -18,7 +18,7 @@ namespace OfTamingAndBreeding.Components.Traits
         {
             _requireGlobalKeys = new List<List<string[]>>();
 
-            Net.NetworkSessionManager.OnSessionClosed += () => {
+            Network.NetworkSessionManager.OnSessionClosed += () => {
                 _requireGlobalKeys.Clear();
             };
         }
@@ -252,9 +252,9 @@ namespace OfTamingAndBreeding.Components.Traits
 
             if (Plugin.Configs.RequireFoodDroppedByPlayer.Value)
             {
-                if (StaticContext.ItemConsumeContext.hasValue && item && StaticContext.ItemConsumeContext.lastItemInstanceID == item.GetInstanceID())
+                if (Runtime.ItemConsumeContext.hasValue && item && Runtime.ItemConsumeContext.lastItemInstanceID == item.GetInstanceID())
                 {
-                    var droppedByAnyPlayer = StaticContext.ItemConsumeContext.lastItemDroppedByPlayer;
+                    var droppedByAnyPlayer = Runtime.ItemConsumeContext.lastItemDroppedByPlayer;
                     if (droppedByAnyPlayer == false)
                     {
                         // definitly not dropped by player
@@ -335,7 +335,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 // is fed
                 if (Plugin.Configs.HoverShowFedTimer.Value)
                 {
-                    return OTABUtils.StringUtils.FormatRelativeTime(
+                    return Utilities.StringUtils.FormatRelativeTime(
                         secondsFedLeft,
                         labelPositive:      "$otab_hover_fed",
                         labelPositiveAlt:   "$otab_hover_fed_alt",
