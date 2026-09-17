@@ -2,8 +2,8 @@
 using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Data.Models.SubData;
-using OfTamingAndBreeding.Utilities;
 using OfTamingAndBreeding.Processing.Core;
+using OfTamingAndBreeding.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -37,7 +37,7 @@ namespace OfTamingAndBreeding.Registry.Processing
         public override bool ValidateData(string creatureName, CreatureFile data)
         {
             var model = $"{nameof(CreatureFile)}.{creatureName}";
-            var error = false;
+            var valid = true;
 
             switch (data.Components.Character)
             {
@@ -48,7 +48,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     if (data.Character == null)
                     {
                         Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Character)}({nameof(ComponentBehavior.Patch)}): Missing component data");
-                        error = true;
+                        valid = false;
                     }
                     break;
                 case ComponentBehavior.Inherit:
@@ -68,7 +68,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     if (data.MonsterAI == null)
                     {
                         Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}({nameof(ComponentBehavior.Patch)}): Missing component data");
-                        error = true;
+                        valid = false;
                     }
                     break;
                 case ComponentBehavior.Inherit:
@@ -79,13 +79,33 @@ namespace OfTamingAndBreeding.Registry.Processing
                     break;
             }
 
+            switch (data.Components.AnimalAI)
+            {
+                case ComponentBehavior.Remove:
+                    Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.AnimalAI)}({nameof(ComponentBehavior.Remove)}): Component cannot be removed");
+                    break;
+                case ComponentBehavior.Patch:
+                    if (data.AnimalAI == null)
+                    {
+                        Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.AnimalAI)}({nameof(ComponentBehavior.Patch)}): Missing component data");
+                        valid = false;
+                    }
+                    break;
+                case ComponentBehavior.Inherit:
+                    if (data.AnimalAI != null)
+                    {
+                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.AnimalAI)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
+                    }
+                    break;
+            }
+
             switch (data.Components.Tameable)
             {
                 case ComponentBehavior.Patch:
                     if (data.Tameable == null)
                     {
                         Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Tameable)}({nameof(ComponentBehavior.Patch)}): Missing component data");
-                        error = true;   
+                        valid = false;   
                     }
                     break;
                 case ComponentBehavior.Inherit:
@@ -102,7 +122,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     if (data.Procreation == null)
                     {
                         Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Procreation)}({nameof(ComponentBehavior.Patch)}): Missing component data");
-                        error = true;
+                        valid = false;
                     }
                     break;
                 case ComponentBehavior.Inherit:
@@ -116,15 +136,6 @@ namespace OfTamingAndBreeding.Registry.Processing
             if (data.Character != null && data.Components.Character == ComponentBehavior.Patch)
             {
                 // nothing to validate here
-            }
-
-            if (data.MonsterAI != null && data.Components.MonsterAI == ComponentBehavior.Patch)
-            {
-                if (data.MonsterAI.ConsumeItems == null)
-                {
-                    // null = keep original
-                    // empty list = clear: wont eat anything
-                }
             }
 
             if (data.Procreation != null && data.Components.Procreation == ComponentBehavior.Patch)
@@ -157,7 +168,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                         if (partnerData.Prefab == null)
                         {
                             Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Partner)}.{i}.{nameof(partnerData.Prefab)}: Field is empty");
-                            error = true;
+                            valid = false;
                         }
                     }
                 }
@@ -165,7 +176,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 if (data.Procreation.Offspring == null || data.Procreation.Offspring.Length == 0)
                 {
                     Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}: Field is required but null or empty");
-                    error = true;
+                    valid = false;
                 }
                 else
                 {
@@ -175,28 +186,14 @@ namespace OfTamingAndBreeding.Registry.Processing
                         if (offspringData.Prefab == null)
                         {
                             Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.Prefab)}: Field is empty");
-                            error = true;
+                            valid = false;
                         }
-                        /*
-                        if (offspringData.LevelUpChance != null && offspringData.MaxLevel == null)
-                        {
-                            Plugin.LogServerWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.LevelUpChance)}: Field needs 'MaxLevel' to be set.");
-                            offspringData.LevelUpChance = null;
-                            // no error
-                        }
-                        if (offspringData.MaxLevel != null && offspringData.MaxLevel <= 0)
-                        {
-                            Plugin.LogServerWarning($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.MaxLevel)}: Invalid value '{offspringData.MaxLevel}' - Setting to 0");
-                            offspringData.MaxLevel = 1;
-                            // no error
-                        }
-                        */
                     }
                 }
 
             }
 
-            return error == false;
+            return valid;
         }
 
         //------------------------------------------------
@@ -234,27 +231,30 @@ namespace OfTamingAndBreeding.Registry.Processing
         public override bool ValidatePrefab(string creatureName, CreatureFile data)
         {
             var model = $"{nameof(CreatureFile)}.{creatureName}";
-            var error = false;
+            var valid = true;
 
             var creature = OTABPrefabRegistry.Instance.GetReservedPrefab(creatureName);
             if (!creature)
             {
                 Plugin.LogError($"{model}: Prefab not found");
-                error = true;
+                valid = false;
             }
             else
             {
 
-                if (!creature.GetComponent<MonsterAI>() && !creature.GetComponent<AnimalAI>())
+                var monsterAI = creature.GetComponent<MonsterAI>();
+                var animalAI = creature.GetComponent<AnimalAI>();
+
+                if (!monsterAI && !animalAI)
                 {
                     Plugin.LogError($"{model}: Prefab has no supported AI");
-                    error = true;
+                    valid = false;
                 }
 
                 if (!creature.GetComponent<Character>())
                 {
                     Plugin.LogError($"{model}: Prefab has no Character");
-                    error = true;
+                    valid = false;
                 }
 
                 var hasProcreation = (bool)creature.GetComponent<Procreation>();
@@ -263,39 +263,10 @@ namespace OfTamingAndBreeding.Registry.Processing
                 bool wantTameableActive = data.Components.Tameable != ComponentBehavior.Remove && (hasTameable || data.Components.Tameable == ComponentBehavior.Patch);
                 if (wantProcreationActive && !wantTameableActive)
                 {
-                    Plugin.LogWarning($"{model}.{nameof(data.Procreation)}: Component requires {nameof(data.Tameable)}");
-                    //error = true;
+                    Plugin.LogError($"{model}.{nameof(data.Procreation)}: Component requires {nameof(data.Tameable)}");
+                    valid = false;
                 }
 
-            }
-
-            if (data.MonsterAI != null && data.Components.MonsterAI == ComponentBehavior.Patch)
-            {
-                if (data.MonsterAI.ConsumeItems != null)
-                {
-                    data.MonsterAI.ConsumeItems = data.MonsterAI.ConsumeItems.Where((CreatureFile.MonsterAIConsumItemData foodData, int i) => {
-
-                        var foodItem = OTABPrefabRegistry.Instance.GetCustomPrefab(foodData.Prefab)
-                                    ?? OTABPrefabRegistry.Instance.GetOriginalPrefab(foodData.Prefab);
-                        if (foodItem == null)
-                        {
-                            Plugin.LogWarning($"{model}.{nameof(data.MonsterAI)}.{nameof(data.MonsterAI.ConsumeItems)}.{i}.{nameof(foodData.Prefab)}: '{foodData.Prefab}' not found");
-                            return false;
-                        }
-                        else
-                        {
-                            var foodItemDrop = foodItem.GetComponent<ItemDrop>();
-                            if (foodItemDrop == null)
-                            {
-                                Plugin.LogError($"{model}.{nameof(data.MonsterAI)}.{nameof(data.MonsterAI.ConsumeItems)}.{i}.{nameof(foodData.Prefab)}: '{foodData.Prefab}' has no ItemDrop component");
-                                error = true;
-                                return false;
-                            }
-                        }
-                        return true;
-
-                    }).ToArray();
-                }
             }
 
             if (data.Procreation != null && data.Components.Procreation == ComponentBehavior.Patch)
@@ -308,7 +279,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                         if (!OTABPrefabRegistry.Instance.PrefabExists(partnerData.Prefab))
                         {
                             Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Partner)}.{i}.{nameof(partnerData.Prefab)}: '{partnerData.Prefab}' not found");
-                            error = true;
+                            valid = false;
                         }
                     }
                 }
@@ -319,7 +290,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     if (!OTABPrefabRegistry.Instance.PrefabExists(offspringData.Prefab))
                     {
                         Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.Prefab)}: '{offspringData.Prefab}' not found");
-                        error = true;
+                        valid = false;
                     }
 
                     if (offspringData.NeedPartner == false)
@@ -332,7 +303,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                         if (!OTABPrefabRegistry.Instance.PrefabExists(offspringData.NeedPartnerPrefab))
                         {
                             Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.Offspring)}.{i}.{nameof(offspringData.NeedPartnerPrefab)}: '{offspringData.NeedPartnerPrefab}' not found");
-                            error = true;
+                            valid = false;
                         }
                     }
                 }
@@ -344,7 +315,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                         if (!OTABPrefabRegistry.Instance.PrefabExists(prefabName))
                         {
                             Plugin.LogError($"{model}.{nameof(data.Procreation)}.{nameof(data.Procreation.MaxCreaturesCountPrefabs)}.{i}: '{prefabName}' not found");
-                            error = true;
+                            valid = false;
                         }
                     }
                 }
@@ -352,7 +323,7 @@ namespace OfTamingAndBreeding.Registry.Processing
 
             }
 
-            return error == false;
+            return valid;
         }
 
         //------------------------------------------------
@@ -368,11 +339,12 @@ namespace OfTamingAndBreeding.Registry.Processing
         // EDIT PREFAB
         //------------------------------------------------
 
-        public override void EditPrefab(string creatureName, CreatureFile data)
+        public override bool EditPrefab(string creatureName, CreatureFile data)
         {
             var model = $"{nameof(CreatureFile)}.{creatureName}";
-            var creature = OTABPrefabRegistry.Instance.GetReservedPrefab(creatureName);
+            var valid = true;
 
+            var creature = OTABPrefabRegistry.Instance.GetReservedPrefab(creatureName);
             var idleSoundPrefab = Utilities.PrefabUtils.FindEffectPrefab<BaseAI>(creatureName, "m_idleSound", 0);
 
             if (data.Components.Character == ComponentBehavior.Patch)
@@ -412,6 +384,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     characterTrait.m_tamedVersusTamed = data.Character.TamedVersusTamed;
                     characterTrait.m_tamedVersusWild = data.Character.TamedVersusWild;
 
+
                 }
             }
             else if (data.Components.Character == ComponentBehavior.Remove)
@@ -419,109 +392,197 @@ namespace OfTamingAndBreeding.Registry.Processing
                 // ignore, cannot be removed
             }
 
-            if (data.Components.MonsterAI == ComponentBehavior.Patch)
+
+
+
+
+
+
+            var monsterAI = creature.GetComponent<MonsterAI>();
+            var animalAI = creature.GetComponent<AnimalAI>();
+
+
+            /*
+
+            maybe use this?
+
+private struct ResolvedBaseAIData
+{
+    public CreatureFile.BaseAIData Data;
+    public ComponentBehavior Behavior;
+    public string Name;
+}
+
+             * */
+
+
+
+            CreatureFile.BaseAIData data_BaseAI = null;
+            ComponentBehavior component_BaseAI = ComponentBehavior.Inherit;
+            string data_BaseAI_name = "";
+
+            if (monsterAI)
             {
-                if (data.MonsterAI != null)
+                if (data.Components.AnimalAI.HasValue == true)
                 {
-                    var monsterAI = creature.GetComponent<MonsterAI>();
-                    var animalAI = creature.GetComponent<AnimalAI>();
-                    //var baseAI = creature.GetComponent<BaseAI>();
-                    var baseAITrait = BaseAITrait.GetOrAddComponent(creature);
+                    Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.AnimalAI)}: Invalid presence because MonsterAI is present");
+                    valid = false;
+                }
+                if (data.Components.MonsterAI.HasValue == true)
+                {
+                    data_BaseAI = data.MonsterAI;
+                    component_BaseAI = data.Components.MonsterAI.Value;
+                    data_BaseAI_name = nameof(data.MonsterAI);
+                }
+                else
+                {
+                    Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}: Missing value");
+                    valid = false;
+                }
+            }
+            else if (animalAI)
+            {
+                if (data.Components.MonsterAI.HasValue == true)
+                {
+                    Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}: Invalid presence because AnimalAI is present");
+                    valid = false;
+                }
+                if (data.Components.AnimalAI.HasValue == true)
+                {
+                    data_BaseAI = data.AnimalAI;
+                    component_BaseAI = data.Components.AnimalAI.Value;
+                    data_BaseAI_name = nameof(data.AnimalAI);
+                }
+                else
+                {
+                    Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.AnimalAI)}: Missing value");
+                    valid = false;
+                }
+            }
+            else
+            {
+                Plugin.LogError($"{model}: Prefab has neither MonsterAI nor AnimalAI");
+                return false;
+            }
 
-                    BaseAITrait.ConsumeItem[] consumeItems = null;
+            if (component_BaseAI == ComponentBehavior.Patch)
+            {
+                //var baseAI = creature.GetComponent<BaseAI>();
+                var baseAITrait = BaseAITrait.GetOrAddComponent(creature);
 
-                    if (data.MonsterAI.ConsumeItems != null)
-                    {
-                        consumeItems = data.MonsterAI.ConsumeItems
-                            .OrderByDescending(i => i.FedDurationFactor)
-                            .Select((ci) =>
+                BaseAITrait.ConsumeItem[] consumeItems = null;
+
+                if (data_BaseAI.ConsumeItems != null)
+                {
+                    consumeItems = data_BaseAI.ConsumeItems
+                        .OrderByDescending(i => i.FedDurationFactor)
+                        .Select((ci, i) =>
+                        {
+                            var foodItem = OTABPrefabRegistry.Instance.GetCustomPrefab(ci.Prefab)
+                                        ?? OTABPrefabRegistry.Instance.GetOriginalPrefab(ci.Prefab);
+
+                            if (foodItem == null)
                             {
-                                var foodItem = OTABPrefabRegistry.Instance.GetCustomPrefab(ci.Prefab)
-                                            ?? OTABPrefabRegistry.Instance.GetOriginalPrefab(ci.Prefab);
-                                return new BaseAITrait.ConsumeItem
-                                {
-                                    itemDrop = foodItem.GetComponent<ItemDrop>(),
-                                    fedDurationFactor = ci.FedDurationFactor,
-                                };
-                            }).ToArray();
-                        baseAITrait.SetCustomConsumeItems(consumeItems);
-                    }
+                                Plugin.LogWarning($"{model}.{nameof(data.MonsterAI)}.{nameof(data.MonsterAI.ConsumeItems)}.{i}.{nameof(ci.Prefab)}: '{ci.Prefab}' not found");
+                                return null;
+                            }
+                            
+                            var foodItemDrop = foodItem.GetComponent<ItemDrop>();
+                            if (foodItemDrop == null)
+                            {
+                                Plugin.LogError($"{model}.{nameof(data.MonsterAI)}.{nameof(data.MonsterAI.ConsumeItems)}.{i}.{nameof(ci.Prefab)}: '{ci.Prefab}' has no ItemDrop component");
+                                valid = false;
+                                return null;
+                            }
+                            
+                            return new BaseAITrait.ConsumeItem
+                            {
+                                itemDrop = foodItemDrop,
+                                fedDurationFactor = ci.FedDurationFactor,
+                            };
+                        }).ToArray();
+                    baseAITrait.SetCustomConsumeItems(consumeItems);
+                }
 
-                    if (monsterAI != null)
+                if (monsterAI != null)
+                {
+
+                    Plugin.LogDebug($"{model}.{nameof(data_BaseAI_name)}: Setting MonsterAI values");
+
+                    if (data_BaseAI.ConsumeRange != null) monsterAI.m_consumeRange = (float)data_BaseAI.ConsumeRange;
+                    if (data_BaseAI.ConsumeSearchRange != null) monsterAI.m_consumeSearchRange = (float)data_BaseAI.ConsumeSearchRange;
+                    if (data_BaseAI.ConsumeSearchInterval != null) monsterAI.m_consumeSearchInterval = (float)data_BaseAI.ConsumeSearchInterval;
+
+                    if (consumeItems != null)
                     {
 
-                        Plugin.LogDebug($"{model}.{nameof(data.MonsterAI)}: Setting MonsterAI values");
+                        monsterAI.m_consumeItems = new List<ItemDrop>();
+                        foreach (var ci in consumeItems)
+                        {
+                            monsterAI.m_consumeItems.Add(ci.itemDrop);
+                        }
+                    }
+                }
+                else
+                {
+                    // we need to make pseudo MonsterAI
+                    if (animalAI != null)
+                    {
+                        Plugin.LogDebug($"{model}.{nameof(data_BaseAI_name)}: Setting custom AnimalAI values");
 
-                        if (data.MonsterAI.ConsumeRange != null) monsterAI.m_consumeRange = (float)data.MonsterAI.ConsumeRange;
-                        if (data.MonsterAI.ConsumeSearchRange != null) monsterAI.m_consumeSearchRange = (float)data.MonsterAI.ConsumeSearchRange;
-                        if (data.MonsterAI.ConsumeSearchInterval != null) monsterAI.m_consumeSearchInterval = (float)data.MonsterAI.ConsumeSearchInterval;
+                        var exAnimalAI = AnimalAITrait.GetOrAddComponent(creature);
 
+                        if (data_BaseAI.ConsumeRange != null) exAnimalAI.m_consumeRange = (float)data_BaseAI.ConsumeRange;
+                        if (data_BaseAI.ConsumeSearchRange != null) exAnimalAI.m_consumeSearchRange = (float)data_BaseAI.ConsumeSearchRange;
+                        if (data_BaseAI.ConsumeSearchInterval != null) exAnimalAI.m_consumeSearchInterval = (float)data_BaseAI.ConsumeSearchInterval;
+                            
                         if (consumeItems != null)
                         {
-
-                            monsterAI.m_consumeItems = new List<ItemDrop>();
+                            exAnimalAI.m_consumeItems = new List<ItemDrop>();
                             foreach (var ci in consumeItems)
                             {
-                                monsterAI.m_consumeItems.Add(ci.itemDrop);
+                                exAnimalAI.m_consumeItems.Add(ci.itemDrop);
                             }
                         }
+                    }
+                }
+
+                baseAITrait.m_tamedStayNearSpawn = data_BaseAI.TamedStayNearSpawn;
+
+
+                if (data_BaseAI.ConsumeAnimation != null)
+                {
+                    var customAnimation = data_BaseAI.ConsumeAnimation;
+                    if (customAnimation.ToLower() == "debug")
+                    {
+                        var zanim = creature.GetComponent<ZSyncAnimation>();
+                        AnimationUtils.DumpZSyncAnim(zanim, $"{model}:");
                     }
                     else
                     {
-                        // we need to make pseudo MonsterAI
-                        if (animalAI != null)
+                        if (AnimationUtils.AnimationExists(creature, customAnimation, out AnimationClip animClip))
                         {
-                            Plugin.LogDebug($"{model}.{nameof(data.MonsterAI)}: Setting custom AnimalAI values");
-
-                            var exAnimalAI = AnimalAITrait.GetOrAddComponent(creature);
-
-                            if (data.MonsterAI.ConsumeRange != null) exAnimalAI.m_consumeRange = (float)data.MonsterAI.ConsumeRange;
-                            if (data.MonsterAI.ConsumeSearchRange != null) exAnimalAI.m_consumeSearchRange = (float)data.MonsterAI.ConsumeSearchRange;
-                            if (data.MonsterAI.ConsumeSearchInterval != null) exAnimalAI.m_consumeSearchInterval = (float)data.MonsterAI.ConsumeSearchInterval;
-                            
-                            if (consumeItems != null)
-                            {
-                                exAnimalAI.m_consumeItems = new List<ItemDrop>();
-                                foreach (var ci in consumeItems)
-                                {
-                                    exAnimalAI.m_consumeItems.Add(ci.itemDrop);
-                                }
-                            }
-                        }
-                    }
-
-                    baseAITrait.m_tamedStayNearSpawn = data.MonsterAI.TamedStayNearSpawn;
-
-
-                    if (data.MonsterAI.ConsumeAnimation != null)
-                    {
-                        var customAnimation = data.MonsterAI.ConsumeAnimation;
-                        if (customAnimation.ToLower() == "debug")
-                        {
-                            var zanim = creature.GetComponent<ZSyncAnimation>();
-                            AnimationUtils.DumpZSyncAnim(zanim, $"{model}:");
+                            var runner = OTABPrefabRegistry.Instance.GetOrAddComponent<AnimationClipOverlay>(creatureName, creature);
+                            runner.m_animClipName = customAnimation;
                         }
                         else
                         {
-                            if (AnimationUtils.AnimationExists(creature, customAnimation, out AnimationClip animClip))
-                            {
-                                var runner = OTABPrefabRegistry.Instance.GetOrAddComponent<AnimationClipOverlay>(creatureName, creature);
-                                runner.m_animClipName = customAnimation;
-                            }
-                            else
-                            {
-                                Plugin.LogWarning($"{model}.{nameof(MonsterAI)}.{nameof(data.MonsterAI.ConsumeAnimation)}: Animation '{customAnimation}' not found on prefab '{creatureName}'. Custom consume animation ignored.");
-                            }
+                            Plugin.LogWarning($"{model}.{nameof(MonsterAI)}.{nameof(data_BaseAI.ConsumeAnimation)}: Animation '{customAnimation}' not found on prefab '{creatureName}'. Custom consume animation ignored.");
                         }
                     }
-
                 }
+
+                if (data_BaseAI.IdleSoundChanceWhenTamed.HasValue)
+                {
+                    // todo: validate and clamp 0-1
+                    baseAITrait.m_idleSoundChanceWhenTamed = data_BaseAI.IdleSoundChanceWhenTamed.Value;
+                }
+                
             }
-            else if (data.Components.MonsterAI == ComponentBehavior.Remove)
+            else if (component_BaseAI == ComponentBehavior.Remove)
             {
                 // ignore, cannot be removed
             }
-
 
             if (data.Components.Tameable == ComponentBehavior.Patch)
             {
@@ -658,8 +719,6 @@ namespace OfTamingAndBreeding.Registry.Processing
                     Plugin.LogDebug($"{model}.{nameof(data.Procreation)}: Setting Procreation values");
 
                     procreationTrait.m_procreateWhileSwimming = data.Procreation.ProcreateWhileSwimming; // todo: rename yaml option to: "DisableProcreationWhileSwimming"
-                    procreationTrait.m_maxSiblingsPerPregnancy = data.Procreation.MaxSiblingsPerPregnancy;
-                    procreationTrait.m_extraSiblingChance = data.Procreation.ExtraSiblingChance;
 
                     if (data.Procreation.Partner != null)
                     {
@@ -678,7 +737,6 @@ namespace OfTamingAndBreeding.Registry.Processing
                             needPartner: o.NeedPartner,
                             needPartnerPrefab: o.NeedPartnerPrefab,
                             levelUpChance: o.LevelUpChance ?? 0,
-                            //maxLevel: o.MaxLevel ?? 1,
                             spawnTamed: o.SpawnTamed
                         )).ToArray();
                         procreationTrait.SetOffspringList(offspringList);
@@ -761,6 +819,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 OTABPrefabRegistry.Instance.DestroyComponentIfExists<Procreation>(creatureName, creature);
             }
 
+            return valid;
         }
 
         //------------------------------------------------

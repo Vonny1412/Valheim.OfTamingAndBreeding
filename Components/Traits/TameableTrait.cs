@@ -292,7 +292,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
             var globalFactor = Plugin.Configs.GlobalFedDurationFactor.Value;
             var totalFactor = customFactor * globalFactor;
-            ZNetUtils.SetFloat(m_nview.GetZDO(), Plugin.ZDOVars.z_fedDurationFactor, customFactor);
+            ZDOUtils.SetFloat(m_nview.GetZDO(), Plugin.ZDOVars.z_fedDurationFactor, customFactor);
             m_nview.InvokeRPC(ZNetView.Everybody, "RPC_UpdateFedDuration", totalFactor);
             UpdateFedDuration(totalFactor);
 

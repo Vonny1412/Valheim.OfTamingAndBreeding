@@ -28,6 +28,7 @@ namespace OfTamingAndBreeding.Patches
             }
 
             var trait = ProcreationTrait.GetUnsafe(__instance.gameObject);
+            trait.SetRealPregnancyChance(__instance.m_pregnancyChance);
             if (trait.OnProcreate())
             {
                 return false;

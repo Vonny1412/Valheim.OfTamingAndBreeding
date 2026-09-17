@@ -43,21 +43,21 @@ namespace OfTamingAndBreeding.Registry.Processing
         public override bool ValidateData(string offspringName, OffspringFile data)
         {
             var model = $"{nameof(OffspringFile)}.{offspringName}";
-            var error = false;
+            var valid = true;
 
             if (data.Clone != null)
             {
                 if (data.Clone.Name == null)
                 {
                     Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.Name)}: Missing field");
-                    error = true;
+                    valid = false;
                 }
                 if (data.Clone.MaxHealthFactor.HasValue)
                 {
                     if (data.Clone.MaxHealthFactor.Value <= 0)
                     {
                         Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.MaxHealthFactor)}: Zero or negative values not allowed");
-                        error = true;
+                        valid = false;
                     }
                     else if (data.Clone.MaxHealthFactor.Value > 1)
                     {
@@ -107,7 +107,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     if (data.Growup == null)
                     {
                         Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Growup)}({nameof(ComponentBehavior.Patch)}): Missing component data");
-                        error = true;
+                        valid = false;
                     }
                     break;
                 case ComponentBehavior.Inherit:
@@ -123,7 +123,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 if (data.Growup.Grown == null || data.Growup.Grown.Length == 0)
                 {
                     Plugin.LogError($"{model}.{nameof(data.Growup)}.{nameof(data.Growup.Grown)}: List is null or empty");
-                    error = true;
+                    valid = false;
                 }
                 else
                 {
@@ -133,13 +133,13 @@ namespace OfTamingAndBreeding.Registry.Processing
                         if (grownData.Prefab == null)
                         {
                             Plugin.LogError($"{model}.{nameof(data.Growup)}.{nameof(data.Growup.Grown)}.{i}.{nameof(grownData.Prefab)}: Field is empty");
-                            error = true;
+                            valid = false;
                         }
                     }
                 }
             }
 
-            return error == false;
+            return valid;
         }
 
         //------------------------------------------------
@@ -149,6 +149,7 @@ namespace OfTamingAndBreeding.Registry.Processing
         public override bool ReservePrefab(string offspringName, OffspringFile data)
         {
             var model = $"{nameof(OffspringFile)}.{offspringName}";
+            var valid = true;
 
             var offspring = OTABPrefabRegistry.Instance.GetReservedPrefab(offspringName);
             if (offspring == null)
@@ -161,26 +162,26 @@ namespace OfTamingAndBreeding.Registry.Processing
                     if (data.Clone == null)
                     {
                         Plugin.LogError($"{model}.{nameof(data.Clone)}: Field missing");
-                        return false;
+                        valid = false;
                     }
 
                     if (data.Clone.From == null)
                     {
                         Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)}: Field missing");
-                        return false;
+                        valid = false;
                     }
 
                     if (OTABPrefabRegistry.IsCustomPrefab(data.Clone.From))
                     {
                         Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)}: Cannot clone from cloned prefab '{data.Clone.From}'");
-                        return false;
+                        valid = false;
                     }
 
                     var cloneFrom = OTABPrefabRegistry.Instance.GetOriginalPrefab(data.Clone.From);
                     if (!cloneFrom)
                     {
                         Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.From)}: Prefab '{data.Clone.From}' not found");
-                        return false;
+                        valid = false;
                     }
 
                     if (custom == null)
@@ -200,10 +201,13 @@ namespace OfTamingAndBreeding.Registry.Processing
                     OTABPrefabRegistry.Instance.MakeOriginalBackup(offspringName);
                 }
 
-                OTABPrefabRegistry.Instance.ReservePrefab(offspringName, offspring);
+                if (valid)
+                {
+                    OTABPrefabRegistry.Instance.ReservePrefab(offspringName, offspring);
+                }
             }
 
-            return true;
+            return valid;
         }
 
         //------------------------------------------------
@@ -213,20 +217,20 @@ namespace OfTamingAndBreeding.Registry.Processing
         public override bool ValidatePrefab(string offspringName, OffspringFile data)
         {
             var model = $"{nameof(OffspringFile)}.{offspringName}";
-            var error = false;
+            var valid = true;
 
             var offspring = OTABPrefabRegistry.Instance.GetReservedPrefab(offspringName);
             if (!offspring)
             {
                 Plugin.LogError($"{model}: Prefab not found");
-                error = true;
+                valid = false;
             }
             else
             {
                 if (!offspring.GetComponent<Character>())
                 {
                     Plugin.LogError($"{model}: Prefab has no Character");
-                    error = true;
+                    valid = false;
                 }
             }
 
@@ -238,12 +242,12 @@ namespace OfTamingAndBreeding.Registry.Processing
                     if (!OTABPrefabRegistry.Instance.PrefabExists(grownData.Prefab))
                     {
                         Plugin.LogError($"{model}.{nameof(data.Growup)}.{nameof(data.Growup.Grown)}.{i}.{nameof(grownData.Prefab)}: '{grownData.Prefab}' not found");
-                        error = true;
+                        valid = false;
                     }
                 }
             }
 
-            return error == false;
+            return valid;
         }
 
         //------------------------------------------------
@@ -266,9 +270,10 @@ namespace OfTamingAndBreeding.Registry.Processing
         // EDIT PREFAB
         //------------------------------------------------
 
-        public override void EditPrefab(string offspringName, OffspringFile data)
+        public override bool EditPrefab(string offspringName, OffspringFile data)
         {
             var model = $"{nameof(OffspringFile)}.{offspringName}";
+            var valid = true;
 
             var offspring = OTABPrefabRegistry.Instance.GetReservedPrefab(offspringName);
 
@@ -311,6 +316,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 OTABPrefabRegistry.Instance.DestroyComponentIfExists<Growup>(offspringName, offspring);
             }
 
+            return valid;
         }
 
         private void PrepareClone(string offspringName, OffspringFile data, UnityEngine.GameObject offspring)
@@ -318,7 +324,7 @@ namespace OfTamingAndBreeding.Registry.Processing
             var model = $"{nameof(OffspringFile)}.{offspringName}";
 
             OTABPrefabRegistry.Instance.DestroyComponentIfExists<Procreation>(offspringName, offspring); // offsprings do not procreate
-            OTABPrefabRegistry.Instance.DestroyComponentIfExists<Tameable>(offspringName, offspring); // offsprings cannot be explicite tamed
+            OTABPrefabRegistry.Instance.DestroyComponentIfExists<Tameable>(offspringName, offspring); // offsprings cannot be explicite tamed, can be readded by using Creature Processing
 
             //PrefabRegistry.Instance.DestroyComponentIfExists<CharacterDrop>(offspringName, offspring);
             if (offspring.TryGetComponent<CharacterDrop>(out var charDrop))
@@ -347,12 +353,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 }
             }
 
-
-
-
-
-
-            if (offspring.TryGetComponent<MonsterAI>(out var monsterAI))
+            if (offspring.TryGetComponent<MonsterAI>(out var monsterAI)) // todo: maybe add yaml option to allow offsprings with monster ai
             {
                 // BaseAI fields
                 var baseAISnapshot = new Common.FieldsSnapshot<BaseAI>(monsterAI);

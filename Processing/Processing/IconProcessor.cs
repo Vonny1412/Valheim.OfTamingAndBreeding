@@ -84,8 +84,9 @@ namespace OfTamingAndBreeding.Registry.Processing
         {
         }
 
-        public override void EditPrefab(string iconName, IconFile data)
+        public override bool EditPrefab(string iconName, IconFile data)
         {
+            return true;
         }
 
         public override void FinalizeProcess()

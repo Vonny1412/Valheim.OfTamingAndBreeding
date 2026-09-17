@@ -42,6 +42,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
         // set in registration
         [SerializeField] public bool m_tamedStayNearSpawn = false;
+        [SerializeField] public float m_idleSoundChanceWhenTamed = -1f;
         [SerializeField] private int m_consumeItemDataIndex = -1;
 
         private void Awake()
@@ -296,7 +297,6 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public void StopPlayerHunt()
         {
-            // i dunno if this is neccessary
             if (m_baseAI && m_baseAI.HuntPlayer())
             {
                 m_baseAI.SetHuntPlayer(hunt: false);

@@ -47,14 +47,14 @@ namespace OfTamingAndBreeding.Registry.Processing
         public override bool ValidateData(string itemName, ItemFile data)
         {
             var model = $"{nameof(ItemFile)}.{itemName}";
-            var error = false;
+            var valid = true;
 
             if (data.Clone != null)
             {
                 if (data.Clone.Name == null)
                 {
                     Plugin.LogError($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.Name)}: Missing field");
-                    error = true;
+                    valid = false;
                 }
                 if (data.Clone.Description == null)
                 {
@@ -80,7 +80,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     if (data.Item == null)
                     {
                         Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Item)}({nameof(ComponentBehavior.Patch)}): Missing component data");
-                        error = true;
+                        valid = false;
                     }
                     break;
                 case ComponentBehavior.Inherit:
@@ -100,7 +100,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     if (data.Floating == null)
                     {
                         Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Floating)}({nameof(ComponentBehavior.Patch)}): Missing component data");
-                        error = true;
+                        valid = false;
                     }
                     break;
                 case ComponentBehavior.Inherit:
@@ -120,7 +120,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                     if (data.EggGrow == null)
                     {
                         Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.EggGrow)}({nameof(ComponentBehavior.Patch)}): Missing component data");
-                        error = true;
+                        valid = false;
                     }
                     break;
                 case ComponentBehavior.Inherit:
@@ -136,7 +136,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 if (data.EggGrow.Grown == null || data.EggGrow.Grown.Length == 0)
                 {
                     Plugin.LogError($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.Grown)}: List is null or empty");
-                    error = true;
+                    valid = false;
                 }
                 else
                 {
@@ -146,13 +146,13 @@ namespace OfTamingAndBreeding.Registry.Processing
                         if (grownData.Prefab == null)
                         {
                             Plugin.LogError($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.Grown)}.{i}.{nameof(grownData.Prefab)}: Field is empty");
-                            error = true;
+                            valid = false;
                         }
                     }
                 }
             }
 
-            return error == false;
+            return valid;
         }
 
         //------------------------------------------------
@@ -162,6 +162,7 @@ namespace OfTamingAndBreeding.Registry.Processing
         public override bool ReservePrefab(string itemName, ItemFile data)
         {
             var model = $"{nameof(ItemFile)}.{itemName}";
+            var valid = true;
 
             var item = OTABPrefabRegistry.Instance.GetReservedPrefab(itemName);
             if (item == null)
@@ -245,7 +246,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 OTABPrefabRegistry.Instance.ReservePrefab(itemName, item);
             }
 
-            return true;
+            return valid;
         }
 
         //------------------------------------------------
@@ -255,20 +256,20 @@ namespace OfTamingAndBreeding.Registry.Processing
         public override bool ValidatePrefab(string itemName, ItemFile data)
         {
             var model = $"{nameof(ItemFile)}.{itemName}";
-            var error = false;
+            var valid = true;
 
             var item = OTABPrefabRegistry.Instance.GetReservedPrefab(itemName);
             if (!item)
             {
                 Plugin.LogError($"{model}: Prefab not found");
-                error = true;
+                valid = false;
             }
             else
             {
                 if (!item.GetComponent<ItemDrop>())
                 {
                     Plugin.LogError($"{model}: Prefab has no ItemDrop (Prefab needs to be an item)");
-                    error = true;
+                    valid = false;
                 }
             }
 
@@ -295,13 +296,13 @@ namespace OfTamingAndBreeding.Registry.Processing
                         if (!OTABPrefabRegistry.Instance.PrefabExists(grownData.Prefab))
                         {
                             Plugin.LogError($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.Grown)}.{i}.{nameof(grownData.Prefab)}: '{grownData.Prefab}' not found");
-                            error = true;
+                            valid = false;
                         }
                     }
                 }
             }
 
-            return error == false;
+            return valid;
         }
 
         //------------------------------------------------
@@ -324,9 +325,10 @@ namespace OfTamingAndBreeding.Registry.Processing
         // EDIT PREFAB
         //------------------------------------------------
 
-        public override void EditPrefab(string itemName, ItemFile data)
+        public override bool EditPrefab(string itemName, ItemFile data)
         {
             var model = $"{nameof(ItemFile)}.{itemName}";
+            var error = false;
 
             var item = OTABPrefabRegistry.Instance.GetReservedPrefab(itemName);
 
@@ -513,6 +515,7 @@ namespace OfTamingAndBreeding.Registry.Processing
             }
             //eggItemDataShared.m_value = 0; // todo: add yaml option for that
 
+            return error == false;
         }
 
         private void PrepareClone(string itemName, ItemFile data, UnityEngine.GameObject item)

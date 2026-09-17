@@ -31,40 +31,36 @@ namespace OfTamingAndBreeding.Registry.Processing
         public override bool ValidateData(string recipeName, RecipeFile data)
         {
             var model = $"{nameof(RecipeFile)}.{recipeName}";
-            var error = false;
+            var valid = true;
 
             if (string.IsNullOrEmpty(data.Item))
             {
                 Plugin.LogError($"{model}.{nameof(data.Item)}: Missing field");
-                error = true;
+                valid = false;
             }
 
             if (data.Amount <= 0)
             {
-                Plugin.LogWarning(
-                    $"{model}.{nameof(data.Amount)}: Value must be > 0 - Setting to 1"
-                );
+                Plugin.LogWarning($"{model}.{nameof(data.Amount)}: Value must be > 0 - Setting to 1");
                 data.Amount = 1;
             }
 
             if (string.IsNullOrEmpty(data.CraftingStation))
             {
                 Plugin.LogError($"{model}.{nameof(data.CraftingStation)}: Missing field");
-                error = true;
+                valid = false;
             }
 
             if (data.MinStationLevel <= 0)
             {
-                Plugin.LogWarning(
-                    $"{model}.{nameof(data.MinStationLevel)}: Value must be > 0 - Setting to 1"
-                );
+                Plugin.LogWarning($"{model}.{nameof(data.MinStationLevel)}: Value must be > 0 - Setting to 1");
                 data.MinStationLevel = 1;
             }
 
             if (data.Requirements == null || data.Requirements.Length == 0)
             {
                 Plugin.LogError($"{model}.{nameof(data.Requirements)}: List is null or empty");
-                error = true;
+                valid = false;
             }
             else
             {
@@ -74,42 +70,32 @@ namespace OfTamingAndBreeding.Registry.Processing
 
                     if (requirement == null)
                     {
-                        Plugin.LogError(
-                            $"{model}.{nameof(data.Requirements)}.{i}: Entry is null"
-                        );
-                        error = true;
+                        Plugin.LogError($"{model}.{nameof(data.Requirements)}.{i}: Entry is null");
+                        valid = false;
                         continue;
                     }
 
                     if (string.IsNullOrEmpty(requirement.Prefab))
                     {
-                        Plugin.LogError(
-                            $"{model}.{nameof(data.Requirements)}.{i}.{nameof(requirement.Prefab)}: Missing field"
-                        );
-                        error = true;
+                        Plugin.LogError($"{model}.{nameof(data.Requirements)}.{i}.{nameof(requirement.Prefab)}: Missing field");
+                        valid = false;
                     }
 
                     if (requirement.Amount <= 0)
                     {
-                        Plugin.LogWarning(
-                            $"{model}.{nameof(data.Requirements)}.{i}.{nameof(requirement.Amount)}: " +
-                            $"Value must be > 0 - Setting to 1"
-                        );
+                        Plugin.LogWarning($"{model}.{nameof(data.Requirements)}.{i}.{nameof(requirement.Amount)}: Value must be > 0 - Setting to 1");
                         requirement.Amount = 1;
                     }
 
                     if (requirement.AmountPerLevel < 0)
                     {
-                        Plugin.LogWarning(
-                            $"{model}.{nameof(data.Requirements)}.{i}.{nameof(requirement.AmountPerLevel)}: " +
-                            $"Negative value not allowed - Setting to 0"
-                        );
+                        Plugin.LogWarning($"{model}.{nameof(data.Requirements)}.{i}.{nameof(requirement.AmountPerLevel)}: Negative value not allowed - Setting to 0");
                         requirement.AmountPerLevel = 0;
                     }
                 }
             }
 
-            return error == false;
+            return valid;
         }
 
         public override bool ReservePrefab(string recipeName, RecipeFile data)
@@ -120,7 +106,7 @@ namespace OfTamingAndBreeding.Registry.Processing
         public override bool ValidatePrefab(string recipeName, RecipeFile data)
         {
             var model = $"{nameof(RecipeFile)}.{recipeName}";
-            var error = false;
+            var valid = true;
 
             //
             // output item
@@ -129,17 +115,13 @@ namespace OfTamingAndBreeding.Registry.Processing
             var itemPrefab = PrefabManager.Instance.GetPrefab(data.Item);
             if (!itemPrefab)
             {
-                Plugin.LogError(
-                    $"{model}.{nameof(data.Item)}: Prefab '{data.Item}' not found"
-                );
-                error = true;
+                Plugin.LogError($"{model}.{nameof(data.Item)}: Prefab '{data.Item}' not found");
+                valid = false;
             }
             else if (!itemPrefab.GetComponent<ItemDrop>())
             {
-                Plugin.LogError(
-                    $"{model}.{nameof(data.Item)}: Prefab '{data.Item}' has no ItemDrop"
-                );
-                error = true;
+                Plugin.LogError($"{model}.{nameof(data.Item)}: Prefab '{data.Item}' has no ItemDrop");
+                valid = false;
             }
 
             //
@@ -149,18 +131,13 @@ namespace OfTamingAndBreeding.Registry.Processing
             var stationPrefab = PrefabManager.Instance.GetPrefab(data.CraftingStation);
             if (!stationPrefab)
             {
-                Plugin.LogError(
-                    $"{model}.{nameof(data.CraftingStation)}: Prefab '{data.CraftingStation}' not found"
-                );
-                error = true;
+                Plugin.LogError($"{model}.{nameof(data.CraftingStation)}: Prefab '{data.CraftingStation}' not found");
+                valid = false;
             }
             else if (!stationPrefab.GetComponent<CraftingStation>())
             {
-                Plugin.LogError(
-                    $"{model}.{nameof(data.CraftingStation)}: " +
-                    $"Prefab '{data.CraftingStation}' has no CraftingStation"
-                );
-                error = true;
+                Plugin.LogError($"{model}.{nameof(data.CraftingStation)}: Prefab '{data.CraftingStation}' has no CraftingStation");
+                valid = false;
             }
 
             //
@@ -178,26 +155,20 @@ namespace OfTamingAndBreeding.Registry.Processing
                     var prefab = PrefabManager.Instance.GetPrefab(requirement.Prefab);
                     if (!prefab)
                     {
-                        Plugin.LogError(
-                            $"{model}.{nameof(data.Requirements)}.{i}.{nameof(requirement.Prefab)}: " +
-                            $"Prefab '{requirement.Prefab}' not found"
-                        );
-                        error = true;
+                        Plugin.LogError($"{model}.{nameof(data.Requirements)}.{i}.{nameof(requirement.Prefab)}: Prefab '{requirement.Prefab}' not found");
+                        valid = false;
                         continue;
                     }
 
                     if (!prefab.GetComponent<ItemDrop>())
                     {
-                        Plugin.LogError(
-                            $"{model}.{nameof(data.Requirements)}.{i}.{nameof(requirement.Prefab)}: " +
-                            $"Prefab '{requirement.Prefab}' has no ItemDrop"
-                        );
-                        error = true;
+                        Plugin.LogError($"{model}.{nameof(data.Requirements)}.{i}.{nameof(requirement.Prefab)}: Prefab '{requirement.Prefab}' has no ItemDrop");
+                        valid = false;
                     }
                 }
             }
 
-            return error == false;
+            return valid;
         }
 
         public override void RegisterPrefab(string recipeName, RecipeFile data)
@@ -241,8 +212,9 @@ namespace OfTamingAndBreeding.Registry.Processing
             otabRecipes[recipeName] = recipe;
         }
 
-        public override void EditPrefab(string recipeName, RecipeFile data)
+        public override bool EditPrefab(string recipeName, RecipeFile data)
         {
+            return true;
         }
 
         public override void FinalizeProcess()

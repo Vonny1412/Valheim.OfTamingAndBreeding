@@ -50,7 +50,7 @@ namespace OfTamingAndBreeding.Components.Traits
         {
             if (m_nview.IsValid() && m_nview.IsOwner())
             {
-                ZNetUtils.SetInt(m_nview.GetZDO(), Plugin.ZDOVars.z_droppedByAnyPlayer, 1);
+                ZDOUtils.SetInt(m_nview.GetZDO(), Plugin.ZDOVars.z_droppedByAnyPlayer, 1);
             }
         }
 

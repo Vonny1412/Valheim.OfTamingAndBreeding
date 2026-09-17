@@ -59,8 +59,9 @@ namespace OfTamingAndBreeding.Registry.Processing
             local.AddTranslation(data.Language, data.Translations);
         }
 
-        public override void EditPrefab(string fileName, TranslationFile data)
+        public override bool EditPrefab(string fileName, TranslationFile data)
         {
+            return true;
         }
 
         public override void FinalizeProcess()

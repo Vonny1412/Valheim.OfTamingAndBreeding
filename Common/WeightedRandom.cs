@@ -10,15 +10,14 @@ namespace OfTamingAndBreeding.Common
             float Weight { get; }
         }
 
-        public static bool FindRandom<T>(
-            IReadOnlyList<T> items,
-            out T entry,
-            Func<T, float> check = null
-        ) where T : IWeighted
+        public static bool FindRandom<T>(IReadOnlyList<T> items, out T entry, Func<T, float> check = null) where T : IWeighted
         {
             entry = default;
-            if (items == null || items.Count == 0) return false;
-            if (items.Count == 1) { entry = items[0]; return true; }
+
+            if (items == null || items.Count == 0)
+            {
+                return false;
+            }
 
             check ??= e => e.Weight;
             float total = 0f;
@@ -27,7 +26,10 @@ namespace OfTamingAndBreeding.Common
             for (int i = 0; i < items.Count; i++)
             {
                 float w = check(items[i]);
-                if (w <= 0f) continue;
+                if (w <= 0f)
+                {
+                    continue;
+                }
 
                 any = true;
                 total += w;

@@ -1,6 +1,7 @@
 ﻿using JetBrains.Annotations;
 using OfTamingAndBreeding.Data.Models.SubData;
 using System;
+using YamlDotNet.Serialization;
 
 namespace OfTamingAndBreeding.Data.Models
 {
@@ -10,20 +11,41 @@ namespace OfTamingAndBreeding.Data.Models
 
         public const string DirectoryName = "Creatures";
 
+        [YamlMember(Order = 1)]
         public ComponentsData Components = new ComponentsData();
 
+        [YamlMember(Order = 2)]
         public CharacterAIData Character = null;
-        public MonsterAIData MonsterAI = null;
+
+        [YamlMember(Order = 3, DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public MonsterAIData MonsterAI { get; set; } = null;
+
+        [YamlMember(Order = 4, DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        public AnimalAIData AnimalAI { get; set; } = null;
+
+        [YamlMember(Order = 5)]
         public TameableData Tameable = null;
+
+        [YamlMember(Order = 6)]
         public ProcreationData Procreation = null;
 
         [Serializable]
         [CanBeNull]
         public class ComponentsData
         {
-            public ComponentBehavior Character { get; set; } = ComponentBehavior.Patch; // cannot be removed
-            public ComponentBehavior MonsterAI { get; set; } = ComponentBehavior.Patch; // cannot be removed
+            [YamlMember(Order = 1)]
+            public ComponentBehavior Character { get; set; } = ComponentBehavior.Patch;
+
+            [YamlMember(Order = 2, DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+            public ComponentBehavior? MonsterAI { get; set; } = null;
+
+            [YamlMember(Order = 3, DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+            public ComponentBehavior? AnimalAI { get; set; } = null;
+
+            [YamlMember(Order = 4)]
             public ComponentBehavior Tameable { get; set; } = ComponentBehavior.Inherit;
+
+            [YamlMember(Order = 5)]
             public ComponentBehavior Procreation { get; set; } = ComponentBehavior.Inherit;
         }
 
@@ -37,32 +59,45 @@ namespace OfTamingAndBreeding.Data.Models
             public string GroupWhenTamed { get; set; } = null;
             public Character.Faction? FactionWhenTamed { get; set; } = null;
 
-            public IsEnemyCondition TamedVersusPlayer { get; set; } = IsEnemyCondition.Default; // OTAB feature
-            public IsEnemyCondition TamedVersusGroup { get; set; } = IsEnemyCondition.Default; // OTAB feature
-            public IsEnemyCondition TamedVersusFaction { get; set; } = IsEnemyCondition.Default; // OTAB feature
-            public IsEnemyCondition TamedVersusTamed { get; set; } = IsEnemyCondition.Default; // OTAB feature
-            public IsEnemyCondition TamedVersusWild { get; set; } = IsEnemyCondition.Default; // OTAB feature
+            public IsEnemyCondition TamedVersusPlayer { get; set; } = IsEnemyCondition.Default;
+            public IsEnemyCondition TamedVersusGroup { get; set; } = IsEnemyCondition.Default;
+            public IsEnemyCondition TamedVersusFaction { get; set; } = IsEnemyCondition.Default;
+            public IsEnemyCondition TamedVersusTamed { get; set; } = IsEnemyCondition.Default;
+            public IsEnemyCondition TamedVersusWild { get; set; } = IsEnemyCondition.Default;
         }
 
         [Serializable]
         [CanBeNull]
-        public class MonsterAIConsumItemData
+        public class MonsterAIData : BaseAIData
         {
-            public string Prefab { get; set; } = null;
-            public float FedDurationFactor { get; set; } = 1f; // OTAB feature
         }
 
         [Serializable]
         [CanBeNull]
-        public class MonsterAIData
+        public class AnimalAIData : BaseAIData
         {
-            public MonsterAIConsumItemData[] ConsumeItems { get; set; } = null;
+        }
+
+        [Serializable]
+        [CanBeNull]
+        public class BaseAIData
+        {
+            public BaseAIConsumItemData[] ConsumeItems { get; set; } = null;
             public float? ConsumeRange { get; set; } = null;
             public float? ConsumeSearchRange { get; set; } = null;
             public float? ConsumeSearchInterval { get; set; } = null;
             public string ConsumeAnimation { get; set; } = null;
             // todo: add "ConsumeAnimationAlt" for food with 0 fedduration factor
             public bool TamedStayNearSpawn { get; set; } = false; // otab feature
+            public float? IdleSoundChanceWhenTamed { get; set; } = null;
+        }
+
+        [Serializable]
+        [CanBeNull]
+        public class BaseAIConsumItemData
+        {
+            public string Prefab { get; set; } = null;
+            public float FedDurationFactor { get; set; } = 1f; // OTAB feature
         }
 
         [Serializable]
@@ -105,7 +140,6 @@ namespace OfTamingAndBreeding.Data.Models
                 public string NeedPartnerPrefab { get; set; } = null; // OTAB feature
 
                 public float? LevelUpChance { get; set; } = null; // OTAB feature
-
                 public bool SpawnTamed { get; set; } = true; // OTAB feature
             }
 
@@ -128,9 +162,6 @@ namespace OfTamingAndBreeding.Data.Models
 
             public int? MaxCreatures { get; set; } = null;
             public string[] MaxCreaturesCountPrefabs { get; set; } = null; // OTAB feature
-
-            public float ExtraSiblingChance { get; set; } = 0.0f; // OTAB feature
-            public int MaxSiblingsPerPregnancy { get; set; } = 0; // OTAB feature
 
             public OffspringData[] Offspring { get; set; } = null;
 

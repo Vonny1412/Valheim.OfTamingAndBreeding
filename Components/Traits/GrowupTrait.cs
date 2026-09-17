@@ -110,8 +110,8 @@ namespace OfTamingAndBreeding.Components.Traits
                     var nameAuthor1 = zdo.GetString(ZDOVars.s_tamedNameAuthor, "");
                     if (name1.Length != 0)
                     {
-                        ZNetUtils.SetString(zdo2, ZDOVars.s_tamedName, name1);
-                        ZNetUtils.SetString(zdo2, ZDOVars.s_tamedNameAuthor, nameAuthor1);
+                        ZDOUtils.SetString(zdo2, ZDOVars.s_tamedName, name1);
+                        ZDOUtils.SetString(zdo2, ZDOVars.s_tamedNameAuthor, nameAuthor1);
                     }
 
                     //
@@ -123,7 +123,7 @@ namespace OfTamingAndBreeding.Components.Traits
                     if (oldFedDuration > 0 && newFedDuration > 0)
                     {
                         var lastFeeding = zdo.GetLong(ZDOVars.s_tameLastFeeding, 0L);
-                        Utilities.ZNetUtils.SetLong(zdo2, ZDOVars.s_tameLastFeeding, lastFeeding);
+                        Utilities.ZDOUtils.SetLong(zdo2, ZDOVars.s_tameLastFeeding, lastFeeding);
                     }
 
                 }
@@ -154,7 +154,7 @@ namespace OfTamingAndBreeding.Components.Traits
                                 progress = Mathf.Clamp01(progress);
 
                                 var newLeft = (newTotal <= 0f) ? 0f : (1f - progress) * newTotal;
-                                Utilities.ZNetUtils.SetFloat(zdo2, ZDOVars.s_tameTimeLeft, newLeft);
+                                Utilities.ZDOUtils.SetFloat(zdo2, ZDOVars.s_tameTimeLeft, newLeft);
                             }
                         }
                     }

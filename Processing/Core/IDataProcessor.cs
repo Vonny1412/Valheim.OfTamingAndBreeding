@@ -19,11 +19,11 @@ namespace OfTamingAndBreeding.Processing.Core
         void ResetData();
 
         void CallPrepareProcess();
-        void CallValidateAllData();
-        void CallReserveAllPrefabs();
+        bool CallValidateAllData();
+        bool CallReserveAllPrefabs();
         bool CallValidateAllPrefabs();
         void CallRegisterAllPrefabs();
-        void CallEditAllPrefabs();
+        bool CallEditAllPrefabs();
         void CallFinalizeProcess();
         void CallRestoreAllPrefabs();
         void CallCleanupProcess();

@@ -60,7 +60,7 @@ namespace OfTamingAndBreeding.Components.Traits
         [SerializeField] public IsEnemyCondition m_tamedVersusFaction = IsEnemyCondition.Default;
         [SerializeField] public IsEnemyCondition m_tamedVersusTamed = IsEnemyCondition.Default;
         [SerializeField] public IsEnemyCondition m_tamedVersusWild = IsEnemyCondition.Default;
-
+        
         private void Awake()
         {
             m_nview = GetComponent<ZNetView>();
@@ -179,14 +179,15 @@ namespace OfTamingAndBreeding.Components.Traits
             }
 
             var m_baseAI = GetComponent<BaseAI>();
-
-            // todo: create yaml option "DisableIdleSounds"
-            if (gameObject.name.StartsWith("Hatchling"))
+            if (m_baseAITrait.m_idleSoundChanceWhenTamed >= 0)
             {
-                m_baseAI.m_idleSoundChance = 0;
+                // -1 means: use default
+                m_baseAI.m_idleSoundChance = m_baseAITrait.m_idleSoundChanceWhenTamed;
             }
-
             m_baseAI.m_aggravatable = false; // todo: maybe add yaml config option?
+
+
+            
         }
 
         public string GetHoverName()

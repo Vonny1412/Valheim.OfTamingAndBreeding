@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using static Version;
 
 namespace OfTamingAndBreeding.Components.Traits
 {
@@ -88,7 +87,7 @@ namespace OfTamingAndBreeding.Components.Traits
             if (m_nview.IsValid())
             {
                 m_nview.Register<float>("RPC_UpdateEffects", RPC_UpdateEffects);
-                m_nview.Register("RPC_HatchAndDestroy", RPC_HatchAndDestroy);
+                m_nview.Register<bool>("RPC_HatchAndDestroy", RPC_HatchAndDestroy);
             }
 
             UpdateGrowTime();
@@ -249,15 +248,19 @@ namespace OfTamingAndBreeding.Components.Traits
             }
         }
 
-        public void RPC_HatchAndDestroy(long sender)
+        public void RPC_HatchAndDestroy(long sender, bool showHatchEffect)
         {
-            if (m_nview.IsValid())
+            if (!m_nview.IsValid())
+            {
+                return;
+            }
+            if (showHatchEffect)
             {
                 m_eggGrow.m_hatchEffect?.Create(m_eggGrow.transform.position, m_eggGrow.transform.rotation);
-                if (m_nview.IsOwner())
-                {
-                    m_nview.Destroy();
-                }
+            }
+            if (m_nview.IsOwner())
+            {
+                m_nview.Destroy();
             }
         }
 
@@ -383,90 +386,57 @@ namespace OfTamingAndBreeding.Components.Traits
                 return true; // handled
             }
 
+            if (!m_eggGrow.CanGrow())
+            {
+                s_growStart = ZDOUtils.SetFloat(zdo, ZDOVars.s_growStart, 0f, s_growStart);
+                m_nview.InvokeRPC(ZNetView.Everybody, "RPC_UpdateEffects", s_growStart);
+                return true; // handled
+            }
+
             var prefabName = Utils.GetPrefabName(m_eggGrow.gameObject.name);
 
-            var z_EggBehavior = zdo.GetInt(Plugin.ZDOVars.z_EggBehavior, Plugin.ZDOVars.EggBehavior.Unknown);
-            if (z_EggBehavior == Plugin.ZDOVars.EggBehavior.Unknown)
+            var timeSeconds = (float)ZNet.instance.GetTimeSeconds();
+
+            if (s_growStart == 0f)
             {
-                // determine behavior
+                s_growStart = ZDOUtils.SetFloat(zdo, ZDOVars.s_growStart, timeSeconds, s_growStart);
+                m_nview.InvokeRPC(ZNetView.Everybody, "RPC_UpdateEffects", s_growStart);
+            }
+
+            bool readyToHatch = timeSeconds > (s_growStart + m_eggGrow.m_growTime);
+            if (readyToHatch)
+            {
+
+
+                GameObject grownPrefab = null;
+                bool spawnTamed = true;
+                bool showHatchEffect = true;
 
                 if (HasCustomGrownList(out var grownList))
                 {
                     var foundRandom = Common.WeightedRandom.FindRandom<EggGrown>(grownList, out EggGrown grownEntry);
-                    if (!foundRandom) // should not happen but whatever
+                    if (foundRandom)
                     {
-                        z_EggBehavior = ZNetUtils.SetInt(zdo, Plugin.ZDOVars.z_EggBehavior, Plugin.ZDOVars.EggBehavior.Vanilla, z_EggBehavior);
-                        return false;
+                        grownPrefab = ZNetScene.instance.GetPrefab(grownEntry.Prefab);
+                        spawnTamed = grownEntry.Tamed;
+                        showHatchEffect = grownEntry.ShowHatchEffect;
                     }
-
-                    var z_eggGrownPrefab = ZNetUtils.SetString(zdo, Plugin.ZDOVars.z_eggGrownPrefab, grownEntry.Prefab);
-                    var z_eggGrownTamed = ZNetUtils.SetInt(zdo, Plugin.ZDOVars.z_eggGrownTamed, grownEntry.Tamed ? 1 : 0);
-                    var z_eggShowHatchEffect = ZNetUtils.SetInt(zdo, Plugin.ZDOVars.z_eggShowHatchEffect, grownEntry.ShowHatchEffect ? 1 : 0);
-
-                    z_EggBehavior = ZNetUtils.SetInt(zdo, Plugin.ZDOVars.z_EggBehavior, Plugin.ZDOVars.EggBehavior.OTAB, z_EggBehavior);
                 }
-                else
+                if (grownPrefab == null)
                 {
-                    z_EggBehavior = ZNetUtils.SetInt(zdo, Plugin.ZDOVars.z_EggBehavior, Plugin.ZDOVars.EggBehavior.Vanilla);
+                    grownPrefab = m_eggGrow.m_grownPrefab;
+                    spawnTamed = m_eggGrow.m_tamed;
                 }
-
-            }
-
-            var timeSeconds = (float)ZNet.instance.GetTimeSeconds();
-            if (m_eggGrow.CanGrow())
-            {
-                if (s_growStart == 0f)
+                if (grownPrefab == null)
                 {
-                    s_growStart = ZNetUtils.SetFloat(zdo, ZDOVars.s_growStart, timeSeconds, s_growStart);
+                    // todo: log error
+                    s_growStart = ZDOUtils.SetFloat(zdo, ZDOVars.s_growStart, 0f, s_growStart);
+                    m_nview.InvokeRPC(ZNetView.Everybody, "RPC_UpdateEffects", s_growStart);
+                    return true; // handled
                 }
-            }
-            else
-            {
-                s_growStart = ZNetUtils.SetFloat(zdo, ZDOVars.s_growStart, 0f, s_growStart);
-            }
 
-            m_nview.InvokeRPC(ZNetView.Everybody, "RPC_UpdateEffects", s_growStart + 0);
-            //eggGrow.UpdateEffects(s_growStart);
-
-            if (s_growStart > 0f && timeSeconds > (s_growStart + m_eggGrow.m_growTime))
-            {
                 var position = m_eggGrow.transform.position;
                 var rotation = m_eggGrow.transform.rotation;
-                var showHatchEffect = true;
-
-                switch (z_EggBehavior)
-                {
-
-                    case Plugin.ZDOVars.EggBehavior.Vanilla:
-                        {
-                            if (m_eggGrow.m_grownPrefab == null)
-                            {
-                                Plugin.LogError($"Egg '{prefabName}#{m_nview.GetInstanceID()}' m_grownPrefab is null");
-                                return true; // but return as handled
-                            }
-                        }
-                        break;
-
-                    case Plugin.ZDOVars.EggBehavior.OTAB:
-                        {
-                            var z_eggGrownPrefab = zdo.GetString(Plugin.ZDOVars.z_eggGrownPrefab, "");
-                            var z_eggGrownTamed = zdo.GetInt(Plugin.ZDOVars.z_eggGrownTamed, 1);
-                            var z_eggShowHatchEffect = zdo.GetInt(Plugin.ZDOVars.z_eggShowHatchEffect, 1);
-
-                            m_eggGrow.m_grownPrefab = ZNetScene.instance.GetPrefab(z_eggGrownPrefab);
-                            m_eggGrow.m_tamed = z_eggGrownTamed == 1;
-                            showHatchEffect = z_eggShowHatchEffect == 1;
-
-                            if (m_eggGrow.m_grownPrefab == null)
-                            {
-                                // this should not happen but just to be save!
-                                Plugin.LogError($"Egg '{prefabName}#{m_nview.GetInstanceID()}' z_eggGrownPrefab '{z_eggGrownPrefab}' does not exist");
-                                return true; // but return as handled
-                            }
-                        }
-                        break;
-
-                }
 
                 if (showHatchEffect)
                 {
@@ -477,13 +447,13 @@ namespace OfTamingAndBreeding.Components.Traits
                     rotation *= Quaternion.Euler(0f, jiggleYaw, 0f);
                 }
 
-                GameObject spawned = UnityEngine.Object.Instantiate(m_eggGrow.m_grownPrefab, position, rotation);
+                GameObject spawned = UnityEngine.Object.Instantiate(grownPrefab, position, rotation);
                 Character spawnedCharacter = spawned.GetComponent<Character>();
                 var level = m_itemDrop.m_itemData.m_quality;
 
                 if ((bool)spawnedCharacter)
                 {
-                    spawnedCharacter.SetTamed(m_eggGrow.m_tamed);
+                    spawnedCharacter.SetTamed(spawnTamed);
 
                     var spawnedCharacterTrait = spawned.GetComponent<CharacterTrait>();
                     if (spawnedCharacterTrait && spawnedCharacterTrait.m_maxLevel > 0)
@@ -519,13 +489,8 @@ namespace OfTamingAndBreeding.Components.Traits
 
                 Integrations.Mods.CllCBridge.PassTraits(zdo, spawned);
 
-                if (showHatchEffect)
-                {
-                    m_nview.InvokeRPC(ZNetView.Everybody, "RPC_HatchAndDestroy");
-                }
-
+                m_nview.InvokeRPC( ZNetView.Everybody, "RPC_HatchAndDestroy", showHatchEffect);
                 // object is beeing destroyed in RPC_HatchAndDestroy()
-                //m_nview.Destroy();
             }
 
             return true; // handled

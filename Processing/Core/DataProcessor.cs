@@ -1,12 +1,13 @@
 ﻿using OfTamingAndBreeding.Data;
-using OfTamingAndBreeding.Utilities;
 using OfTamingAndBreeding.Registry;
+using OfTamingAndBreeding.Utilities;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
 using YamlDotNet.Core;
+using static Unity.IO.LowLevel.Unsafe.AsyncReadManagerMetrics;
 
 namespace OfTamingAndBreeding.Processing.Core
 {
@@ -156,7 +157,7 @@ namespace OfTamingAndBreeding.Processing.Core
 
         public abstract void RegisterPrefab(string prefabName, T data);
 
-        public abstract void EditPrefab(string prefabName, T data);
+        public abstract bool EditPrefab(string prefabName, T data);
 
         public abstract void FinalizeProcess();
 
@@ -173,11 +174,12 @@ namespace OfTamingAndBreeding.Processing.Core
             PrepareProcess();
         }
 
-        public void CallValidateAllData()
+        public bool CallValidateAllData()
         {
             Plugin.LogDebug($"{nameof(CallValidateAllData)}: {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
             var keys = all.Keys.ToList();
+            var valid = true;
             foreach (var prefabName in keys)
             {
                 if (!all.TryGetValue(prefabName, out var data))
@@ -187,22 +189,25 @@ namespace OfTamingAndBreeding.Processing.Core
                 {
                     if (!ValidateData(prefabName, data))
                     {
-                        DataBase<T>.Drop(prefabName);
+                        //DataBase<T>.Drop(prefabName);
+                        valid = false;
                     }
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     Plugin.LogFatal($"{ModelTypeName}.{nameof(ValidateData)}() '{prefabName}' failed");
                     throw;
                 }
             }
+            return valid;
         }
 
-        public void CallReserveAllPrefabs()
+        public bool CallReserveAllPrefabs()
         {
             Plugin.LogDebug($"{nameof(CallReserveAllPrefabs)}: {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
             var keys = all.Keys.ToList();
+            var valid = true;
             foreach (var prefabName in keys)
             {
                 if (!all.TryGetValue(prefabName, out var data))
@@ -215,7 +220,7 @@ namespace OfTamingAndBreeding.Processing.Core
                         if (OTABPrefabRegistry.TryRegisterPrefabType(prefabName, PrefabTypeName, out string registeredTypeName) == false)
                         {
                             Plugin.LogFatal($"Tried to register {typeof(T).Name} '{prefabName}' as type '{PrefabTypeName}' but has already been registered as type '{registeredTypeName}' before by an other OTAB instance. Rename your custom prefab to avoid prefab corruption");
-                            DataBase<T>.Drop(prefabName);
+                            valid = false;
                             continue;
                         }
                     }
@@ -223,7 +228,7 @@ namespace OfTamingAndBreeding.Processing.Core
                     if (reservedPrefabNames.Contains(prefabName))
                     {
                         Plugin.LogError($"{nameof(ReservePrefab)}: {typeof(T).Name} '{prefabName}' already reserved!");
-                        DataBase<T>.Drop(prefabName);
+                        valid = false;
                         continue;
                     }
 
@@ -233,8 +238,7 @@ namespace OfTamingAndBreeding.Processing.Core
                     }
                     else
                     {
-                        // error should be logged in ReservePrefab()
-                        DataBase<T>.Drop(prefabName);
+                        valid = false;
                     }
                     
                 }
@@ -244,6 +248,7 @@ namespace OfTamingAndBreeding.Processing.Core
                     throw;
                 }
             }
+            return valid;
         }
 
         public bool CallValidateAllPrefabs()
@@ -251,7 +256,7 @@ namespace OfTamingAndBreeding.Processing.Core
             Plugin.LogDebug($"{nameof(CallValidateAllPrefabs)}: {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
             var keys = all.Keys.ToList();
-            var allOkay = true;
+            var valid = true;
             foreach (var prefabName in keys)
             {
                 if (!all.TryGetValue(prefabName, out var data))
@@ -259,7 +264,10 @@ namespace OfTamingAndBreeding.Processing.Core
                 Plugin.LogDebug($"{nameof(ValidatePrefab)}: {typeof(T).Name} '{prefabName}'");
                 try
                 {
-                    allOkay &= ValidatePrefab(prefabName, data);
+                    if (!ValidatePrefab(prefabName, data))
+                    {
+                        valid = false;
+                    }
                 }
                 catch (Exception)
                 {
@@ -267,7 +275,7 @@ namespace OfTamingAndBreeding.Processing.Core
                     throw;
                 }
             }
-            return allOkay;
+            return valid;
         }
 
         public void CallRegisterAllPrefabs()
@@ -292,11 +300,12 @@ namespace OfTamingAndBreeding.Processing.Core
             }
         }
 
-        public void CallEditAllPrefabs()
+        public bool CallEditAllPrefabs()
         {
             Plugin.LogDebug($"{nameof(CallEditAllPrefabs)} {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
             var keys = all.Keys.ToList();
+            var valid = true;
             foreach (var prefabName in keys)
             {
                 if (!all.TryGetValue(prefabName, out var data))
@@ -304,7 +313,10 @@ namespace OfTamingAndBreeding.Processing.Core
                 Plugin.LogDebug($"{nameof(EditPrefab)} {typeof(T).Name} '{prefabName}'");
                 try
                 {
-                    EditPrefab(prefabName, data);
+                    if (!EditPrefab(prefabName, data))
+                    {
+                        valid = false;
+                    }
                 }
                 catch (Exception)
                 {
@@ -312,6 +324,7 @@ namespace OfTamingAndBreeding.Processing.Core
                     throw;
                 }
             }
+            return valid;
         }
 
         public void CallFinalizeProcess()

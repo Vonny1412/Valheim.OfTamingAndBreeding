@@ -56,15 +56,15 @@ namespace OfTamingAndBreeding.Processing.Core
             }
             else
             {
-                var allokay = true;
+                var valid = true;
                 foreach (var dh in dataProcessors)
                 {
                     foreach (var file in EnumerateCategoryFiles(worldRoot, dh.DirectoryName))
                     {
-                        allokay &= dh.LoadFromFile(file);
+                        valid &= dh.LoadFromFile(file);
                     }
                 }
-                if (!allokay)
+                if (!valid)
                 {
                     // fatal error in data
                     return false;
@@ -127,35 +127,23 @@ namespace OfTamingAndBreeding.Processing.Core
             OTABPrefabRegistry.CreateInstance();
             OTABPrefabRegistry.SaveOriginalPrefabNames();
 
+            var valid = true;
+
             foreach (var p in dataProcessors)
             {
                 p.CallPrepareProcess();
             }
-
             foreach (var p in dataProcessors)
             {
-                p.CallValidateAllData();
+                valid &= p.CallValidateAllData();
             }
-
             foreach (var p in dataProcessors)
             {
-                p.CallReserveAllPrefabs();
+                valid &= p.CallReserveAllPrefabs();
             }
-
-            var allOkay = true;
             foreach (var p in dataProcessors)
             {
-                allOkay &= p.CallValidateAllPrefabs();
-            }
-
-            if (allOkay == false)
-            {
-                foreach (var p in dataProcessors)
-                {
-                    p.CallFinalizeProcess();
-                }
-                ResetRegistry();
-                return false;
+                valid &= p.CallValidateAllPrefabs();
             }
 
             // from this point everything is okay
@@ -168,6 +156,20 @@ namespace OfTamingAndBreeding.Processing.Core
             {
                 p.CallEditAllPrefabs();
             }
+
+
+            if (valid == false)
+            {
+                foreach (var p in dataProcessors)
+                {
+                    p.CallFinalizeProcess();
+                }
+                ResetRegistry();
+                return false;
+            }
+
+
+
             foreach (var p in dataProcessors)
             {
                 p.CallFinalizeProcess();

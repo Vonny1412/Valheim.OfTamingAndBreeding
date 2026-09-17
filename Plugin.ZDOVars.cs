@@ -7,13 +7,6 @@ namespace OfTamingAndBreeding
         public static class ZDOVars
         {
 
-            public static class EggBehavior
-            {
-                public const int Unknown = 0;
-                public const int Vanilla = 1;
-                public const int OTAB = 2;
-            }
-
             //
             // Creature Tameable
             //
@@ -25,40 +18,8 @@ namespace OfTamingAndBreeding
             // Creature Procreation
             //
 
-            // counter for offsprings of current pregnancy
-            public static readonly int z_siblingsCounter = $"{Plugin.ModGuid}.z_siblingsCounter".GetStableHashCode();
-
-            // used to store if partner is neccessary for running procreation
-            // because it can vary depending on randomly chosen offspring from data
-            public static readonly int z_needPartner = $"{Plugin.ModGuid}.z_needPartner".GetStableHashCode();
-
-            // used to store current offspring prefab to be used for breeding and max-count check
-            // because it can vary depending on randomly chosen offspring from data
-            public static readonly int z_offspringPrefab = $"{Plugin.ModGuid}.z_offspringPrefab".GetStableHashCode();
-
-            public static readonly int z_offspringLevelUpChance = $"{Plugin.ModGuid}.z_offspringLevelUpChance".GetStableHashCode();
-
-            // used to store current chosen partner for that parent
+            // used to store the partner prefab of the current pregnancy
             public static readonly int z_partnerPrefab = $"{Plugin.ModGuid}.z_partnerPrefab".GetStableHashCode();
-
-            // used to store if the upcoming offspring spawns tamed or not
-            public static readonly int z_offspringTamed = $"{Plugin.ModGuid}.z_offspringTamed".GetStableHashCode();
-
-            //
-            // Egg
-            //
-
-            // used to store flag if valheim is handling the egg grow update or we (0=undecided, 1=valheim, 2=otab)
-            public static readonly int z_EggBehavior = $"{Plugin.ModGuid}.z_EggBehavior".GetStableHashCode();
-
-            // used to store current selected grown prefab for the egg because it can vary based on our egg data
-            public static readonly int z_eggGrownPrefab = $"{Plugin.ModGuid}.z_eggGrownPrefab".GetStableHashCode();
-
-            // used to store flag if egg's grown gets automatically tamed because it can vary based on our egg data
-            public static readonly int z_eggGrownTamed = $"{Plugin.ModGuid}.z_eggGrownTamed".GetStableHashCode();
-
-            // used to store flag to show hatch effect or not because it can vary based on our egg data
-            public static readonly int z_eggShowHatchEffect = $"{Plugin.ModGuid}.z_eggShowHatchEffect".GetStableHashCode();
 
             //
             // Item

@@ -17,27 +17,29 @@ namespace OfTamingAndBreeding.Utilities
 
             var start = root.Start;
 
-            // Mark.Line/Column can be long -> robust clamping after int
             int line = ClampToInt(start.Line);
             int column = ClampToInt(start.Column);
 
-            // 2) Text normalisieren & Zeilen splitten
-            var lines = (yamlText ?? string.Empty).Replace("\r\n", "\n").Split('\n');
+            var lines = (yamlText ?? string.Empty)
+                .Replace("\r\n", "\n")
+                .Split('\n');
 
-            string errorLine = (line >= 0 && line < lines.Length)
-                ? lines[line]
+            int lineIndex = line - 1;
+
+            string errorLine = (lineIndex >= 0 && lineIndex < lines.Length)
+                ? lines[lineIndex]
                 : "<line unavailable>";
 
-            // Caret position clamps (not extending beyond line length)
-            int caretPos = column;
+            int caretPos = column - 1;
             if (caretPos < 0) caretPos = 0;
-            if (errorLine != null && caretPos > errorLine.Length) caretPos = errorLine.Length;
+            if (errorLine != null && caretPos > errorLine.Length)
+                caretPos = errorLine.Length;
 
             string caret = new string(' ', caretPos) + "^";
 
             return $@"{context}
 Error: {root.Message}
-At line {line + 1}, column {caretPos + 1}:
+At line {line}, column {column}:
 
 {errorLine}
 {caret}";
