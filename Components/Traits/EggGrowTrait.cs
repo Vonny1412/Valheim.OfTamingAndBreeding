@@ -299,7 +299,7 @@ namespace OfTamingAndBreeding.Components.Traits
             }
             else
             {
-                if (!Plugin.IsServerDataLoaded())
+                if (!Plugin.IsOTABMode())
                 {
                     return "";
                 }

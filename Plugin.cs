@@ -217,7 +217,7 @@ namespace OfTamingAndBreeding
             return val;
         }
 
-        public static bool IsServerDataLoaded()
+        public static bool IsOTABMode()
         {
             return DataProcessingManager.IsDataLoaded();
         }

@@ -1,5 +1,5 @@
 ﻿using HarmonyLib;
-using OfTamingAndBreeding.Components.Extensions;
+using OfTamingAndBreeding.Components.Traits;
 using System;
 
 namespace OfTamingAndBreeding.Patches

@@ -8,10 +8,7 @@ namespace OfTamingAndBreeding.Components.Traits
 {
     public class AnimalAITrait : OTABComponent<AnimalAITrait>
     {
-
-        
-
-        // set by registry processor
+        // prefab values
         [SerializeField] public List<ItemDrop> m_consumeItems = null;
         [SerializeField] public float m_consumeRange = 2f;
         [SerializeField] public float m_consumeSearchRange = 5f;
@@ -19,10 +16,7 @@ namespace OfTamingAndBreeding.Components.Traits
         [SerializeField] public bool m_avoidLand = false;
         [SerializeField] public bool m_fleeInLava = true;
 
-        // used by TameableTrait
-        [NonSerialized] public Action<ItemDrop> m_onConsumedItem = null;
-        
-        // set in awake
+        // instance values
         [NonSerialized] private ZNetView m_nview = null;
         [NonSerialized] private AnimalAI m_animalAI = null;
         [NonSerialized] private Tameable m_tameable = null;
@@ -31,6 +25,7 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private ZSyncAnimation m_animator = null;
         [NonSerialized] private ItemDrop m_consumeTarget = null;
         [NonSerialized] private float m_consumeSearchTimer = 0;
+        [NonSerialized] public Action<ItemDrop> m_onConsumedItem = null;
         [NonSerialized] private GameObject m_follow = null;
 
         private void Awake()

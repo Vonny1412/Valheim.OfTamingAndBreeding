@@ -54,7 +54,8 @@ namespace OfTamingAndBreeding
 
             private const string Section_Server_Gameplay = "Server - Gameplay";
 
-            public static ConfigEntry<bool> EnableAntiJammingSystem { get; private set; } // todo: needs wiki entry
+            public static ConfigEntry<bool> EnableAntiJammingSystem { get; private set; }
+            public static ConfigEntry<bool> EnableAntiJammingWhileTaming { get; private set; }
 
             public static ConfigEntry<float> GlobalBaseLevelUpChance { get; private set; }
             public static ConfigEntry<float> GlobalPregnancyDurationFactor { get; private set; }
@@ -136,8 +137,24 @@ namespace OfTamingAndBreeding
 
                 section = Section_Server_Gameplay;
 
-                EnableAntiJammingSystem = Config.BindConfigInOrder<bool>(section, "EnableAntiJammingSystem", true, "Enabled/disables the whole anti-jamming system of OTAB", synced: true);
+                EnableAntiJammingSystem = Config.BindConfigInOrder<bool>(section, "EnableAntiJammingSystem", true, "Enables/disables OTAB's anti-jamming system, which prevents tamed creatures from procreating when they are confined without enough room to move.", synced: true);
+                EnableAntiJammingSystem.SettingChanged += (object sender, EventArgs args) => {
+                    foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
+                    {
+                        var baseAITrait = baseAI.GetComponent<BaseAITrait>();
+                        baseAITrait.ResetAntiJam();
+                    }
+                };
 
+                EnableAntiJammingWhileTaming = Config.BindConfigInOrder<bool>(section, "EnableAntiJammingWhileTaming", false, "Extends the anti-jamming system to creatures that are currently being tamed, instead of only fully tamed creatures.", synced: true);
+                EnableAntiJammingWhileTaming.SettingChanged += (object sender, EventArgs args) => {
+                    foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
+                    {
+                        var baseAITrait = baseAI.GetComponent<BaseAITrait>();
+                        baseAITrait.ResetAntiJam();
+                    }
+                };
+                
                 GlobalBaseLevelUpChance = Config.BindConfigInOrder<float>(section, "GlobalBaseLevelUpChance", 0f, "Adds a global base chance to level up. This value is added to each creature's individual level up chance defined in the YAML files.", acceptableValues: new AcceptableValueRange<float>(0, 1), synced: true);
 
                 GlobalPregnancyDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalPregnancyDurationFactor", 1f, "Global multiplier for PregnancyDuration.  Applies immediately; lowering it can instantly finish ongoing pregnancy on the next update.", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);

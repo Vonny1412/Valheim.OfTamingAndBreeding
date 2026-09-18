@@ -1,17 +1,34 @@
 ﻿using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Utilities;
-using OfTamingAndBreeding.ValheimAPI;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using TMPro;
 using UnityEngine;
+using YamlDotNet.Core.Tokens;
 
 namespace OfTamingAndBreeding.Components.Traits
 {
     public class BaseAITrait : OTABComponent<BaseAITrait>
     {
+
+        // prefab values
+        [SerializeField] public bool m_tamedStayNearSpawn = false;
+        [SerializeField] public float m_idleSoundChanceWhenTamed = -1f;
+        [SerializeField] private int m_consumeItemDataIndex = -1;
+
+
+
+
+
+
+
+
+
+
+
+
         public class ConsumeItem
         {
             internal ItemDrop itemDrop;
@@ -31,31 +48,22 @@ namespace OfTamingAndBreeding.Components.Traits
             };
         }
 
-        // set in awake
+        // instance values
         [NonSerialized] private ZNetView m_nview = null;
         [NonSerialized] private BaseAI m_baseAI = null;
-        [NonSerialized] private MonsterAI m_monsterAI = null;
         [NonSerialized] private TameableTrait m_tameableTrait = null;
         [NonSerialized] private AnimalAITrait m_animalAITrait = null;
         [NonSerialized] private CharacterTrait m_characterTrait = null;
         [NonSerialized] private AnimationClipOverlay m_consumeClip = null;
 
-        // set in registration
-        [SerializeField] public bool m_tamedStayNearSpawn = false;
-        [SerializeField] public float m_idleSoundChanceWhenTamed = -1f;
-        [SerializeField] private int m_consumeItemDataIndex = -1;
-
         private void Awake()
         {
             m_nview = GetComponent<ZNetView>();
             m_baseAI = GetComponent<BaseAI>();
-            m_monsterAI = GetComponent<MonsterAI>();
             m_tameableTrait = GetComponent<TameableTrait>();
             m_animalAITrait = GetComponent<AnimalAITrait>();
             m_characterTrait = GetComponent<CharacterTrait>();
             m_consumeClip = GetComponent<AnimationClipOverlay>();
-
-            m_lastPosition = null;
 
             Register(this);
         }
@@ -222,6 +230,8 @@ namespace OfTamingAndBreeding.Components.Traits
         {
             m_characterTrait.UpdateHostilities();
 
+            UpdateJammedHud();
+
             if (m_animalAITrait && m_animalAITrait.UpdateAI(dt))
             {
                 return true;
@@ -238,7 +248,10 @@ namespace OfTamingAndBreeding.Components.Traits
                 return true;
             }
 
-            IdleMovementAntiJam(dt);
+            if (IdleMovementAntiJam(dt))
+            {
+                return true;
+            }
 
             if (m_animalAITrait && m_animalAITrait.IdleMovement(dt))
             {
@@ -322,31 +335,81 @@ namespace OfTamingAndBreeding.Components.Traits
 
 
         [NonSerialized] private float m_checkRandomMoveTimer = 0;
-        [NonSerialized] private const int m_idleMoveCheckCount = 3; // todo: add config option for interval-count
-        [NonSerialized] private const float m_idleMoveCheckDistMul = 0.5f; // todo: add config option
-        [NonSerialized] private Vector3? m_lastPosition;
+        [NonSerialized] private const int m_idleMoveCheckCount = 2;
+        [NonSerialized] private const float m_idleMoveCheckDistMul = 0.33333f;
+        [NonSerialized] private Vector3? m_lastPosition = null;
         [NonSerialized] private List<float> m_movedList = new List<float>();
-        [NonSerialized] private bool m_isJammed = false;
-        [NonSerialized] private float m_totalMovedDistance = 0f;
+        [NonSerialized] private bool m_avoidJam = false;
+        [NonSerialized] private Vector3 m_jamFleeTarget;
+        [NonSerialized] private GameObject m_jammedHud;
+        [NonSerialized] private GameObject m_awareHud;
+        [NonSerialized] private bool m_jammed = false;
+
+        public void SetJammedHud(GameObject jammedHud, GameObject awareHud)
+        {
+            m_jammedHud = jammedHud;
+            m_awareHud = awareHud;
+        }
+
+        private void UpdateJammedHud()
+        {
+            m_jammed = m_nview.GetZDO().GetInt(Plugin.ZDOVars.z_jammed, 0) == 1;
+            if (!m_jammedHud)
+            {
+                return;
+            }
+
+            //bool flag = m_baseAI.HaveTarget();
+            bool flag2 = m_baseAI.IsAlerted();
+            if (m_jammed && !flag2)
+            {
+                m_awareHud.SetActive(false);
+                m_jammedHud.SetActive(true);
+            }
+            else
+            {
+                m_awareHud.SetActive(true);
+                m_jammedHud.SetActive(false);
+            }
+        }
+
+
+
+
+
+
+        public void ResetAntiJam()
+        {
+            // this is egtting called on config change
+
+            m_checkRandomMoveTimer = 0f;
+            m_lastPosition = null;
+            m_movedList.Clear();
+            m_avoidJam = false;
+            if (m_nview.IsValid())
+            {
+                ZDOUtils.SetInt(m_nview.GetZDO(), Plugin.ZDOVars.z_jammed, 0);
+            }
+        }
+
+        private float GetTotalMovedDistance()
+        {
+            return m_movedList.Sum();
+        }
 
         public bool IsJammed()
         {
-            return m_isJammed;
+            return m_jammed;
         }
-
-        public bool CheckIsJammed()
-        {
-            return m_totalMovedDistance < GetMinRequiredMoveRange();
-        }
-
+        
         private float GetMinRequiredMoveRange()
         {
             return m_baseAI.m_randomMoveRange * m_idleMoveCheckDistMul;
         }
-
+        
         private bool CanBecomeJammed()
         {
-            if (!Plugin.IsServerDataLoaded())
+            if (!Plugin.IsOTABMode())
             {
                 return false;
             }
@@ -354,79 +417,86 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 return false;
             }
-            //if (!m_tameableTrait || !(m_tameableTrait.IsTamed() || m_tameableTrait.IsTamingStarted()))
-            if (!m_characterTrait.IsTamed())
+            if (!(m_characterTrait.IsTamed() || (m_tameableTrait && m_tameableTrait.IsTamingStarted())))
             {
                 return false;
             }
             return true;
         }
 
-        private static readonly EffectList m_emptyEffect = new EffectList();
 
-        public void AlertSilent()
-        {
-            if (m_baseAI.IsAlerted())
-            {
-                return;
-            }
-            var eff = m_baseAI.m_alertedEffects;
-            m_baseAI.m_alertedEffects = m_emptyEffect;
-            try
-            {
-                m_baseAI.SetAlerted(alerted: true);
-            }
-            finally
-            {
-                m_baseAI.m_alertedEffects = eff;
-            }
-        }
 
-        private void IdleMovementAntiJam(float dt)
+
+        private bool IdleMovementAntiJam(float dt)
         {
             if (!CanBecomeJammed())
             {
-                m_isJammed = false;
-                return;
+                ResetAntiJam();
+                return false;
             }
 
+            if (!m_nview.IsValid())
+            {
+                return false;
+            }
+            var zdo = m_nview.GetZDO();
+
+
+
+
+
+
             m_checkRandomMoveTimer -= dt;
-            if (m_checkRandomMoveTimer <= 0)
+            if (m_checkRandomMoveTimer <= 0f)
             {
                 m_checkRandomMoveTimer = m_baseAI.m_randomMoveInterval;
 
-                var curPosition = transform.position;
+                var currentPosition = transform.position;
+
                 if (m_lastPosition.HasValue)
                 {
-                    float curDist = Vector3.Distance(m_lastPosition.Value, curPosition);
-                    m_movedList.Add(curDist);
+                    m_movedList.Add(Vector3.Distance(m_lastPosition.Value, currentPosition));
                 }
-                m_lastPosition = curPosition;
+
+                m_lastPosition = currentPosition;
+
                 while (m_movedList.Count > m_idleMoveCheckCount)
                 {
                     m_movedList.RemoveAt(0);
                 }
-                m_totalMovedDistance = 0f;
-                foreach (var v in m_movedList)
-                {
-                    m_totalMovedDistance += v;
-                }
+
                 if (m_movedList.Count == m_idleMoveCheckCount)
                 {
-                    var wasJammed = m_isJammed;
-                    m_isJammed = CheckIsJammed();
-                    if (m_isJammed)
+                    var movedEnough = GetTotalMovedDistance() >= GetMinRequiredMoveRange();
+
+                    if (movedEnough)
                     {
-                        AlertSilent();
+                        m_avoidJam = false;
+                        ZDOUtils.SetInt(zdo, Plugin.ZDOVars.z_jammed, 0);
                     }
-                    else if (wasJammed)
+                    else
                     {
-                        m_baseAI.SetAlerted(alerted: false);
+                        if (!m_avoidJam)
+                        {
+                            m_avoidJam = true;
+                            m_jamFleeTarget = transform.position;
+                        }
+                        else
+                        {
+                            ZDOUtils.SetInt(zdo, Plugin.ZDOVars.z_jammed, 1);
+                        }
                     }
                 }
             }
+
+            if (m_avoidJam && !IsAlerted())
+            {
+                m_baseAI.Flee(dt, m_jamFleeTarget);
+                return true;
+            }
+            return false;
         }
-        
+
         public string GetAdminHoverInfoText()
         {
             if (!m_nview.IsValid())
@@ -436,13 +506,21 @@ namespace OfTamingAndBreeding.Components.Traits
 
             var text = "";
 
-            var movedDist = (float)(int)(m_totalMovedDistance * 10) / 10;
+            var movedDist = (float)(int)(GetTotalMovedDistance() * 10) / 10;
             var movedParts = string.Join(" + ", m_movedList.Select((d) => (float)(int)(d * 10) / 10));
             var movedText = $"Moved: {movedParts} = {movedDist} / {GetMinRequiredMoveRange()}";
+            var jammedText = $"Jammed: " + (m_jammed ? "true" : "false");
+            text += "\n" + Localization.instance.Localize("$otab_hover_admin_info", jammedText);
             text += "\n" + Localization.instance.Localize("$otab_hover_admin_info", movedText);
 
             return text;
         }
+
+
+
+
+
+
 
 
 

@@ -141,6 +141,10 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 return false;
             }
+            if (m_baseAITrait.IsJammed())
+            {
+                return false;
+            }
             return true;
         }
 
@@ -387,7 +391,6 @@ namespace OfTamingAndBreeding.Components.Traits
                     }
                     else
                     {
-                        // todo: broadcast me
                         m_tameable.m_sootheEffect?.Create(m_tameable.transform.position, m_tameable.transform.rotation);
                     }
                 }
