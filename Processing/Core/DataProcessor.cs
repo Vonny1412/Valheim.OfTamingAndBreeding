@@ -5,14 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using UnityEngine;
 using YamlDotNet.Core;
-using static Unity.IO.LowLevel.Unsafe.AsyncReadManagerMetrics;
 
 namespace OfTamingAndBreeding.Processing.Core
 {
     internal abstract class DataProcessor<T> : IDataProcessor where T : DataBase<T>
     {
+
 
         //
         // IDataProcessor
@@ -157,7 +156,7 @@ namespace OfTamingAndBreeding.Processing.Core
 
         public abstract void RegisterPrefab(string prefabName, T data);
 
-        public abstract bool EditPrefab(string prefabName, T data);
+        public abstract bool ProcessPrefab(string prefabName, T data);
 
         public abstract void FinalizeProcess();
 
@@ -300,9 +299,9 @@ namespace OfTamingAndBreeding.Processing.Core
             }
         }
 
-        public bool CallEditAllPrefabs()
+        public bool CallProcessAllPrefabs()
         {
-            Plugin.LogDebug($"{nameof(CallEditAllPrefabs)} {typeof(T).Name}");
+            Plugin.LogDebug($"{nameof(CallProcessAllPrefabs)} {typeof(T).Name}");
             var all = DataBase<T>.GetAll();
             var keys = all.Keys.ToList();
             var valid = true;
@@ -310,17 +309,17 @@ namespace OfTamingAndBreeding.Processing.Core
             {
                 if (!all.TryGetValue(prefabName, out var data))
                     continue;
-                Plugin.LogDebug($"{nameof(EditPrefab)} {typeof(T).Name} '{prefabName}'");
+                Plugin.LogDebug($"{nameof(ProcessPrefab)} {typeof(T).Name} '{prefabName}'");
                 try
                 {
-                    if (!EditPrefab(prefabName, data))
+                    if (!ProcessPrefab(prefabName, data))
                     {
                         valid = false;
                     }
                 }
                 catch (Exception)
                 {
-                    Plugin.LogFatal($"{ModelTypeName}.{nameof(EditPrefab)}() '{prefabName}' failed");
+                    Plugin.LogFatal($"{ModelTypeName}.{nameof(ProcessPrefab)}() '{prefabName}' failed");
                     throw;
                 }
             }

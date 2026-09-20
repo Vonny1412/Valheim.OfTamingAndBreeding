@@ -4,6 +4,11 @@ using OfTamingAndBreeding.ValheimAPI;
 using System;
 using TMPro;
 
+
+//todo: cleanup
+
+
+
 namespace OfTamingAndBreeding.Components.Traits
 {
     public class MonsterAITrait : OTABComponent<MonsterAITrait>

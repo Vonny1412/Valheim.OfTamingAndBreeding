@@ -4,6 +4,11 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+
+//todo: cleanup
+
+
+
 namespace OfTamingAndBreeding.Components.Traits
 {
     public class AnimalAITrait : OTABComponent<AnimalAITrait>
@@ -76,24 +81,36 @@ namespace OfTamingAndBreeding.Components.Traits
             m_animalAI.SetAlerted(alert: false); // complex, sets zdo
         }
 
-        public bool UpdateAI(float dt)
+        public bool OnUpdateAI(float dt)
         {
             if (m_avoidLand && !m_character.IsSwimming())
             {
                 m_animalAI.MoveToWater(dt, 20f);
                 return true;
             }
-
+            
             if (m_fleeInLava && m_character.InLava())
             {
                 m_animalAI.Flee(dt, m_character.transform.position - m_character.transform.forward);
                 return true;
             }
 
+
+            /*
+            // TODO: 
+            if ((m_afraidOfFire || m_avoidFire))
+            {
+                m_animalAI.AvoidFire(dt, m_targetCreature, m_afraidOfFire)
+
+                return true;
+            }
+            */
+
+
             return false;
         }
 
-        public bool IdleMovement(float dt)
+        public bool OnIdleMovement(float dt)
         {
             if (!m_nview.IsValid())
             {

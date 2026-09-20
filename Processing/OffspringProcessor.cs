@@ -1,20 +1,17 @@
 ﻿using Jotunn.Managers;
 using OfTamingAndBreeding.Components;
-using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Data.Models.SubData;
-using OfTamingAndBreeding.Utilities;
 using OfTamingAndBreeding.Processing.Core;
-using OfTamingAndBreeding.ValheimAPI;
+using OfTamingAndBreeding.Registry;
+using OfTamingAndBreeding.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using UnityEngine;
-using YamlDotNet.Core;
 
-namespace OfTamingAndBreeding.Registry.Processing
+namespace OfTamingAndBreeding.Processing
 {
     internal class OffspringProcessor : DataProcessor<OffspringFile>
     {
@@ -195,6 +192,10 @@ namespace OfTamingAndBreeding.Registry.Processing
                         Plugin.LogDebug($"{model}.{nameof(data.Clone)}: Reactivating cloned prefab for '{cloneFrom.name}'");
                         offspring = OTABPrefabRegistry.Instance.ReactivateCustomPrefab(offspringName, cloneFrom.name);
                     }
+                    if (!offspring)
+                    {
+                        return false;
+                    }
                 }
                 else
                 {
@@ -270,7 +271,7 @@ namespace OfTamingAndBreeding.Registry.Processing
         // EDIT PREFAB
         //------------------------------------------------
 
-        public override bool EditPrefab(string offspringName, OffspringFile data)
+        public override bool ProcessPrefab(string offspringName, OffspringFile data)
         {
             var model = $"{nameof(OffspringFile)}.{offspringName}";
             var valid = true;
@@ -326,13 +327,26 @@ namespace OfTamingAndBreeding.Registry.Processing
             OTABPrefabRegistry.Instance.DestroyComponentIfExists<Procreation>(offspringName, offspring); // offsprings do not procreate
             OTABPrefabRegistry.Instance.DestroyComponentIfExists<Tameable>(offspringName, offspring); // offsprings cannot be explicite tamed, can be readded by using Creature Processing
 
-            //PrefabRegistry.Instance.DestroyComponentIfExists<CharacterDrop>(offspringName, offspring);
             if (offspring.TryGetComponent<CharacterDrop>(out var charDrop))
             {
+                charDrop.m_drops = charDrop.m_drops
+                    .Select(drop => new CharacterDrop.Drop
+                    {
+                        m_prefab = drop.m_prefab,
+                        m_amountMin = drop.m_amountMin,
+                        m_amountMax = drop.m_amountMax,
+                        m_chance = drop.m_chance,
+                        m_onePerPlayer = drop.m_onePerPlayer,
+                        m_levelMultiplier = drop.m_levelMultiplier,
+                        m_dontScale = drop.m_dontScale,
+                    })
+                    .ToList();
+
                 foreach (var drop in charDrop.m_drops)
                 {
                     var isTrophy = drop.m_prefab.name.StartsWith("trophy", StringComparison.OrdinalIgnoreCase);
                     var isSpecial = drop.m_onePerPlayer || isTrophy;
+
                     if (isSpecial)
                     {
                         drop.m_amountMin = 0;
@@ -345,6 +359,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                         drop.m_chance /= 2;
                         drop.m_levelMultiplier = false;
                         drop.m_dontScale = true;
+
                         if (drop.m_amountMax > 1)
                         {
                             drop.m_amountMax = (int)(((float)drop.m_amountMax / 2) + 0.5f);
@@ -352,6 +367,11 @@ namespace OfTamingAndBreeding.Registry.Processing
                     }
                 }
             }
+
+
+
+
+
 
             if (offspring.TryGetComponent<MonsterAI>(out var monsterAI)) // todo: maybe add yaml option to allow offsprings with monster ai
             {
@@ -382,7 +402,7 @@ namespace OfTamingAndBreeding.Registry.Processing
             var levelFx = offspring.GetComponentInChildren<LevelEffects>(true);
             if (levelFx != null)
             {
-                UnityEngine.Object.Destroy(levelFx);
+                levelFx.enabled = false;
             }
 
 
@@ -480,12 +500,10 @@ namespace OfTamingAndBreeding.Registry.Processing
 
                 Plugin.LogDebug($"{model}.{nameof(data.Clone)}: Setting custom scaling to {setScale}");
 
-                offspring.transform.localScale = UnityEngine.Vector3.one * setScale;
-                offspringCharacter.m_eye.position = new UnityEngine.Vector3(
-                    offspringCharacter.m_eye.position.x * setScale,
-                    offspringCharacter.m_eye.position.y * setScale,
-                    offspringCharacter.m_eye.position.z * setScale
-                    );
+                offspring.transform.localScale *= setScale;
+
+
+
 
                 offspringCharacter.m_speed *= setScale;
 
@@ -496,53 +514,80 @@ namespace OfTamingAndBreeding.Registry.Processing
                 offspringCharacter.m_flySlowSpeed *= setScale;
                 offspringCharacter.m_flyFastSpeed *= setScale;
 
-                //offspringCharacter.m_turnSpeed /= setScale; // dont use this
-                //offspringCharacter.m_runTurnSpeed /= setScale; // dont use this
-                //offspringCharacter.m_swimTurnSpeed /= setScale; // dont use this
-                //offspringCharacter.m_flyTurnSpeed /= setScale; // dont use this
-
                 Plugin.LogDebug($"{model}.{nameof(data.Clone)}: Setting vfx scaling");
-                Utilities.VfxUtils.ScaleVfx(offspring, setScale); // scale model particles
+                VfxUtils.ScaleVfx(offspring, setScale); // scale model particles
 
-                var col = offspring.GetComponent<UnityEngine.CapsuleCollider>();
-                if (col)
-                {
-                    // not used anymore
-                    // delete, if unneccessary
-                    //col.height *= setScale; // dont use this because the height will already get scaled. additional scaling will shrink the collision-box for hover-text
-                    //col.radius *= setScale; // dont use this because the radius will already get scaled. additional scaling will shrink the collision-box for hover-text
-                    //col.center *= setScale;
-                }
 
-                Plugin.LogDebug($"{model}.{nameof(data.Clone)}: Setting effects scaling");
+
+
+
+                Plugin.LogDebug($"{model}.{nameof(data.Clone)}: Setting death effects scaling");
+                offspringCharacter.m_deathEffects = EffectUtils.CloneEffectList(offspringCharacter.m_deathEffects);
                 foreach (var eff in offspringCharacter.m_deathEffects.m_effectPrefabs)
                 {
+                    var originalEffect = eff.m_prefab;
 
-                    var clonedEffectName = $"{offspringName}_{eff.m_prefab.gameObject.name}";
+                    var clonedEffectName = $"{offspringName}_{originalEffect.name}";
                     var clonedEffect = PrefabManager.Instance.GetPrefab(clonedEffectName);
+
                     if (clonedEffect == null)
                     {
-                        clonedEffect = PrefabManager.Instance.CreateClonedPrefab(clonedEffectName, eff.m_prefab.gameObject.name);
-                    }
-                    eff.m_prefab = clonedEffect;
-
-                    var ragdoll = eff.m_prefab.GetComponent<Ragdoll>();
-                    if (ragdoll)
-                    {
-                        ragdoll.transform.localScale *= setScale;
-                        foreach (var eff2 in ragdoll.m_removeEffect.m_effectPrefabs)
-                        {
-                            Utilities.VfxUtils.ScaleVfx(eff2.m_prefab, setScale);
-                        }
+                        clonedEffect = PrefabManager.Instance.CreateClonedPrefab(
+                            clonedEffectName,
+                            originalEffect.name
+                        );
                     }
                     else
                     {
-                        Utilities.VfxUtils.ScaleVfx(eff.m_prefab, setScale);
+                        VfxUtils.RestoreVfx(clonedEffect, originalEffect);
+                    }
+                    VfxUtils.ScaleVfx(clonedEffect, setScale);
+                    eff.m_prefab = clonedEffect;
+
+                    // ragdoll
+
+                    var ragdoll = clonedEffect.GetComponent<Ragdoll>();
+                    var originalRagdoll = originalEffect.GetComponent<Ragdoll>();
+
+                    if (ragdoll && originalRagdoll)
+                    {
+                        ragdoll.transform.localScale = originalRagdoll.transform.localScale * setScale;
+                        ragdoll.m_removeEffect = EffectUtils.CloneEffectList(originalRagdoll.m_removeEffect);
+
+                        foreach (var eff2 in ragdoll.m_removeEffect.m_effectPrefabs)
+                        {
+                            var originalRemoveEffect = eff2.m_prefab;
+
+                            var clonedRemoveEffectName = $"{offspringName}_{originalEffect.name}_{originalRemoveEffect.name}";
+                            var clonedRemoveEffect = PrefabManager.Instance.GetPrefab(clonedRemoveEffectName);
+                            if (clonedRemoveEffect == null)
+                            {
+                                clonedRemoveEffect = PrefabManager.Instance.CreateClonedPrefab(clonedRemoveEffectName, originalRemoveEffect.name);
+                            }
+                            else
+                            {
+                                VfxUtils.RestoreVfx(clonedRemoveEffect, originalRemoveEffect
+                                );
+                            }
+
+                            VfxUtils.ScaleVfx(clonedRemoveEffect, setScale);
+                            eff2.m_prefab = clonedRemoveEffect;
+                        }
                     }
                 }
 
                 var scaler = OTABPrefabRegistry.Instance.GetOrAddComponent<ScaledCreature>(offspringName, offspring);
                 scaler.m_animationScale = 1 / setScale;
+
+
+
+
+
+
+
+
+
+
 
                 // do not hide the creature if we just go some steps away
                 var lodGroup = offspringCharacter.transform.Find("Visual")?.GetComponent<LODGroup>();
@@ -551,12 +596,21 @@ namespace OfTamingAndBreeding.Registry.Processing
                     // todo: is this beeing restored correctly?
                     lodGroup.size /= setScale;
                 }
+
+
+
+
+
+
+
             }
 
 
 
             /*
-             * testing to make a creature pickable
+             * just testing to make a creature pickable
+             * 
+             * do not remove, do not uncomment
              * 
             if (offspringName == "OTAB_Bat_pup")
             {
@@ -585,6 +639,13 @@ namespace OfTamingAndBreeding.Registry.Processing
 
         }
 
+
+
+
+
+
+
+
         //------------------------------------------------
         // FINALIZE
         //------------------------------------------------
@@ -600,6 +661,78 @@ namespace OfTamingAndBreeding.Registry.Processing
         public override void RestorePrefab(string offspringName)
         {
             OTABPrefabRegistry.Instance.RestorePrefab(offspringName, (current, backup) => {
+
+                current.transform.localScale = backup.transform.localScale;
+
+                var currentLodGroup = current.transform.Find("Visual")?.GetComponent<LODGroup>();
+                var backupLodGroup = backup.transform.Find("Visual")?.GetComponent<LODGroup>();
+                if (currentLodGroup && backupLodGroup)
+                {
+                    currentLodGroup.size = backupLodGroup.size;
+                }
+
+
+
+                var currentGrowup = current.GetComponent<Growup>();
+                var backupGrowup = backup.GetComponent<Growup>();
+                var currentFootStep = current.GetComponent<FootStep>();
+                var backupFootStep = backup.GetComponent<FootStep>();
+                var currentCharacterDrop = current.GetComponent<CharacterDrop>();
+                var backupCharacterDrop = backup.GetComponent<CharacterDrop>();
+                var currentMonsterAI = current.GetComponent<MonsterAI>();
+                var backupMonsterAI = backup.GetComponent<MonsterAI>();
+                var currentCharacter = current.GetComponent<Character>();
+                var backupCharacter = backup.GetComponent<Character>();
+
+                if (currentGrowup && backupGrowup)
+                {
+                    currentGrowup.m_grownPrefab = backupGrowup.m_grownPrefab;
+                    currentGrowup.m_altGrownPrefabs = backupGrowup.m_altGrownPrefabs;
+                }
+
+                if (currentFootStep && backupFootStep)
+                {
+                    currentFootStep.m_effects = backupFootStep.m_effects;
+                }
+
+                if (currentCharacterDrop && backupCharacterDrop)
+                {
+                    currentCharacterDrop.m_drops = backupCharacterDrop.m_drops;
+                }
+
+                if (currentMonsterAI && backupMonsterAI)
+                {
+                    // BaseAI references
+                    currentMonsterAI.m_onBecameAggravated = backupMonsterAI.m_onBecameAggravated;
+                    currentMonsterAI.m_alertedEffects = backupMonsterAI.m_alertedEffects;
+                    currentMonsterAI.m_idleSound = backupMonsterAI.m_idleSound;
+
+                    // MonsterAI references
+                    currentMonsterAI.m_onConsumedItem = backupMonsterAI.m_onConsumedItem;
+                    currentMonsterAI.m_wakeupEffects = backupMonsterAI.m_wakeupEffects;
+                    currentMonsterAI.m_sleepEffects = backupMonsterAI.m_sleepEffects;
+                    currentMonsterAI.m_consumeItems = backupMonsterAI.m_consumeItems;
+                }
+
+                if (currentCharacter && backupCharacter)
+                {
+                    currentCharacter.m_deathEffects = backupCharacter.m_deathEffects;
+                }
+
+                var currentLevelFx = current.GetComponentInChildren<LevelEffects>(true);
+                var backupLevelFx = backup.GetComponentInChildren<LevelEffects>(true);
+                if (currentLevelFx && backupLevelFx)
+                {
+                    currentLevelFx.enabled = backupLevelFx.enabled;
+                }
+
+                VfxUtils.RestoreVfx(current, backup);
+
+                var scaledCreature = current.GetComponent<ScaledCreature>();
+                if (scaledCreature)
+                {
+                    UnityEngine.Object.DestroyImmediate(scaledCreature);
+                }
             });
         }
         

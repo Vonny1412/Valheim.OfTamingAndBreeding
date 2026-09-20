@@ -1,5 +1,4 @@
 ﻿using OfTamingAndBreeding.Registry;
-using OfTamingAndBreeding.Registry.Processing;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -154,7 +153,7 @@ namespace OfTamingAndBreeding.Processing.Core
             }
             foreach (var p in dataProcessors)
             {
-                p.CallEditAllPrefabs();
+                valid &= p.CallProcessAllPrefabs();
             }
 
 

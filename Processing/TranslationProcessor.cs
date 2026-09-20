@@ -5,7 +5,7 @@ using Jotunn.Managers;
 using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Processing.Core;
 
-namespace OfTamingAndBreeding.Registry.Processing
+namespace OfTamingAndBreeding.Processing
 {
     internal class TranslationProcessor : DataProcessor<TranslationFile>
     {
@@ -59,7 +59,7 @@ namespace OfTamingAndBreeding.Registry.Processing
             local.AddTranslation(data.Language, data.Translations);
         }
 
-        public override bool EditPrefab(string fileName, TranslationFile data)
+        public override bool ProcessPrefab(string fileName, TranslationFile data)
         {
             return true;
         }

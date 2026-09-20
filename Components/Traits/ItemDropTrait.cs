@@ -2,6 +2,11 @@
 using OfTamingAndBreeding.Utilities;
 using System;
 
+
+//todo: cleanup
+
+
+
 namespace OfTamingAndBreeding.Components.Traits
 {
     public class ItemDropTrait : OTABComponent<ItemDropTrait>

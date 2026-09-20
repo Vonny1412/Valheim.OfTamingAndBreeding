@@ -1,12 +1,11 @@
-﻿using OfTamingAndBreeding.Common;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.Utilities
+namespace OfTamingAndBreeding.Registry
 {
     internal static partial class PrefabUtils
     {
@@ -22,57 +21,55 @@ namespace OfTamingAndBreeding.Utilities
             return string.Join("/", parts);
         }
 
-        private static void CopyPublicFields(Component src, Component dst)
-        {
-            var t = src.GetType();
-            foreach (var f in t.GetFields(BindingFlags.Instance | BindingFlags.Public))
-            {
-                if (f.IsInitOnly) continue;
-                try
-                {
-                    f.SetValue(dst, f.GetValue(src));
-                }
-                catch
-                {
-                    // dirty: keep going
-                }
-            }
-        }
-
         //------------------------------
         // single components
         //------------------------------
 
-        public static void RestoreComponent<T>(GameObject current, GameObject backup) where T : Component
+        public static void RestoreComponent<T>(GameObject current, GameObject backup)
+            where T : Component
         {
-            var src = backup.GetComponent<T>();
-            var dst = current.GetComponent<T>();
-            if (src == null)
-            {
-                if (dst != null)
-                {
-                    UnityEngine.Object.DestroyImmediate(dst);
-                }
-                return;
-            }
-            if (dst == null)
-            {
-                dst = current.AddComponent<T>();
-            }
-            CopyPublicFields(src, dst);
+            RestoreComponent(typeof(T), current, backup);
         }
 
-        public static void RestoreBaseAI(GameObject current, GameObject backup)
+        /// <summary>
+        /// Restores component existence and safely copyable value fields.
+        /// Reference-type fields are processor-owned and must be restored explicitly.
+        /// </summary>
+        public static void RestoreComponent(Type type, GameObject current, GameObject backup)
         {
-            var sourceAI = backup.GetComponent<BaseAI>();
-            var targetAI = current.GetComponent<BaseAI>();
+            var source = backup.GetComponent(type);
+            var target = current.GetComponent(type);
 
-            if (sourceAI == null || targetAI == null)
+            if (source == null)
+            {
+                if (target != null)
+                    UnityEngine.Object.DestroyImmediate(target);
+
                 return;
+            }
 
-            var snapshot = new FieldsSnapshot<BaseAI>(sourceAI);
-            snapshot.ApplyTo(targetAI);
+            if (target == null)
+                target = current.AddComponent(source.GetType());
+
+            CopyValueFields(source, target);
         }
+
+        private static void CopyValueFields(Component source, Component target)
+        {
+            var type = source.GetType();
+
+            foreach (var field in type.GetFields(BindingFlags.Instance | BindingFlags.Public))
+            {
+                if (field.IsInitOnly)
+                    continue;
+
+                if (!field.FieldType.IsValueType && field.FieldType != typeof(string))
+                    continue;
+
+                field.SetValue(target, field.GetValue(source));
+            }
+        }
+
 
         //------------------------------
         // children list

@@ -5,7 +5,7 @@ using OfTamingAndBreeding.Processing.Core;
 using System;
 using System.IO;
 
-namespace OfTamingAndBreeding.Registry.Processing
+namespace OfTamingAndBreeding.Processing
 {
     internal class IconProcessor : DataProcessor<IconFile>
     {
@@ -84,7 +84,7 @@ namespace OfTamingAndBreeding.Registry.Processing
         {
         }
 
-        public override bool EditPrefab(string iconName, IconFile data)
+        public override bool ProcessPrefab(string iconName, IconFile data)
         {
             return true;
         }

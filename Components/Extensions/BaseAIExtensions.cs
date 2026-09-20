@@ -1,5 +1,4 @@
-﻿using Mono.Cecil.Cil;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using UnityEngine;
 
@@ -104,9 +103,6 @@ namespace OfTamingAndBreeding.Components.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void GetWorldTimeDelta(this BaseAI that)
             => ValheimAPI.BaseAI.__IAPI_GetWorldTimeDelta_Invoker1.Invoke(that);
-
-
-
 
     }
 }

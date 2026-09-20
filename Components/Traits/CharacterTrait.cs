@@ -9,6 +9,11 @@ using System.Linq;
 using UnityEngine;
 using static UnityEngine.Networking.UnityWebRequest;
 
+
+//todo: cleanup
+
+
+
 namespace OfTamingAndBreeding.Components.Traits
 {
     public class CharacterTrait : OTABComponent<CharacterTrait>
@@ -323,13 +328,13 @@ namespace OfTamingAndBreeding.Components.Traits
 
             if (Plugin.IsAdmin() && Plugin.Configs.HoverShowAdminInfo.Value)
             {
-
+                string text2 = "";
                 if (m_baseAITrait)
                 {
                     var info = m_baseAITrait.GetAdminHoverInfoText();
                     if (info.Length > 0)
                     {
-                        text += "\n" + info;
+                        text2 += "<size=33%>\n\n</size>" + info.Trim();
                     }
                 }
 
@@ -338,7 +343,7 @@ namespace OfTamingAndBreeding.Components.Traits
                     var info = m_tameableTrait.GetAdminHoverInfoText();
                     if (info.Length > 0)
                     {
-                        text += "\n" + info;
+                        text2 += "<size=33%>\n\n</size>" + info.Trim();
                     }
                 }
 
@@ -347,10 +352,14 @@ namespace OfTamingAndBreeding.Components.Traits
                     var info = m_procreationTrait.GetAdminHoverInfoText();
                     if (info.Length > 0)
                     {
-                        text += "\n" + info;
+                        text2 += "<size=33%>\n\n</size>" + info.Trim();
                     }
                 }
 
+                if (!string.IsNullOrEmpty(text2))
+                {
+                    text += "\n" + text2.Trim();
+                }
             }
 
             return text;
@@ -412,12 +421,9 @@ namespace OfTamingAndBreeding.Components.Traits
                 return displayItems;
             }
 
-            // otab feature
-            // no need to check if otab data has been loaded
-            // if no data loaded HasCustomConsumeItems() will return false
-            if (m_baseAITrait.HasCustomConsumeItems(out var customItems))
+            if (m_baseAITrait.m_consumeItems != null )
             {
-                if (customItems.Length == 0)
+                if (m_baseAITrait.m_consumeItems.Length == 0)
                 {
                     return displayItems;
                 }
@@ -428,7 +434,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
                 var fedTimerDisabled = m_tameableTrait && m_tameableTrait.IsFedTimerDisabled();
 
-                foreach (var item in customItems)
+                foreach (var item in m_baseAITrait.m_consumeItems)
                 {
                     var displayName = L.Localize(item.itemDrop.m_itemData.m_shared.m_name);
                     var displayColor = Utilities.ColorUtils.GetColorBetween(

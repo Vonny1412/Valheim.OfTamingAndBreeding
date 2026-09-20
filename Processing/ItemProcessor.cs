@@ -1,16 +1,18 @@
 ﻿using Jotunn.Managers;
 using OfTamingAndBreeding.Components;
+using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Data.Models.SubData;
-using OfTamingAndBreeding.Utilities;
 using OfTamingAndBreeding.Processing.Core;
+using OfTamingAndBreeding.Registry;
+using OfTamingAndBreeding.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.Registry.Processing
+namespace OfTamingAndBreeding.Processing
 {
     internal partial class ItemProcessor : DataProcessor<ItemFile>
     {
@@ -216,6 +218,10 @@ namespace OfTamingAndBreeding.Registry.Processing
                         Plugin.LogDebug($"{model}.{nameof(data.Clone)}: Reactivating cloned prefab for '{cloneFrom.name}'");
                         item = OTABPrefabRegistry.Instance.ReactivateCustomPrefab(itemName, cloneFrom.name);
                     }
+                    if (!item)
+                    {
+                        return false;
+                    }
 
                     if (data.Clone.VisualFrom != null)
                     {
@@ -230,6 +236,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                             Plugin.LogError( $"{model}.{nameof(data.Clone)}.{nameof(data.Clone.VisualFrom)}: Prefab '{data.Clone.VisualFrom}' not found" );
                             return false;
                         }
+
                         if (!ApplyVisualFrom(item, cloneVisualsFrom, model))
                         {
                             return false;
@@ -325,7 +332,7 @@ namespace OfTamingAndBreeding.Registry.Processing
         // EDIT PREFAB
         //------------------------------------------------
 
-        public override bool EditPrefab(string itemName, ItemFile data)
+        public override bool ProcessPrefab(string itemName, ItemFile data)
         {
             var model = $"{nameof(ItemFile)}.{itemName}";
             var error = false;
@@ -392,7 +399,13 @@ namespace OfTamingAndBreeding.Registry.Processing
             }
             else if (data.Components.Floating == ComponentBehavior.Remove)
             {
-                OTABPrefabRegistry.Instance.DestroyComponentIfExists<Floating>(itemName, item);
+                //OTABPrefabRegistry.Instance.DestroyComponentIfExists<Floating>(itemName, item);
+                // do not destroy! we can just disable it
+                var itemFloating = item.GetComponent<Floating>();
+                if (itemFloating)
+                {
+                    itemFloating.enabled = false;
+                }
             }
 
             //
@@ -488,7 +501,7 @@ namespace OfTamingAndBreeding.Registry.Processing
                 {
                     itemEggGrow.m_hatchEffect = new EffectList
                     {
-                        m_effectPrefabs = Utilities.PrefabUtils.CreateEffectList(new string[] {
+                        m_effectPrefabs = Utilities.EffectUtils.CreateEffectList(new string[] {
                         "fx_chicken_birth",
                     })
                     };
@@ -502,6 +515,7 @@ namespace OfTamingAndBreeding.Registry.Processing
             else if (data.Components.EggGrow == ComponentBehavior.Remove)
             {
                 OTABPrefabRegistry.Instance.DestroyComponentIfExists<EggGrow>(itemName, item);
+                // seems we need to destroy. eggrow.start is using invokerepeating
             }
 
             // set last remaining egg values
@@ -612,8 +626,8 @@ namespace OfTamingAndBreeding.Registry.Processing
             {
                 foreach (var r in item.GetComponentsInChildren<UnityEngine.ParticleSystemRenderer>(true))
                 {
-                    UnityEngine.Object.DestroyImmediate(r);
-                    //r.enabled = false;
+                    //UnityEngine.Object.DestroyImmediate(r); // do not destroy, hard to restore
+                    r.enabled = false;
                 }
             }
             if (data.Clone.LightsScale.HasValue)
@@ -638,7 +652,7 @@ namespace OfTamingAndBreeding.Registry.Processing
             if (customIcon != null)
             {
                 SaveIcon(customIcon, $"{itemName} (final)");
-                originalIcons[itemName] = itemItemDataShared.m_icons;
+                originalIcons.TryAdd(itemName, itemItemDataShared.m_icons); // maybe its already added by custom visual part
                 itemItemDataShared.m_icons = new[] { customIcon };
             }
 
@@ -666,7 +680,14 @@ namespace OfTamingAndBreeding.Registry.Processing
                 var itemItemDrop = OTABPrefabRegistry.Instance.GetOriginalPrefab(itemName).GetComponent<ItemDrop>();
                 foreach (var s in itemItemDrop.m_itemData.m_shared.m_icons)
                 {
-                    if (s.texture) UnityEngine.Object.DestroyImmediate(s.texture);
+                    if (!s)
+                    {
+                        continue;
+                    }
+                    if (s.texture)
+                    {
+                        UnityEngine.Object.DestroyImmediate(s.texture);
+                    }
                     UnityEngine.Object.DestroyImmediate(s);
                 }
                 itemItemDrop.m_itemData.m_shared.m_icons = icons;
@@ -689,13 +710,59 @@ namespace OfTamingAndBreeding.Registry.Processing
             }
 
             OTABPrefabRegistry.Instance.RestorePrefab(itemName, (current, backup) => {
+
+                var currentItemDrop = current.GetComponent<ItemDrop>();
+                var backupItemDrop = backup.GetComponent<ItemDrop>();
+
+                if (currentItemDrop && backupItemDrop)
+                {
+                    var currentShared = currentItemDrop.m_itemData.m_shared;
+                    var backupShared = backupItemDrop.m_itemData.m_shared;
+
+                    currentShared.m_name = backupShared.m_name;
+                    currentShared.m_description = backupShared.m_description;
+                    currentShared.m_itemType = backupShared.m_itemType;
+                    currentShared.m_weight = backupShared.m_weight;
+                    currentShared.m_teleportable = backupShared.m_teleportable;
+
+                    currentShared.m_maxStackSize = backupShared.m_maxStackSize;
+                    currentShared.m_maxQuality = backupShared.m_maxQuality;
+                    currentShared.m_scaleByQuality = backupShared.m_scaleByQuality;
+                    currentShared.m_scaleWeightByQuality = backupShared.m_scaleWeightByQuality;
+
+                    currentShared.m_autoStack = backupShared.m_autoStack;
+                }
+
+                var currentFloating = current.GetComponent<Floating>();
+                var backupFloating = backup.GetComponent<Floating>();
+
+                if (currentFloating && backupFloating)
+                {
+                    currentFloating.enabled = backupFloating.enabled;
+                }
+
+                var currentEggGrow = current.GetComponent<EggGrow>();
+                var backupEggGrow = backup.GetComponent<EggGrow>();
+
+                if (currentEggGrow && backupEggGrow)
+                {
+                    currentEggGrow.m_grownPrefab = backupEggGrow.m_grownPrefab;
+                    currentEggGrow.m_hatchEffect = backupEggGrow.m_hatchEffect;
+                    currentEggGrow.m_growingObject = backupEggGrow.m_growingObject;
+                    currentEggGrow.m_notGrowingObject = backupEggGrow.m_notGrowingObject;
+                }
+
                 PrefabUtils.RestoreChildRenderers(current, backup);
                 PrefabUtils.RestoreChildLights(current, backup);
-                PrefabUtils.RestoreChildParticleSystems(current, backup);
+                //PrefabUtils.RestoreChildParticleSystems(current, backup); // todo: no more neccessary, remove if everything is okay
                 PrefabUtils.RestoreChildParticleRenderers(current, backup);
                 PrefabUtils.RestoreChildLightFlickerBaseColor(current, backup);
-                // we dont need to use this anymore (or do we? it doesnt seem to be the case)
-                //RestoreHelper.RestoreItemIcons(current, backup);
+
+                var comp1 = current.GetComponent(typeof(ScaledEgg));
+                if (comp1)
+                {
+                    UnityEngine.Object.DestroyImmediate(comp1);
+                }
             });
 
             if (OTABPrefabRegistry.IsCustomPrefab(itemName))
@@ -710,6 +777,18 @@ namespace OfTamingAndBreeding.Registry.Processing
 
         public override void CleanupProcess()
         {
+
+            foreach (var texture in customTextures)
+            {
+                if (texture)
+                {
+                    // destroy baked textures
+                    // not destroying them will result in ghost objects
+                    UnityEngine.Object.DestroyImmediate(texture);
+                }
+            }
+            customTextures.Clear();
+
             originalIcons.Clear();
             customVisuals.Clear();
             originalVisualStates.Clear();

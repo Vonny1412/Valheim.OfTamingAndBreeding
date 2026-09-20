@@ -54,8 +54,8 @@ namespace OfTamingAndBreeding
 
             private const string Section_Server_Gameplay = "Server - Gameplay";
 
-            public static ConfigEntry<bool> EnableAntiJammingSystem { get; private set; }
-            public static ConfigEntry<bool> EnableAntiJammingWhileTaming { get; private set; }
+            public static ConfigEntry<bool> EnableAntiExploitSystem { get; private set; }
+            public static ConfigEntry<bool> EnableAntiExploitWhileTaming { get; private set; }
 
             public static ConfigEntry<float> GlobalBaseLevelUpChance { get; private set; }
             public static ConfigEntry<float> GlobalPregnancyDurationFactor { get; private set; }
@@ -68,6 +68,8 @@ namespace OfTamingAndBreeding
             public static ConfigEntry<bool> UseBetterSearchForFood { get; private set; }
             public static ConfigEntry<float> TamingSlowdownPerStar { get; private set; }
 
+            public static ConfigEntry<bool> PreventProcreationWhileFollowing { get; private set; }
+            
 
             private const string Section_Server_CLLC = "Server - Creature Level & Loot Control";
 
@@ -132,26 +134,25 @@ namespace OfTamingAndBreeding
                 CacheFileName = Config.BindConfigInOrder<string>(section, "CacheFileName", "local-{world}-{seed}", "Template for the cache file name (server-resolved). Supports placeholders like {world} and {seed}. Read on world/server start and not synchronized during runtime.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
                 ExportIconsToCache = Config.BindConfigInOrder<bool>(section, "ExportIconsToCache", false, "When enabled, item icons are written to the server cache directory for customization or debug purposes.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
                 DumpPrefabsToCache = Config.BindConfigInOrder<bool>(section, "DumpPrefabsToCache", false, "", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
-                //todo: DumpPrefabsToCache need descr and wiki entry
-
+                //todo: DumpPrefabsToCache need descr
 
                 section = Section_Server_Gameplay;
 
-                EnableAntiJammingSystem = Config.BindConfigInOrder<bool>(section, "EnableAntiJammingSystem", true, "Enables/disables OTAB's anti-jamming system, which prevents tamed creatures from procreating when they are confined without enough room to move.", synced: true);
-                EnableAntiJammingSystem.SettingChanged += (object sender, EventArgs args) => {
+                EnableAntiExploitSystem = Config.BindConfigInOrder<bool>(section, "EnableAntiExploitSystem", true, "Enables/disables OTAB's anti-exploit system. This actively tests creature movement and prevents confined animals without enough room to move from procreating.", synced: true);
+                EnableAntiExploitSystem.SettingChanged += (object sender, EventArgs args) => {
                     foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
                     {
                         var baseAITrait = baseAI.GetComponent<BaseAITrait>();
-                        baseAITrait.ResetAntiJam();
+                        baseAITrait.ResetAntiExploitState();
                     }
                 };
 
-                EnableAntiJammingWhileTaming = Config.BindConfigInOrder<bool>(section, "EnableAntiJammingWhileTaming", false, "Extends the anti-jamming system to creatures that are currently being tamed, instead of only fully tamed creatures.", synced: true);
-                EnableAntiJammingWhileTaming.SettingChanged += (object sender, EventArgs args) => {
+                EnableAntiExploitWhileTaming = Config.BindConfigInOrder<bool>(section, "EnableAntiExploitWhileTaming", false, "Extends the anti-exploit system to creatures currently being tamed, preventing taming progress while they are confined without enough room to move.", synced: true);
+                EnableAntiExploitWhileTaming.SettingChanged += (object sender, EventArgs args) => {
                     foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
                     {
                         var baseAITrait = baseAI.GetComponent<BaseAITrait>();
-                        baseAITrait.ResetAntiJam();
+                        baseAITrait.ResetAntiExploitState();
                     }
                 };
                 
@@ -206,7 +207,9 @@ namespace OfTamingAndBreeding
                     "Formula: progress /= (1 + stars × value)\n" +
                     "Example (base time = 100s, value = 1.0): 0★ = 100s, 1★ = 200s, 2★ = 300s", synced: true);
 
+                PreventProcreationWhileFollowing = Config.BindConfigInOrder<bool>(section, "PreventProcreationWhileFollowing", true, "Prevents tamed creatures from procreating while they are commanded to follow a player.", synced: true);
 
+                
                 section = Section_Server_CLLC;
 
                 CLLC_Infusion_WeightDirectParent = Config.BindConfigInOrder<float>(section, "Infusion_WeightDirectParent", 60, "Weight for inheriting infusion from the direct parent creature.", synced: true);

@@ -1,62 +1,48 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Components.Core
 {
-    public abstract class OTABComponent<T> : MonoBehaviour
-        where T : OTABComponent<T>
+    public abstract class OTABComponent<T> : MonoBehaviour where T : OTABComponent<T>
     {
+        private static readonly Dictionary<GameObject, T> s_cache = new Dictionary<GameObject, T>();
 
-        private static readonly Dictionary<GameObject, T> cache = new Dictionary<GameObject, T>();
-
-        internal static void Register(T component)
+        public static void RegisterType(params Type[] requiredTypes)
         {
-            cache[component.gameObject] = component;
+            OTABComponentTypeRegistry.RegisterType(typeof(T), requiredTypes);
         }
 
-        internal static void Unregister(T component)
+        protected static void Register(T component)
         {
-            cache.Remove(component.gameObject);
+            s_cache[component.gameObject] = component;
+        }
+
+        protected static void Unregister(T component)
+        {
+            s_cache.Remove(component.gameObject);
         }
 
         public static T GetUnsafe(GameObject prefab)
         {
-            return cache[prefab];
+            return s_cache[prefab];
         }
 
         public static bool TryGet(GameObject prefab, out T component)
         {
-            return cache.TryGetValue(prefab, out component);
+            return s_cache.TryGetValue(prefab, out component);
         }
 
         public static T GetOrAddComponent(GameObject prefab)
         {
             var component = prefab.GetComponent<T>();
-            if (!component)
+            if (component)
             {
-                Plugin.LogDebug($"Adding OTABComponent '{typeof(T).Name}' to prefab '{prefab.name}'");
-                component = prefab.AddComponent<T>();
-                OTABComponentRegistry.registeredTypes.Add(typeof(T));
+                return component;
             }
+            Plugin.LogDebug($"Adding OTABComponent '{typeof(T).Name}' to prefab '{prefab.name}'");
+            component = prefab.AddComponent<T>();
             return component;
-        }
-
-        public static void AddComponentToPrefabs(params Type[] requiredTypes)
-        {
-            foreach (var prefab in ZNetScene.instance.m_prefabs)
-            {
-                if (!prefab.GetComponent<T>())
-                {
-                    if (requiredTypes.All((t) => (bool)prefab.GetComponent(t)))
-                    {
-                        Plugin.LogDebug($"Adding OTABComponent '{typeof(T).Name}' to prefab '{prefab.name}'");
-                        prefab.AddComponent<T>();
-                        OTABComponentRegistry.registeredTypes.Add(typeof(T));
-                    }
-                }
-            }
         }
 
     }

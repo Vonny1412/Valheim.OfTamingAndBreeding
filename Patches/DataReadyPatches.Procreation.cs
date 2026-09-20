@@ -1,6 +1,5 @@
 ﻿using HarmonyLib;
 using OfTamingAndBreeding.Components.Traits;
-using System;
 
 namespace OfTamingAndBreeding.Patches
 {
@@ -12,7 +11,6 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         private static void Procreation_IsDue_Prefix(Procreation __instance)
         {
-            //var trait = __instance.GetComponent<ProcreationTrait>();
             var trait = ProcreationTrait.GetUnsafe(__instance.gameObject);
             trait.SetRealPregnancyDuration(__instance.m_pregnancyDuration);
         }
@@ -29,12 +27,25 @@ namespace OfTamingAndBreeding.Patches
 
             var trait = ProcreationTrait.GetUnsafe(__instance.gameObject);
             trait.SetRealPregnancyChance(__instance.m_pregnancyChance);
-            if (trait.OnProcreate())
-            {
-                return false;
-            }
-            return true;
+            trait.OnProcreate();
+
+            return false;
         }
+
+
+        /*
+
+        public bool ReadyForProcreation()
+        {
+            if (m_tameable.IsTamed() && !IsPregnant())
+            {
+                return !m_tameable.IsHungry();
+            }
+
+            return false;
+        }
+
+        */
 
     }
 }

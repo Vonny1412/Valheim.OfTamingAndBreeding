@@ -67,7 +67,7 @@ namespace OfTamingAndBreeding.Patches
 
             //var trait = __instance.GetComponent<BaseAITrait>();
             var trait = BaseAITrait.GetUnsafe(__instance.gameObject);
-            if (trait.UpdateAI(dt))
+            if (trait.OnUpdateAI(dt))
             {
                 __result = false;
             }

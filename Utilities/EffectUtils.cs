@@ -4,8 +4,41 @@ using UnityEngine;
 
 namespace OfTamingAndBreeding.Utilities
 {
-    internal static partial class PrefabUtils
+    internal static partial class EffectUtils
     {
+
+
+
+
+        internal static EffectList CloneEffectList(EffectList source)
+        {
+            var clone = new EffectList
+            {
+                m_effectPrefabs = source.m_effectPrefabs
+                    .Select(effect => new EffectList.EffectData
+                    {
+                        m_prefab = effect.m_prefab,
+                        m_enabled = effect.m_enabled,
+                        m_variant = effect.m_variant,
+                        m_attach = effect.m_attach,
+                        m_follow = effect.m_follow,
+                        m_inheritParentRotation = effect.m_inheritParentRotation,
+                        m_inheritParentScale = effect.m_inheritParentScale,
+                        m_multiplyParentVisualScale = effect.m_multiplyParentVisualScale,
+                        m_randomRotation = effect.m_randomRotation,
+                        m_scale = effect.m_scale,
+                        m_childTransform = effect.m_childTransform,
+                    })
+                    .ToArray()
+            };
+
+            return clone;
+        }
+
+
+
+
+
 
         public static EffectList.EffectData CreateEffectData(GameObject prefab)
             => prefab ? new EffectList.EffectData

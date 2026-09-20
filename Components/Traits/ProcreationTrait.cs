@@ -1,10 +1,14 @@
 ﻿using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Utilities;
-using OfTamingAndBreeding.ValheimAPI;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+
+
+//todo: cleanup
+
+
 
 namespace OfTamingAndBreeding.Components.Traits
 {
@@ -14,10 +18,7 @@ namespace OfTamingAndBreeding.Components.Traits
         {
             public float Weight { get; }
             public string Prefab { get; }
-            public ProcreationPartner(
-                string prefab,
-                float weight
-                )
+            public ProcreationPartner(string prefab, float weight)
             {
                 Prefab = prefab;
                 Weight = weight;
@@ -329,28 +330,6 @@ namespace OfTamingAndBreeding.Components.Traits
             return text;
         }
         
-        public bool OnProcreate()
-        {
-
-            // Procreation component COULD work without Tameable component
-            // maybe one day I gonna add non-tameable procration feature
-            // but that would also mean to build a feeding/hungry workaround - maybe in far future
-            var isTamed = m_tameable ? m_tameable.IsTamed() : (m_character ? m_character.IsTamed() : false);
-            if (!isTamed || !m_nview.IsValid() || !m_nview.IsOwner())
-            {
-                // note: valheim also immediatly returns if its not the owner
-                return true; // handled
-            }
-
-            // check if procreation is disabled while swimming
-            if (m_procreateWhileSwimming == false && m_character && m_character.IsSwimming())
-            {
-                return true; // handled
-            }
-
-            DoProcreate();
-            return true; // handled
-        }
 
 
 
@@ -378,8 +357,32 @@ namespace OfTamingAndBreeding.Components.Traits
         }
 
 
-        private void DoProcreate()
+        internal void OnProcreate()
         {
+            if (!m_nview.IsValid() || !m_nview.IsOwner())
+            {
+                return;
+            }
+
+            // Procreation component COULD work without Tameable component
+            // maybe one day I gonna add non-tameable procration feature
+            // but that would also mean to build a feeding/hungry workaround - maybe in far future
+            var isTamed = m_tameable ? m_tameable.IsTamed() : (m_character ? m_character.IsTamed() : false);
+            if (!isTamed)
+            {
+                return;
+            }
+
+            if (m_procreateWhileSwimming == false && m_character && m_character.IsSwimming())
+            {
+                return;
+            }
+
+            if (Plugin.Configs.PreventProcreationWhileFollowing.Value == true && m_baseAITrait.GetFollowTarget())
+            {
+                return;
+            }
+
             var zdo = m_nview.GetZDO();
 
             // original block, just keep it
@@ -412,7 +415,7 @@ namespace OfTamingAndBreeding.Components.Traits
                     // Valheim uses inverted logic here
                     return;
                 }
-                if (m_baseAITrait.IsAlerted() || m_baseAITrait.IsJammed() || m_tameable.IsHungry())
+                if (m_baseAITrait.IsAlerted() || m_baseAITrait.IsConfined() || m_tameable.IsHungry())
                 {
                     return;
                 }

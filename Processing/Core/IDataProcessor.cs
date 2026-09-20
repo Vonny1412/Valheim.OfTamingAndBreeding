@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace OfTamingAndBreeding.Processing.Core
 {
@@ -23,7 +22,7 @@ namespace OfTamingAndBreeding.Processing.Core
         bool CallReserveAllPrefabs();
         bool CallValidateAllPrefabs();
         void CallRegisterAllPrefabs();
-        bool CallEditAllPrefabs();
+        bool CallProcessAllPrefabs();
         void CallFinalizeProcess();
         void CallRestoreAllPrefabs();
         void CallCleanupProcess();

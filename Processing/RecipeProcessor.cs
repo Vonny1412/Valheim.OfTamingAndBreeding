@@ -1,12 +1,10 @@
 ﻿using Jotunn.Managers;
 using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Processing.Core;
-using OfTamingAndBreeding.Integrations.Mods;
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.Registry.Processing
+namespace OfTamingAndBreeding.Processing
 {
     internal class RecipeProcessor : DataProcessor<RecipeFile>
     {
@@ -212,7 +210,7 @@ namespace OfTamingAndBreeding.Registry.Processing
             otabRecipes[recipeName] = recipe;
         }
 
-        public override bool EditPrefab(string recipeName, RecipeFile data)
+        public override bool ProcessPrefab(string recipeName, RecipeFile data)
         {
             return true;
         }

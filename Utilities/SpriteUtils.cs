@@ -1,5 +1,6 @@
 ﻿using Jotunn.Managers;
 using System;
+using System.Reflection;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Utilities
@@ -141,33 +142,74 @@ namespace OfTamingAndBreeding.Utilities
             UnityEngine.Object.Destroy(tex);
         }
 
-        public static Texture2D LoadImageFromFile(string path, bool readable = true)
+
+
+
+        public static Texture2D LoadTextureFromFile(string path, bool readable = true)
         {
             if (string.IsNullOrWhiteSpace(path) || !System.IO.File.Exists(path))
-                return null;
-
-            byte[] data = System.IO.File.ReadAllBytes(path);
-            return LoadImageFromBytes(data, readable);
-        }
-
-        public static Texture2D LoadImageFromBytes(byte[] data, bool readable = true)
-        {
-            if (data == null || data.Length == 0)
-                return null;
-
-            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false, false);
-
-            // requires UnityEngine.ImageConversionModule
-            if (!UnityEngine.ImageConversion.LoadImage(tex, data, !readable))
             {
-                UnityEngine.Object.Destroy(tex);
                 return null;
             }
-
-            tex.wrapMode = TextureWrapMode.Clamp;
-            tex.filterMode = FilterMode.Bilinear;
-
-            return tex;
+            return LoadTextureFromBytes(System.IO.File.ReadAllBytes(path), readable);
         }
+
+        public static Texture2D LoadTextureFromResource(string path, Assembly assembly = null, bool readable = true)
+        {
+            assembly ??= Assembly.GetExecutingAssembly();
+            using var stream = assembly.GetManifestResourceStream(path);
+            if (stream == null)
+            {
+                return null;
+            }
+            var data = new byte[stream.Length];
+            stream.Read(data, 0, data.Length);
+            return LoadTextureFromBytes(data, readable);
+        }
+
+        public static Texture2D LoadTextureFromBytes(byte[] data, bool readable = true)
+        {
+            if (data == null || data.Length == 0)
+            {
+                return null;
+            }
+            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false, false);
+            if (!ImageConversion.LoadImage(texture, data, !readable))
+            {
+                UnityEngine.Object.Destroy(texture);
+                return null;
+            }
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+            return texture;
+        }
+
+        public static Sprite LoadSpriteFromFile(string path, string name = null, float pixelsPerUnit = 100f)
+        {
+            var texture = LoadTextureFromFile(path);
+            return CreateSprite(texture, name, pixelsPerUnit);
+        }
+
+        public static Sprite LoadSpriteFromResource(string path, string name = null, Assembly assembly = null, float pixelsPerUnit = 100f)
+        {
+            var texture = LoadTextureFromResource(path, assembly);
+            return CreateSprite(texture, name, pixelsPerUnit);
+        }
+
+        public static Sprite CreateSprite(Texture2D texture, string name = null, float pixelsPerUnit = 100f)
+        {
+            if (!texture)
+            {
+                return null;
+            }
+            if (!string.IsNullOrEmpty(name))
+            {
+                texture.name = name;
+            }
+            var sprite = Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(0.5f, 0.5f), pixelsPerUnit);
+            sprite.name = texture.name;
+            return sprite;
+        }
+
     }
 }

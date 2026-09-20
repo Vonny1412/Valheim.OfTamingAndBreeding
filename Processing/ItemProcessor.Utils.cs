@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.Registry.Processing
+namespace OfTamingAndBreeding.Processing
 {
     internal partial class ItemProcessor : DataProcessor<ItemFile>
     {
@@ -77,9 +77,16 @@ namespace OfTamingAndBreeding.Registry.Processing
 
             EnsureVisualCollider(item, visualRoot, oldVisuals);
 
-            // get new icon for new model
+            // get+set new icon for new model
+            var itemDrop = item.GetComponent<ItemDrop>();
+            var shared = itemDrop.m_itemData.m_shared;
+            if (!originalIcons.ContainsKey(item.name))
+            {
+                // but wait! we also need to save the backup!
+                originalIcons[item.name] = shared.m_icons;
+            }
             var icon = SpriteUtils.RenderGameObject(item);
-            item.GetComponent<ItemDrop>().m_itemData.m_shared.m_icons = new[] { icon };
+            shared.m_icons = new[] { icon };
 
             return true;
         }
@@ -147,7 +154,7 @@ namespace OfTamingAndBreeding.Registry.Processing
             return result;
         }
 
-        private static void ShiftItemColors(GameObject item, float hueShift, float saturationShift, float brightnessShift)
+        private void ShiftItemColors(GameObject item, float hueShift, float saturationShift, float brightnessShift)
         {
             if (!item)
                 return;
@@ -175,9 +182,13 @@ namespace OfTamingAndBreeding.Registry.Processing
             }
         }
 
-        private static void ShiftMaterialColors(Material material, float hueShift, float saturationShift, float brightnessShift)
+        private void ShiftMaterialColors(Material material, float hueShift, float saturationShift, float brightnessShift)
         {
-            bool bakedMainColor = TryShiftMainTexture(material, hueShift, saturationShift, brightnessShift);
+            bool bakedMainColor = TryShiftMainTexture(material, hueShift, saturationShift, brightnessShift, out Texture2D customTexture);
+            if (customTexture)
+            {
+                customTextures.Add(customTexture);
+            }
             if (!bakedMainColor)
             {
                 if (material.HasProperty("_Color"))
@@ -203,8 +214,13 @@ namespace OfTamingAndBreeding.Registry.Processing
             }
         }
 
-        private static bool TryShiftMainTexture(Material material, float hueShift, float saturationShift, float brightnessShift)
+        private readonly HashSet<Texture2D> customTextures = new HashSet<Texture2D>();
+
+
+        private static bool TryShiftMainTexture(Material material, float hueShift, float saturationShift, float brightnessShift, out Texture2D createdTexture)
         {
+            createdTexture = null;
+
             if (!material.HasProperty("_MainTex") || !material.HasProperty("_Color"))
             {
                 return false;
@@ -244,8 +260,13 @@ namespace OfTamingAndBreeding.Registry.Processing
             //material.SetColor("_Color", new Color(1f, 1f, 1f, 1f));
             material.SetColor("_Color", new Color(1f, 1f, 1f, materialColor.a));
 
+            createdTexture = readable;
             return true;
         }
+
+
+
+
 
         private static Texture2D MakeReadableCopy(Texture2D source)
         {

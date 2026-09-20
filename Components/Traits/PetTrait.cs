@@ -5,6 +5,11 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+
+//todo: cleanup
+
+
+
 namespace OfTamingAndBreeding.Components.Traits
 {
     public class PetTrait : OTABComponent<PetTrait>

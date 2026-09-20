@@ -4,6 +4,11 @@ using UnityEngine;
 using UnityEngine.Animations;
 using UnityEngine.Playables;
 
+
+//todo: cleanup
+
+
+
 namespace OfTamingAndBreeding.Components
 {
     public class AnimationClipOverlay : OTABComponent<AnimationClipOverlay>

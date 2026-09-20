@@ -16,7 +16,7 @@ namespace OfTamingAndBreeding.Patches
             }
 
             var trait = BaseAITrait.GetUnsafe(__instance.gameObject);
-            if (trait.IdleMovement(dt))
+            if (trait.OnIdleMovement(dt))
             {
                 return false; // block original
             }

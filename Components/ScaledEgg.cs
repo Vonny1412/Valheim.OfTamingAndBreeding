@@ -2,6 +2,11 @@
 using System;
 using UnityEngine;
 
+
+//todo: cleanup
+
+
+
 namespace OfTamingAndBreeding.Components
 {
     public class ScaledEgg : OTABComponent<ScaledEgg>

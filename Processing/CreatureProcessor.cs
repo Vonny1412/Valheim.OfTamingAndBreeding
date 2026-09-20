@@ -3,6 +3,7 @@ using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Data.Models.SubData;
 using OfTamingAndBreeding.Processing.Core;
+using OfTamingAndBreeding.Registry;
 using OfTamingAndBreeding.Utilities;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ using System.Data;
 using System.Linq;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.Registry.Processing
+namespace OfTamingAndBreeding.Processing
 {
     internal class CreatureProcessor : DataProcessor<CreatureFile>
     {
@@ -339,13 +340,13 @@ namespace OfTamingAndBreeding.Registry.Processing
         // EDIT PREFAB
         //------------------------------------------------
 
-        public override bool EditPrefab(string creatureName, CreatureFile data)
+        public override bool ProcessPrefab(string creatureName, CreatureFile data)
         {
             var model = $"{nameof(CreatureFile)}.{creatureName}";
             var valid = true;
 
             var creature = OTABPrefabRegistry.Instance.GetReservedPrefab(creatureName);
-            var idleSoundPrefab = Utilities.PrefabUtils.FindEffectPrefab<BaseAI>(creatureName, "m_idleSound", 0);
+            var idleSoundPrefab = Utilities.EffectUtils.FindEffectPrefab<BaseAI>(creatureName, "m_idleSound", 0);
 
             if (data.Components.Character == ComponentBehavior.Patch)
             {
@@ -401,26 +402,13 @@ namespace OfTamingAndBreeding.Registry.Processing
             var monsterAI = creature.GetComponent<MonsterAI>();
             var animalAI = creature.GetComponent<AnimalAI>();
 
-
-            /*
-
-            maybe use this?
-
-private struct ResolvedBaseAIData
-{
-    public CreatureFile.BaseAIData Data;
-    public ComponentBehavior Behavior;
-    public string Name;
-}
-
-             * */
-
-
-
             CreatureFile.BaseAIData data_BaseAI = null;
             ComponentBehavior component_BaseAI = ComponentBehavior.Inherit;
             string data_BaseAI_name = "";
 
+
+            // this is the correct place for following checks
+            // because offspringprocessor is removing monsterai and replacing it with animalai
             if (monsterAI)
             {
                 if (data.Components.AnimalAI.HasValue == true)
@@ -428,16 +416,16 @@ private struct ResolvedBaseAIData
                     Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.AnimalAI)}: Invalid presence because MonsterAI is present");
                     valid = false;
                 }
-                if (data.Components.MonsterAI.HasValue == true)
+                if (data.Components.MonsterAI.HasValue == false)
+                {
+                    Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}: Missing value");
+                    valid = false;
+                }
+                else
                 {
                     data_BaseAI = data.MonsterAI;
                     component_BaseAI = data.Components.MonsterAI.Value;
                     data_BaseAI_name = nameof(data.MonsterAI);
-                }
-                else
-                {
-                    Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}: Missing value");
-                    valid = false;
                 }
             }
             else if (animalAI)
@@ -447,23 +435,31 @@ private struct ResolvedBaseAIData
                     Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}: Invalid presence because AnimalAI is present");
                     valid = false;
                 }
-                if (data.Components.AnimalAI.HasValue == true)
+                if (data.Components.AnimalAI.HasValue == false)
+                {
+                    Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.AnimalAI)}: Missing value");
+                    valid = false;
+                }
+                else
                 {
                     data_BaseAI = data.AnimalAI;
                     component_BaseAI = data.Components.AnimalAI.Value;
                     data_BaseAI_name = nameof(data.AnimalAI);
                 }
-                else
-                {
-                    Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.AnimalAI)}: Missing value");
-                    valid = false;
-                }
             }
             else
             {
                 Plugin.LogError($"{model}: Prefab has neither MonsterAI nor AnimalAI");
-                return false;
+                valid = false;
             }
+
+
+
+
+
+
+
+
 
             if (component_BaseAI == ComponentBehavior.Patch)
             {
@@ -500,8 +496,11 @@ private struct ResolvedBaseAIData
                                 itemDrop = foodItemDrop,
                                 fedDurationFactor = ci.FedDurationFactor,
                             };
-                        }).ToArray();
-                    baseAITrait.SetCustomConsumeItems(consumeItems);
+                        })
+                        .Where(ci => ci != null)
+                        .ToArray();
+
+                    baseAITrait.m_consumeItemsStoreIndex = BaseAITrait.s_consumeItemsStore.Add(consumeItems);
                 }
 
                 if (monsterAI != null)
@@ -649,39 +648,44 @@ private struct ResolvedBaseAIData
                     }
 
                     Plugin.LogDebug($"{model}.{nameof(data.Tameable)}: Setting effects");
-                    if (tameable.m_sootheEffect.m_effectPrefabs.Length == 0)
+                    if (tameable.m_sootheEffect?.m_effectPrefabs == null || tameable.m_sootheEffect.m_effectPrefabs.Length == 0)
                     {
                         tameable.m_sootheEffect = new EffectList
                         {
-                            m_effectPrefabs = Utilities.PrefabUtils.CreateEffectList(new string[] {
+                            m_effectPrefabs = Utilities.EffectUtils.CreateEffectList(new string[] {
                                 "vfx_creature_soothed",
                             })
                         };
                     }
-                    if (tameable.m_tamedEffect.m_effectPrefabs.Length == 0)
-                    {
+                    if (tameable.m_tamedEffect?.m_effectPrefabs == null || tameable.m_tamedEffect.m_effectPrefabs.Length == 0)
+                        {
                         tameable.m_tamedEffect = new EffectList
                         {
-                            m_effectPrefabs = Utilities.PrefabUtils.CreateEffectList(new string[] {
+                            m_effectPrefabs = Utilities.EffectUtils.CreateEffectList(new string[] {
                                 "fx_creature_tamed",
                             })
                         };
                     }
 
-                    tameable.m_petEffect ??= new EffectList(); // just to make sure
                     if (data.Tameable.ShowPetEffect == false)
                     {
-                        tameable.m_petEffect.m_effectPrefabs = Array.Empty<EffectList.EffectData>();
+                        tameable.m_petEffect = new EffectList
+                        {
+                            m_effectPrefabs = Array.Empty<EffectList.EffectData>()
+                        };
                     }
                     else
                     {
-                        if (tameable.m_petEffect.m_effectPrefabs == null || tameable.m_petEffect.m_effectPrefabs.Length == 0)
+                        if (tameable.m_petEffect?.m_effectPrefabs == null || tameable.m_petEffect.m_effectPrefabs.Length == 0)
                         {
-                            tameable.m_petEffect.m_effectPrefabs = Utilities.PrefabUtils.CreateEffectList(new UnityEngine.GameObject[]
+                            tameable.m_petEffect = new EffectList
                             {
-                                PrefabUtils.GetVisualOnlyEffect("fx_boar_pet", "otab_vfx_pet"),
-                                idleSoundPrefab,
-                            });
+                                m_effectPrefabs = EffectUtils.CreateEffectList(new GameObject[]
+                                {
+                                    EffectUtils.GetVisualOnlyEffect("fx_boar_pet", "otab_vfx_pet"),
+                                    idleSoundPrefab,
+                                })
+                            };
                         }
                     }
 
@@ -782,25 +786,22 @@ private struct ResolvedBaseAIData
 
                     Plugin.LogDebug($"{model}.{nameof(data.Procreation)}: Setting effects");
 
-                    if (procreation.m_loveEffects.m_effectPrefabs.Length == 0)
+                    if (procreation.m_loveEffects?.m_effectPrefabs == null || procreation.m_loveEffects.m_effectPrefabs.Length == 0)
                     {
                         procreation.m_loveEffects = new EffectList
                         {
-                            m_effectPrefabs = Utilities.PrefabUtils.CreateEffectList(new string[] {
-                            "vfx_boar_love",
-                            idleSoundPrefab?.name,
-                        })
+                            m_effectPrefabs = Utilities.EffectUtils.CreateEffectList(new string[] {
+                                "vfx_boar_love",
+                                idleSoundPrefab?.name,
+                            })
                         };
-
-                        procreation.m_loveEffects.m_effectPrefabs[0].m_scale = true;
-                        procreation.m_loveEffects.m_effectPrefabs[0].m_prefab.transform.localScale = UnityEngine.Vector3.one * 0.5f;
-
                     }
-                    if (procreation.m_birthEffects.m_effectPrefabs.Length == 0)
+
+                    if (procreation.m_birthEffects?.m_effectPrefabs == null || procreation.m_birthEffects.m_effectPrefabs.Length == 0)
                     {
                         procreation.m_birthEffects = new EffectList
                         {
-                            m_effectPrefabs = Utilities.PrefabUtils.CreateEffectList(new string[] {
+                            m_effectPrefabs = Utilities.EffectUtils.CreateEffectList(new string[] {
                             "vfx_boar_birth",
                             idleSoundPrefab?.name,
                         })
@@ -836,7 +837,41 @@ private struct ResolvedBaseAIData
 
         public override void RestorePrefab(string creatureName)
         {
-            OTABPrefabRegistry.Instance.RestorePrefab(creatureName, (current, backup) => {
+            OTABPrefabRegistry.Instance.RestorePrefab(creatureName, (current, backup) =>
+            {
+                var currentMonsterAI = current.GetComponent<MonsterAI>();
+                var backupMonsterAI = backup.GetComponent<MonsterAI>();
+                var currentTameable = current.GetComponent<Tameable>();
+                var backupTameable = backup.GetComponent<Tameable>();
+                var currentProcreation = current.GetComponent<Procreation>();
+                var backupProcreation = backup.GetComponent<Procreation>();
+
+                if (currentMonsterAI && backupMonsterAI)
+                {
+                    currentMonsterAI.m_consumeItems = backupMonsterAI.m_consumeItems;
+                }
+
+                if (currentTameable && backupTameable)
+                {
+                    currentTameable.m_tamedEffect = backupTameable.m_tamedEffect;
+                    currentTameable.m_sootheEffect = backupTameable.m_sootheEffect;
+                    currentTameable.m_petEffect = backupTameable.m_petEffect;
+                    currentTameable.m_tameTextGetter = backupTameable.m_tameTextGetter;
+                }
+
+                if (currentProcreation && backupProcreation)
+                {
+                    currentProcreation.m_birthEffects = backupProcreation.m_birthEffects;
+                    currentProcreation.m_loveEffects = backupProcreation.m_loveEffects;
+                    currentProcreation.m_offspring = backupProcreation.m_offspring;
+                    currentProcreation.m_seperatePartner = backupProcreation.m_seperatePartner;
+                }
+
+                var comp1 = current.GetComponent(typeof(AnimationClipOverlay));
+                if (comp1)
+                {
+                    UnityEngine.Object.DestroyImmediate(comp1);
+                }
             });
         }
 

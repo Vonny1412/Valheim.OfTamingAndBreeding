@@ -4,6 +4,11 @@ using OfTamingAndBreeding.Utilities;
 using System;
 using UnityEngine;
 
+
+//todo: cleanup
+
+
+
 namespace OfTamingAndBreeding.Components.Traits
 {
     public class GrowupTrait : OTABComponent<GrowupTrait>

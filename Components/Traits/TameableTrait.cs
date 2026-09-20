@@ -7,12 +7,16 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+
+//todo: cleanup
+
+
+
 namespace OfTamingAndBreeding.Components.Traits
 {
     public class TameableTrait : OTABComponent<TameableTrait>
     {
 
-        [NonSerialized] private static readonly List<List<string[]>> _requireGlobalKeys;
 
         static TameableTrait()
         {
@@ -38,6 +42,8 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private BaseAITrait m_baseAITrait = null;
         [NonSerialized] private float m_baseFedDuration = 600;
         [NonSerialized] private float m_baseTamingTime = 1800;
+
+        [NonSerialized] private static readonly List<List<string[]>> _requireGlobalKeys;
 
         // set in registration
         [SerializeField] private int m_requireGlobalKeysIndex = -1;
@@ -141,7 +147,7 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 return false;
             }
-            if (m_baseAITrait.IsJammed())
+            if (m_baseAITrait.IsConfined())
             {
                 return false;
             }
@@ -274,11 +280,11 @@ namespace OfTamingAndBreeding.Components.Traits
 
             // calculate new fed duration based on consumed food
             var customFactor = m_nview.GetZDO().GetFloat(Plugin.ZDOVars.z_fedDurationFactor, 1f);
-            if (m_baseAITrait && m_baseAITrait.HasCustomConsumeItems(out var consumeItems))
+            if (m_baseAITrait && m_baseAITrait.m_consumeItems != null)
             {
                 var sharedName = item.m_itemData.m_shared.m_name;
                 var newFactor = 1f;
-                foreach (var consumeItem in consumeItems)
+                foreach (var consumeItem in m_baseAITrait.m_consumeItems)
                 {
                     if (consumeItem.itemDrop.m_itemData.m_shared.m_name == sharedName)
                     {

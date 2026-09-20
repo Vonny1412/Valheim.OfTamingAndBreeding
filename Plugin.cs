@@ -1,11 +1,18 @@
 ﻿using BepInEx;
 using BepInEx.Bootstrap;
 using Jotunn.Utils;
+using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Traits;
-using OfTamingAndBreeding.Processing.Core;
 using OfTamingAndBreeding.Integrations.Mods;
+using OfTamingAndBreeding.Processing.Core;
 using System;
 using System.IO;
+
+
+
+// todo: cleanup
+
+
 
 namespace OfTamingAndBreeding
 {
@@ -109,6 +116,17 @@ namespace OfTamingAndBreeding
 
             Configs.Initialize(Config);
 
+            BaseAITrait.RegisterType(typeof(BaseAI));
+            AnimalAITrait.RegisterType(typeof(AnimalAI));
+            MonsterAITrait.RegisterType(typeof(MonsterAI));
+            CharacterTrait.RegisterType(typeof(Character), typeof(BaseAI));
+            EggGrowTrait.RegisterType(typeof(EggGrow));
+            GrowupTrait.RegisterType(typeof(Growup));
+            ItemDropTrait.RegisterType(typeof(ItemDrop));
+            TameableTrait.RegisterType(typeof(Tameable));
+            ProcreationTrait.RegisterType(typeof(Procreation));
+            PetTrait.RegisterType(typeof(Pet));
+
             Integrations.ThirdPartyManager.RegisterBridges();
 
             Network.NetworkSessionManager.RegisterRPCs();
@@ -124,7 +142,7 @@ namespace OfTamingAndBreeding
             {
                 if (Configs.DumpPrefabsToCache.Value == true)
                 {
-                    Utilities.PrefabUtils.DumpPrefabs(Path.Combine(CacheDir, "prefabs"));
+                    Registry.PrefabUtils.DumpPrefabs(Path.Combine(CacheDir, "prefabs"));
                 }
             }
 
@@ -134,20 +152,7 @@ namespace OfTamingAndBreeding
 
         private static void OnNetworkSessionReady()
         {
-
-            // add trait components to all prefabs that are still missing these traits
-            // added trait types will be registered and latter removed when session is closing
-            // important: they also need to be removed when restoring prefab inside PrefabRegistry::RestorePrefabFromBackup()
-            BaseAITrait.AddComponentToPrefabs(typeof(BaseAI));
-            AnimalAITrait.AddComponentToPrefabs(typeof(AnimalAI));
-            MonsterAITrait.AddComponentToPrefabs(typeof(MonsterAI));
-            CharacterTrait.AddComponentToPrefabs(typeof(Character), typeof(BaseAI));
-            EggGrowTrait.AddComponentToPrefabs(typeof(EggGrow));
-            GrowupTrait.AddComponentToPrefabs(typeof(Growup));
-            ItemDropTrait.AddComponentToPrefabs(typeof(ItemDrop));
-            TameableTrait.AddComponentToPrefabs(typeof(Tameable));
-            ProcreationTrait.AddComponentToPrefabs(typeof(Procreation));
-            PetTrait.AddComponentToPrefabs(typeof(Pet));
+            OTABComponentTypeRegistry.AddComponentsToPrefabs();
 
             if (DataProcessingManager.IsDataLoaded())
             {
@@ -170,7 +175,8 @@ namespace OfTamingAndBreeding
         private static void OnNetworkSessionClosed()
         {
             Patches.DataReadyPatches.Uninstall();
-            Components.Core.OTABComponentRegistry.RemoveComponentsFromPrefabs();
+
+            OTABComponentTypeRegistry.RemoveComponentsFromPrefabs();
 
             OnSessionClosed();
             isAdmin = false;

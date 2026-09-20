@@ -6,6 +6,11 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
+
+//todo: cleanup
+
+
+
 namespace OfTamingAndBreeding.Components.Traits
 {
     public class EggGrowTrait : OTABComponent<EggGrowTrait>
