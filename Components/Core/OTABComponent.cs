@@ -8,7 +8,7 @@ namespace OfTamingAndBreeding.Components.Core
     {
         private static readonly Dictionary<GameObject, T> s_cache = new Dictionary<GameObject, T>();
 
-        public static void RegisterType(params Type[] requiredTypes)
+        internal static void RegisterType(params Type[] requiredTypes)
         {
             OTABComponentTypeRegistry.RegisterType(typeof(T), requiredTypes);
         }
@@ -33,7 +33,7 @@ namespace OfTamingAndBreeding.Components.Core
             return s_cache.TryGetValue(prefab, out component);
         }
 
-        public static T GetOrAddComponent(GameObject prefab)
+        internal static T GetOrAddComponent(GameObject prefab)
         {
             var component = prefab.GetComponent<T>();
             if (component)

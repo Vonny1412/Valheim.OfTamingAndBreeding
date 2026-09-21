@@ -1,5 +1,6 @@
 ﻿using HarmonyLib;
 using OfTamingAndBreeding.Components.Traits;
+using OfTamingAndBreeding.ValheimAPI;
 
 namespace OfTamingAndBreeding.Patches
 {
@@ -19,8 +20,8 @@ namespace OfTamingAndBreeding.Patches
             // -> BaseAITrait.IdleMovement() -> if (m_animalAITrait && m_animalAITrait.IdleMovement(dt))
             // -> AnimalAITrait.IdleMovement() -> if (UpdateConsumeItem(dt)) return true;
 
-            var trait = MonsterAITrait.GetUnsafe(__instance.gameObject);
-            __result = trait.FindConsumeableItem();
+            var trait = BaseAITrait.GetUnsafe(__instance.gameObject);
+            __result = trait.FindClosestConsumableItem(__instance.m_consumeSearchRange, __instance.m_consumeItems);
             return false;
         }
 

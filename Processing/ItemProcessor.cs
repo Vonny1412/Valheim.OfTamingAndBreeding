@@ -1,12 +1,10 @@
 ﻿using Jotunn.Managers;
 using OfTamingAndBreeding.Components;
-using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Data.Models.SubData;
 using OfTamingAndBreeding.Processing.Core;
 using OfTamingAndBreeding.Registry;
-using OfTamingAndBreeding.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -282,23 +280,19 @@ namespace OfTamingAndBreeding.Processing
 
             if (data.Clone != null)
             {
-                if (!string.IsNullOrEmpty(data.Clone.CustomIconName))
+                if (!string.IsNullOrEmpty(data.Clone.CustomIcon))
                 {
-                    var texName = data.Clone.CustomIconName;
-                    var texExists = Runtime.TextureDataContext.textures.ContainsKey(texName);
-                    if (texExists == false)
+                    if (!TextureProcessor.TryGetSprite(data.Clone.CustomIcon, out var _))
                     {
-                        Plugin.LogWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.CustomIconName)}: Texture '{texName}' not found");
+                        Plugin.LogWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.CustomIcon)}: Texture '{data.Clone.CustomIcon}' not found");
                         valid = false;
                     }
                 }
-                if (!string.IsNullOrEmpty(data.Clone.GroundVisual))
+                if (!string.IsNullOrEmpty(data.Clone.AttachedSprite))
                 {
-                    var texName = data.Clone.GroundVisual;
-                    var texExists = Runtime.TextureDataContext.textures.ContainsKey(texName);
-                    if (texExists == false)
+                    if (!TextureProcessor.TryGetSprite(data.Clone.AttachedSprite, out var _))
                     {
-                        Plugin.LogWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.CustomIconName)}: Texture '{texName}' not found");
+                        Plugin.LogWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.AttachedSprite)}: Texture '{data.Clone.AttachedSprite}' not found");
                         valid = false;
                     }
                 }
@@ -491,7 +485,7 @@ namespace OfTamingAndBreeding.Processing
                     if (data.EggGrow.RequireGlobalKeys != null)
                     {
                         var keysList = ParseGlobalKeys(data.EggGrow.RequireGlobalKeys);
-                        itemEggGrowTrait.SetRequiredGlobalKeys(keysList);
+                        itemEggGrowTrait.m_requiredGlobalKeysStoreIndex = EggGrowTrait.s_requiredGlobalKeysStore.Add(keysList);
                     }
 
                     if (data.EggGrow.Grown != null)
@@ -502,7 +496,7 @@ namespace OfTamingAndBreeding.Processing
                             tamed: g.Tamed,
                             showHatchEffect: g.ShowHatchEffect
                         )).ToArray();
-                        itemEggGrowTrait.SetCustomGrownList(grownList);
+                        itemEggGrowTrait.m_grownListStoreIndex = EggGrowTrait.s_grownListStore.Add(grownList);
                     }
 
                 }
@@ -536,12 +530,32 @@ namespace OfTamingAndBreeding.Processing
                 itemItemDrop.m_autoPickup = false;
                 itemItemDrop.m_autoDestroy = false;
                 itemItemDataShared.m_autoStack = false;
-                Runtime.ItemDataContext.RegisterEggSharedName(item);
+                eggSharedNameHashes.Add(itemItemDataShared.m_name.GetStableHashCode());
             }
-            //eggItemDataShared.m_value = 0; // todo: add yaml option for that
+
+
+
+
+
+
+            //eggItemDataShared.m_value = 0; // todo: maybe add yaml option for that
 
             return error == false;
         }
+
+
+
+
+
+        [NonSerialized] private static readonly HashSet<int> eggSharedNameHashes = new HashSet<int>();
+        public static bool IsRegisteredEgg(string sharedName)
+        {
+            return eggSharedNameHashes.Contains(sharedName.GetStableHashCode());
+        }
+
+
+
+
 
         private void PrepareClone(string itemName, ItemFile data, UnityEngine.GameObject item)
         {
@@ -594,11 +608,10 @@ namespace OfTamingAndBreeding.Processing
 
             UnityEngine.Sprite customIcon = null;
             var baseIcon = itemItemDataShared.m_icons?.FirstOrDefault();
-            if (data.Clone.CustomIconName != null)
+            if (data.Clone.CustomIcon != null)
             {
                 Plugin.LogDebug($"{model}.{nameof(data.Clone)}: Setting custom icon");
-                var tex2d = Runtime.TextureDataContext.textures[data.Clone.CustomIconName];
-                customIcon = SpriteUtils.TextureToSprite(tex2d);
+                TextureProcessor.TryGetSprite(data.Clone.CustomIcon, out customIcon);
             }
 
             // color/lights stuff
@@ -610,13 +623,6 @@ namespace OfTamingAndBreeding.Processing
                 float saturationShift = data.Clone.ItemSaturationShift ?? 0f;
                 float brightnessShift = data.Clone.ItemBrightnessShift ?? 0f;
                 ShiftItemColors(item, hueShift, saturationShift, brightnessShift);
-
-                /*
-                if (customIcon == null)
-                {
-                    customIcon = RenderItemIcon(item);
-                }
-                */
 
                 if (customIcon == null && baseIcon != null)
                 {
@@ -636,16 +642,6 @@ namespace OfTamingAndBreeding.Processing
 
 
 
-            /*
-            if (data.Clone.DisableParticles.HasValue && data.Clone.DisableParticles.Value == true)
-            {
-                foreach (var r in item.GetComponentsInChildren<UnityEngine.ParticleSystemRenderer>(true))
-                {
-                    //UnityEngine.Object.DestroyImmediate(r); // do not destroy, hard to restore
-                    r.enabled = false;
-                }
-            }
-            */
             if (data.Clone.DisableParticles == true)
             {
                 foreach (var ps in item.GetComponentsInChildren<ParticleSystem>(true))
@@ -692,16 +688,25 @@ namespace OfTamingAndBreeding.Processing
 
 
 
-            if (data.Clone.GroundVisual != null)
+            if (data.Clone.AttachedSprite != null)
             {
-                var texName = data.Clone.GroundVisual;
-                var tex2d = Runtime.TextureDataContext.textures[texName];
-                var sprite = SpriteUtils.TextureToSprite(tex2d);
+                var texName = data.Clone.AttachedSprite;
+                TextureProcessor.TryGetSprite(data.Clone.AttachedSprite, out var sprite);
 
-                var component = GroundVisual.GetOrAddComponent(item);
-                component.SetSprite(sprite);
-                component.m_size = data.Clone.GroundVisualScale ?? 1f;
-                component.m_offset = data.Clone.GroundVisualOffset?.ToVector3() ?? new Vector3(0f, 0.02f, 0f);
+                var component = AttachedSprite.GetOrAddComponent(item);
+                component.m_sprite = sprite;
+                component.m_size = data.Clone.AttachedSpriteScale ?? 1f;
+                if (data.Clone.AttachedSpriteOffset != null)
+                {
+                    component.m_offset = new Vector3(
+                        data.Clone.AttachedSpriteOffset.X ?? 0f,
+                        data.Clone.AttachedSpriteOffset.Y ?? 0.02f,
+                        data.Clone.AttachedSpriteOffset.Z ?? 0f);
+                }
+                else
+                {
+                    component.m_offset = new Vector3(0f, 0.02f, 0f);
+                }
             }
 
 
@@ -846,6 +851,10 @@ PrefabUtils.RestoreChildParticleSystems(current, backup);
             originalIcons.Clear();
             customVisuals.Clear();
             originalVisualStates.Clear();
+            eggSharedNameHashes.Clear();
+
+            EggGrowTrait.s_requiredGlobalKeysStore.Clear();
+            EggGrowTrait.s_grownListStore.Clear();
         }
 
     }

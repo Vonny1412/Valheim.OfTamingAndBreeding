@@ -19,9 +19,15 @@ namespace OfTamingAndBreeding.Components.Traits
         private static readonly int s_consumeItemMask = LayerMask.GetMask("item");
         private static readonly Collider[] s_consumeColliders = new Collider[64];
 
+
+
+
         internal static readonly IndexedDataStore<ConsumeItem[]> s_consumeItemsStore = new IndexedDataStore<ConsumeItem[]>();
         [SerializeField] internal int m_consumeItemsStoreIndex = -1;
         [NonSerialized] public ConsumeItem[] m_consumeItems = null;
+
+
+
 
         public static bool CanConsume(IReadOnlyList<ItemDrop> consumeList, ItemDrop checkItem)
         {
@@ -60,11 +66,9 @@ namespace OfTamingAndBreeding.Components.Traits
                 Collider col = s_consumeColliders[i];
                 if (!col)
                     continue;
-
                 var rb = col.attachedRigidbody;
                 if (!rb)
                     continue;
-
                 if (!rb.TryGetComponent<ItemDropTrait>(out var trait))
                     continue;
                 if (trait.TryGetValidItemDrop(out var item) == false)
@@ -72,11 +76,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 if (!CanConsume(consumeList, item))
                     continue;
 
-                //float dist = MathUtils.DistanceSqrXZ(item.transform.position, pos);
-                var itemPos = item.transform.position;
-                float dx = itemPos.x - pos.x;
-                float dz = itemPos.z - pos.z;
-                var dist = dx * dx + dz * dz;
+                float dist = (item.transform.position - pos).sqrMagnitude;
                 if (chosen == null || dist < bestDist)
                 {
                     chosen = item;
@@ -95,6 +95,7 @@ namespace OfTamingAndBreeding.Components.Traits
             return null;
         }
 
+        /*
         public ItemDrop FindNearbyConsumableItem(float maxRange, IReadOnlyList<ItemDrop> consumeList)
         {
             var pos = m_baseAI.transform.position;
@@ -154,6 +155,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
             return null;
         }
+        */
 
     }
 }

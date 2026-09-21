@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using static CharacterAnimEvent;
 
 namespace OfTamingAndBreeding.Processing
 {
@@ -60,11 +61,6 @@ namespace OfTamingAndBreeding.Processing
                     {
                         Plugin.LogWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.MaxHealthFactor)}: Offspring is getting increased max health");
                     }
-                }
-                if (data.Clone.RemoveEffects != null && data.Clone.RemoveEffects.Length == 0)
-                {
-                    Plugin.LogWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.RemoveEffects)}: List is empty and will be set to null");
-                    data.Clone.RemoveEffects = null;
                 }
                 if (data.Clone.Scale.HasValue)
                 {
@@ -327,45 +323,42 @@ namespace OfTamingAndBreeding.Processing
             OTABPrefabRegistry.Instance.DestroyComponentIfExists<Procreation>(offspringName, offspring); // offsprings do not procreate
             OTABPrefabRegistry.Instance.DestroyComponentIfExists<Tameable>(offspringName, offspring); // offsprings cannot be explicite tamed, can be readded by using Creature Processing
 
+            var offspringCharacter = offspring.GetComponent<Character>();
+            var offspringBaseAI = offspring.GetComponent<BaseAI>();
+
+
+
+
+
+
+
+
             if (offspring.TryGetComponent<CharacterDrop>(out var charDrop))
             {
-                charDrop.m_drops = charDrop.m_drops
-                    .Select(drop => new CharacterDrop.Drop
-                    {
-                        m_prefab = drop.m_prefab,
-                        m_amountMin = drop.m_amountMin,
-                        m_amountMax = drop.m_amountMax,
-                        m_chance = drop.m_chance,
-                        m_onePerPlayer = drop.m_onePerPlayer,
-                        m_levelMultiplier = drop.m_levelMultiplier,
-                        m_dontScale = drop.m_dontScale,
-                    })
-                    .ToList();
-
-                foreach (var drop in charDrop.m_drops)
+                var drops = new List<CharacterDrop.Drop>();
+                foreach (var source in charDrop.m_drops)
                 {
-                    var isTrophy = drop.m_prefab.name.StartsWith("trophy", StringComparison.OrdinalIgnoreCase);
-                    var isSpecial = drop.m_onePerPlayer || isTrophy;
-
+                    var isSpecial =
+                        offspringCharacter.m_boss ||
+                        source.m_onePerPlayer ||
+                        source.m_prefab.name.StartsWith("trophy", StringComparison.OrdinalIgnoreCase);
                     if (isSpecial)
                     {
-                        drop.m_amountMin = 0;
-                        drop.m_amountMax = 0;
-                        drop.m_chance = 0;
+                        continue;
                     }
-                    else
+                    drops.Add(new CharacterDrop.Drop
                     {
-                        drop.m_amountMin = 0;
-                        drop.m_chance /= 2;
-                        drop.m_levelMultiplier = false;
-                        drop.m_dontScale = true;
-
-                        if (drop.m_amountMax > 1)
-                        {
-                            drop.m_amountMax = (int)(((float)drop.m_amountMax / 2) + 0.5f);
-                        }
-                    }
+                        m_prefab = source.m_prefab,
+                        m_amountMin = 0,
+                        m_amountMax = source.m_amountMax > 1 ? (int)(source.m_amountMax / 2f + 0.5f) : source.m_amountMax,
+                        m_chance = source.m_chance / 2f,
+                        m_onePerPlayer = source.m_onePerPlayer,
+                        m_levelMultiplier = false,
+                        m_dontScale = true,
+                    });
                 }
+
+                charDrop.m_drops = drops;
             }
 
 
@@ -410,6 +403,15 @@ namespace OfTamingAndBreeding.Processing
             // debug/remove effects
             //
 
+            var footStep = offspring.GetComponent<FootStep>();
+            if (footStep)
+            {
+                // todo: maybe add yaml option for this?
+                footStep.enabled = false;
+            }
+
+            /*
+
             var removedEffects = new List<string>();
 
             var debugEffects = data.Clone.DebugEffects == true && ZNet.instance.IsServer();
@@ -448,9 +450,7 @@ namespace OfTamingAndBreeding.Processing
                             removedEffects.Add(p.name);
 
                         if (debugEffects)
-                            Plugin.LogMessage(remove
-                                ? $"  - {p.name} (removed)"
-                                : $"  - {p.name}");
+                            Plugin.LogMessage(remove ? $"  - {p.name} (removed)" : $"  - {p.name}");
 
                         if (!remove)
                             kept.Add(p);
@@ -474,14 +474,34 @@ namespace OfTamingAndBreeding.Processing
                 }
             }
 
+            */
+
+
+            if (data.Clone.DebugEffects == true)
+            {
+                Plugin.LogMessage($"{model}: DebugEffects");
+                VfxUtils.DebugVfx(offspring);
+            }
+
+            if (data.Clone.RemoveEffects != null)
+            {
+                VfxUtils.DisableVfx(offspring, data.Clone.RemoveEffects);
+            }
+
+
+
+
+
+
+
+
+
 
             //
             // character / baseai
             //
 
             Plugin.LogDebug($"{model}.{nameof(data.Clone)}: Setting Character values");
-            var offspringCharacter = offspring.GetComponent<Character>();
-            var offspringBaseAI = offspring.GetComponent<BaseAI>();
 
             offspringCharacter.m_boss = false;
             offspringCharacter.m_bossEvent = "";
@@ -532,8 +552,37 @@ namespace OfTamingAndBreeding.Processing
                 offspringCharacter.m_flySlowSpeed *= setScale;
                 offspringCharacter.m_flyFastSpeed *= setScale;
 
+                // but then we also need to change this:
+                offspringBaseAI.m_randomMoveRange *= setScale;
+
+
+
+                // important for the hud
+                var collider = offspring.GetComponent<CapsuleCollider>();
+                if (collider)
+                {
+                    //collider.center *= setScale;
+                    //collider.radius *= setScale;
+                    collider.height *= setScale;
+                }
+
+
+
+
+
+
+
+
+
                 Plugin.LogDebug($"{model}.{nameof(data.Clone)}: Setting vfx scaling");
                 VfxUtils.ScaleVfx(offspring, setScale); // scale model particles
+
+
+
+
+
+
+
 
 
 
@@ -689,12 +738,24 @@ namespace OfTamingAndBreeding.Processing
                     currentLodGroup.size = backupLodGroup.size;
                 }
 
+                var currentFootStep = current.GetComponent<FootStep>();
+                var backupFootStep = backup.GetComponent<FootStep>();
+                if (currentFootStep && backupFootStep)
+                {
+                    currentFootStep.m_effects = backupFootStep.m_effects;
+                    currentFootStep.enabled = backupFootStep.enabled;
+                }
+
+
+
+
+
+
+
 
 
                 var currentGrowup = current.GetComponent<Growup>();
                 var backupGrowup = backup.GetComponent<Growup>();
-                var currentFootStep = current.GetComponent<FootStep>();
-                var backupFootStep = backup.GetComponent<FootStep>();
                 var currentCharacterDrop = current.GetComponent<CharacterDrop>();
                 var backupCharacterDrop = backup.GetComponent<CharacterDrop>();
                 var currentMonsterAI = current.GetComponent<MonsterAI>();
@@ -708,10 +769,7 @@ namespace OfTamingAndBreeding.Processing
                     currentGrowup.m_altGrownPrefabs = backupGrowup.m_altGrownPrefabs;
                 }
 
-                if (currentFootStep && backupFootStep)
-                {
-                    currentFootStep.m_effects = backupFootStep.m_effects;
-                }
+
 
                 if (currentCharacterDrop && backupCharacterDrop)
                 {
@@ -759,6 +817,17 @@ namespace OfTamingAndBreeding.Processing
                     }
                 }
 
+
+
+
+                var currentCollider = current.GetComponent<CapsuleCollider>();
+                var backupCollider = backup.GetComponent<CapsuleCollider>();
+                if (currentCollider && backupCollider)
+                {
+                    currentCollider.height = backupCollider.height;
+                    currentCollider.center = backupCollider.center;
+                    currentCollider.radius = backupCollider.radius;
+                }
 
 
 

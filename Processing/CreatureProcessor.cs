@@ -644,7 +644,7 @@ namespace OfTamingAndBreeding.Processing
                     if (data.Tameable.RequireGlobalKeys != null)
                     {
                         var keysList = ParseGlobalKeys(data.Tameable.RequireGlobalKeys);
-                        tameableTrait.SetRequiredGlobalKeys(keysList);
+                        tameableTrait.m_requiredGlobalKeysStoreIndex = TameableTrait.s_requiredGlobalKeysStore.Add(keysList);
                     }
 
                     Plugin.LogDebug($"{model}.{nameof(data.Tameable)}: Setting effects");
@@ -730,7 +730,7 @@ namespace OfTamingAndBreeding.Processing
                             prefab: p.Prefab,
                             weight: p.Weight
                         )).ToArray();
-                        procreationTrait.SetPartnerList(partnerList);
+                        procreationTrait.m_partnerListStoreIndex = ProcreationTrait.s_partnerListStore.Add(partnerList);
                     }
 
                     if (data.Procreation.Offspring != null)
@@ -743,21 +743,15 @@ namespace OfTamingAndBreeding.Processing
                             levelUpChance: o.LevelUpChance ?? 0,
                             spawnTamed: o.SpawnTamed
                         )).ToArray();
-                        procreationTrait.SetOffspringList(offspringList);
+                        procreationTrait.m_offspringListStoreIndex = ProcreationTrait.s_offspringListStore.Add(offspringList);
                     }
 
                     if (data.Procreation.MaxCreaturesCountPrefabs != null)
                     {
-                        procreationTrait.SetMaxCreaturesPrefabs(data.Procreation.MaxCreaturesCountPrefabs);
+                        // prefabs should have been already validated if they exist
+                        GameObject[] prefabs = data.Procreation.MaxCreaturesCountPrefabs.Select(ZNetScene.instance.GetPrefab).ToArray();
+                        procreationTrait.m_maxCreaturesPrefabsStoreIndex = ProcreationTrait.s_maxCreaturesPrefabsStore.Add(prefabs);
                     }
-
-
-
-
-                    
-
-
-
 
 
 
@@ -876,6 +870,11 @@ namespace OfTamingAndBreeding.Processing
 
         public override void CleanupProcess()
         {
+            BaseAITrait.s_consumeItemsStore.Clear();
+            ProcreationTrait.s_partnerListStore.Clear();
+            ProcreationTrait.s_offspringListStore.Clear();
+            ProcreationTrait.s_maxCreaturesPrefabsStore.Clear();
+            TameableTrait.s_requiredGlobalKeysStore.Clear();
         }
 
     }

@@ -32,7 +32,7 @@ namespace OfTamingAndBreeding.Data.Models
             public float? Weight { get; set; } = null;
             public bool? Teleportable { get; set; } = null;
 
-            public string CustomIconName { get; set; } = null;
+            public string CustomIcon { get; set; } = null;
 
             public float? ItemHueShift { get; set; } = null;
             public float? ItemSaturationShift { get; set; } = null;
@@ -45,23 +45,18 @@ namespace OfTamingAndBreeding.Data.Models
 
             public bool? DisableParticles { get; set; } = null;
 
-            public string GroundVisual { get; set; }
-            public float? GroundVisualScale { get; set; }
-            public GroundVisualOffset GroundVisualOffset { get; set; }
+            public string AttachedSprite { get; set; } = null;
+            public float? AttachedSpriteScale { get; set; } = null;
+            public AttachedSpriteOffset AttachedSpriteOffset { get; set; } = null;
         }
 
         [Serializable]
         [CanBeNull]
-        public class GroundVisualOffset
+        public class AttachedSpriteOffset
         {
-            public float X { get; set; }
-            public float Y { get; set; }
-            public float Z { get; set; }
-
-            public UnityEngine.Vector3 ToVector3()
-            {
-                return new UnityEngine.Vector3(X, Y, Z);
-            }
+            public float? X { get; set; } = null;
+            public float? Y { get; set; } = null;
+            public float? Z { get; set; } = null;
         }
 
         [Serializable]

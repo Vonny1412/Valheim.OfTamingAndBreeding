@@ -1,4 +1,5 @@
 ﻿using HarmonyLib;
+using OfTamingAndBreeding.Processing;
 
 namespace OfTamingAndBreeding.Patches
 {
@@ -16,7 +17,7 @@ namespace OfTamingAndBreeding.Patches
             if (item?.m_shared == null || itemAt?.m_shared == null) return true;
             if (item.m_shared.m_name != itemAt.m_shared.m_name) return true;
 
-            if (Runtime.ItemDataContext.IsRegisteredEggSharedName(item.m_shared.m_name))
+            if (ItemProcessor.IsRegisteredEgg(item.m_shared.m_name))
             {
                 // both are otab-eggs
                 if (itemAt.m_quality != item.m_quality)

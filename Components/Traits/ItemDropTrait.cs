@@ -51,11 +51,11 @@ namespace OfTamingAndBreeding.Components.Traits
             return droppedByPlayer > 0;
         }
 
-        public void SetDroppedByPlayer()
+        public void SetDroppedByPlayer(bool byPlayer = true)
         {
             if (m_nview.IsValid() && m_nview.IsOwner())
             {
-                ZDOUtils.SetInt(m_nview.GetZDO(), Plugin.ZDOVars.z_droppedByAnyPlayer, 1);
+                ZDOUtils.SetInt(m_nview.GetZDO(), Plugin.ZDOVars.z_droppedByAnyPlayer, byPlayer ? 1 : 0);
             }
         }
 

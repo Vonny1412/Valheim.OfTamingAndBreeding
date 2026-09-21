@@ -1,7 +1,7 @@
-﻿using OfTamingAndBreeding.Components.Core;
+﻿using OfTamingAndBreeding.Common;
+using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Utilities;
-using OfTamingAndBreeding.ValheimAPI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,16 +16,6 @@ namespace OfTamingAndBreeding.Components.Traits
 {
     public class TameableTrait : OTABComponent<TameableTrait>
     {
-
-
-        static TameableTrait()
-        {
-            _requireGlobalKeys = new List<List<string[]>>();
-
-            Network.NetworkSessionManager.OnSessionClosed += () => {
-                _requireGlobalKeys.Clear();
-            };
-        }
 
         // set by registry processor
         [SerializeField] public bool m_fedTimerDisabled = false;
@@ -43,10 +33,22 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private float m_baseFedDuration = 600;
         [NonSerialized] private float m_baseTamingTime = 1800;
 
-        [NonSerialized] private static readonly List<List<string[]>> _requireGlobalKeys;
+
 
         // set in registration
-        [SerializeField] private int m_requireGlobalKeysIndex = -1;
+
+
+
+
+        internal static readonly IndexedDataStore<List<string[]>> s_requiredGlobalKeysStore = new IndexedDataStore<List<string[]>>();
+        [SerializeField] internal int m_requiredGlobalKeysStoreIndex = -1;
+        [NonSerialized] public List<string[]> m_requiredGlobalKeys = null;
+
+
+
+
+
+
 
         private void Awake()
         {
@@ -87,6 +89,8 @@ namespace OfTamingAndBreeding.Components.Traits
             m_baseFedDuration = m_tameable.m_fedDuration;
             m_baseTamingTime = m_tameable.m_tamingTime;
 
+            s_requiredGlobalKeysStore.TryGet(m_requiredGlobalKeysStoreIndex, out m_requiredGlobalKeys);
+
             UpdateFedDuration();
             UpdateTamingTime();
 
@@ -108,28 +112,13 @@ namespace OfTamingAndBreeding.Components.Traits
             return m_tameable.m_commandable;
         }
 
-        internal void SetRequiredGlobalKeys(List<string[]> orKeysList)
-        {
-            m_requireGlobalKeysIndex = _requireGlobalKeys.Count;
-            _requireGlobalKeys.Add(orKeysList);
-        }
 
-        public bool HasRequiredGlobalKeys(out List<string[]> orKeysList)
-        {
-            if (m_requireGlobalKeysIndex != -1)
-            {
-                orKeysList = _requireGlobalKeys[m_requireGlobalKeysIndex];
-                return true;
-            }
-            orKeysList = null;
-            return false;
-        }
 
         public bool SolvesRequiredGlobalKeys()
         {
-            if (HasRequiredGlobalKeys(out List<string[]> orKeysList))
+            if (m_requiredGlobalKeys != null && m_requiredGlobalKeys.Count > 0)
             {
-                foreach (var andKeys in orKeysList)
+                foreach (var andKeys in m_requiredGlobalKeys)
                 {
                     if (andKeys.All((key) => ZoneSystem.instance.GetGlobalKey(key)))
                     {
@@ -158,11 +147,11 @@ namespace OfTamingAndBreeding.Components.Traits
         {
             if (SolvesRequiredGlobalKeys() == false)
             {
-                if (HasRequiredGlobalKeys(out List<string[]> orKeysList))
+                if (m_requiredGlobalKeys != null && m_requiredGlobalKeys.Count > 0)
                 {
                     // just take first AND-list for now
                     // todo: maybe display full list?
-                    var andList = orKeysList[0];
+                    var andList = m_requiredGlobalKeys[0];
                     var outList = String.Join(", ", andList.Select((k) => Localization.instance.Localize($"$OTAB_require_key_{k}")));
                     return Localization.instance.Localize("$otab_taming_requires_key", outList);
                 }

@@ -1,9 +1,7 @@
 ﻿using HarmonyLib;
 using OfTamingAndBreeding.Components;
 using OfTamingAndBreeding.Components.Traits;
-using OfTamingAndBreeding.ValheimAPI;
 using UnityEngine;
-using static UnityEngine.Networking.UnityWebRequest;
 
 namespace OfTamingAndBreeding.Patches
 {
@@ -17,7 +15,7 @@ namespace OfTamingAndBreeding.Patches
             if (Runtime.ItemDropContext.DroppedByPlayer)
             {
                 var trait = ItemDropTrait.GetUnsafe(__result.gameObject);
-                trait.SetDroppedByPlayer();
+                trait.SetDroppedByPlayer(byPlayer: true);
             }
         }
 

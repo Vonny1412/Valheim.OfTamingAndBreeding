@@ -7,7 +7,6 @@ namespace OfTamingAndBreeding.Data.Models
     {
         public const string DirectoryName = "Textures";
 
-        public SubData.TextureType Type { get; set; }
         public string Data { get; set; }
     }
 }

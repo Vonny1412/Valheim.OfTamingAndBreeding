@@ -1,17 +1,13 @@
 ﻿using System.Collections.Generic;
 
+// todo: cleanup
+// this is only component/trait related
+
 namespace OfTamingAndBreeding.Common
 {
     internal class IndexedDataStore<T>
     {
         private readonly List<T> m_items = new List<T>();
-
-        public IndexedDataStore()
-        {
-            Network.NetworkSessionManager.OnSessionClosed += () => {
-                m_items.Clear();
-            };
-        }
 
         public int Add(T item)
         {
@@ -29,6 +25,11 @@ namespace OfTamingAndBreeding.Common
             }
             item = default;
             return false;
+        }
+
+        public void Clear()
+        {
+            m_items.Clear();
         }
 
     }

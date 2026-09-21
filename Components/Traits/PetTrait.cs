@@ -18,10 +18,8 @@ namespace OfTamingAndBreeding.Components.Traits
         // set in awake
         [NonSerialized] private ZNetView m_nview = null;
         [NonSerialized] private Pet m_pet = null;
-        [NonSerialized] private Tameable m_tameable = null;
         [NonSerialized] private Procreation m_procreation = null;
         [NonSerialized] private MaterialVariation m_materialVariation = null;
-        [NonSerialized] private ItemStand m_itemStand = null;
         [NonSerialized] private Renderer m_renderer = null;
         [NonSerialized] private RandomSpeak m_randomSpeak = null;
 
@@ -30,10 +28,8 @@ namespace OfTamingAndBreeding.Components.Traits
             m_nview = GetComponent<ZNetView>();
             m_pet = GetComponent<Pet>();
 
-            m_tameable = GetComponent<Tameable>();
             m_procreation = GetComponent<Procreation>();
             m_materialVariation = GetComponentInChildren<MaterialVariation>();
-            m_itemStand = GetComponent<ItemStand>();
             m_renderer = GetComponentInChildren<Renderer>();
             m_randomSpeak = GetComponent<RandomSpeak>();
 

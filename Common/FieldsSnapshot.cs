@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 
 //todo: cleanup
-
+// this is only processor related
 
 namespace OfTamingAndBreeding.Common
 {

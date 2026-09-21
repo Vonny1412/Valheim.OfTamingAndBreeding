@@ -1,4 +1,5 @@
-﻿using OfTamingAndBreeding.Components.Core;
+﻿using OfTamingAndBreeding.Common;
+using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Utilities;
 using System;
@@ -51,23 +52,6 @@ namespace OfTamingAndBreeding.Components.Traits
             }
         }
 
-        private static readonly List<ProcreationPartner[]> _partnerData;
-        private static readonly List<ProcreationOffspring[]> _offspringData;
-        private static readonly List<string[]> _maxCreaturesPrefabs;
-
-        static ProcreationTrait()
-        {
-            _partnerData = new List<ProcreationPartner[]>();
-            _offspringData = new List<ProcreationOffspring[]>();
-            _maxCreaturesPrefabs = new List<string[]>();
-
-            Network.NetworkSessionManager.OnSessionClosed += () => {
-                _partnerData.Clear();
-                _offspringData.Clear();
-                _maxCreaturesPrefabs.Clear();
-            };
-        }
-
         // set in awake
         [NonSerialized] private ZNetView m_nview = null;
         [NonSerialized] private Procreation m_procreation = null;
@@ -82,9 +66,47 @@ namespace OfTamingAndBreeding.Components.Traits
 
         // set in registration
         [SerializeField] public bool m_procreateWhileSwimming = true;
-        [SerializeField] private int m_partnerListIndex = -1;
-        [SerializeField] private int m_offspringListIndex = -1;
-        [SerializeField] private int m_maxCreaturesPrefabsIndex = -1;
+
+
+
+
+
+
+
+
+
+        internal static readonly IndexedDataStore<ProcreationPartner[]> s_partnerListStore = new IndexedDataStore<ProcreationPartner[]>();
+        [SerializeField] internal int m_partnerListStoreIndex = -1;
+        [NonSerialized] public ProcreationPartner[] m_partnerList = null;
+
+
+
+
+
+
+
+        internal static readonly IndexedDataStore<ProcreationOffspring[]> s_offspringListStore = new IndexedDataStore<ProcreationOffspring[]>();
+        [SerializeField] internal int m_offspringListStoreIndex = -1;
+        [NonSerialized] public ProcreationOffspring[] m_offspringList = null;
+
+
+
+
+
+
+
+        internal static readonly IndexedDataStore<GameObject[]> s_maxCreaturesPrefabsStore = new IndexedDataStore<GameObject[]>();
+        [SerializeField] internal int m_maxCreaturesPrefabsStoreIndex = -1;
+        [NonSerialized] public GameObject[] m_maxCreaturesPrefabs = null;
+
+
+
+
+
+
+
+
+
 
         // used for procreation
         [NonSerialized] private GameObject _m_partnerPrefab = null;
@@ -115,6 +137,9 @@ namespace OfTamingAndBreeding.Components.Traits
                 m_myPrefab = ZNetScene.instance.GetPrefab(m_nview.GetZDO().GetPrefab());
             }
 
+            s_partnerListStore.TryGet(m_partnerListStoreIndex, out m_partnerList);
+            s_offspringListStore.TryGet(m_offspringListStoreIndex, out m_offspringList);
+
             UpdatePregnancyDuration();
 
             Register(this);
@@ -123,57 +148,6 @@ namespace OfTamingAndBreeding.Components.Traits
         private void OnDestroy()
         {
             Unregister(this);
-        }
-
-        public void SetPartnerList(ProcreationPartner[] partnerList)
-        {
-            m_partnerListIndex = _partnerData.Count;
-            _partnerData.Add(partnerList);
-        }
-
-        public bool HasPartnerList(out ProcreationPartner[] partnerList)
-        {
-            if (m_partnerListIndex != -1)
-            {
-                partnerList = _partnerData[m_partnerListIndex];
-                return true;
-            }
-            partnerList = null;
-            return false;
-        }
-
-        public void SetOffspringList(ProcreationOffspring[] offspringList)
-        {
-            m_offspringListIndex = _offspringData.Count;
-            _offspringData.Add(offspringList);
-        }
-
-        public bool HasOffspringList(out ProcreationOffspring[] offspringList)
-        {
-            if (m_offspringListIndex != -1)
-            {
-                offspringList = _offspringData[m_offspringListIndex];
-                return true;
-            }
-            offspringList = null;
-            return false;
-        }
-
-        public void SetMaxCreaturesPrefabs(string[] prefabNames)
-        {
-            m_maxCreaturesPrefabsIndex = _maxCreaturesPrefabs.Count;
-            _maxCreaturesPrefabs.Add(prefabNames);
-        }
-
-        public bool HasMaxCreaturesPrefabs(out string[] prefabNames)
-        {
-            if (m_maxCreaturesPrefabsIndex != -1)
-            {
-                prefabNames = _maxCreaturesPrefabs[m_maxCreaturesPrefabsIndex];
-                return true;
-            }
-            prefabNames = null;
-            return false;
         }
 
         public void SetRealPregnancyDuration(float duration)
@@ -299,11 +273,11 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 partnersInRange = GetNearbyCountExcludeMyself(_m_partnerPrefab, myPosition, m_procreation.m_partnerCheckRange);
             }
-            if (HasMaxCreaturesPrefabs(out var prefabNames))
+            if (m_maxCreaturesPrefabs != null && m_maxCreaturesPrefabs.Length > 0)
             {
-                foreach (var prefabName in prefabNames)
+                foreach (var prefab in m_maxCreaturesPrefabs)
                 {
-                    totalInRange += SpawnSystem.GetNrOfInstances(ZNetScene.instance.GetPrefab(prefabName), myPosition, m_totalCheckRange);
+                    totalInRange += SpawnSystem.GetNrOfInstances(prefab, myPosition, m_totalCheckRange);
                 }
             }
             else
@@ -423,9 +397,9 @@ namespace OfTamingAndBreeding.Components.Traits
                 _m_partnerPrefab = null;
                 _m_offspringPrefab = null;
 
-                if (HasPartnerList(out var partnerList))
+                if (m_partnerList != null && m_partnerList.Length > 0)
                 {
-                    var foundPartner = Common.WeightedRandom.FindRandom(partnerList, out ProcreationPartner partnerEntry, entry =>
+                    var foundPartner = Common.WeightedRandom.FindRandom(m_partnerList, out ProcreationPartner partnerEntry, entry =>
                     {
                         var prefab = c_zNetScene.GetPrefab(entry.Prefab);
                         if (prefab == null) return 0; // zero weight => skip this one
@@ -458,14 +432,14 @@ namespace OfTamingAndBreeding.Components.Traits
                 }
             }
 
-            if (!_m_offspringPrefab && HasOffspringList(out var offspringList))
+            if (!_m_offspringPrefab && m_offspringList  != null && m_offspringList.Length > 0)
             {
                 _m_offspringTamed = true;
                 _m_offspringNeedPartner = true;
                 _m_offspringLevelUpChance = 0f;
 
                 var flag1 = (bool)_m_partnerPrefab;
-                var foundOffspring = Common.WeightedRandom.FindRandom(offspringList, out var randomOffspring, entry =>
+                var foundOffspring = Common.WeightedRandom.FindRandom(m_offspringList, out var randomOffspring, entry =>
                 {
                     var validPartner = entry.NeedPartner == false || (flag1 && (string.IsNullOrEmpty(entry.NeedPartnerPrefab) || _m_partnerPrefab.name == entry.NeedPartnerPrefab));
                     return validPartner ? entry.Weight : 0;
@@ -503,14 +477,17 @@ namespace OfTamingAndBreeding.Components.Traits
                 int maxCreaturesLeft = m_procreation.m_maxCreatures;
                 if (maxCreaturesLeft > 0)
                 {
-                    if (HasMaxCreaturesPrefabs(out var prefabNames))
+                    if (m_maxCreaturesPrefabs != null)
                     {
-                        foreach (var prefabName in prefabNames)
+                        if (m_maxCreaturesPrefabs.Length > 0)
                         {
-                            maxCreaturesLeft -= SpawnSystem.GetNrOfInstances(c_zNetScene.GetPrefab(prefabName), c_myPosition, c_myTotalCheckRange);
-                            if (maxCreaturesLeft <= 0)
+                            foreach (var prefab in m_maxCreaturesPrefabs)
                             {
-                                return;
+                                maxCreaturesLeft -= SpawnSystem.GetNrOfInstances(prefab, c_myPosition, c_myTotalCheckRange);
+                                if (maxCreaturesLeft <= 0)
+                                {
+                                    return;
+                                }
                             }
                         }
                     }

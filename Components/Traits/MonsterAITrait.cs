@@ -1,12 +1,8 @@
 ﻿using OfTamingAndBreeding.Components.Core;
-using OfTamingAndBreeding.Components.Extensions;
-using OfTamingAndBreeding.ValheimAPI;
 using System;
-using TMPro;
 
-
-//todo: cleanup
-
+// warning: MonsterAITrait is currently not registered in typeregistry because its currently not used
+//todo: remove me
 
 
 namespace OfTamingAndBreeding.Components.Traits
@@ -17,13 +13,10 @@ namespace OfTamingAndBreeding.Components.Traits
         // set in awake
         [NonSerialized] private ZNetView m_nview = null;
         [NonSerialized] private MonsterAI m_monsterAI = null;
-        [NonSerialized] private BaseAITrait m_baseAITrait = null;
-
         private void Awake()
         {
             m_nview = GetComponent<ZNetView>();
             m_monsterAI = GetComponent<MonsterAI>();
-            m_baseAITrait = GetComponent<BaseAITrait>();
 
             Register(this);
         }
@@ -33,14 +26,13 @@ namespace OfTamingAndBreeding.Components.Traits
             Unregister(this);
         }
 
+        /*
+        // handled in patch
         public ItemDrop FindConsumeableItem()
         {
-            if (Plugin.Configs.UseBetterSearchForFood.Value == true)
-            {
-                return m_baseAITrait.FindNearbyConsumableItem(m_monsterAI.m_consumeSearchRange, m_monsterAI.m_consumeItems);
-            }
             return m_baseAITrait.FindClosestConsumableItem(m_monsterAI.m_consumeSearchRange, m_monsterAI.m_consumeItems);
         }
+        */
 
     }
 }

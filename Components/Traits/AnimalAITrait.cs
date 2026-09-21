@@ -144,15 +144,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 {
                     return false;
                 }
-
-                if (Plugin.Configs.UseBetterSearchForFood.Value == true)
-                {
-                    m_consumeTarget = m_baseAITrait.FindNearbyConsumableItem(m_consumeSearchRange, m_consumeItems);
-                }
-                else
-                {
-                    m_consumeTarget = m_baseAITrait.FindClosestConsumableItem(m_consumeSearchRange, m_consumeItems);
-                }
+                m_consumeTarget = m_baseAITrait.FindClosestConsumableItem(m_consumeSearchRange, m_consumeItems);
             }
 
             if (m_consumeTarget)

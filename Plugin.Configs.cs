@@ -65,7 +65,6 @@ namespace OfTamingAndBreeding
 
             public static ConfigEntry<bool> RequireEggsDroppedByPlayer { get; private set; }
             public static ConfigEntry<bool> RequireFoodDroppedByPlayer { get; private set; }
-            public static ConfigEntry<bool> UseBetterSearchForFood { get; private set; }
             public static ConfigEntry<float> TamingSlowdownPerStar { get; private set; }
 
             public static ConfigEntry<bool> PreventProcreationWhileFollowing { get; private set; }
@@ -201,7 +200,6 @@ namespace OfTamingAndBreeding
 
                 RequireEggsDroppedByPlayer = Config.BindConfigInOrder<bool>(section, "RequireEggsDroppedByPlayer", true, "When enabled, only eggs dropped by players can grow or hatch. When disabled, eggs found in the world can also grow or hatch.", synced: true);
                 RequireFoodDroppedByPlayer = Config.BindConfigInOrder<bool>(section, "RequireFoodDroppedByPlayer", true, "When disabled, animals will also be tamed and stimulated to breed using food found in the world (not dropped by players).", synced: true);
-                UseBetterSearchForFood = Config.BindConfigInOrder<bool>(section, "UseBetterSearchForFood", true, "Uses a weighted food search instead of always picking the nearest item, resulting in more natural and less robotic animal behavior.", synced: true);
                 TamingSlowdownPerStar = Config.BindConfigInOrder<float>(section, "TamingSlowdownPerStar", 1f, "Slows down taming progress per star by reducing how much progress is applied each update.\n" +
                     "This does not change the base taming time itself — it only affects how fast taming progresses.\nA value of 0 disables this feature.\n" +
                     "Formula: progress /= (1 + stars × value)\n" +

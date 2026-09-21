@@ -1,4 +1,5 @@
-﻿using OfTamingAndBreeding.Components.Core;
+﻿using OfTamingAndBreeding.Common;
+using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Utilities;
 using System;
@@ -35,20 +36,6 @@ namespace OfTamingAndBreeding.Components.Traits
             }
         }
 
-        [NonSerialized] private static readonly List<List<string[]>> _requireGlobalKeys;
-        [NonSerialized] private static readonly List<EggGrown[]> _grownListByIndex;
-
-        static EggGrowTrait()
-        {
-            _requireGlobalKeys = new List<List<string[]>>();
-            _grownListByIndex = new List<EggGrown[]>();
-
-            Network.NetworkSessionManager.OnSessionClosed += () => {
-                _requireGlobalKeys.Clear();
-                _grownListByIndex.Clear();
-            };
-        }
-
         private static readonly Dictionary<Heightmap.Biome, string> biomeLangKeys = new Dictionary<Heightmap.Biome, string>() {
             { Heightmap.Biome.Meadows,      "$biome_meadows" },
             { Heightmap.Biome.Swamp,        "$biome_swamp" },
@@ -72,8 +59,23 @@ namespace OfTamingAndBreeding.Components.Traits
         [SerializeField] public Heightmap.Biome m_requireBiome = Heightmap.Biome.None;
         [SerializeField] public Utilities.EnvironmentUtils.LiquidTypeEx m_requireLiquid = Utilities.EnvironmentUtils.LiquidTypeEx.None;
         [SerializeField] public float m_requireLiquidDepth = 0;
-        [SerializeField] private int m_requireGlobalKeysIndex = -1;
-        [SerializeField] private int m_grownListIndex = -1;
+
+
+
+
+
+        internal static readonly IndexedDataStore<List<string[]>> s_requiredGlobalKeysStore = new IndexedDataStore<List<string[]>>();
+        [SerializeField] internal int m_requiredGlobalKeysStoreIndex = -1;
+        [NonSerialized] public List<string[]> m_requiredGlobalKeys = null;
+
+
+        internal static readonly IndexedDataStore<EggGrown[]> s_grownListStore = new IndexedDataStore<EggGrown[]>();
+        [SerializeField] internal int m_grownListStoreIndex = -1;
+        [NonSerialized] public EggGrown[] m_grownList = null;
+
+
+
+
 
         private void Awake()
         {
@@ -95,6 +97,10 @@ namespace OfTamingAndBreeding.Components.Traits
                 m_nview.Register<bool>("RPC_HatchAndDestroy", RPC_HatchAndDestroy);
             }
 
+            s_requiredGlobalKeysStore.TryGet(m_requiredGlobalKeysStoreIndex, out m_requiredGlobalKeys);
+            s_grownListStore.TryGet(m_grownListStoreIndex, out m_grownList);
+
+
             UpdateGrowTime();
         }
 
@@ -108,55 +114,13 @@ namespace OfTamingAndBreeding.Components.Traits
             return m_baseGrowTime;
         }
 
-        internal void SetRequiredGlobalKeys(List<string[]> orKeysList)
+        private bool SolvesRequiredGlobalKeys()
         {
-            m_requireGlobalKeysIndex = _requireGlobalKeys.Count;
-            _requireGlobalKeys.Add(orKeysList);
-        }
-
-        public bool HasRequiredGlobalKeys(out List<string[]> orKeysList)
-        {
-            if (m_requireGlobalKeysIndex != -1)
+            if (m_requiredGlobalKeys == null || m_requiredGlobalKeys.Count == 0)
             {
-                orKeysList = _requireGlobalKeys[m_requireGlobalKeysIndex];
-                if (orKeysList.Count > 0)
-                {
-                    return true;
-                }
-            }
-            orKeysList = null;
-            return false;
-        }
-
-        public void SetCustomGrownList(EggGrown[] grownList)
-        {
-            m_grownListIndex = _grownListByIndex.Count;
-            _grownListByIndex.Add(grownList);
-        }
-
-        public bool HasCustomGrownList(out EggGrown[] grownList)
-        {
-            if (m_grownListIndex != -1)
-            {
-                grownList = _grownListByIndex[m_grownListIndex];
                 return true;
             }
-            grownList = null;
-            return false;
-        }
-
-        public bool SolvesRequiredGlobalKeys()
-        {
-            if (HasRequiredGlobalKeys(out List<string[]> orKeysList))
-            {
-                return SolvesRequiredGlobalKeys(orKeysList);
-            }
-            return true;
-        }
-
-        private bool SolvesRequiredGlobalKeys(List<string[]> orKeysList)
-        {
-            foreach (var andKeys in orKeysList)
+            foreach (var andKeys in m_requiredGlobalKeys)
             {
                 if (andKeys.All((key) => ZoneSystem.instance.GetGlobalKey(key)))
                 {
@@ -341,11 +305,11 @@ namespace OfTamingAndBreeding.Components.Traits
                     }
                 }
 
-                if (HasRequiredGlobalKeys(out List<string[]> orKeysList) && !SolvesRequiredGlobalKeys(orKeysList))
+                if (!SolvesRequiredGlobalKeys())
                 {
                     // just take first AND-list for now
                     // todo: maybe display full list?
-                    var andList = orKeysList[0].Where((key) => !ZoneSystem.instance.GetGlobalKey(key));
+                    var andList = m_requiredGlobalKeys[0].Where((key) => !ZoneSystem.instance.GetGlobalKey(key));
                     var outList = String.Join(", ", andList.Select((k) => Localization.instance.Localize($"$OTAB_require_key_{k}")));
                     return Localization.instance.Localize("$otab_egg_requires_key", outList);
                 }
@@ -417,9 +381,9 @@ namespace OfTamingAndBreeding.Components.Traits
                 bool spawnTamed = true;
                 bool showHatchEffect = true;
 
-                if (HasCustomGrownList(out var grownList))
+                if (m_grownList != null && m_grownList.Length > 0)
                 {
-                    var foundRandom = Common.WeightedRandom.FindRandom<EggGrown>(grownList, out EggGrown grownEntry);
+                    var foundRandom = Common.WeightedRandom.FindRandom(m_grownList, out var grownEntry);
                     if (foundRandom)
                     {
                         grownPrefab = ZNetScene.instance.GetPrefab(grownEntry.Prefab);
@@ -477,6 +441,11 @@ namespace OfTamingAndBreeding.Components.Traits
                 }
                 else
                 {
+
+                    // we need to pass the flag!
+                    var spawnedItemDropTrait = spawned.GetComponent<ItemDropTrait>();
+                    spawnedItemDropTrait.SetDroppedByPlayer(m_itemDropTrait.IsDroppedByPlayer());
+
                     var spawnedItemDrop = spawned.GetComponent<ItemDrop>();
                     if (spawnedItemDrop)
                     {

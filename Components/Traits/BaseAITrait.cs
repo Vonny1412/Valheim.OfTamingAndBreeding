@@ -22,10 +22,6 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private CharacterTrait m_characterTrait = null;
         [NonSerialized] private AnimationClipOverlay m_consumeClip = null;
 
-        static BaseAITrait()
-        {
-        }
-
         private void Awake()
         {
             m_nview = GetComponent<ZNetView>();
@@ -51,6 +47,13 @@ namespace OfTamingAndBreeding.Components.Traits
                 }
             }
         }
+
+
+
+
+
+
+
 
         private void OnDestroy()
         {

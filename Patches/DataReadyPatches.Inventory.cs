@@ -1,11 +1,10 @@
 ﻿using HarmonyLib;
+using OfTamingAndBreeding.Processing;
 
 namespace OfTamingAndBreeding.Patches
 {
     internal partial class DataReadyPatches
     {
-
-
 
         [HarmonyPatch(typeof(Inventory), "AddItem", new[] { typeof(ItemDrop.ItemData), typeof(int), typeof(int), typeof(int), typeof(bool) })]
         [HarmonyPrefix]
@@ -28,7 +27,7 @@ namespace OfTamingAndBreeding.Patches
                 // item in slot is different, continue
                 return true;
             }
-            if (Runtime.ItemDataContext.IsRegisteredEggSharedName(item.m_shared.m_name) == false)
+            if (ItemProcessor.IsRegisteredEgg(item.m_shared.m_name) == false)
             {
                 // is not a registered egg item, continue
                 return true;

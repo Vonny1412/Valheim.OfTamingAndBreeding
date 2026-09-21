@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace OfTamingAndBreeding.Components
 {
-    public class GroundVisual : OTABComponent<GroundVisual>
+    public class AttachedSprite : OTABComponent<AttachedSprite>
     {
         [SerializeField] public Sprite m_sprite;
         [SerializeField] public float m_size = 1f;
@@ -20,7 +20,7 @@ namespace OfTamingAndBreeding.Components
         {
             if (m_sprite)
             {
-                CreateVisual();
+                CreateRenderer();
             }
         }
 
@@ -44,29 +44,17 @@ namespace OfTamingAndBreeding.Components
             Unregister(this);
         }
 
-        private void CreateVisual()
+        private void CreateRenderer()
         {
             if (!m_sprite)
             {
                 return;
             }
-            m_visual = new GameObject("OTAB_GroundVisual");
+            m_visual = new GameObject("OTAB_AttachedSprite");
             var renderer = m_visual.AddComponent<SpriteRenderer>();
             renderer.sprite = m_sprite;
             m_visual.transform.localScale = Vector3.one * m_size;
         }
 
-        public void SetSprite(Sprite sprite)
-        {
-            m_sprite = sprite;
-            if (!m_visual)
-            {
-                CreateVisual();
-            }
-            else
-            {
-                m_visual.GetComponent<SpriteRenderer>().sprite = sprite;
-            }
-        }
     }
 }

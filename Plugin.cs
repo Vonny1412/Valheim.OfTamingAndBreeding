@@ -119,7 +119,7 @@ namespace OfTamingAndBreeding
 
             BaseAITrait.RegisterType(typeof(Character), typeof(BaseAI));
             AnimalAITrait.RegisterType(typeof(AnimalAI));
-            MonsterAITrait.RegisterType(typeof(MonsterAI));
+            //MonsterAITrait.RegisterType(typeof(MonsterAI));
             CharacterTrait.RegisterType(typeof(Character), typeof(BaseAI));
             EggGrowTrait.RegisterType(typeof(EggGrow));
             GrowupTrait.RegisterType(typeof(Growup));
@@ -128,11 +128,11 @@ namespace OfTamingAndBreeding
             ProcreationTrait.RegisterType(typeof(Procreation));
             PetTrait.RegisterType(typeof(Pet));
 
-            // clever: it will not get added automatically because the required componentt (itself) not found. but it automatically gets removed
+            // Requiring itself prevents automatic addition, but still allows automatic removal.
             ScaledCreature.RegisterType(typeof(ScaledCreature));
             ScaledItem.RegisterType(typeof(ScaledItem));
             AnimationClipOverlay.RegisterType(typeof(AnimationClipOverlay));
-            GroundVisual.RegisterType(typeof(GroundVisual));
+            AttachedSprite.RegisterType(typeof(AttachedSprite));
 
             Integrations.ThirdPartyManager.RegisterBridges();
 
