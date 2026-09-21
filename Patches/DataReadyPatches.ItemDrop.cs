@@ -43,7 +43,7 @@ namespace OfTamingAndBreeding.Patches
         private static void ItemDrop_SetQuality_Postfix(ItemDrop __instance)
         {
             //if (__instance.TryGetComponent<ScaledEgg>(out var scaler))
-            if (ScaledEgg.TryGet(__instance.gameObject, out var scaler))
+            if (ScaledItem.TryGet(__instance.gameObject, out var scaler))
             {
                 // we need to multiply because localScale has already been set to variable scaling according to stuff like quality
                 __instance.transform.localScale *= scaler.m_scale;

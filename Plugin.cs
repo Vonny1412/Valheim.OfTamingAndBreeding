@@ -1,6 +1,7 @@
 ﻿using BepInEx;
 using BepInEx.Bootstrap;
 using Jotunn.Utils;
+using OfTamingAndBreeding.Components;
 using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Integrations.Mods;
@@ -116,7 +117,7 @@ namespace OfTamingAndBreeding
 
             Configs.Initialize(Config);
 
-            BaseAITrait.RegisterType(typeof(BaseAI));
+            BaseAITrait.RegisterType(typeof(Character), typeof(BaseAI));
             AnimalAITrait.RegisterType(typeof(AnimalAI));
             MonsterAITrait.RegisterType(typeof(MonsterAI));
             CharacterTrait.RegisterType(typeof(Character), typeof(BaseAI));
@@ -126,6 +127,12 @@ namespace OfTamingAndBreeding
             TameableTrait.RegisterType(typeof(Tameable));
             ProcreationTrait.RegisterType(typeof(Procreation));
             PetTrait.RegisterType(typeof(Pet));
+
+            // clever: it will not get added automatically because the required componentt (itself) not found. but it automatically gets removed
+            ScaledCreature.RegisterType(typeof(ScaledCreature));
+            ScaledItem.RegisterType(typeof(ScaledItem));
+            AnimationClipOverlay.RegisterType(typeof(AnimationClipOverlay));
+            GroundVisual.RegisterType(typeof(GroundVisual));
 
             Integrations.ThirdPartyManager.RegisterBridges();
 

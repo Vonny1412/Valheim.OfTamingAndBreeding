@@ -282,17 +282,28 @@ namespace OfTamingAndBreeding.Processing
 
             if (data.Clone != null)
             {
-                if (data.Clone.CustomIconName != null)
+                if (!string.IsNullOrEmpty(data.Clone.CustomIconName))
                 {
-                    var iconName = data.Clone.CustomIconName;
-                    var iconExists = Runtime.IconDataContext.iconTextures.ContainsKey(iconName);
-                    if (iconExists == false)
+                    var texName = data.Clone.CustomIconName;
+                    var texExists = Runtime.TextureDataContext.textures.ContainsKey(texName);
+                    if (texExists == false)
                     {
-                        Plugin.LogWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.CustomIconName)}: Icon with name '{iconName}' not found - using original icon");
-                        data.Clone.CustomIconName = null;
+                        Plugin.LogWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.CustomIconName)}: Texture '{texName}' not found");
+                        valid = false;
+                    }
+                }
+                if (!string.IsNullOrEmpty(data.Clone.GroundVisual))
+                {
+                    var texName = data.Clone.GroundVisual;
+                    var texExists = Runtime.TextureDataContext.textures.ContainsKey(texName);
+                    if (texExists == false)
+                    {
+                        Plugin.LogWarning($"{model}.{nameof(data.Clone)}.{nameof(data.Clone.CustomIconName)}: Texture '{texName}' not found");
+                        valid = false;
                     }
                 }
             }
+
 
             if (data.Components.EggGrow == ComponentBehavior.Patch)
             {
@@ -563,7 +574,7 @@ namespace OfTamingAndBreeding.Processing
                 var customScale = data.Clone.Scale.Value;
                 if (customScale != 1 && customScale > 0)
                 {
-                    var component = OTABPrefabRegistry.Instance.GetOrAddComponent<ScaledEgg>(itemName, item);
+                    var component = OTABPrefabRegistry.Instance.GetOrAddComponent<ScaledItem>(itemName, item);
                     component.m_scale = customScale;
                 }
 
@@ -586,7 +597,7 @@ namespace OfTamingAndBreeding.Processing
             if (data.Clone.CustomIconName != null)
             {
                 Plugin.LogDebug($"{model}.{nameof(data.Clone)}: Setting custom icon");
-                var tex2d = Runtime.IconDataContext.iconTextures[data.Clone.CustomIconName];
+                var tex2d = Runtime.TextureDataContext.textures[data.Clone.CustomIconName];
                 customIcon = SpriteUtils.TextureToSprite(tex2d);
             }
 
@@ -622,6 +633,10 @@ namespace OfTamingAndBreeding.Processing
                 ShiftLightColors(item, hueShift, saturationShift);
             }
 
+
+
+
+            /*
             if (data.Clone.DisableParticles.HasValue && data.Clone.DisableParticles.Value == true)
             {
                 foreach (var r in item.GetComponentsInChildren<UnityEngine.ParticleSystemRenderer>(true))
@@ -630,6 +645,23 @@ namespace OfTamingAndBreeding.Processing
                     r.enabled = false;
                 }
             }
+            */
+            if (data.Clone.DisableParticles == true)
+            {
+                foreach (var ps in item.GetComponentsInChildren<ParticleSystem>(true))
+                {
+                    var emission = ps.emission;
+                    emission.enabled = false;
+                }
+            }
+
+
+            
+
+
+
+
+
             if (data.Clone.LightsScale.HasValue)
             {
                 var lightsScale = data.Clone.LightsScale.Value;
@@ -655,6 +687,31 @@ namespace OfTamingAndBreeding.Processing
                 originalIcons.TryAdd(itemName, itemItemDataShared.m_icons); // maybe its already added by custom visual part
                 itemItemDataShared.m_icons = new[] { customIcon };
             }
+
+
+
+
+
+            if (data.Clone.GroundVisual != null)
+            {
+                var texName = data.Clone.GroundVisual;
+                var tex2d = Runtime.TextureDataContext.textures[texName];
+                var sprite = SpriteUtils.TextureToSprite(tex2d);
+
+                var component = GroundVisual.GetOrAddComponent(item);
+                component.SetSprite(sprite);
+                component.m_size = data.Clone.GroundVisualScale ?? 1f;
+                component.m_offset = data.Clone.GroundVisualOffset?.ToVector3() ?? new Vector3(0f, 0.02f, 0f);
+            }
+
+
+
+
+
+
+
+
+
 
         }
 
@@ -754,15 +811,12 @@ namespace OfTamingAndBreeding.Processing
 
                 PrefabUtils.RestoreChildRenderers(current, backup);
                 PrefabUtils.RestoreChildLights(current, backup);
-                //PrefabUtils.RestoreChildParticleSystems(current, backup); // todo: no more neccessary, remove if everything is okay
+PrefabUtils.RestoreChildParticleSystems(current, backup);
                 PrefabUtils.RestoreChildParticleRenderers(current, backup);
                 PrefabUtils.RestoreChildLightFlickerBaseColor(current, backup);
 
-                var comp1 = current.GetComponent(typeof(ScaledEgg));
-                if (comp1)
-                {
-                    UnityEngine.Object.DestroyImmediate(comp1);
-                }
+
+
             });
 
             if (OTABPrefabRegistry.IsCustomPrefab(itemName))

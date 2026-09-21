@@ -145,9 +145,6 @@ namespace OfTamingAndBreeding.Registry
             }
         }
 
-
-
-
         public static void RestoreChildParticleSystems(GameObject current, GameObject backup)
         {
             var bMap = MapByPath<ParticleSystem>(backup);
@@ -160,6 +157,10 @@ namespace OfTamingAndBreeding.Registry
 
                 if (!bMap.TryGetValue(path, out var bak) || !bak)
                     continue;
+
+                var curEmission = cur.emission;
+                var bakEmission = bak.emission;
+                curEmission.enabled = bakEmission.enabled;
 
                 var curMain = cur.main;
                 var bakMain = bak.main;

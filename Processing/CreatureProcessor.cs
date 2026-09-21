@@ -867,11 +867,6 @@ namespace OfTamingAndBreeding.Processing
                     currentProcreation.m_seperatePartner = backupProcreation.m_seperatePartner;
                 }
 
-                var comp1 = current.GetComponent(typeof(AnimationClipOverlay));
-                if (comp1)
-                {
-                    UnityEngine.Object.DestroyImmediate(comp1);
-                }
             });
         }
 

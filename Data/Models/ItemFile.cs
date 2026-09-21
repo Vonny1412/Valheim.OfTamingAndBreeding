@@ -34,7 +34,6 @@ namespace OfTamingAndBreeding.Data.Models
 
             public string CustomIconName { get; set; } = null;
 
-
             public float? ItemHueShift { get; set; } = null;
             public float? ItemSaturationShift { get; set; } = null;
             public float? ItemBrightnessShift { get; set; } = null;
@@ -45,6 +44,24 @@ namespace OfTamingAndBreeding.Data.Models
             public float? LightsScale { get; set; } = null;
 
             public bool? DisableParticles { get; set; } = null;
+
+            public string GroundVisual { get; set; }
+            public float? GroundVisualScale { get; set; }
+            public GroundVisualOffset GroundVisualOffset { get; set; }
+        }
+
+        [Serializable]
+        [CanBeNull]
+        public class GroundVisualOffset
+        {
+            public float X { get; set; }
+            public float Y { get; set; }
+            public float Z { get; set; }
+
+            public UnityEngine.Vector3 ToVector3()
+            {
+                return new UnityEngine.Vector3(X, Y, Z);
+            }
         }
 
         [Serializable]

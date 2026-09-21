@@ -244,7 +244,7 @@ namespace OfTamingAndBreeding.Processing.Core
                 catch (Exception)
                 {
                     Plugin.LogFatal($"{ModelTypeName}.{nameof(ReservePrefab)}() '{prefabName}' failed");
-                    throw;
+                    valid = false;
                 }
             }
             return valid;
@@ -320,7 +320,7 @@ namespace OfTamingAndBreeding.Processing.Core
                 catch (Exception)
                 {
                     Plugin.LogFatal($"{ModelTypeName}.{nameof(ProcessPrefab)}() '{prefabName}' failed");
-                    throw;
+                    valid = false;
                 }
             }
             return valid;

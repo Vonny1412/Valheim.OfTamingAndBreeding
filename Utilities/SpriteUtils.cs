@@ -1,5 +1,6 @@
 ﻿using Jotunn.Managers;
 using System;
+using System.IO;
 using System.Reflection;
 using UnityEngine;
 
@@ -7,6 +8,7 @@ namespace OfTamingAndBreeding.Utilities
 {
     internal static class SpriteUtils
     {
+        private const float DefaultPixelsPerUnit = 100f;
 
         public static Sprite RenderGameObject(GameObject item)
         {
@@ -15,188 +17,10 @@ namespace OfTamingAndBreeding.Utilities
                 Rotation = RenderManager.IsometricRotation,
                 UseCache = true
             };
-            var icon = RenderManager.Instance.Render(request);
-            return icon;
+            return RenderManager.Instance.Render(request);
         }
 
-        public static Sprite TextureToSprite(Texture2D tex)
-        {
-            if (!tex) return null;
-            return Sprite.Create(
-                tex,
-                new Rect(0, 0, tex.width, tex.height),
-                new Vector2(0.5f, 0.5f),
-                100f
-            );
-        }
-
-        public static bool TryLoadValidImage(string base64, out Texture2D texture)
-        {
-            byte[] bytes = Convert.FromBase64String(base64);
-            return TryLoadValidImage(bytes, out texture);
-        }
-
-        public static bool TryLoadValidImage(byte[] bytes, out Texture2D texture)
-        {
-            texture = null;
-
-            if (bytes == null || bytes.Length == 0)
-                return false;
-
-            try
-            {
-                var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false)
-                {
-                    filterMode = FilterMode.Bilinear
-                };
-                bool loaded = tex.LoadImage(bytes, markNonReadable: true);
-                if (!loaded)
-                {
-                    UnityEngine.Object.Destroy(tex);
-                    return false;
-                }
-
-                if (tex.width <= 0 || tex.height <= 0)
-                {
-                    UnityEngine.Object.Destroy(tex);
-                    return false;
-                }
-
-                texture = tex;
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static Texture2D RenderSpriteToTexture(Sprite src)
-        {
-            if (!src) return null;
-
-            int w = Mathf.CeilToInt(src.rect.width);
-            int h = Mathf.CeilToInt(src.rect.height);
-
-            var rt = RenderTexture.GetTemporary(w, h, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
-            var prev = RenderTexture.active;
-
-            const int IconLayer = 31;
-
-            var go = new GameObject("IconExport_TMP");
-            go.hideFlags = HideFlags.HideAndDontSave;
-            go.layer = IconLayer;
-
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = src;
-            sr.color = Color.white;
-            sr.sharedMaterial = new Material(Shader.Find("Sprites/Default"));
-
-            var camGo = new GameObject("IconExport_CAM");
-            camGo.hideFlags = HideFlags.HideAndDontSave;
-            camGo.layer = IconLayer;
-
-            var cam = camGo.AddComponent<Camera>();
-            cam.orthographic = true;
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0, 0, 0, 0);
-            cam.targetTexture = rt;
-            cam.cullingMask = 1 << IconLayer;
-            cam.allowMSAA = false;
-            cam.allowHDR = false;
-
-            try
-            {
-                cam.orthographicSize = (h / src.pixelsPerUnit) * 0.5f;
-
-                go.transform.position = Vector3.zero;
-                cam.transform.position = new Vector3(0, 0, -10);
-
-                cam.Render();
-
-                RenderTexture.active = rt;
-
-                var tex = new Texture2D(w, h, TextureFormat.RGBA32, false, false);
-                tex.name = $"{src.name}_export";
-                tex.ReadPixels(new Rect(0, 0, w, h), 0, 0);
-                tex.Apply(false, false);
-
-                return tex;
-            }
-            finally
-            {
-                RenderTexture.active = prev;
-                RenderTexture.ReleaseTemporary(rt);
-                UnityEngine.Object.DestroyImmediate(camGo);
-                UnityEngine.Object.DestroyImmediate(go);
-            }
-        }
-
-        public static void ExportSpriteToPng(Sprite src, string path)
-        {
-            var tex = RenderSpriteToTexture(src);
-            if (tex == null) return;
-
-            var png = tex.EncodeToPNG();
-            System.IO.File.WriteAllBytes(path, png);
-            UnityEngine.Object.Destroy(tex);
-        }
-
-
-
-
-        public static Texture2D LoadTextureFromFile(string path, bool readable = true)
-        {
-            if (string.IsNullOrWhiteSpace(path) || !System.IO.File.Exists(path))
-            {
-                return null;
-            }
-            return LoadTextureFromBytes(System.IO.File.ReadAllBytes(path), readable);
-        }
-
-        public static Texture2D LoadTextureFromResource(string path, Assembly assembly = null, bool readable = true)
-        {
-            assembly ??= Assembly.GetExecutingAssembly();
-            using var stream = assembly.GetManifestResourceStream(path);
-            if (stream == null)
-            {
-                return null;
-            }
-            var data = new byte[stream.Length];
-            stream.Read(data, 0, data.Length);
-            return LoadTextureFromBytes(data, readable);
-        }
-
-        public static Texture2D LoadTextureFromBytes(byte[] data, bool readable = true)
-        {
-            if (data == null || data.Length == 0)
-            {
-                return null;
-            }
-            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false, false);
-            if (!ImageConversion.LoadImage(texture, data, !readable))
-            {
-                UnityEngine.Object.Destroy(texture);
-                return null;
-            }
-            texture.wrapMode = TextureWrapMode.Clamp;
-            texture.filterMode = FilterMode.Bilinear;
-            return texture;
-        }
-
-        public static Sprite LoadSpriteFromFile(string path, string name = null, float pixelsPerUnit = 100f)
-        {
-            var texture = LoadTextureFromFile(path);
-            return CreateSprite(texture, name, pixelsPerUnit);
-        }
-
-        public static Sprite LoadSpriteFromResource(string path, string name = null, Assembly assembly = null, float pixelsPerUnit = 100f)
-        {
-            var texture = LoadTextureFromResource(path, assembly);
-            return CreateSprite(texture, name, pixelsPerUnit);
-        }
-
-        public static Sprite CreateSprite(Texture2D texture, string name = null, float pixelsPerUnit = 100f)
+        public static Sprite TextureToSprite(Texture2D texture, string name = null, float pixelsPerUnit = DefaultPixelsPerUnit)
         {
             if (!texture)
             {
@@ -211,5 +35,164 @@ namespace OfTamingAndBreeding.Utilities
             return sprite;
         }
 
+        public static bool TryLoadValidImage(string base64, out Texture2D texture)
+        {
+            texture = null;
+            if (string.IsNullOrWhiteSpace(base64))
+            {
+                return false;
+            }
+            try
+            {
+                return TryLoadValidImage(Convert.FromBase64String(base64), out texture);
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
+        }
+
+        public static bool TryLoadValidImage(byte[] bytes, out Texture2D texture)
+        {
+            texture = LoadTextureFromBytes(bytes, readable: false, filterMode: FilterMode.Point);
+            return texture;
+        }
+
+        public static Texture2D LoadTextureFromFile(string path, bool readable = true, FilterMode filterMode = FilterMode.Bilinear)
+        {
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            {
+                return null;
+            }
+            return LoadTextureFromBytes(File.ReadAllBytes(path), readable, filterMode);
+        }
+
+        public static Texture2D LoadTextureFromResource(string path, Assembly assembly = null, bool readable = true, FilterMode filterMode = FilterMode.Bilinear)
+        {
+            assembly ??= Assembly.GetExecutingAssembly();
+            using var stream = assembly.GetManifestResourceStream(path);
+            if (stream == null)
+            {
+                return null;
+            }
+            var data = new byte[stream.Length];
+            stream.Read(data, 0, data.Length);
+            return LoadTextureFromBytes(data, readable, filterMode);
+        }
+
+        public static Texture2D LoadTextureFromBytes(byte[] data, bool readable = true, FilterMode filterMode = FilterMode.Bilinear)
+        {
+            if (data == null || data.Length == 0)
+            {
+                return null;
+            }
+            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false, false);
+            try
+            {
+                if (!ImageConversion.LoadImage(texture, data, !readable))
+                {
+                    UnityEngine.Object.Destroy(texture);
+                    return null;
+                }
+
+                if (texture.width <= 0 || texture.height <= 0)
+                {
+                    UnityEngine.Object.Destroy(texture);
+                    return null;
+                }
+                texture.wrapMode = TextureWrapMode.Clamp;
+                texture.filterMode = filterMode;
+                return texture;
+            }
+            catch
+            {
+                UnityEngine.Object.Destroy(texture);
+                return null;
+            }
+        }
+
+        public static Sprite LoadSpriteFromFile(string path, string name = null, float pixelsPerUnit = DefaultPixelsPerUnit)
+        {
+            var texture = LoadTextureFromFile(path);
+            return TextureToSprite(texture, name, pixelsPerUnit);
+        }
+
+        public static Sprite LoadSpriteFromResource(string path, string name = null, Assembly assembly = null, float pixelsPerUnit = DefaultPixelsPerUnit)
+        {
+            var texture = LoadTextureFromResource(path, assembly);
+            return TextureToSprite(texture, name, pixelsPerUnit);
+        }
+
+        public static void ExportSpriteToPng(Sprite sprite, string path)
+        {
+            var texture = RenderSpriteToTexture(sprite);
+            if (!texture)
+            {
+                return;
+            }
+            try
+            {
+                File.WriteAllBytes(path, texture.EncodeToPNG());
+            }
+            finally
+            {
+                UnityEngine.Object.Destroy(texture);
+            }
+        }
+
+        private static Texture2D RenderSpriteToTexture(Sprite sprite)
+        {
+            if (!sprite)
+            {
+                return null;
+            }
+            int width = Mathf.CeilToInt(sprite.rect.width);
+            int height = Mathf.CeilToInt(sprite.rect.height);
+            var renderTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+            var previousRenderTexture = RenderTexture.active;
+            const int IconLayer = 31;
+            var spriteObject = new GameObject("IconExport_TMP")
+            {
+                hideFlags = HideFlags.HideAndDontSave,
+                layer = IconLayer
+            };
+            var spriteRenderer = spriteObject.AddComponent<SpriteRenderer>();
+            spriteRenderer.sprite = sprite;
+            spriteRenderer.color = Color.white;
+            spriteRenderer.sharedMaterial = new Material(Shader.Find("Sprites/Default"));
+            var cameraObject = new GameObject("IconExport_CAM")
+            {
+                hideFlags = HideFlags.HideAndDontSave,
+                layer = IconLayer
+            };
+            var camera = cameraObject.AddComponent<Camera>();
+            camera.orthographic = true;
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(0f, 0f, 0f, 0f);
+            camera.targetTexture = renderTexture;
+            camera.cullingMask = 1 << IconLayer;
+            camera.allowMSAA = false;
+            camera.allowHDR = false;
+            try
+            {
+                camera.orthographicSize = (height / sprite.pixelsPerUnit) * 0.5f;
+                spriteObject.transform.position = Vector3.zero;
+                camera.transform.position = new Vector3(0f, 0f, -10f);
+                camera.Render();
+                RenderTexture.active = renderTexture;
+                var texture = new Texture2D(width, height, TextureFormat.RGBA32, false, false);
+                texture.name = $"{sprite.name}_export";
+                texture.ReadPixels(new Rect(0f, 0f, width, height), 0, 0);
+                texture.Apply(false, false);
+                return texture;
+            }
+            finally
+            {
+                RenderTexture.active = previousRenderTexture;
+                RenderTexture.ReleaseTemporary(renderTexture);
+                UnityEngine.Object.DestroyImmediate(cameraObject);
+                UnityEngine.Object.DestroyImmediate(spriteObject);
+            }
+        }
     }
 }

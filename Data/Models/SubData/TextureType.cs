@@ -3,7 +3,7 @@
 namespace OfTamingAndBreeding.Data.Models.SubData
 {
     [Serializable]
-    internal enum IconType
+    internal enum TextureType
     {
         Unknown = 0,
         Png = 1,

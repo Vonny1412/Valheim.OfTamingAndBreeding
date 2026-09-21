@@ -476,14 +476,32 @@ namespace OfTamingAndBreeding.Processing
 
 
             //
-            // character
+            // character / baseai
             //
 
             Plugin.LogDebug($"{model}.{nameof(data.Clone)}: Setting Character values");
             var offspringCharacter = offspring.GetComponent<Character>();
+            var offspringBaseAI = offspring.GetComponent<BaseAI>();
 
             offspringCharacter.m_boss = false;
             offspringCharacter.m_bossEvent = "";
+            offspringBaseAI.m_spawnMessage = "";
+            offspringBaseAI.m_deathMessage = "";
+
+            var comp1 = offspring.GetComponent<MovementDamage>();
+            if (comp1)
+            {
+                // disable faders walk damage
+                comp1.enabled = false;
+                if (comp1.m_runDamageObject)
+                {
+                    comp1.m_runDamageObject.SetActive(false);
+                }
+            }
+
+
+
+
             offspringCharacter.m_name = data.Clone.Name;
             if (data.Clone.MaxHealthFactor.HasValue)
             {
@@ -726,13 +744,27 @@ namespace OfTamingAndBreeding.Processing
                     currentLevelFx.enabled = backupLevelFx.enabled;
                 }
 
+
+
+
+
+                var currentMovementDamage = current.GetComponent<MovementDamage>();
+                var backupMovementDamage = backup.GetComponent<MovementDamage>();
+                if (currentMovementDamage && backupMovementDamage)
+                {
+                    currentMovementDamage.enabled = backupMovementDamage.enabled;
+                    if (currentMovementDamage.m_runDamageObject && backupMovementDamage.m_runDamageObject)
+                    {
+                        currentMovementDamage.m_runDamageObject.SetActive(backupMovementDamage.m_runDamageObject.activeSelf);
+                    }
+                }
+
+
+
+
+
                 VfxUtils.RestoreVfx(current, backup);
 
-                var scaledCreature = current.GetComponent<ScaledCreature>();
-                if (scaledCreature)
-                {
-                    UnityEngine.Object.DestroyImmediate(scaledCreature);
-                }
             });
         }
         

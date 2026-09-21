@@ -4,6 +4,7 @@ using OfTamingAndBreeding.Utilities;
 using System;
 using System.Linq;
 using UnityEngine;
+using YamlDotNet.Core.Tokens;
 
 namespace OfTamingAndBreeding.Components.Traits
 {
@@ -38,6 +39,17 @@ namespace OfTamingAndBreeding.Components.Traits
             s_consumeItemsStore.TryGet(m_consumeItemsStoreIndex, out m_consumeItems);
 
             Register(this);
+        }
+
+        private void Start()
+        {
+            if (!CanBecomeConfined())
+            {
+                if (m_nview.IsValid())
+                {
+                    ResetAntiExploitState();
+                }
+            }
         }
 
         private void OnDestroy()

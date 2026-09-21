@@ -16,7 +16,7 @@ namespace OfTamingAndBreeding.Processing.Core
         }
 
         private static readonly IDataProcessor[] dataProcessors = new IDataProcessor[] {
-            new IconProcessor(),
+            new TextureProcessor(),
             new TranslationProcessor(),
             new OffspringProcessor(),
             new ItemProcessor(),
@@ -128,6 +128,11 @@ namespace OfTamingAndBreeding.Processing.Core
 
             var valid = true;
 
+
+
+
+
+
             foreach (var p in dataProcessors)
             {
                 p.CallPrepareProcess();
@@ -145,7 +150,10 @@ namespace OfTamingAndBreeding.Processing.Core
                 valid &= p.CallValidateAllPrefabs();
             }
 
-            // from this point everything is okay
+            if (valid == false)
+            {
+                return false;
+            }
 
             foreach (var p in dataProcessors)
             {
@@ -156,18 +164,11 @@ namespace OfTamingAndBreeding.Processing.Core
                 valid &= p.CallProcessAllPrefabs();
             }
 
-
             if (valid == false)
             {
-                foreach (var p in dataProcessors)
-                {
-                    p.CallFinalizeProcess();
-                }
                 ResetRegistry();
                 return false;
             }
-
-
 
             foreach (var p in dataProcessors)
             {

@@ -2,23 +2,23 @@
 
 namespace OfTamingAndBreeding.Runtime
 {
-    internal static class IconDataContext
+    internal static class TextureDataContext
     {
-        public static readonly Dictionary<string, UnityEngine.Texture2D> iconTextures;
+        public static readonly Dictionary<string, UnityEngine.Texture2D> textures;
 
-        static IconDataContext()
+        static TextureDataContext()
         {
-            iconTextures = new Dictionary<string, UnityEngine.Texture2D>();
+            textures = new Dictionary<string, UnityEngine.Texture2D>();
 
             Network.NetworkSessionManager.OnSessionClosed += () => {
-                foreach(var texture in iconTextures.Values)
+                foreach(var texture in textures.Values)
                 {
                     if (texture)
                     {
                         UnityEngine.Object.Destroy(texture);
                     }
                 }
-                iconTextures.Clear();
+                textures.Clear();
             };
         }
 

@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace OfTamingAndBreeding.Components
 {
-    public class ScaledEgg : OTABComponent<ScaledEgg>
+    public class ScaledItem : OTABComponent<ScaledItem>
     {
         [SerializeField] public float m_scale = 1;
 
