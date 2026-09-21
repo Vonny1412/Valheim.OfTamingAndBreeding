@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Utilities
@@ -122,6 +123,71 @@ public static bool IsInAnyBiome(Vector3 pos, Heightmap.Biome[] biomes)
     return (at & mask) != 0;
 }
         */
+
+
+
+
+
+
+        public static string ParseGlobalKey(string rawKey)
+        {
+            if (string.IsNullOrEmpty(rawKey))
+            {
+                return null;
+            }
+            string[] keyParts = rawKey.Split(':');
+            switch (keyParts.Length)
+            {
+
+                case 1:
+                    {
+                        var key = keyParts[0].Trim();
+                        return key;
+                    }
+
+                case 2:
+                    {
+                        // todo: shall we still support mod-specific keys?
+                        var mod = keyParts[0].Trim();
+                        var key = keyParts[1].Trim();
+                        if (Integrations.ThirdPartyManager.TryGetPluginMetadata(mod, out _))
+                        {
+                            return key;
+                        }
+                        break;
+                    }
+                default:
+                    // todo: warning
+                    break;
+
+            }
+            return null;
+        }
+
+
+        public static List<string[]> ParseGlobalKeysList(string[] rawKeys)
+        {
+            if (rawKeys == null)
+            {
+                return null;
+            }
+            var orList = new List<string[]>();
+            foreach (var unsplitted in rawKeys)
+            {
+                var splitted = unsplitted.Split(',')
+                    .Select(ParseGlobalKey)
+                    .Where((key) => !string.IsNullOrEmpty(key))
+                    .ToArray();
+                if (splitted.Length > 0)
+                {
+                    orList.Add(splitted);
+                }
+            }
+            return orList;
+        }
+
+
+
 
 
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 //todo: cleanup
 
@@ -29,7 +30,7 @@ namespace OfTamingAndBreeding.Common
             for (int i = 0; i < items.Count; i++)
             {
                 float w = check(items[i]);
-                if (w <= 0f)
+                if (w <= 0f || float.IsNaN(w) || float.IsInfinity(w))
                 {
                     continue;
                 }

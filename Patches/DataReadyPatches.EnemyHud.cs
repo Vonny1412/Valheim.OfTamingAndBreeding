@@ -1,14 +1,48 @@
 ﻿using HarmonyLib;
+using OfTamingAndBreeding.Components;
 using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Utilities;
 using System.Collections;
+using System.Collections.Generic;
+using System.Reflection.Emit;
 using UnityEngine;
+
 
 namespace OfTamingAndBreeding.Patches
 {
     internal partial class DataReadyPatches
     {
+
+        // Character.GetTopPoint() does not account for transform scaling when
+        // adding the collider height. Replace it only for EnemyHud positioning.
+        [HarmonyPatch(typeof(EnemyHud), "UpdateHuds")]
+        [HarmonyTranspiler]
+        private static IEnumerable<CodeInstruction> EnemyHud_UpdateHuds_Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var getTopPoint = AccessTools.Method(typeof(Character), nameof(Character.GetTopPoint));
+            var getHudTopPoint = AccessTools.Method(typeof(DataReadyPatches), nameof(GetHudTopPoint));
+            foreach (var instruction in instructions)
+            {
+                if (instruction.Calls(getTopPoint))
+                {
+                    yield return new CodeInstruction(OpCodes.Call, getHudTopPoint);
+                }
+                else
+                {
+                    yield return instruction;
+                }
+            }
+        }
+        private static Vector3 GetHudTopPoint(Character character)
+        {
+            if (ScaledCreature.TryGet(character.gameObject, out var scaledCreature))
+            {
+                return scaledCreature.GetTopPoint();
+            }
+            return character.GetTopPoint();
+        }
+
 
         [HarmonyPatch(typeof(EnemyHud), "ShowHud")]
         [HarmonyPrefix]

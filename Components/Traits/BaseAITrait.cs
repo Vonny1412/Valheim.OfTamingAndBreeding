@@ -17,6 +17,7 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private ZNetView m_nview = null;
         [NonSerialized] private BaseAI m_baseAI = null;
         [NonSerialized] private MonsterAI m_monsterAI = null;
+        [NonSerialized] private ProcreationTrait m_procreationTrait = null;
         [NonSerialized] private TameableTrait m_tameableTrait = null;
         [NonSerialized] private AnimalAITrait m_animalAITrait = null;
         [NonSerialized] private CharacterTrait m_characterTrait = null;
@@ -27,11 +28,12 @@ namespace OfTamingAndBreeding.Components.Traits
             m_nview = GetComponent<ZNetView>();
             m_baseAI = GetComponent<BaseAI>();
             m_monsterAI = GetComponent<MonsterAI>();
+            m_procreationTrait = GetComponent<ProcreationTrait>();
             m_tameableTrait = GetComponent<TameableTrait>();
             m_animalAITrait = GetComponent<AnimalAITrait>();
             m_characterTrait = GetComponent<CharacterTrait>();
             m_consumeClip = GetComponent<AnimationClipOverlay>();
-
+            
             s_consumeItemsStore.TryGet(m_consumeItemsStoreIndex, out m_consumeItems);
 
             Register(this);
@@ -186,7 +188,7 @@ namespace OfTamingAndBreeding.Components.Traits
             var movedDist = (float)(int)(GetAntiExploitMovedDistance() * 10) / 10;
             var movedParts = string.Join(" + ", m_antiExploitMoveDistances.Select((d) => (float)(int)(d * 10) / 10));
             var movedText = $"Moved: {movedParts} = {movedDist} / {GetMinRequiredMoveDistance()}";
-            var jammedText = $"Jammed: " + (m_confined ? "true" : "false") + (m_checkConfinement ? " (avoiding)" : "");
+            var jammedText = $"Confined: " + (m_confined ? "true" : "false") + (m_checkConfinement ? " (avoiding)" : "");
             text += "\n" + Localization.instance.Localize("$otab_hover_admin_info", jammedText);
             text += "\n" + Localization.instance.Localize("$otab_hover_admin_info", movedText);
 

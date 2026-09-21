@@ -30,10 +30,17 @@ namespace OfTamingAndBreeding.Components
             {
                 return;
             }
+
             // Follow position, but NOT item rotation
+            //m_visual.transform.position = transform.position + m_offset;
+            //m_visual.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+
+            // Follow position and Y rotation, but always stay flat
             m_visual.transform.position = transform.position + m_offset;
-            m_visual.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            var yaw = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
+            m_visual.transform.rotation = yaw * flat;
         }
+        private readonly Quaternion flat = Quaternion.Euler(90f, 0f, 0f);
 
         private void OnDestroy()
         {

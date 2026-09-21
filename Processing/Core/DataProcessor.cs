@@ -86,61 +86,6 @@ namespace OfTamingAndBreeding.Processing.Core
         }
 
         //---------------------
-        // processor utils
-        //---------------------
-
-        protected static string ParseGlobalKey(string rawKey)
-        {
-            string[] keyParts = rawKey.Split(':');
-            switch (keyParts.Length)
-            {
-
-                case 1:
-                    {
-                        var key = keyParts[0].Trim();
-                        return key;
-                    }
-
-                case 2:
-                    {
-                        var mod = keyParts[0].Trim();
-                        var key = keyParts[1].Trim();
-                        if (Integrations.ThirdPartyManager.TryGetPluginMetadata(mod, out _))
-                        {
-                            return key;
-                        }
-                        break;
-                    }
-                default:
-                    // todo: warning
-                    break;
-
-            }
-            return null;
-        }
-
-        protected static List<string[]> ParseGlobalKeys(string[] rawKeys)
-        {
-            var orList = new List<string[]>();
-            foreach (var unsplitted in rawKeys)
-            {
-                var splitted = unsplitted.Split(',')
-                    .Select(ParseGlobalKey)
-                    .Where((key) => !string.IsNullOrEmpty(key))
-                    .ToArray();
-                if (splitted.Length > 0)
-                {
-                    orList.Add(splitted);
-                }
-                else
-                {
-                    // todo: warning
-                }
-            }
-            return orList;
-        }
-
-        //---------------------
         // orchestrator routine
         //---------------------
 
@@ -192,10 +137,11 @@ namespace OfTamingAndBreeding.Processing.Core
                         valid = false;
                     }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     Plugin.LogFatal($"{ModelTypeName}.{nameof(ValidateData)}() '{prefabName}' failed");
-                    throw;
+                    Plugin.LogFatal(e);
+                    valid = false;
                 }
             }
             return valid;
@@ -241,9 +187,10 @@ namespace OfTamingAndBreeding.Processing.Core
                     }
                     
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     Plugin.LogFatal($"{ModelTypeName}.{nameof(ReservePrefab)}() '{prefabName}' failed");
+                    Plugin.LogFatal(e);
                     valid = false;
                 }
             }
@@ -268,10 +215,11 @@ namespace OfTamingAndBreeding.Processing.Core
                         valid = false;
                     }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     Plugin.LogFatal($"{ModelTypeName}.{nameof(ValidatePrefab)}() '{prefabName}' failed");
-                    throw;
+                    Plugin.LogFatal(e);
+                    valid = false;
                 }
             }
             return valid;
@@ -291,10 +239,10 @@ namespace OfTamingAndBreeding.Processing.Core
                 {
                     RegisterPrefab(prefabName, data);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     Plugin.LogFatal($"{ModelTypeName}.{nameof(RegisterPrefab)}() '{prefabName}' failed");
-                    throw;
+                    Plugin.LogFatal(e);
                 }
             }
         }
@@ -317,9 +265,10 @@ namespace OfTamingAndBreeding.Processing.Core
                         valid = false;
                     }
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     Plugin.LogFatal($"{ModelTypeName}.{nameof(ProcessPrefab)}() '{prefabName}' failed");
+                    Plugin.LogFatal(e);
                     valid = false;
                 }
             }
@@ -345,10 +294,10 @@ namespace OfTamingAndBreeding.Processing.Core
                 {
                     RestorePrefab(prefabName);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     Plugin.LogFatal($"{ModelTypeName}.{nameof(RestorePrefab)}() '{prefabName}' failed");
-                    throw;
+                    Plugin.LogFatal(e);
                 }
             }
         }

@@ -643,7 +643,7 @@ namespace OfTamingAndBreeding.Processing
 
                     if (data.Tameable.RequireGlobalKeys != null)
                     {
-                        var keysList = ParseGlobalKeys(data.Tameable.RequireGlobalKeys);
+                        var keysList = EnvironmentUtils.ParseGlobalKeysList(data.Tameable.RequireGlobalKeys);
                         tameableTrait.m_requiredGlobalKeysStoreIndex = TameableTrait.s_requiredGlobalKeysStore.Add(keysList);
                     }
 

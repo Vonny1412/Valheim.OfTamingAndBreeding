@@ -508,6 +508,8 @@ namespace OfTamingAndBreeding.Processing
             offspringBaseAI.m_spawnMessage = "";
             offspringBaseAI.m_deathMessage = "";
 
+
+
             var comp1 = offspring.GetComponent<MovementDamage>();
             if (comp1)
             {
@@ -540,9 +542,6 @@ namespace OfTamingAndBreeding.Processing
 
                 offspring.transform.localScale *= setScale;
 
-
-
-
                 offspringCharacter.m_speed *= setScale;
 
                 offspringCharacter.m_crouchSpeed *= setScale;
@@ -557,30 +556,9 @@ namespace OfTamingAndBreeding.Processing
 
 
 
-                // important for the hud
-                var collider = offspring.GetComponent<CapsuleCollider>();
-                if (collider)
-                {
-                    //collider.center *= setScale;
-                    //collider.radius *= setScale;
-                    collider.height *= setScale;
-                }
-
-
-
-
-
-
-
-
 
                 Plugin.LogDebug($"{model}.{nameof(data.Clone)}: Setting vfx scaling");
                 VfxUtils.ScaleVfx(offspring, setScale); // scale model particles
-
-
-
-
-
 
 
 
@@ -644,13 +622,8 @@ namespace OfTamingAndBreeding.Processing
                 }
 
                 var scaler = OTABPrefabRegistry.Instance.GetOrAddComponent<ScaledCreature>(offspringName, offspring);
+                scaler.m_scale = setScale;
                 scaler.m_animationScale = 1 / setScale;
-
-
-
-
-
-
 
 
 
@@ -819,7 +792,7 @@ namespace OfTamingAndBreeding.Processing
 
 
 
-
+                /*
                 var currentCollider = current.GetComponent<CapsuleCollider>();
                 var backupCollider = backup.GetComponent<CapsuleCollider>();
                 if (currentCollider && backupCollider)
@@ -828,7 +801,7 @@ namespace OfTamingAndBreeding.Processing
                     currentCollider.center = backupCollider.center;
                     currentCollider.radius = backupCollider.radius;
                 }
-
+                */
 
 
 

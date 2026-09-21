@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using YamlDotNet.Core.Tokens;
 
 
 //todo: cleanup
@@ -19,18 +20,21 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public class EggGrown : Common.WeightedRandom.IWeighted
         {
-            public float Weight { get; }
             public string Prefab { get; }
+            public float Weight { get; }
+            public string RequireGlobalKey { get; }
             public bool Tamed { get; }
             public bool ShowHatchEffect { get; }
             public EggGrown(
                 string prefab,
                 float weight,
+                string requireGlobalKey,
                 bool tamed,
                 bool showHatchEffect)
             {
                 Prefab = prefab;
                 Weight = weight;
+                RequireGlobalKey = requireGlobalKey;
                 Tamed = tamed;
                 ShowHatchEffect = showHatchEffect;
             }
@@ -58,15 +62,15 @@ namespace OfTamingAndBreeding.Components.Traits
         // set in registration
         [SerializeField] public Heightmap.Biome m_requireBiome = Heightmap.Biome.None;
         [SerializeField] public Utilities.EnvironmentUtils.LiquidTypeEx m_requireLiquid = Utilities.EnvironmentUtils.LiquidTypeEx.None;
-        [SerializeField] public float m_requireLiquidDepth = 0;
 
 
 
 
 
-        internal static readonly IndexedDataStore<List<string[]>> s_requiredGlobalKeysStore = new IndexedDataStore<List<string[]>>();
-        [SerializeField] internal int m_requiredGlobalKeysStoreIndex = -1;
-        [NonSerialized] public List<string[]> m_requiredGlobalKeys = null;
+
+        internal static readonly IndexedDataStore<List<string[]>> s_requireAnyGlobalKeysStore = new IndexedDataStore<List<string[]>>();
+        [SerializeField] internal int m_requireAnyGlobalKeysStoreIndex = -1;
+        [NonSerialized] public List<string[]> m_requireAnyGlobalKeys = null;
 
 
         internal static readonly IndexedDataStore<EggGrown[]> s_grownListStore = new IndexedDataStore<EggGrown[]>();
@@ -97,7 +101,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 m_nview.Register<bool>("RPC_HatchAndDestroy", RPC_HatchAndDestroy);
             }
 
-            s_requiredGlobalKeysStore.TryGet(m_requiredGlobalKeysStoreIndex, out m_requiredGlobalKeys);
+            s_requireAnyGlobalKeysStore.TryGet(m_requireAnyGlobalKeysStoreIndex, out m_requireAnyGlobalKeys);
             s_grownListStore.TryGet(m_grownListStoreIndex, out m_grownList);
 
 
@@ -116,11 +120,11 @@ namespace OfTamingAndBreeding.Components.Traits
 
         private bool SolvesRequiredGlobalKeys()
         {
-            if (m_requiredGlobalKeys == null || m_requiredGlobalKeys.Count == 0)
+            if (m_requireAnyGlobalKeys == null || m_requireAnyGlobalKeys.Count == 0)
             {
                 return true;
             }
-            foreach (var andKeys in m_requiredGlobalKeys)
+            foreach (var andKeys in m_requireAnyGlobalKeys)
             {
                 if (andKeys.All((key) => ZoneSystem.instance.GetGlobalKey(key)))
                 {
@@ -146,11 +150,10 @@ namespace OfTamingAndBreeding.Components.Traits
                 return true;
             }
             var liquidType = m_requireLiquid;
-            var liquidDepth = m_requireLiquidDepth;
             return liquidType switch
             {
-                Utilities.EnvironmentUtils.LiquidTypeEx.Water => Utilities.EnvironmentUtils.IsInWater(position, liquidDepth),
-                Utilities.EnvironmentUtils.LiquidTypeEx.Tar => Utilities.EnvironmentUtils.IsInTar(position, liquidDepth),
+                Utilities.EnvironmentUtils.LiquidTypeEx.Water => Utilities.EnvironmentUtils.IsInWater(position, 0),
+                Utilities.EnvironmentUtils.LiquidTypeEx.Tar => Utilities.EnvironmentUtils.IsInTar(position, 0),
                 // todo: lava?
                 _ => true,
             };
@@ -309,7 +312,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 {
                     // just take first AND-list for now
                     // todo: maybe display full list?
-                    var andList = m_requiredGlobalKeys[0].Where((key) => !ZoneSystem.instance.GetGlobalKey(key));
+                    var andList = m_requireAnyGlobalKeys[0].Where((key) => !ZoneSystem.instance.GetGlobalKey(key));
                     var outList = String.Join(", ", andList.Select((k) => Localization.instance.Localize($"$OTAB_require_key_{k}")));
                     return Localization.instance.Localize("$otab_egg_requires_key", outList);
                 }
@@ -383,7 +386,14 @@ namespace OfTamingAndBreeding.Components.Traits
 
                 if (m_grownList != null && m_grownList.Length > 0)
                 {
-                    var foundRandom = Common.WeightedRandom.FindRandom(m_grownList, out var grownEntry);
+                    var foundRandom = Common.WeightedRandom.FindRandom(m_grownList, out var grownEntry, (entry) => {
+                        if (!string.IsNullOrEmpty(entry.RequireGlobalKey) && !ZoneSystem.instance.GetGlobalKey(entry.RequireGlobalKey))
+                        {
+                            // todo: add this feature also to procreation offsprings list
+                            return 0;
+                        }
+                        return entry.Weight;
+                    });
                     if (foundRandom)
                     {
                         grownPrefab = ZNetScene.instance.GetPrefab(grownEntry.Prefab);
@@ -391,18 +401,8 @@ namespace OfTamingAndBreeding.Components.Traits
                         showHatchEffect = grownEntry.ShowHatchEffect;
                     }
                 }
-                if (grownPrefab == null)
-                {
-                    grownPrefab = m_eggGrow.m_grownPrefab;
-                    spawnTamed = m_eggGrow.m_tamed;
-                }
-                if (grownPrefab == null)
-                {
-                    // todo: log error
-                    s_growStart = ZDOUtils.SetFloat(zdo, ZDOVars.s_growStart, 0f, s_growStart);
-                    m_nview.InvokeRPC(ZNetView.Everybody, "RPC_UpdateEffects", s_growStart);
-                    return true; // handled
-                }
+
+
 
                 var position = m_eggGrow.transform.position;
                 var rotation = m_eggGrow.transform.rotation;
@@ -416,52 +416,60 @@ namespace OfTamingAndBreeding.Components.Traits
                     rotation *= Quaternion.Euler(0f, jiggleYaw, 0f);
                 }
 
-                GameObject spawned = UnityEngine.Object.Instantiate(grownPrefab, position, rotation);
-                Character spawnedCharacter = spawned.GetComponent<Character>();
-                var level = m_itemDrop.m_itemData.m_quality;
-
-                if ((bool)spawnedCharacter)
+                if (grownPrefab)
                 {
-                    spawnedCharacter.SetTamed(spawnTamed);
 
-                    var spawnedCharacterTrait = spawned.GetComponent<CharacterTrait>();
-                    if (spawnedCharacterTrait && spawnedCharacterTrait.m_maxLevel > 0)
+                    GameObject spawned = UnityEngine.Object.Instantiate(grownPrefab, position, rotation);
+                    Character spawnedCharacter = spawned.GetComponent<Character>();
+                    var level = m_itemDrop.m_itemData.m_quality;
+
+                    if ((bool)spawnedCharacter)
                     {
-                        if (level > spawnedCharacterTrait.m_maxLevel)
+                        spawnedCharacter.SetTamed(spawnTamed);
+
+                        var spawnedCharacterTrait = spawned.GetComponent<CharacterTrait>();
+                        if (spawnedCharacterTrait && spawnedCharacterTrait.m_maxLevel > 0)
                         {
-                            level = spawnedCharacterTrait.m_maxLevel;
+                            if (level > spawnedCharacterTrait.m_maxLevel)
+                            {
+                                level = spawnedCharacterTrait.m_maxLevel;
+                            }
                         }
+                        else
+                        {
+                            // important todo: warning, cannot varify level
+                            level = 1;
+                        }
+                        spawnedCharacter.SetLevel(level);
                     }
                     else
                     {
-                        // important todo: warning, cannot varify level
-                        level = 1;
+
+                        // we need to pass the flag!
+                        var spawnedItemDropTrait = spawned.GetComponent<ItemDropTrait>();
+                        spawnedItemDropTrait.SetDroppedByPlayer(m_itemDropTrait.IsDroppedByPlayer());
+
+                        var spawnedItemDrop = spawned.GetComponent<ItemDrop>();
+                        if (spawnedItemDrop)
+                        {
+                            if (level > spawnedItemDrop.m_itemData.m_shared.m_maxQuality)
+                            {
+                                level = spawnedItemDrop.m_itemData.m_shared.m_maxQuality;
+                            }
+                            spawnedItemDrop.SetQuality(level);
+                        }
+                        else
+                        {
+                            // important todo: warning, cannot set level
+                        }
                     }
-                    spawnedCharacter.SetLevel(level);
+
+                    Integrations.Mods.CllCBridge.PassTraits(zdo, spawned);
                 }
                 else
                 {
-
-                    // we need to pass the flag!
-                    var spawnedItemDropTrait = spawned.GetComponent<ItemDropTrait>();
-                    spawnedItemDropTrait.SetDroppedByPlayer(m_itemDropTrait.IsDroppedByPlayer());
-
-                    var spawnedItemDrop = spawned.GetComponent<ItemDrop>();
-                    if (spawnedItemDrop)
-                    {
-                        if (level > spawnedItemDrop.m_itemData.m_shared.m_maxQuality)
-                        {
-                            level = spawnedItemDrop.m_itemData.m_shared.m_maxQuality;
-                        }
-                        spawnedItemDrop.SetQuality(level);
-                    }
-                    else
-                    {
-                        // important todo: warning, cannot set level
-                    }
+                    // just let the item get destroyed
                 }
-
-                Integrations.Mods.CllCBridge.PassTraits(zdo, spawned);
 
                 m_nview.InvokeRPC( ZNetView.Everybody, "RPC_HatchAndDestroy", showHatchEffect);
                 // object is beeing destroyed in RPC_HatchAndDestroy()

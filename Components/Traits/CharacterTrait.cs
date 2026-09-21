@@ -329,6 +329,8 @@ namespace OfTamingAndBreeding.Components.Traits
             if (Plugin.IsAdmin() && Plugin.Configs.HoverShowAdminInfo.Value)
             {
                 string text2 = "";
+                text2 += "<size=33%>\n\n</size>" + Localization.instance.Localize("$otab_hover_admin_info", $"Prefab: " + gameObject.name);
+
                 if (m_baseAITrait)
                 {
                     var info = m_baseAITrait.GetAdminHoverInfoText();

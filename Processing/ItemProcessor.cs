@@ -5,6 +5,7 @@ using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Data.Models.SubData;
 using OfTamingAndBreeding.Processing.Core;
 using OfTamingAndBreeding.Registry;
+using OfTamingAndBreeding.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -142,7 +143,6 @@ namespace OfTamingAndBreeding.Processing
                 {
                     foreach (var (grownData, i) in data.EggGrow.Grown.Select((value, i) => (value, i)))
                     {
-                        grownData.Weight = Math.Max(0f, grownData.Weight);
                         if (grownData.Prefab == null)
                         {
                             Plugin.LogError($"{model}.{nameof(data.EggGrow)}.{nameof(data.EggGrow.Grown)}.{i}.{nameof(grownData.Prefab)}: Field is empty");
@@ -476,22 +476,19 @@ namespace OfTamingAndBreeding.Processing
                     if (data.EggGrow.RequireLiquid.HasValue)
                     {
                         itemEggGrowTrait.m_requireLiquid = data.EggGrow.RequireLiquid.Value;
-                        if (data.EggGrow.RequireLiquidDepth.HasValue)
-                        {
-                            itemEggGrowTrait.m_requireLiquidDepth = data.EggGrow.RequireLiquidDepth.Value;
-                        }
                     }
 
-                    if (data.EggGrow.RequireGlobalKeys != null)
+                    if (data.EggGrow.RequireAnyGlobalKeys != null)
                     {
-                        var keysList = ParseGlobalKeys(data.EggGrow.RequireGlobalKeys);
-                        itemEggGrowTrait.m_requiredGlobalKeysStoreIndex = EggGrowTrait.s_requiredGlobalKeysStore.Add(keysList);
+                        var keysList = EnvironmentUtils.ParseGlobalKeysList(data.EggGrow.RequireAnyGlobalKeys);
+                        itemEggGrowTrait.m_requireAnyGlobalKeysStoreIndex = EggGrowTrait.s_requireAnyGlobalKeysStore.Add(keysList);
                     }
 
                     if (data.EggGrow.Grown != null)
                     {
                         var grownList = data.EggGrow.Grown.Select((g) => new EggGrowTrait.EggGrown(
                             weight: g.Weight,
+                            requireGlobalKey: EnvironmentUtils.ParseGlobalKey(g.RequireGlobalKey),
                             prefab: g.Prefab,
                             tamed: g.Tamed,
                             showHatchEffect: g.ShowHatchEffect
@@ -513,8 +510,8 @@ namespace OfTamingAndBreeding.Processing
                 }
 
                 // will be set seperatly
-                itemEggGrow.m_tamed = true;
                 itemEggGrow.m_grownPrefab = null;
+                itemEggGrow.m_tamed = true;
 
             }
             else if (data.Components.EggGrow == ComponentBehavior.Remove)
@@ -816,7 +813,7 @@ namespace OfTamingAndBreeding.Processing
 
                 PrefabUtils.RestoreChildRenderers(current, backup);
                 PrefabUtils.RestoreChildLights(current, backup);
-PrefabUtils.RestoreChildParticleSystems(current, backup);
+                PrefabUtils.RestoreChildParticleSystems(current, backup);
                 PrefabUtils.RestoreChildParticleRenderers(current, backup);
                 PrefabUtils.RestoreChildLightFlickerBaseColor(current, backup);
 
@@ -853,7 +850,7 @@ PrefabUtils.RestoreChildParticleSystems(current, backup);
             originalVisualStates.Clear();
             eggSharedNameHashes.Clear();
 
-            EggGrowTrait.s_requiredGlobalKeysStore.Clear();
+            EggGrowTrait.s_requireAnyGlobalKeysStore.Clear();
             EggGrowTrait.s_grownListStore.Clear();
         }
 

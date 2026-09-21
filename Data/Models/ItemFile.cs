@@ -96,6 +96,7 @@ namespace OfTamingAndBreeding.Data.Models
             {
                 public string Prefab { get; set; } = null;
                 public float Weight { get; set; } = 1;
+                public string RequireGlobalKey { get; set; } = null;
                 public bool Tamed { get; set; } = true;
                 public bool ShowHatchEffect { get; set; } = true;
             }
@@ -109,8 +110,7 @@ namespace OfTamingAndBreeding.Data.Models
 
             public Heightmap.Biome[] RequireAnyBiome { get; set; } = null; // OTAB feature
             public Utilities.EnvironmentUtils.LiquidTypeEx? RequireLiquid { get; set; } = null; // OTAB feature
-            public float? RequireLiquidDepth { get; set; } = null; // OTAB feature
-            public string[] RequireGlobalKeys { get; set; } = null; // OTAB feature
+            public string[] RequireAnyGlobalKeys { get; set; } = null; // OTAB feature
 
             public GrownData[] Grown { get; set; } = null;
         }
