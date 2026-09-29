@@ -82,9 +82,12 @@ namespace OfTamingAndBreeding.Utilities
                 UnityEngine.Object.DestroyImmediate(audioSource);
 
             /*
+             // DO NOT DESTROY
             foreach (var nview in clone.GetComponentsInChildren<ZNetView>(true))
                 UnityEngine.Object.DestroyImmediate(nview);
             */
+
+            PrefabManager.Instance.RegisterToZNetScene(clone);
 
             return clone;
         }

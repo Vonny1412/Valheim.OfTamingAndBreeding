@@ -1,9 +1,8 @@
-﻿using OfTamingAndBreeding.Common;
-using OfTamingAndBreeding.Components.Core;
+﻿using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Utilities;
+using OfTamingAndBreeding.ValheimAPI;
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 
@@ -15,18 +14,17 @@ namespace OfTamingAndBreeding.Components.Traits
 {
     public class ProcreationTrait : OTABComponent<ProcreationTrait>
     {
-        public class ProcreationPartner : Common.WeightedRandom.IWeighted
+        public class ProcreationPartner : WeightedRandom.IWeighted
         {
-            public float Weight { get; }
+            public float Weight { get; } = 1f;
             public string Prefab { get; }
-            public ProcreationPartner(string prefab, float weight)
+            public ProcreationPartner(string prefab)
             {
                 Prefab = prefab;
-                Weight = weight;
             }
         }
 
-        public class ProcreationOffspring : Common.WeightedRandom.IWeighted
+        public class ProcreationOffspring : WeightedRandom.IWeighted
         {
             public string Prefab { get; }
             public float Weight { get; }
@@ -40,7 +38,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 bool needPartner,
                 string needPartnerPrefab,
                 float levelUpChance,
-                bool spawnTamed
+                bool inheritTame
             )
             {
                 Prefab = prefab;
@@ -48,7 +46,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 NeedPartner = needPartner;
                 NeedPartnerPrefab = needPartnerPrefab;
                 LevelUpChance = levelUpChance;
-                SpawnTamed = spawnTamed;
+                SpawnTamed = inheritTame;
             }
         }
 
@@ -142,13 +140,26 @@ namespace OfTamingAndBreeding.Components.Traits
 
             UpdatePregnancyDuration();
 
-            Register(this);
+            Register();
         }
 
         private void OnDestroy()
         {
-            Unregister(this);
+            Unregister();
         }
+
+        public Procreation GetProcreation() {
+            return m_procreation;
+        }
+
+
+
+
+
+
+
+
+
 
         public void SetRealPregnancyDuration(float duration)
         {
@@ -194,66 +205,6 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 m_procreation.m_pregnancyDuration = GetBasePregnancyDuration() * totalFactor;
             }
-        }
-
-        public string GetProcreationHoverText()
-        {
-            string text;
-            if (m_procreation.IsPregnant())
-            {
-                text = GetPregnancyLine();
-            }
-            else
-            {
-                text = GetLovePointsLine();
-            }
-            return text;
-        }
-
-        private string GetPregnancyLine()
-        {
-            var zdo = m_nview.GetZDO();
-            var zTime = ZNet.instance.GetTime();
-            long pregnantLong = zdo.GetLong(ZDOVars.s_pregnant, 0L);
-            var dateTime = new DateTime(pregnantLong);
-            var duration = GetRealPregnancyDuration();
-            double secLeft = duration - (zTime - dateTime).TotalSeconds;
-
-            return Utilities.StringUtils.FormatRelativeTime(
-                secLeft,
-                labelPositive: "$otab_hover_pregnancy_due",
-                labelPositiveAlt: "$otab_hover_pregnancy_due_alt",
-                labelNegative: "$otab_hover_pregnancy_overdue",
-                labelNegativeAlt: "$otab_hover_pregnancy_overdue_alt",
-                colorPositive: Plugin.Configs.HoverColorGood.Value,
-                colorNegative: Plugin.Configs.HoverColorBad.Value
-            );
-        }
-
-        private string GetLovePointsLine()
-        {
-            if (!Plugin.Configs.HoverShowLovePoints.Value)
-            {
-                return "";
-            }
-
-            if (m_procreation.m_requiredLovePoints == 0)
-            {
-                return "";
-            }
-
-            int lPoints = m_procreation.GetLovePoints();
-
-            var color = lPoints > 0
-                ? Plugin.Configs.HoverColorGood.Value
-                : Plugin.Configs.HoverColorBad.Value;
-
-            return Localization.instance.Localize(
-                "$otab_hover_love_points",
-                color,
-                lPoints.ToString(),
-                m_procreation.m_requiredLovePoints.ToString()
-            );
         }
 
         public string GetAdminHoverInfoText()
@@ -315,7 +266,7 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 return 0;
             }
-
+            // todo: GetNrOfInstances does not check for IsSleeping
             var count = SpawnSystem.GetNrOfInstances(
                 ofPrefab,
                 position,
@@ -331,7 +282,7 @@ namespace OfTamingAndBreeding.Components.Traits
         }
 
 
-        internal void OnProcreate()
+        internal void On_Procreate()
         {
             if (!m_nview.IsValid() || !m_nview.IsOwner())
             {
@@ -389,7 +340,7 @@ namespace OfTamingAndBreeding.Components.Traits
                     // Valheim uses inverted logic here
                     return;
                 }
-                if (m_baseAITrait.IsAlerted() || m_baseAITrait.IsConfined() || m_tameable.IsHungry())
+                if (m_baseAITrait.IsAlerted() || m_baseAITrait.IsConfined() || m_tameable.IsHungry() || m_baseAITrait.GetBaseAI().IsSleeping())
                 {
                     return;
                 }
@@ -399,7 +350,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
                 if (m_partnerList != null && m_partnerList.Length > 0)
                 {
-                    var foundPartner = Common.WeightedRandom.FindRandom(m_partnerList, out ProcreationPartner partnerEntry, entry =>
+                    var foundPartner = WeightedRandom.FindRandom(m_partnerList, out ProcreationPartner partnerEntry, entry =>
                     {
                         var prefab = c_zNetScene.GetPrefab(entry.Prefab);
                         if (prefab == null) return 0; // zero weight => skip this one
@@ -439,7 +390,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 _m_offspringLevelUpChance = 0f;
 
                 var flag1 = (bool)_m_partnerPrefab;
-                var foundOffspring = Common.WeightedRandom.FindRandom(m_offspringList, out var randomOffspring, entry =>
+                var foundOffspring = WeightedRandom.FindRandom(m_offspringList, out var randomOffspring, entry =>
                 {
                     var validPartner = entry.NeedPartner == false || (flag1 && (string.IsNullOrEmpty(entry.NeedPartnerPrefab) || _m_partnerPrefab.name == entry.NeedPartnerPrefab));
                     return validPartner ? entry.Weight : 0;

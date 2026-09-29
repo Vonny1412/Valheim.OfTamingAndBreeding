@@ -43,8 +43,6 @@ namespace OfTamingAndBreeding.Data.Models
 
             public float? LightsScale { get; set; } = null;
 
-            public bool? DisableParticles { get; set; } = null;
-
             public string AttachedSprite { get; set; } = null;
             public float? AttachedSpriteScale { get; set; } = null;
             public AttachedSpriteOffset AttachedSpriteOffset { get; set; } = null;
@@ -108,9 +106,9 @@ namespace OfTamingAndBreeding.Data.Models
             public bool? RequireUnderRoof { get; set; } = null;
             public float? RequireCoverPercentige { get; set; } = null;
 
-            public Heightmap.Biome[] RequireAnyBiome { get; set; } = null; // OTAB feature
-            public Utilities.EnvironmentUtils.LiquidTypeEx? RequireLiquid { get; set; } = null; // OTAB feature
-            public string[] RequireAnyGlobalKeys { get; set; } = null; // OTAB feature
+            public Heightmap.Biome[] RequireAnyBiome { get; set; } = null;
+            public Utilities.EnvironmentUtils.LiquidTypeEx? RequireLiquid { get; set; } = null;
+            public string RequireGlobalKey { get; set; } = null;
 
             public GrownData[] Grown { get; set; } = null;
         }

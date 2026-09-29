@@ -1,4 +1,4 @@
-﻿using OfTamingAndBreeding.Registry;
+﻿using OfTamingAndBreeding.Processing.Registry;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,24 +10,80 @@ namespace OfTamingAndBreeding.Processing.Core
     {
         private static bool dataLoaded = false;
 
-        public static bool IsDataLoaded()
-        {
-            return dataLoaded;
-        }
-
         private static readonly IDataProcessor[] dataProcessors = new IDataProcessor[] {
             new TextureProcessor(),
             new TranslationProcessor(),
-            new OffspringProcessor(),
             new ItemProcessor(),
-            new CreatureProcessor(),
             new RecipeProcessor(),
+            new CreatureProcessor(),
         };
 
-        public static IEnumerable<IDataProcessor> IterDataProcessors()
+        public static IEnumerable<IDataProcessor> DataProcessors => dataProcessors;
+        public static bool IsDataLoaded => dataLoaded;
+
+        // TODO: Distinguish expected processing failures from unexpected exceptions.
+        //
+        // Invalid user data (e.g. YAML validation errors) is an expected failure:
+        // - ResetRegistry() restores/cleans the current processing attempt.
+        // - The player is returned to the menu.
+        // - After fixing the data, joining a world again is allowed.
+        //
+        // Unexpected exceptions during processing indicate an unknown/inconsistent state.
+        // Even though ResetRegistry() performs a best-effort cleanup, we cannot guarantee
+        // that every side effect caused before the exception has been tracked/restored.
+        // Retrying processing in the same Valheim session could therefore cause prefab
+        // corruption, stale Unity references, duplicate registrations, etc.
+        //
+        // Possible implementation:
+        // - Add a static `fatalProcessingError` flag to DataProcessingManager.
+        // - Set it when RunForAllProcessors() catches an unexpected exception.
+        // - Also consider setting it if an exception occurs during ResetRegistry(),
+        //   because cleanup itself was then incomplete.
+        // - ResetRegistry() should still always attempt the full best-effort cleanup.
+        // - ValidateDataAndRegisterPrefabs() should refuse another processing attempt
+        //   while `fatalProcessingError` is set and log that Valheim must be restarted.
+        // - Do NOT set the flag for normal `false` results caused by invalid user data.
+        // - Do NOT clear the flag on world/menu transitions; only restarting Valheim
+        //   should restore a trustworthy process state.
+        //
+        // Important:
+        // Keep the distinction based on exceptions vs. normal validation failures.
+        // Do not use a general processing-phase flag: an exception may happen halfway
+        // through processing an individual prefab, so the reached phase alone cannot
+        // describe which mutations have already occurred.
+
+        private static bool RunForAllProcessors(Func<IDataProcessor, bool> action)
         {
-            foreach (var dh in dataProcessors)
-                yield return dh;
+            var valid = true;
+            foreach (var processor in dataProcessors)
+            {
+                try
+                {
+                    valid &= action(processor);
+                }
+                catch (Exception ex)
+                {
+                    Plugin.LogError($"Unexpected exception while processing {processor.GetType().Name}:\n{ex}");
+                    return false;
+                }
+            }
+            return valid;
+        }
+
+        private static void RunForAllProcessorsReverse(Action<IDataProcessor> action)
+        {
+            for (var i = dataProcessors.Length - 1; i >= 0; i--)
+            {
+                var processor = dataProcessors[i];
+                try
+                {
+                    action(processor);
+                }
+                catch (Exception ex)
+                {
+                    Plugin.LogError($"Unexpected exception while resetting {processor.GetType().Name}:\n{ex}");
+                }
+            }
         }
 
         public static bool LoadDataFromLocalFiles()
@@ -124,55 +180,41 @@ namespace OfTamingAndBreeding.Processing.Core
             }
 
             OTABPrefabRegistry.CreateInstance();
-            OTABPrefabRegistry.SaveOriginalPrefabNames();
 
-            var valid = true;
-
-
-
-
-
-
-            foreach (var p in dataProcessors)
-            {
-                p.CallPrepareProcess();
-            }
-            foreach (var p in dataProcessors)
-            {
-                valid &= p.CallValidateAllData();
-            }
-            foreach (var p in dataProcessors)
-            {
-                valid &= p.CallReserveAllPrefabs();
-            }
-            foreach (var p in dataProcessors)
-            {
-                valid &= p.CallValidateAllPrefabs();
-            }
-
-            if (valid == false)
-            {
-                return false;
-            }
-
-            foreach (var p in dataProcessors)
-            {
-                p.CallRegisterAllPrefabs();
-            }
-            foreach (var p in dataProcessors)
-            {
-                valid &= p.CallProcessAllPrefabs();
-            }
-
-            if (valid == false)
+            if (!RunForAllProcessors(p => p.PrepareProcess()))
             {
                 ResetRegistry();
                 return false;
             }
 
-            foreach (var p in dataProcessors)
+            if (!RunForAllProcessors(p => p.ReserveAllPrefabNames()))
             {
-                p.CallFinalizeProcess();
+                ResetRegistry();
+                return false;
+            }
+
+            if (!RunForAllProcessors(p => p.ValidateAllData()))
+            {
+                ResetRegistry();
+                return false;
+            }
+
+            if (!RunForAllProcessors(p => p.RegisterAllPrefabs()))
+            {
+                ResetRegistry();
+                return false;
+            }
+
+            if (!RunForAllProcessors(p => p.ProcessAllPrefabs()))
+            {
+                ResetRegistry();
+                return false;
+            }
+
+            if (!RunForAllProcessors(p => p.FinalizeProcess()))
+            {
+                ResetRegistry();
+                return false;
             }
 
             dataLoaded = true;
@@ -181,27 +223,16 @@ namespace OfTamingAndBreeding.Processing.Core
 
         public static void ResetRegistry()
         {
-            if (OTABPrefabRegistry.Instance == null)
-            {
-                return;
-            }
-
-            for (var i= dataProcessors.Length - 1; i >= 0; i--)
-            {
-                dataProcessors[i].CallRestoreAllPrefabs();
-            }
-
-            for (var i = dataProcessors.Length - 1; i >= 0; i--)
-            {
-                dataProcessors[i].CallCleanupProcess();
-            }
-
-            for (var i = dataProcessors.Length - 1; i >= 0; i--)
-            {
-                dataProcessors[i].ResetData();
-            }
-
             dataLoaded = false;
+
+            if (OTABPrefabRegistry.Instance != null)
+            {
+                RunForAllProcessorsReverse(p => p.RestoreAllPrefabs());
+            }
+
+            RunForAllProcessorsReverse(p => p.CleanupProcess());
+            RunForAllProcessorsReverse(p => p.ResetData());
+
             OTABPrefabRegistry.DestroyInstance();
         }
 

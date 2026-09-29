@@ -1,7 +1,5 @@
 ﻿using HarmonyLib;
-using Jotunn;
 using OfTamingAndBreeding.Components.Traits;
-using UnityEngine;
 
 namespace OfTamingAndBreeding.Patches
 {
@@ -15,7 +13,7 @@ namespace OfTamingAndBreeding.Patches
         {
             if (CharacterTrait.TryGet(__instance.gameObject, out var trait))
             {
-                var text = trait.GetHoverName();
+                var text = trait.On_GetHoverName();
                 if (text.Length > 0)
                 {
                     __result += " " + text;

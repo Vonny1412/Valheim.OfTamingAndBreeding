@@ -1,5 +1,4 @@
-﻿using OfTamingAndBreeding.Common;
-using OfTamingAndBreeding.Components.Core;
+﻿using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Extensions;
 using System;
 using System.Collections.Generic;

@@ -52,7 +52,7 @@ namespace OfTamingAndBreeding.Data.Cache
             };
 
 
-            foreach(var p in DataProcessingManager.IterDataProcessors())
+            foreach(var p in DataProcessingManager.DataProcessors)
             {
                 var writeToDir = Path.Combine(cacheDebugFilesPath, p.DirectoryName);
                 if (writeFiles)
@@ -101,7 +101,7 @@ namespace OfTamingAndBreeding.Data.Cache
                 var cacheFilePlain = encryptKey == null ? crypted : DeterministicStringCrypto.DecryptFromBase64(crypted, encryptKey);
                 var cacheFile = SerializeableData.Deserialize<CacheFile>(cacheFilePlain);
                 var allokay = true;
-                foreach(var p in DataProcessingManager.IterDataProcessors())
+                foreach(var p in DataProcessingManager.DataProcessors)
                 {
                     foreach (var kv in cacheFile.Data[p.DirectoryName])
                     {

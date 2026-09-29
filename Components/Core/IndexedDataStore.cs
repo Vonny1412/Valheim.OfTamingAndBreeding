@@ -1,9 +1,6 @@
 ﻿using System.Collections.Generic;
 
-// todo: cleanup
-// this is only component/trait related
-
-namespace OfTamingAndBreeding.Common
+namespace OfTamingAndBreeding.Components.Core
 {
     internal class IndexedDataStore<T>
     {

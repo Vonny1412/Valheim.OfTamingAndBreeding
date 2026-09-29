@@ -1,11 +1,5 @@
 ﻿using OfTamingAndBreeding.Components.Core;
-using System;
 using UnityEngine;
-
-
-//todo: cleanup
-
-
 
 namespace OfTamingAndBreeding.Components
 {
@@ -14,6 +8,7 @@ namespace OfTamingAndBreeding.Components
     {
         [SerializeField] public float m_scale = 1f;
         [SerializeField] public float m_animationScale = 1f;
+        [SerializeField] public float m_attackScale = 1f;
 
         private CapsuleCollider m_collider;
         private Transform m_visual;
@@ -24,12 +19,12 @@ namespace OfTamingAndBreeding.Components
             m_collider = GetComponent<CapsuleCollider>();
             m_visual = character.GetVisual().transform;
 
-            Register(this);
+            Register();
         }
 
         private void OnDestroy()
         {
-            Unregister(this);
+            Unregister();
         }
 
         public Vector3 GetTopPoint()
@@ -38,10 +33,7 @@ namespace OfTamingAndBreeding.Components
         }
 
 
-
-
-
-
+        
     }
     
 }

@@ -1,6 +1,5 @@
 ﻿using HarmonyLib;
 using OfTamingAndBreeding.Components.Traits;
-using System;
 
 namespace OfTamingAndBreeding.Patches
 {
@@ -19,7 +18,7 @@ namespace OfTamingAndBreeding.Patches
             {
                 // this will only be run for creatures that actually got tamed
                 // not for offsprings that just hatched
-                trait.RPC_SetTamed(tamed);
+                trait.On_RPC_SetTamed(tamed);
             }
         }
         

@@ -1,9 +1,9 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using Jotunn.Managers;
+﻿using Jotunn.Managers;
 using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Processing.Core;
+using System;
+using System.IO;
+using System.Linq;
 
 namespace OfTamingAndBreeding.Processing
 {
@@ -34,8 +34,14 @@ namespace OfTamingAndBreeding.Processing
         //
         //
         //
-        public override void PrepareProcess()
+        public override bool PrepareProcess()
         {
+            return true;
+        }
+
+        public override bool ReservePrefabName(string fileName)
+        {
+            return true; // no need to reserve
         }
 
         public override bool ValidateData(string fileName, TranslationFile data)
@@ -43,20 +49,12 @@ namespace OfTamingAndBreeding.Processing
             return true; // i dont care
         }
 
-        public override bool ReservePrefab(string fileName, TranslationFile data)
-        {
-            return true; // i dont care
-        }
-
-        public override bool ValidatePrefab(string fileName, TranslationFile data)
-        {
-            return true; // i dont care
-        }
-
-        public override void RegisterPrefab(string fileName, TranslationFile data)
+        public override bool RegisterPrefab(string fileName, TranslationFile data)
         {
             var local = LocalizationManager.Instance.GetLocalization();
             local.AddTranslation(data.Language, data.Translations);
+
+            return true;
         }
 
         public override bool ProcessPrefab(string fileName, TranslationFile data)
@@ -64,8 +62,9 @@ namespace OfTamingAndBreeding.Processing
             return true;
         }
 
-        public override void FinalizeProcess()
+        public override bool FinalizeProcess()
         {
+            return true;
         }
 
         public override void RestorePrefab(string fileName)

@@ -11,8 +11,10 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPriority(Priority.Last)]
         private static void Procreation_IsDue_Prefix(Procreation __instance)
         {
-            var trait = ProcreationTrait.GetUnsafe(__instance.gameObject);
-            trait.SetRealPregnancyDuration(__instance.m_pregnancyDuration);
+            if (ProcreationTrait.TryGet(__instance.gameObject, out var trait))
+            {
+                trait.SetRealPregnancyDuration(__instance.m_pregnancyDuration);
+            }
         }
 
         [HarmonyPatch(typeof(Procreation), "Procreate")]
@@ -25,27 +27,17 @@ namespace OfTamingAndBreeding.Patches
                 return false;
             }
 
-            var trait = ProcreationTrait.GetUnsafe(__instance.gameObject);
-            trait.SetRealPregnancyChance(__instance.m_pregnancyChance);
-            trait.OnProcreate();
-
-            return false;
-        }
-
-
-        /*
-
-        public bool ReadyForProcreation()
-        {
-            if (m_tameable.IsTamed() && !IsPregnant())
+            if (ProcreationTrait.TryGet(__instance.gameObject, out var trait))
             {
-                return !m_tameable.IsHungry();
+                trait.SetRealPregnancyChance(__instance.m_pregnancyChance);
+                trait.On_Procreate();
+                return false;
             }
 
-            return false;
+            return true;
         }
 
-        */
+
 
     }
 }

@@ -2,26 +2,28 @@
 using System.Collections.Generic;
 using System.Reflection;
 
-//todo: cleanup
-// this is only processor related
-
 namespace OfTamingAndBreeding.Common
 {
     internal sealed class FieldsSnapshot<T>
     {
-        private static readonly BindingFlags FieldFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly;
-        private static readonly FieldInfo[] s_fields = typeof(T).GetFields(FieldFlags);
         private readonly Dictionary<FieldInfo, object> m_values;
 
-        public FieldsSnapshot(T source)
+        public FieldsSnapshot(T source, bool declaredOnly = false)
         {
             if (source == null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
 
-            m_values = new Dictionary<FieldInfo, object>(s_fields.Length);
-            foreach (var field in s_fields)
+            var flags = BindingFlags.Instance | BindingFlags.Public;
+            if (declaredOnly)
+            {
+                flags |= BindingFlags.DeclaredOnly;
+            }
+
+            var fields = typeof(T).GetFields(flags);
+            m_values = new Dictionary<FieldInfo, object>(fields.Length);
+            foreach (var field in fields)
             {
                 m_values[field] = field.GetValue(source);
             }
@@ -39,6 +41,5 @@ namespace OfTamingAndBreeding.Common
                 pair.Key.SetValue(target, pair.Value);
             }
         }
-
     }
 }

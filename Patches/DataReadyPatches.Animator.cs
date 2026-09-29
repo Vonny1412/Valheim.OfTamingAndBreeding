@@ -1,7 +1,5 @@
 ﻿using HarmonyLib;
 using OfTamingAndBreeding.Components;
-using OfTamingAndBreeding.ValheimAPI;
-using TMPro;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Patches

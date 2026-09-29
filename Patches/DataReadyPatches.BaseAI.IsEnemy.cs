@@ -100,10 +100,11 @@ namespace OfTamingAndBreeding.Patches
 
             // get traits only if needed
             // actual players are never tamed
-            CharacterTrait trait1 = null;
-            CharacterTrait trait2 = null;
-            if (isTamed1) trait1 = CharacterTrait.GetUnsafe(a.gameObject);
-            if (isTamed2) trait2 = CharacterTrait.GetUnsafe(b.gameObject);
+            CharacterTrait.TryGet(a.gameObject, out CharacterTrait trait1);
+            CharacterTrait.TryGet(b.gameObject, out CharacterTrait trait2);
+
+            //if (isTamed1) trait1 = CharacterTrait.GetUnsafe(a.gameObject);
+            //if (isTamed2) trait2 = CharacterTrait.GetUnsafe(b.gameObject);
 
             //
             // build hostility bit masks

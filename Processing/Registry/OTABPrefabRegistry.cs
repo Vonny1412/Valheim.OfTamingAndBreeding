@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.Registry
+namespace OfTamingAndBreeding.Processing.Registry
 {
     internal class OTABPrefabRegistry // We need a unique name here that doesn't conflict with other classes, such as those from Jotunn.
     {
@@ -15,13 +15,19 @@ namespace OfTamingAndBreeding.Registry
 
         private static readonly Dictionary<string, string> globalRegisteredPrefabTypes = new Dictionary<string, string>();
 
-        public static bool TryRegisterPrefabType(string prefabName, string prefabTypeName, out string registeredPrefabTypeName)
+        public static bool TryRegisterPrefabType(string prefabName, string prefabTypeName)
         {
-            registeredPrefabTypeName = null;
-            if (globalRegisteredPrefabTypes.TryGetValue(prefabName, out registeredPrefabTypeName))
+            if (globalRegisteredPrefabTypes.TryGetValue(prefabName, out var registeredPrefabTypeName))
             {
-                // todo: put error log here
-                return prefabTypeName == registeredPrefabTypeName;
+                if (prefabTypeName != registeredPrefabTypeName)
+                {
+                    Plugin.LogFatal(
+                        $"Tried to register '{prefabName}' as type '{prefabTypeName}' " +
+                        $"but has already been registered as type '{registeredPrefabTypeName}' before by another OTAB instance. " +
+                        $"Rename your custom prefab to avoid prefab corruption");
+                    return false;
+                }
+                return true;
             }
             globalRegisteredPrefabTypes.Add(prefabName, prefabTypeName);
             return true;
@@ -29,13 +35,16 @@ namespace OfTamingAndBreeding.Registry
 
         private static readonly Dictionary<string, string> globalRegisteredPrefabCloneSources = new Dictionary<string, string>();
 
-        public static bool TryRegisterPrefabCloneSource(string prefabName, string cloneFromName, out string registeredCloneFromName)
+        public static bool TryRegisterPrefabCloneSource(string prefabName, string cloneFromName)
         {
-            registeredCloneFromName = null;
-            if (globalRegisteredPrefabCloneSources.TryGetValue(prefabName, out registeredCloneFromName))
+            if (globalRegisteredPrefabCloneSources.TryGetValue(prefabName, out var registeredCloneFromName))
             {
-                // todo: put error log here
-                return cloneFromName == registeredCloneFromName; // valid
+                if (cloneFromName != registeredCloneFromName)
+                {
+                    Plugin.LogFatal($"Custom prefab '{prefabName}' was previously cloned from '{registeredCloneFromName}', but is now requested to clone from '{cloneFromName}'. Custom prefab names must be unique across OTAB instances.");
+                    return false;
+                }
+                return true;
             }
             globalRegisteredPrefabCloneSources.Add(prefabName, cloneFromName);
             return true;
@@ -43,9 +52,6 @@ namespace OfTamingAndBreeding.Registry
 
         //--------------------------------------------------
         // lifetime backups
-
-        private static bool originalPrefabsSaved = false;
-        private static readonly HashSet<string> originalPrefabNames = new HashSet<string>();
 
         // each original prefab gets its own backup prefab
         private static readonly Dictionary<string, GameObject> originalPrefabBackups = new Dictionary<string, GameObject>();
@@ -59,29 +65,18 @@ namespace OfTamingAndBreeding.Registry
         // GrowingAbomination1 -> "OTAB_BACKUP_Abomination_CUSTOM_0"
         // GrowingAbomination2 -> "OTAB_BACKUP_Abomination_CUSTOM_1"
         // GrowingAbomination3 -> "OTAB_BACKUP_Abomination_CUSTOM_2"
+        // => customPrefabBackups["Abomination"] = [
+        //      OTAB_BACKUP_Abomination_CUSTOM_0,
+        //      OTAB_BACKUP_Abomination_CUSTOM_1,
+        //      OTAB_BACKUP_Abomination_CUSTOM_2,
+        //      ...
+        // ]
         private static readonly Dictionary<string, List<GameObject>> customPrefabBackups = new Dictionary<string, List<GameObject>>();
-
-        public static void SaveOriginalPrefabNames()
-        {
-            if (originalPrefabsSaved)
-            {
-                return;
-            }
-            originalPrefabsSaved = true;
-            foreach (var prefab in ZNetScene.instance.m_prefabs)
-            {
-                originalPrefabNames.Add(prefab.name);
-            }
-        }
-
-        public static bool IsOriginalPrefab(string prefabName)
-        {
-            return originalPrefabNames.Contains(prefabName);
-        }
 
         public static bool IsCustomPrefab(string prefabName)
         {
-            return IsOriginalPrefab(prefabName) == false;
+            // if its not returned by jotunns PrefabManager it means it WILL be a custom prefab
+            return customPrefabs.ContainsKey(prefabName) || !PrefabManager.Instance.GetPrefab(prefabName);
         }
 
         //--------------------------------------------------
@@ -111,10 +106,7 @@ namespace OfTamingAndBreeding.Registry
         //--------------------------------------------------
         // instance for current session
 
-        // custom prefabs might get used multiple times, like an offspring that also is used for creature data
-        // and eggs need to be pre-created so they can be used in creatures offpsirngs list
-        // for that we are reserving them: prefabs are cloned if needed and can be used in onfollowing process-steps
-        private readonly Dictionary<string, GameObject> reservedPrefabsByName = new Dictionary<string, GameObject>();
+        private readonly List<string> reservedPrefabNames = new List<string>();
 
         // pool of unused entries from customPrefabBackups
         // it this pool runs out of backups additional backups will be created and directly added to customPrefabBackups for next server/world joining
@@ -137,16 +129,21 @@ namespace OfTamingAndBreeding.Registry
 
         public GameObject CreateCustomPrefab(string prefabName, string cloneFromName)
         {
-            if (!TryRegisterPrefabCloneSource(prefabName, cloneFromName, out var registeredCloneFromName))
+            if (IsCustomPrefab(cloneFromName))
             {
-                Plugin.LogFatal($"Custom prefab '{prefabName}' was previously cloned from '{registeredCloneFromName}', but is now requested to clone from '{cloneFromName}'. Custom prefab names must be unique across OTAB instances.");
+                Plugin.LogFatal($"Custom prefab '{prefabName}' cannot be cloned from '{cloneFromName}' because '{cloneFromName}' is not a valid original prefab.");
+                return null;
+            }
+
+            if (!TryRegisterPrefabCloneSource(prefabName, cloneFromName))
+            {
                 return null;
             }
 
             var custom = PrefabManager.Instance.CreateClonedPrefab(prefabName, cloneFromName);
             customPrefabs.Add(prefabName, custom);
 
-            var backup = MakeCustomBackup(cloneFromName);
+            var backup = GetUnusedCustomPrefabBackup(cloneFromName);
             SetCustomPrefabUsingBackup(prefabName, backup);
 
             return custom;
@@ -154,9 +151,8 @@ namespace OfTamingAndBreeding.Registry
 
         public GameObject ReactivateCustomPrefab(string prefabName, string cloneFromName)
         {
-            if (!TryRegisterPrefabCloneSource(prefabName, cloneFromName, out var registeredCloneFromName))
+            if (!TryRegisterPrefabCloneSource(prefabName, cloneFromName))
             {
-                Plugin.LogFatal($"Custom prefab '{prefabName}' was previously cloned from '{registeredCloneFromName}', but is now requested to clone from '{cloneFromName}'. Custom prefab names must be unique across OTAB instances.");
                 return null;
             }
 
@@ -166,25 +162,6 @@ namespace OfTamingAndBreeding.Registry
             //RestorePrefabFromBackup(custom, backup); // todo: this can be deleted if everything is working fine
             SetCustomPrefabUsingBackup(prefabName, backup);
             return custom;
-        }
-
-        private void RestorePrefabFromBackup(GameObject current, GameObject backup)
-        {
-            PrefabUtils.RestoreComponent<AnimalAI>(current, backup);
-            PrefabUtils.RestoreComponent<MonsterAI>(current, backup);
-            
-            PrefabUtils.RestoreComponent<Character>(current, backup);
-            PrefabUtils.RestoreComponent<CharacterDrop>(current, backup);
-            PrefabUtils.RestoreComponent<EggGrow>(current, backup);
-            PrefabUtils.RestoreComponent<Floating>(current, backup);
-
-            PrefabUtils.RestoreComponent<Growup>(current, backup);
-            PrefabUtils.RestoreComponent<ItemDrop>(current, backup);
-            PrefabUtils.RestoreComponent<Pet>(current, backup);
-            PrefabUtils.RestoreComponent<Procreation>(current, backup);
-            PrefabUtils.RestoreComponent<Ragdoll>(current, backup);
-            PrefabUtils.RestoreComponent<Sadle>(current, backup);
-            PrefabUtils.RestoreComponent<Tameable>(current, backup);
         }
 
         private GameObject MakeCustomBackup(string prefabName)
@@ -197,11 +174,7 @@ namespace OfTamingAndBreeding.Registry
             var backupName = $"OTAB_BACKUP_{prefabName}_CUSTOM_{backList.Count}";
             Plugin.LogDebug($"{nameof(MakeCustomBackup)}() for {prefabName} ({backupName})");
 
-            var backup = PrefabManager.Instance.GetPrefab(backupName);
-            if (backup == null)
-            {
-                backup = PrefabManager.Instance.CreateClonedPrefab(backupName, prefabName);
-            }
+            var backup = PrefabManager.Instance.GetPrefab(backupName) ?? PrefabManager.Instance.CreateClonedPrefab(backupName, prefabName);
             backList.Add(backup);
             return backup;
         }
@@ -225,14 +198,19 @@ namespace OfTamingAndBreeding.Registry
         //--------------------------------------------------
         // original prefabs
 
-        public GameObject GetOriginalPrefab(string prefabName)
+
+        public GameObject GetRegisteredPrefab(string prefabName)
         {
             return PrefabManager.Instance.GetPrefab(prefabName);
         }
 
+
+
+
+
         public void MakeOriginalBackup(string prefabName)
         {
-            if (!IsOriginalPrefab(prefabName))
+            if (IsCustomPrefab(prefabName))
             {
                 return;
             }
@@ -251,32 +229,29 @@ namespace OfTamingAndBreeding.Registry
         //--------------------------------------------------
         // reserve/register/restore prefabs
 
-        public GameObject GetReservedPrefab(string prefabName)
+        public bool ReservePrefabName(string prefabName)
         {
-            if (reservedPrefabsByName.TryGetValue(prefabName, out var prefab))
+            if (reservedPrefabNames.Contains(prefabName))
             {
-                return prefab;
+                return false;
             }
-            return null;
+            reservedPrefabNames.Add(prefabName);
+            return true;
         }
 
-        public void ReservePrefab(string prefabName, GameObject prefab)
+        public bool PrefabWillExist(string prefabName)
         {
-            reservedPrefabsByName.Add(prefabName, prefab);
+            //return reservedPrefabNames.Contains(prefabName) || originalPrefabNames.Contains(prefabName);
+            return reservedPrefabNames.Contains(prefabName) || (bool)PrefabManager.Instance.GetPrefab(prefabName);
         }
 
-        public bool PrefabExists(string prefabName)
-        {
-            if (reservedPrefabsByName.TryGetValue(prefabName, out _))
-            {
-                return true;
-            }
-            if ((bool)GetOriginalPrefab(prefabName))
-            {
-                return true;
-            }
-            return false;
-        }
+
+        //--------------------------------------------------
+        // editing
+
+
+
+
 
         public T GetOrAddComponent<T>(string prefabName, GameObject go) where T : Component
         {
@@ -289,19 +264,22 @@ namespace OfTamingAndBreeding.Registry
             // prefabName is currently unused, but may be needed for tracking/restoring component changes in the future.
             T c = obj.GetComponent<T>();
             if (c != null)
+            {
                 UnityEngine.Object.DestroyImmediate(c);
+            }
         }
 
         public void RestorePrefab(string prefabName, Action<GameObject, GameObject> restoreProcessorState)
         {
-            var current = GetReservedPrefab(prefabName);
+            var current = GetRegisteredPrefab(prefabName);
             if (current == null)
             {
                 return;
             }
 
-            GameObject backup = null;
-            if (IsOriginalPrefab(prefabName))
+            GameObject backup;
+            var isOriginal = IsCustomPrefab(prefabName) == false;
+            if (isOriginal)
             {
                 originalPrefabBackups.TryGetValue(prefabName, out backup);
             }
@@ -314,10 +292,15 @@ namespace OfTamingAndBreeding.Registry
                 return;
             }
 
-            Plugin.LogDebug($"Restoring {(IsOriginalPrefab(prefabName) ? "original" : "cloned")} prefab {prefabName} ({backup.name})");
-            RestorePrefabFromBackup(current, backup);
+            Plugin.LogDebug($"Restoring {(!IsCustomPrefab(prefabName) ? "original" : "cloned")} prefab {prefabName} ({backup.name})");
             restoreProcessorState?.Invoke(current, backup);
+
+            if (!isOriginal)
+            {
+                PrefabManager.Instance.RemovePrefab(prefabName);
+            }
         }
+
 
 
 

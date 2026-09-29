@@ -1,34 +1,44 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using UnityEngine;
+using YamlDotNet.Core.Tokens;
 
 namespace OfTamingAndBreeding.Utilities
 {
     internal static class AnimationUtils
     {
 
-        public static void DumpZSyncAnim(ZSyncAnimation zsa, string tag = "")
+        public static void DumpZSyncAnim(GameObject prefab, StreamWriter writer)
         {
-            if (!zsa) { Plugin.LogMessage($"{tag} ZSyncAnimation: <null>"); return; }
+
+            var zsa = prefab.GetComponent<ZSyncAnimation>();
+            if (!zsa) {
+                writer.WriteLine($"  (No ZSyncAnimation found)");
+                return;
+            }
 
             var a = zsa.GetComponentInChildren<Animator>(true);
-            Plugin.LogMessage($"{tag} ZSyncAnimation on {zsa.name}, Animator={(a ? a.name : "<null>")}");
-
             if (!a || !a.runtimeAnimatorController)
             {
-                Plugin.LogMessage($"{tag} No RuntimeAnimatorController found.");
+                writer.WriteLine($"  (No Animator found)");
                 return;
             }
 
             var ctrl = a.runtimeAnimatorController;
 
+            /*
             Plugin.LogMessage($"{tag} Params:");
             foreach (var p in a.parameters)
                 Plugin.LogMessage($"{tag}  - {p.name} [{p.type}]");
-
             Plugin.LogMessage($"{tag} Clips:");
+                writer.WriteLine($"  '{c.name}' (length:{c.length:0.00}s loop:{(c.isLooping ? "yes" : "no")})");
+            */
+
             foreach (var c in ctrl.animationClips.Distinct())
-                Plugin.LogMessage($"{tag}  - {c.name} ({c.length:0.00}s loop={(c.isLooping ? "yes" : "no")})");
+            {
+                writer.WriteLine($"  '{c.name}' ({c.length:0.00}s)");
+            }
         }
 
         public static bool AnimationExists(GameObject prefab, string clipName, out AnimationClip animClip)

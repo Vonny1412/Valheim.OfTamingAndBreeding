@@ -33,19 +33,29 @@ namespace OfTamingAndBreeding.Components.Traits
             m_renderer = GetComponentInChildren<Renderer>();
             m_randomSpeak = GetComponent<RandomSpeak>();
 
-            Register(this);
+            Register();
         }
 
         private void OnDestroy()
         {
-            Unregister(this);
+            Unregister();
         }
 
-        public void UpdateMaterial()
+        public Pet GetPet() {
+            return m_pet;
+        }
+
+
+
+
+
+
+
+
+
+
+        public void On_UpdateMaterial()
         {
-
-
-
             if (m_nview == null)
             {
                 return;

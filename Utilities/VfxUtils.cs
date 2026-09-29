@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Utilities
@@ -24,35 +25,44 @@ namespace OfTamingAndBreeding.Utilities
             return true;
         }
 
-        public static void DebugVfx(GameObject root)
+        public static void DebugVfx(GameObject root, StreamWriter writer)
         {
+            var found = false;
             foreach (var ps in root.GetComponentsInChildren<ParticleSystem>(true))
             {
                 if (IsActiveInPrefab(ps.transform, root.transform))
                 {
-                    Plugin.LogMessage($"  {nameof(ParticleSystem)}: {ps.gameObject.name}");
+                    writer.WriteLine($"  '{ps.gameObject.name}' ({nameof(ParticleSystem)})");
+                    found = true;
                 }
             }
             foreach (var light in root.GetComponentsInChildren<Light>(true))
             {
                 if (IsActiveInPrefab(light.transform, root.transform))
                 {
-                    Plugin.LogMessage($"  {nameof(Light)}: {light.gameObject.name}");
+                    writer.WriteLine($"  '{light.gameObject.name}' ({nameof(Light)})");
+                    found = true;
                 }
             }
             foreach (var trail in root.GetComponentsInChildren<TrailRenderer>(true))
             {
                 if (IsActiveInPrefab(trail.transform, root.transform))
                 {
-                    Plugin.LogMessage($"  {nameof(TrailRenderer)}: {trail.gameObject.name}");
+                    writer.WriteLine($"  '{trail.gameObject.name}' ({nameof(TrailRenderer)})");
+                    found = true;
                 }
             }
             foreach (var line in root.GetComponentsInChildren<LineRenderer>(true))
             {
                 if (IsActiveInPrefab(line.transform, root.transform))
                 {
-                    Plugin.LogMessage($"  {nameof(LineRenderer)}: {line.gameObject.name}");
+                    writer.WriteLine($"  '{line.gameObject.name}' ({nameof(LineRenderer)})");
+                    found = true;
                 }
+            }
+            if (!found)
+            {
+                writer.WriteLine($"  (None found)");
             }
         }
 

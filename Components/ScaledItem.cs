@@ -1,5 +1,4 @@
 ﻿using OfTamingAndBreeding.Components.Core;
-using System;
 using UnityEngine;
 
 
@@ -21,12 +20,12 @@ namespace OfTamingAndBreeding.Components
                 itemDrop.transform.localScale *= m_scale;
             }
 
-            Register(this);
+            Register();
         }
 
         private void OnDestroy()
         {
-            Unregister(this);
+            Unregister();
         }
 
     }

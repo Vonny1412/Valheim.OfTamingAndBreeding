@@ -14,8 +14,11 @@ namespace OfTamingAndBreeding.Patches
             {
                 return false;
             }
-            var trait = PetTrait.GetUnsafe(__instance.gameObject);
-            trait.UpdateMaterial();
+
+            if (PetTrait.TryGet(__instance.gameObject, out var trait))
+            {
+                trait.On_UpdateMaterial();
+            }
             return false;
         }
 

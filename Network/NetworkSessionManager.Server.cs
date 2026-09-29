@@ -1,7 +1,6 @@
 ﻿using OfTamingAndBreeding.Data.Cache;
 using OfTamingAndBreeding.Utilities;
 using OfTamingAndBreeding.Processing.Core;
-using System;
 
 namespace OfTamingAndBreeding.Network
 {

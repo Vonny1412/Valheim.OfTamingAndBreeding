@@ -1,13 +1,11 @@
-﻿using Jotunn;
-using Jotunn.Utils;
-using OfTamingAndBreeding.Components.Core;
+﻿using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Data.Models.SubData;
+using OfTamingAndBreeding.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using static UnityEngine.Networking.UnityWebRequest;
 
 
 //todo: cleanup
@@ -59,6 +57,8 @@ namespace OfTamingAndBreeding.Components.Traits
         [SerializeField] public bool m_changeGroupWhenTamed = false;
         [SerializeField] public string m_changeGroupWhenTamedTo = "";
         [SerializeField] public bool m_changeFactionWhenTamed = false;
+        [SerializeField] public bool m_tameSpawnedOnDeath = false;
+
         [SerializeField] public Character.Faction m_changeFactionWhenTamedTo = Character.Faction.Players;
         [SerializeField] public IsEnemyCondition m_tamedVersusPlayer = IsEnemyCondition.Default;
         [SerializeField] public IsEnemyCondition m_tamedVersusGroup = IsEnemyCondition.Default;
@@ -77,7 +77,7 @@ namespace OfTamingAndBreeding.Components.Traits
             m_baseAITrait = GetComponent<BaseAITrait>();
             m_growupTrait = GetComponent<GrowupTrait>();
 
-            Register(this);
+            Register();
         }
 
         private void Start()
@@ -90,7 +90,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
         private void OnDestroy()
         {
-            Unregister(this);
+            Unregister();
         }
 
         public Character GetCharacter()
@@ -100,12 +100,11 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public bool IsTamed()
         {
-            return m_character.IsTamed();
+            return m_tameableTrait ? m_tameableTrait.IsTamed() : m_character.IsTamed();
         }
 
         public void UpdateHostilities()
         {
-            // EnvMan.instance.m_dayLengthSec
             bool isHungry = m_tameableTrait && m_tameableTrait.IsHungry(m_tameableTrait.GetBaseFedDuration() * 3); // todo: add conf for delay
 
             switch (m_tamedVersusPlayer)
@@ -150,27 +149,39 @@ namespace OfTamingAndBreeding.Components.Traits
             }
         }
 
-        public void RPC_SetTamed(bool tamed)
+        public void On_RPC_SetTamed(bool tamed)
         {
             if (tamed)
             {
-                // re-setting spawn point is important for tamed creatures that use stay-near-spawn-point
                 m_baseAITrait.SetSpawnPoint();
-
-                // is this even neccessary?
-                // alerted kreatues wont get tamed after all
                 m_baseAITrait.StopPlayerHunt();
-
                 SetTamedCharacteristics();
+
+                if (m_tameableTrait)
+                {
+                    m_tameableTrait.CancelTamingUpdate();
+                }
+            }
+            else
+            {
+                if (m_tameableTrait)
+                {
+                    m_tameableTrait.StartTamingUpdate();
+                }
             }
         }
         
         public void SetTamedCharacteristics()
         {
+            var m_baseAI = GetComponent<BaseAI>();
+
+            m_baseAI.SetHuntPlayer(false);
+            m_character.m_boss = false;
+            m_character.m_bossEvent = "";
+            m_character.m_defeatSetGlobalKey = "";
+
             if (m_character.m_boss == true)
             {
-                m_character.m_boss = false;
-                m_character.m_bossEvent = "";
                 EnemyHud.instance.RemoveCharacterHud(m_character);
             }
 
@@ -178,128 +189,135 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 m_character.m_group = m_changeGroupWhenTamedTo;
             }
+
             if (m_changeFactionWhenTamed == true)
             {
                 m_character.m_faction = m_changeFactionWhenTamedTo;
             }
 
-            var m_baseAI = GetComponent<BaseAI>();
             if (m_baseAITrait.m_idleSoundChanceWhenTamed >= 0)
             {
-                // -1 means: use default
                 m_baseAI.m_idleSoundChance = m_baseAITrait.m_idleSoundChanceWhenTamed;
             }
-            m_baseAI.m_aggravatable = false; // todo: maybe add yaml config option?
 
+            m_baseAI.m_aggravatable = false;
+            if (m_nview.IsOwner() && m_nview.IsValid())
+            {
+                ZDOUtils.SetInt(m_nview.GetZDO(), ZDOVars.s_aggravated, 0);
+            }
 
-            
         }
 
-        public string GetHoverName()
+
+
+
+        private const float HoverNameUpdateInterval = 0.5f;
+        private string m_cachedHoverName = "";
+        private float m_lastHoverNameUpdate;
+
+        public string On_GetHoverName()
+        {
+            var time = Time.time;
+            if (time - m_lastHoverNameUpdate < HoverNameUpdateInterval)
+            {
+                return m_cachedHoverName;
+            }
+            m_lastHoverNameUpdate = time;
+            m_cachedHoverName = GetHoverName();
+            return m_cachedHoverName;
+        }
+
+        private string GetHoverName()
         {
             if (!m_nview.IsValid())
             {
                 return "";
             }
 
-            var text = "";
-            var textSpacing = false;
-            var precision = 1f / Plugin.Configs.HudProgressPrecision.Value;
-            int decimals = Mathf.Max(0, Mathf.RoundToInt(-Mathf.Log10(precision)));
+            var showTamingProgress = false;
+            var remainingTamingTime = 0f;
 
-            if ((bool)m_tameableTrait && Plugin.Configs.HudShowTamingProgress.Value)
+            if (m_tameableTrait && Plugin.Configs.HudShowTamingProgress.Value)
             {
-                var tamingProgress = m_tameableTrait.GetTamingProgress(precision, decimals);
-                if (tamingProgress.Length != 0)
-                {
-                    text += tamingProgress;
-                    textSpacing = true;
-                }
+                showTamingProgress = !IsTamed() && m_tameableTrait.IsTamingStarted(out remainingTamingTime);
             }
 
-            if ((bool)m_growupTrait && Plugin.Configs.HudShowOffspringGrowProgress.Value)
+            var showGrowupProgress = false;
+            var remainingGrowupTime = 0f;
+
+            if (m_growupTrait && Plugin.Configs.HudShowOffspringGrowProgress.Value)
             {
-                var growupProgress = m_growupTrait.GetGrowupProgress(precision, decimals);
-                if (growupProgress.Length != 0)
+                showGrowupProgress = m_growupTrait.IsGrowingStarted(out remainingGrowupTime);
+            }
+
+            if (!showTamingProgress && !showGrowupProgress)
+            {
+                return "";
+            }
+
+            var text = "";
+            var multiplier = Plugin.Configs.HudProgressMultiplier;
+
+            if (showTamingProgress)
+            {
+                var tameTime = m_tameableTrait.GetTameable().m_tamingTime;
+                var percent = (float)(int)((1f - Mathf.Clamp01(remainingTamingTime / tameTime)) * 100f * multiplier) / multiplier;
+                var percentText = percent.ToString(Plugin.Configs.HudProgressFormat, System.Globalization.CultureInfo.InvariantCulture);
+                text = Localization.instance.Localize("$otab_hud_tameness", percentText);
+            }
+
+            if (showGrowupProgress)
+            {
+                var growTime = m_growupTrait.GetGrowup().m_growTime;
+                var percent = (float)(int)((1f - Mathf.Clamp01(remainingGrowupTime / growTime)) * 100f * multiplier) / multiplier;
+                var percentText = percent.ToString(Plugin.Configs.HudProgressFormat, System.Globalization.CultureInfo.InvariantCulture);
+                var growupText = Localization.instance.Localize("$otab_hud_growth", percentText);
+                if (text.Length != 0)
                 {
-                    if (textSpacing)
-                    {
-                        text += " ";
-                    }
-                    text += growupProgress;
+                    text += " ";
                 }
+                text += growupText;
             }
 
             return text;
         }
 
-        public string GetHoverText(string text)
+
+
+
+
+        private const float HoverTextUpdateInterval = 0.5f;
+        private string m_cachedHoverText = "";
+        //private string m_lastVanillaHoverText = null;
+        private float m_lastHoverTextUpdate;
+
+        public string On_GetHoverText(string text)
+        {
+            var time = Time.time;
+            //if (text == m_lastVanillaHoverText && time - m_lastHoverTextUpdate < HoverTextUpdateInterval)
+            if (time - m_lastHoverTextUpdate < HoverTextUpdateInterval)
+            {
+                return m_cachedHoverText;
+            }
+            //m_lastVanillaHoverText = text;
+            m_lastHoverTextUpdate = time;
+            m_cachedHoverText = GetHoverText(text);
+            return m_cachedHoverText;
+        }
+
+        private string GetHoverText(string text)
         {
             var isTamed = m_character.IsTamed();
 
             if (m_tameableTrait)
             {
+                text = GetTameableHoverText(text, isTamed);
+            }
 
-                if (!isTamed && m_tameableTrait.IsTamingDisabled())
-                {
-                    text = m_tameableTrait.GetName();
-                }
-                else if (!isTamed && m_tameableTrait.CanBeTamed() == false)
-                {
-                    text = m_tameableTrait.GetName() + "\n" + m_tameableTrait.GetNotTameableReason();
-                }
-                else
-                {
-                    int newlineIndex = text.IndexOf('\n');
-                    string firstLine;
-                    string rest;
-
-                    if (newlineIndex >= 0)
-                    {
-                        firstLine = text[..newlineIndex];
-                        rest = text[newlineIndex..]; // includes '\n'
-                    }
-                    else
-                    {
-                        firstLine = text;
-                        rest = "";
-                    }
-
-                    if (m_tameableTrait.IsFedTimerDisabled())
-                    {
-                        var hungry = Localization.instance.Localize("$hud_tamehungry");
-                        if (!string.IsNullOrEmpty(hungry))
-                        {
-                            // remove hungry token only from first line
-                            firstLine = firstLine.Replace(", " + hungry, "");
-                            firstLine = firstLine.Replace(hungry + ", ", "");
-                            firstLine = firstLine.Replace(hungry, "");
-
-                            // cleanup spacing / punctuation artifacts
-                            firstLine = firstLine.Replace(",  ", ", ");
-                            firstLine = firstLine.Replace("  )", " )");
-                            firstLine = firstLine.Replace("(  ", "( ");
-
-                            // remove empty parentheses variants
-                            firstLine = firstLine.Replace(" ( )", "");
-                            firstLine = firstLine.Replace("( )", "");
-                            firstLine = firstLine.Replace("()", "");
-
-                            firstLine = firstLine.TrimEnd();
-                            text = firstLine + rest;
-                        }
-                    }
-
-                    if (m_tameableTrait.m_petCommand.Length != 0)
-                    {
-                        var pet1 = "] " + Localization.instance.Localize("$hud_pet");
-                        var pet2 = "] " + Localization.instance.Localize(m_tameableTrait.m_petCommand);
-
-                        // only replace in first line
-                        text = text.Replace(pet1, pet2);
-                    }
-
-                }
+            var growupText = GetGrowupHoverText();
+            if (growupText.Length != 0)
+            {
+                text += "\n" + growupText;
             }
 
             var consumeText = GetConsumeHoverText();
@@ -310,7 +328,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
             if (m_tameableTrait)
             {
-                var fedTimer = m_tameableTrait.GetFedTimerHoverText();
+                var fedTimer = GetFedTimerHoverText();
                 if (fedTimer.Length != 0)
                 {
                     text += "\n" + fedTimer;
@@ -319,7 +337,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
             if (m_procreationTrait && isTamed)
             {
-                var procreationText = m_procreationTrait.GetProcreationHoverText();
+                var procreationText = GetProcreationHoverText();
                 if (procreationText.Length != 0)
                 {
                     text += "\n" + procreationText;
@@ -328,43 +346,67 @@ namespace OfTamingAndBreeding.Components.Traits
 
             if (Plugin.IsAdmin() && Plugin.Configs.HoverShowAdminInfo.Value)
             {
-                string text2 = "";
-                text2 += "<size=33%>\n\n</size>" + Localization.instance.Localize("$otab_hover_admin_info", $"Prefab: " + gameObject.name);
-
-                if (m_baseAITrait)
-                {
-                    var info = m_baseAITrait.GetAdminHoverInfoText();
-                    if (info.Length > 0)
-                    {
-                        text2 += "<size=33%>\n\n</size>" + info.Trim();
-                    }
-                }
-
-                if (m_tameableTrait)
-                {
-                    var info = m_tameableTrait.GetAdminHoverInfoText();
-                    if (info.Length > 0)
-                    {
-                        text2 += "<size=33%>\n\n</size>" + info.Trim();
-                    }
-                }
-
-                if (m_procreationTrait && isTamed)
-                {
-                    var info = m_procreationTrait.GetAdminHoverInfoText();
-                    if (info.Length > 0)
-                    {
-                        text2 += "<size=33%>\n\n</size>" + info.Trim();
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(text2))
-                {
-                    text += "\n" + text2.Trim();
-                }
+                text = AddAdminHoverText(text, isTamed);
             }
 
             return text;
+        }
+
+        private string GetTameableHoverText(string text, bool isTamed)
+        {
+            if (!isTamed)
+            {
+                if (m_tameableTrait.IsTamingDisabled())
+                {
+                    return m_tameableTrait.GetName();
+                }
+
+                if (!m_tameableTrait.CanBeTamed())
+                {
+                    var requireGlobalKey = m_tameableTrait.m_requireGlobalKey;
+                    if (!string.IsNullOrEmpty(requireGlobalKey) && !ZoneSystem.instance.GetGlobalKey(requireGlobalKey))
+                    {
+                        return m_tameableTrait.GetName() + "\n" + Localization.instance.Localize("$otab_taming_requires_key", Localization.instance.Localize($"$OTAB_require_key_{requireGlobalKey}"));
+                    }
+                    return text;
+                }
+            }
+
+            if (m_tameableTrait.IsFeedingDisabled())
+            {
+                var hungry = Localization.instance.Localize("$hud_tamehungry");
+                text = text.Replace(", " + hungry, "");
+            }
+
+            if (m_tameableTrait.m_petCommand.Length != 0)
+            {
+                var pet = Localization.instance.Localize("$hud_pet");
+                var petCommand = Localization.instance.Localize(m_tameableTrait.m_petCommand);
+                text = text.Replace("] " + pet, "] " + petCommand);
+            }
+
+            return text;
+        }
+
+        private string GetGrowupHoverText()
+        {
+            if (!m_growupTrait || m_growupTrait.CanGrow(out var reason))
+            {
+                return "";
+            }
+
+            if (reason == 1)
+            {
+                var requireGlobalKey = m_growupTrait.m_requireGlobalKey;
+                return Localization.instance.Localize("$otab_growing_requires_key", Localization.instance.Localize($"$OTAB_require_key_{requireGlobalKey}"));
+            }
+
+            if (reason == 2)
+            {
+                return Localization.instance.Localize("$otab_growing_requires_fed");
+            }
+
+            return "CANNOT GROW - UNKNOWN REASON";
         }
 
         public string GetConsumeHoverText()
@@ -375,10 +417,8 @@ namespace OfTamingAndBreeding.Components.Traits
             }
 
             var L = Localization.instance;
-
-
             var tSecs = Time.time;
-            
+
             if (lastHoverTarget != m_character || (tSecs - lastHoverUpdateTime) > 1f)
             {
                 lastHoverTarget = m_character;
@@ -403,11 +443,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
                 // First line gets the bullet, following lines get transparent bullet
                 lastHoverConsumeText = string.Join("\n", displayLines.Select((line, i) =>
-                    L.Localize(
-                        "$otab_hover_food",
-                        i == 0 ? Plugin.Configs.HoverColorNormal.Value : "#00000000",
-                        line
-                    )
+                    L.Localize("$otab_hover_food", i == 0 ? Plugin.Configs.HoverColorNormal.Value : "#00000000", line)
                 ));
             }
 
@@ -434,7 +470,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 float min = 0.33f; // consumeItems.Last().fedDurationFactor;
                 float max = 3.00f; // consumeItems.First().fedDurationFactor;
 
-                var fedTimerDisabled = m_tameableTrait && m_tameableTrait.IsFedTimerDisabled();
+                var fedTimerDisabled = m_tameableTrait && m_tameableTrait.IsFeedingDisabled();
 
                 foreach (var item in m_baseAITrait.m_consumeItems)
                 {
@@ -522,6 +558,187 @@ namespace OfTamingAndBreeding.Components.Traits
 
             return displayLines;
         }
+
+
+
+
+
+
+
+        private string GetFedTimerHoverText()
+        {
+            if (!m_tameableTrait || !Plugin.Configs.HoverShowFedTimer.Value || m_tameableTrait.IsFeedingDisabled() || !m_nview.IsValid())
+            {
+                return "";
+            }
+
+            var secondsFedLeft = m_tameableTrait.GetFedTimeLeft();
+            if (secondsFedLeft <= 0)
+            {
+                return "";
+            }
+
+            return FormatRelativeTime(
+                secondsFedLeft,
+                labelPositive: "$otab_hover_fed",
+                labelPositiveAlt: "$otab_hover_fed_alt",
+                labelNegative: "$otab_hover_hungry",
+                labelNegativeAlt: "$otab_hover_hungry_alt",
+                colorPositive: Plugin.Configs.HoverColorGood.Value,
+                colorNegative: Plugin.Configs.HoverColorBad.Value
+            );
+        }
+
+        private string GetProcreationHoverText()
+        {
+            if (!m_procreationTrait)
+            {
+                return "";
+            }
+
+            var procreation = m_procreationTrait.GetProcreation();
+            if (procreation.IsPregnant())
+            {
+                var zdo = m_nview.GetZDO();
+                var pregnantTime = new DateTime(zdo.GetLong(ZDOVars.s_pregnant, 0L));
+                var duration = m_procreationTrait.GetRealPregnancyDuration();
+                var secondsLeft = duration - (ZNet.instance.GetTime() - pregnantTime).TotalSeconds;
+                return FormatRelativeTime(
+                    secondsLeft,
+                    labelPositive: "$otab_hover_pregnancy_due",
+                    labelPositiveAlt: "$otab_hover_pregnancy_due_alt",
+                    labelNegative: "$otab_hover_pregnancy_overdue",
+                    labelNegativeAlt: "$otab_hover_pregnancy_overdue_alt",
+                    colorPositive: Plugin.Configs.HoverColorGood.Value,
+                    colorNegative: Plugin.Configs.HoverColorBad.Value
+                );
+            }
+
+            if (!Plugin.Configs.HoverShowLovePoints.Value ||
+                procreation.m_requiredLovePoints == 0)
+            {
+                return "";
+            }
+
+            var lovePoints = procreation.GetLovePoints();
+            var color = lovePoints > 0 ? Plugin.Configs.HoverColorGood.Value : Plugin.Configs.HoverColorBad.Value;
+            return Localization.instance.Localize(
+                "$otab_hover_love_points",
+                color,
+                lovePoints.ToString(),
+                procreation.m_requiredLovePoints.ToString()
+            );
+        }
+
+
+
+
+
+
+        private string AddAdminHoverText(string text, bool isTamed)
+        {
+            var adminText = Localization.instance.Localize("$otab_hover_admin_info", "Prefab: " + gameObject.name);
+
+            if (m_baseAITrait)
+            {
+                var info = m_baseAITrait.GetAdminHoverInfoText();
+                if (info.Length != 0)
+                {
+                    adminText += "<size=33%>\n\n</size>" + info.Trim();
+                }
+            }
+
+            if (m_tameableTrait)
+            {
+                var info = m_tameableTrait.GetAdminHoverInfoText();
+                if (info.Length != 0)
+                {
+                    adminText += "<size=33%>\n\n</size>" + info.Trim();
+                }
+            }
+
+            if (m_procreationTrait && isTamed)
+            {
+                var info = m_procreationTrait.GetAdminHoverInfoText();
+                if (info.Length != 0)
+                {
+                    adminText += "<size=33%>\n\n</size>" + info.Trim();
+                }
+            }
+
+            return text + "\n" + adminText;
+        }
+
+
+
+
+
+        private static string FormatRelativeTime(double secondsLeft, string labelPositive, string labelPositiveAlt, string labelNegative, string labelNegativeAlt, string colorPositive, string colorNegative)
+        {
+            var isNegative = secondsLeft < 0;
+            var totalSeconds = Math.Abs(secondsLeft);
+
+            var color = isNegative ? colorNegative : colorPositive;
+            var label = isNegative ? labelNegative : labelPositive;
+            var labelAlt = isNegative ? labelNegativeAlt : labelPositiveAlt;
+
+            TimeSpan time;
+
+            if (Plugin.Configs.HoverUseIngameTime.Value)
+            {
+                var secondsPerDay = EnvMan.instance.m_dayLengthSec;
+
+                var days = (int)(totalSeconds / secondsPerDay);
+                totalSeconds -= days * secondsPerDay;
+
+                var hours = (int)(totalSeconds / 3600.0);
+                totalSeconds -= hours * 3600.0;
+
+                var minutes = (int)(totalSeconds / 60.0);
+                var seconds = (int)(totalSeconds % 60.0);
+
+                time = new TimeSpan(days, hours, minutes, seconds);
+            }
+            else
+            {
+                time = TimeSpan.FromSeconds(totalSeconds);
+            }
+
+            var localization = Localization.instance;
+            var timeString = "";
+
+            if (time.Days > 0)
+            {
+                timeString += localization.Localize(
+                    "$otab_hover_time_days",
+                    color,
+                    time.Days.ToString());
+            }
+
+            var timeFormat = localization.Localize("$otab_hover_time_format");
+
+            if (time.Hours > 0 || timeString.Length != 0)
+            {
+                timeString += localization.Localize("$otab_hover_time_hours", color, string.Format(timeFormat, time.Hours));
+            }
+
+            if (time.Minutes > 0 || timeString.Length != 0)
+            {
+                timeString += localization.Localize("$otab_hover_time_minutes", color, string.Format(timeFormat, time.Minutes));
+            }
+
+            if (Plugin.Configs.HoverShowSeconds.Value)
+            {
+                timeString += localization.Localize("$otab_hover_time_seconds", color, string.Format(timeFormat, time.Seconds));
+            }
+
+            return timeString.Length != 0
+                ? localization.Localize(label, color, timeString.Trim())
+                : localization.Localize(labelAlt, color);
+        }
+
+
+
 
     }
 }

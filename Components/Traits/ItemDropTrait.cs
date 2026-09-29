@@ -21,14 +21,26 @@ namespace OfTamingAndBreeding.Components.Traits
             m_nview = GetComponent<ZNetView>();
             m_itemDrop = GetComponent<ItemDrop>();
 
-            Register(this);
+            Register();
         }
 
         private void OnDestroy()
         {
-            Unregister(this);
+            Unregister();
         }
 
+        public ItemDrop GetItemDrop() {
+            return m_itemDrop;
+        }
+
+
+
+
+
+
+
+
+        // todo: is this neccessary?
         public bool TryGetValidItemDrop(out ItemDrop itemDrop)
         {
             if (m_nview && m_nview.IsValid())
@@ -39,6 +51,11 @@ namespace OfTamingAndBreeding.Components.Traits
             itemDrop = null;
             return false;
         }
+
+
+
+
+
 
         public bool IsDroppedByPlayer()
         {
@@ -58,6 +75,15 @@ namespace OfTamingAndBreeding.Components.Traits
                 ZDOUtils.SetInt(m_nview.GetZDO(), Plugin.ZDOVars.z_droppedByAnyPlayer, byPlayer ? 1 : 0);
             }
         }
+
+
+
+
+
+
+
+
+
 
     }
 }

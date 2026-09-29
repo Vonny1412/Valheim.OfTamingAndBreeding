@@ -33,10 +33,7 @@ namespace OfTamingAndBreeding.ValheimAPI.Core.Invokers
                 binder: null,
                 types: parameterTypes,
                 modifiers: null
-            );
-
-            if (member == null)
-                throw new MissingMethodException(type.FullName, name);
+            ) ?? throw new MissingMethodException(type.FullName, name);
 
             _invoker = CreateInvokerDelegate(member);
         }
@@ -70,7 +67,7 @@ namespace OfTamingAndBreeding.ValheimAPI.Core.Invokers
             {
                 return (R)_invoker(instance, new object[1] { arg0 });
             }
-            var args = _args1 ?? (_args1 = new object[1]);
+            var args = _args1 ??= new object[1];
             args[0] = arg0;
             return (R)_invoker(instance, args);
         }
@@ -82,7 +79,7 @@ namespace OfTamingAndBreeding.ValheimAPI.Core.Invokers
             {
                 return (R)_invoker(instance, new object[2] { arg0, arg1 });
             }
-            var args = _args2 ?? (_args2 = new object[2]);
+            var args = _args2 ??= new object[2];
             args[0] = arg0;
             args[1] = arg1;
             return (R)_invoker(instance, args);
@@ -95,7 +92,7 @@ namespace OfTamingAndBreeding.ValheimAPI.Core.Invokers
             {
                 return (R)_invoker(instance, new object[3] { arg0, arg1, arg2 });
             }
-            var args = _args3 ?? (_args3 = new object[3]);
+            var args = _args3 ??= new object[3];
             args[0] = arg0;
             args[1] = arg1;
             args[2] = arg2;
@@ -109,7 +106,7 @@ namespace OfTamingAndBreeding.ValheimAPI.Core.Invokers
             {
                 return (R)_invoker(instance, new object[4] { arg0, arg1, arg2, arg3 });
             }
-            var args = _args4 ?? (_args4 = new object[4]);
+            var args = _args4 ??= new object[4];
             args[0] = arg0;
             args[1] = arg1;
             args[2] = arg2;
@@ -124,7 +121,7 @@ namespace OfTamingAndBreeding.ValheimAPI.Core.Invokers
             {
                 return (R)_invoker(instance, new object[5] { arg0, arg1, arg2, arg3, arg4 });
             }
-            var args = _args5 ?? (_args5 = new object[5]);
+            var args = _args5 ??= new object[5];
             args[0] = arg0;
             args[1] = arg1;
             args[2] = arg2;

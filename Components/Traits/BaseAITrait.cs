@@ -4,14 +4,13 @@ using OfTamingAndBreeding.Utilities;
 using System;
 using System.Linq;
 using UnityEngine;
-using YamlDotNet.Core.Tokens;
 
 namespace OfTamingAndBreeding.Components.Traits
 {
     public partial class BaseAITrait : OTABComponent<BaseAITrait>
     {
 
-        [SerializeField] internal bool m_tamedStayNearSpawn = false;
+        [SerializeField] internal bool m_tamedIdleNearSpawn = false;
         [SerializeField] internal float m_idleSoundChanceWhenTamed = -1f;
 
         [NonSerialized] private ZNetView m_nview = null;
@@ -36,7 +35,7 @@ namespace OfTamingAndBreeding.Components.Traits
             
             s_consumeItemsStore.TryGet(m_consumeItemsStoreIndex, out m_consumeItems);
 
-            Register(this);
+            Register();
         }
 
         private void Start()
@@ -50,25 +49,33 @@ namespace OfTamingAndBreeding.Components.Traits
             }
         }
 
-
-
-
-
-
-
-
         private void OnDestroy()
         {
-            Unregister(this);
+            Unregister();
         }
 
-        internal bool OnUpdateAI(float dt)
+        public BaseAI GetBaseAI() {
+            return m_baseAI;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+        internal bool On_UpdateAI(float dt)
         {
             m_characterTrait.UpdateHostilities();
 
             UpdateConfinedHud();
 
-            if (m_animalAITrait && m_animalAITrait.OnUpdateAI(dt))
+            if (m_animalAITrait && m_animalAITrait.On_UpdateAI(dt))
             {
                 // Update monsterAI-like stuff
                 return true;
@@ -77,7 +84,7 @@ namespace OfTamingAndBreeding.Components.Traits
             return false;
         }
 
-        internal bool OnIdleMovement(float dt)
+        internal bool On_IdleMovement(float dt)
         {
             if (m_consumeClip && m_consumeClip.IsPlaying())
             {
@@ -90,7 +97,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 return true;
             }
 
-            if (m_animalAITrait && m_animalAITrait.OnIdleMovement(dt))
+            if (m_animalAITrait && m_animalAITrait.On_IdleMovement(dt))
             {
                 // used for animals that can consume food or follow the player
                 return true;
@@ -106,7 +113,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
         private bool RandomMovementNearSpawn(float dt)
         {
-            if (!m_tamedStayNearSpawn)
+            if (!m_tamedIdleNearSpawn)
             {
                 return false;
             }
@@ -125,17 +132,9 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 return false;
             }
-
-            var currentPoint = m_baseAI.transform.position;
-            var spawnPoint = m_baseAI.GetSpawnPoint();
-            var inRange = MathUtils.InRangeXZ(currentPoint, spawnPoint, m_baseAI.m_randomMoveRange * 10); // todo: factor 10 needs to be tested
-            if (inRange)
-            {
-                m_baseAI.RandomMovement(dt, spawnPoint, snapToGround: false);
-                return true;
-            }
-
-            return false;
+            
+            m_baseAI.RandomMovement(dt, m_baseAI.GetSpawnPoint(), snapToGround: false);
+            return true;
         }
 
         public bool IsAlerted()
@@ -160,11 +159,6 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 m_nview.GetZDO().Set(ZDOVars.s_spawnPoint, point);
             }
-        }
-
-        public bool TamedStayNearSpawn()
-        {
-            return m_tamedStayNearSpawn;
         }
 
         public GameObject GetFollowTarget()

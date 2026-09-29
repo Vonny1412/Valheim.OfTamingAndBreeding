@@ -15,17 +15,16 @@ namespace OfTamingAndBreeding.Processing.Core
         Dictionary<string, string> GetAllSerializedData();
         int GetLoadedDataCount();
 
-        void ResetData();
+        bool PrepareProcess();
+        bool ReserveAllPrefabNames();
+        bool ValidateAllData();
+        bool RegisterAllPrefabs();
+        bool ProcessAllPrefabs();
+        bool FinalizeProcess();
 
-        void CallPrepareProcess();
-        bool CallValidateAllData();
-        bool CallReserveAllPrefabs();
-        bool CallValidateAllPrefabs();
-        void CallRegisterAllPrefabs();
-        bool CallProcessAllPrefabs();
-        void CallFinalizeProcess();
-        void CallRestoreAllPrefabs();
-        void CallCleanupProcess();
+        void RestoreAllPrefabs();
+        void CleanupProcess();
+        void ResetData();
 
     }
 }

@@ -13,20 +13,22 @@ namespace OfTamingAndBreeding.Components.Core
             OTABComponentTypeRegistry.RegisterType(typeof(T), requiredTypes);
         }
 
-        protected static void Register(T component)
+        protected void Register()
         {
-            s_cache[component.gameObject] = component;
+            s_cache[gameObject] = (T)this;
         }
 
-        protected static void Unregister(T component)
+        protected void Unregister()
         {
-            s_cache.Remove(component.gameObject);
+            s_cache.Remove(gameObject);
         }
 
+        /*
         public static T GetUnsafe(GameObject prefab)
         {
             return s_cache[prefab];
         }
+        */
 
         public static bool TryGet(GameObject prefab, out T component)
         {

@@ -18,13 +18,19 @@ namespace OfTamingAndBreeding.Components.Traits
             m_nview = GetComponent<ZNetView>();
             m_monsterAI = GetComponent<MonsterAI>();
 
-            Register(this);
+            Register();
         }
 
         private void OnDestroy()
         {
-            Unregister(this);
+            Unregister();
         }
+
+        public MonsterAI GetMonsterAI() {
+            return m_monsterAI;
+        }
+
+
 
         /*
         // handled in patch

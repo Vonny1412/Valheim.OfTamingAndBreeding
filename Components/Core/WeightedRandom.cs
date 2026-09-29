@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
 
-//todo: cleanup
-
-
-namespace OfTamingAndBreeding.Common
+namespace OfTamingAndBreeding.Components.Core
 {
     internal static class WeightedRandom
     {
@@ -38,7 +34,6 @@ namespace OfTamingAndBreeding.Common
                 any = true;
                 total += w;
 
-                // weighted reservoir sampling: select item with probability w/total
                 if (UnityEngine.Random.value * total <= w)
                 {
                     entry = items[i];

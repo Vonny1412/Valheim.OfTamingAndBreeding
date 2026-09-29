@@ -1,12 +1,11 @@
-﻿using OfTamingAndBreeding.Common;
-using OfTamingAndBreeding.Components.Core;
+﻿using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Extensions;
+using OfTamingAndBreeding.Processing.Core;
 using OfTamingAndBreeding.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using YamlDotNet.Core.Tokens;
 
 
 //todo: cleanup
@@ -18,7 +17,7 @@ namespace OfTamingAndBreeding.Components.Traits
     public class EggGrowTrait : OTABComponent<EggGrowTrait>
     {
 
-        public class EggGrown : Common.WeightedRandom.IWeighted
+        public class EggGrown : WeightedRandom.IWeighted
         {
             public string Prefab { get; }
             public float Weight { get; }
@@ -52,38 +51,32 @@ namespace OfTamingAndBreeding.Components.Traits
             { Heightmap.Biome.Mistlands,    "$biome_mistlands" },
         };
 
-        // set in Start
         [NonSerialized] private ZNetView m_nview = null;
         [NonSerialized] private EggGrow m_eggGrow = null;
         [NonSerialized] private ItemDrop m_itemDrop = null;
         [NonSerialized] private ItemDropTrait m_itemDropTrait = null;
         [NonSerialized] private float m_baseGrowTime = 60;
+        private ParticleSystem[] m_particleSystems;
 
         // set in registration
         [SerializeField] public Heightmap.Biome m_requireBiome = Heightmap.Biome.None;
+        [NonSerialized] public Heightmap.Biome[] m_requireBiomes = null;
         [SerializeField] public Utilities.EnvironmentUtils.LiquidTypeEx m_requireLiquid = Utilities.EnvironmentUtils.LiquidTypeEx.None;
+        [NonSerialized] public string m_requireGlobalKey;
 
 
 
 
 
-
-        internal static readonly IndexedDataStore<List<string[]>> s_requireAnyGlobalKeysStore = new IndexedDataStore<List<string[]>>();
-        [SerializeField] internal int m_requireAnyGlobalKeysStoreIndex = -1;
-        [NonSerialized] public List<string[]> m_requireAnyGlobalKeys = null;
 
 
         internal static readonly IndexedDataStore<EggGrown[]> s_grownListStore = new IndexedDataStore<EggGrown[]>();
         [SerializeField] internal int m_grownListStoreIndex = -1;
         [NonSerialized] public EggGrown[] m_grownList = null;
 
-
-
-
-
         private void Awake()
         {
-            Register(this);
+            Register();
         }
 
         private void Start()
@@ -92,49 +85,37 @@ namespace OfTamingAndBreeding.Components.Traits
             m_eggGrow = GetComponent<EggGrow>();
             m_itemDrop = GetComponent<ItemDrop>();
             m_itemDropTrait = GetComponent<ItemDropTrait>();
+            m_particleSystems = GetComponentsInChildren<ParticleSystem>(true);
 
             m_baseGrowTime = m_eggGrow.m_growTime;
 
-            if (m_nview.IsValid())
-            {
-                m_nview.Register<float>("RPC_UpdateEffects", RPC_UpdateEffects);
-                m_nview.Register<bool>("RPC_HatchAndDestroy", RPC_HatchAndDestroy);
-            }
-
-            s_requireAnyGlobalKeysStore.TryGet(m_requireAnyGlobalKeysStoreIndex, out m_requireAnyGlobalKeys);
             s_grownListStore.TryGet(m_grownListStoreIndex, out m_grownList);
-
 
             UpdateGrowTime();
         }
 
         private void OnDestroy()
         {
-            Unregister(this);
+            Unregister();
         }
+
+        public EggGrow GetEggGrow() {
+            return m_eggGrow;
+        }
+
+
+
+
+
+
+
 
         public float GetBaseGrowTime()
         {
             return m_baseGrowTime;
         }
 
-        private bool SolvesRequiredGlobalKeys()
-        {
-            if (m_requireAnyGlobalKeys == null || m_requireAnyGlobalKeys.Count == 0)
-            {
-                return true;
-            }
-            foreach (var andKeys in m_requireAnyGlobalKeys)
-            {
-                if (andKeys.All((key) => ZoneSystem.instance.GetGlobalKey(key)))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        public bool InValidBiome(Vector3 position)
+        public bool IsInValidBiome(Vector3 position)
         {
             if (m_requireBiome == Heightmap.Biome.None)
             {
@@ -143,7 +124,7 @@ namespace OfTamingAndBreeding.Components.Traits
             return Utilities.EnvironmentUtils.IsInBiome(position, m_requireBiome);
         }
 
-        public bool OnValidGround(Vector3 position)
+        public bool IsOnValidGround(Vector3 position)
         {
             if (m_requireLiquid == EnvironmentUtils.LiquidTypeEx.None)
             {
@@ -159,7 +140,7 @@ namespace OfTamingAndBreeding.Components.Traits
             };
         }
 
-        public bool CanGrow()
+        public bool On_CanGrow()
         {
             if (Plugin.Configs.RequireEggsDroppedByPlayer.Value == true)
             {
@@ -169,19 +150,19 @@ namespace OfTamingAndBreeding.Components.Traits
                 }
             }
 
-            if (SolvesRequiredGlobalKeys() == false)
+            if (!string.IsNullOrEmpty(m_requireGlobalKey) && !ZoneSystem.instance.GetGlobalKey(m_requireGlobalKey))
             {
                 return false;
             }
 
             var eggPosition = m_eggGrow.transform.position;
 
-            if (InValidBiome(eggPosition) == false)
+            if (IsInValidBiome(eggPosition) == false)
             {
                 return false;
             }
 
-            if (OnValidGround(eggPosition) == false)
+            if (IsOnValidGround(eggPosition) == false)
             {
                 return false;
             }
@@ -189,196 +170,219 @@ namespace OfTamingAndBreeding.Components.Traits
             return true;
         }
 
+
+
+
+
+
+
         public void UpdateGrowTime()
         {
             if (!m_nview.IsValid()) return;
 
             var globalFactor = Plugin.Configs.GlobalGrowTimeFactor.Value;
-            if (globalFactor < 0f)
+            if (globalFactor >= 0) // yes, we do allow 0, too
             {
-                // should not be possible but whatever
-                //eggGrow.UpdateGrowTime(1f); // back to base
+                m_eggGrow.m_growTime = GetBaseGrowTime() * globalFactor;
+            }
+
+            var zdo = m_nview.GetZDO();
+            var growStart = zdo.GetFloat(ZDOVars.s_growStart, 0);
+            m_eggGrow.UpdateEffects(growStart);
+        }
+
+        private void SetParticlesEnabled(bool enabled)
+        {
+            //Plugin.LogWarning("SetParticlesEnabled: " + enabled);
+            foreach (var ps in m_particleSystems)
+            {
+                var emission = ps.emission;
+                emission.enabled = enabled;
+            }
+        }
+
+        public void On_UpdateEffects(float grow)
+        {
+            if (m_eggGrow.m_notGrowingObject)
+            {
+                //Plugin.LogWarning("has m_notGrowingObject");
+                // it has notgrowing object, nothing to do
                 return;
             }
-            var totalFactor = globalFactor;
-            UpdateGrowTime(totalFactor);
+
+            var isInstant = m_eggGrow.m_growTime <= 0; // no growtime means instant hatching, only rely on updatetime
+            var isGrowing = (isInstant && m_eggGrow.CanGrow()) || (!isInstant && grow > 0f);
+            SetParticlesEnabled(enabled: !isGrowing);
         }
 
-        private void UpdateGrowTime(float totalFactor)
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        private const float HoverTextUpdateInterval = 0.5f;
+        private string m_cachedHoverText = "";
+        private float m_lastHoverTextUpdate;
+
+        public string On_GetHoverText()
         {
-            if (totalFactor >= 0) // yes, we do allow 0, too
+            var time = Time.time;
+            if (time - m_lastHoverTextUpdate < HoverTextUpdateInterval)
             {
-                m_eggGrow.m_growTime = GetBaseGrowTime() * totalFactor;
+                return m_cachedHoverText;
             }
+            m_lastHoverTextUpdate = time;
+            m_cachedHoverText = GetHoverText();
+            return m_cachedHoverText;
         }
 
-        public void RPC_UpdateEffects(long sender, float grow)
-        {
-            if (m_nview.IsValid())
-            {
-                m_eggGrow.UpdateEffects(grow);
-            }
-        }
-
-        public void RPC_HatchAndDestroy(long sender, bool showHatchEffect)
-        {
-            if (!m_nview.IsValid())
-            {
-                return;
-            }
-            if (showHatchEffect)
-            {
-                m_eggGrow.m_hatchEffect?.Create(m_eggGrow.transform.position, m_eggGrow.transform.rotation);
-            }
-            if (m_nview.IsOwner())
-            {
-                m_nview.Destroy();
-            }
-        }
-
-        public string GetEggGrowProgress()
+        public string GetHoverText()
         {
             if (!m_eggGrow || !m_nview.IsValid())
             {
                 return "";
             }
 
-            var zdo = m_nview.GetZDO();
-
-            var canGrow = m_eggGrow.CanGrow();
-            if (canGrow)
+            if (m_eggGrow.CanGrow())
             {
                 var growTime = m_eggGrow.m_growTime;
-                if (growTime > 0) // has a grow time
-                {
-                    float growStart = zdo.GetFloat(ZDOVars.s_growStart);
-                    if (growStart > 0) // is already growing
-                    {
-                        float precision = 1f / Plugin.Configs.HudProgressPrecision.Value;
-                        int decimals = Mathf.Max(0, Mathf.RoundToInt(-Mathf.Log10(precision)));
-
-                        float remainingTime = (float)((growStart + growTime) - ZNet.instance.GetTimeSeconds());
-                        float pctRaw = (1f - Mathf.Clamp01(remainingTime / growTime)) * 100f;
-
-                        float pct = Mathf.Floor(pctRaw * precision) / precision; // no "jumping forward"
-                        var pctText = pct.ToString($"F{decimals}", System.Globalization.CultureInfo.InvariantCulture);
-                        return $"({pctText}%)";
-                    }
-                }
-
-                // unknown/secret grow time
-                return "";
-            }
-            else
-            {
-                if (!Plugin.IsOTABMode())
+                if (growTime <= 0)
                 {
                     return "";
                 }
 
-                // logic:
-                //   (otab)DroppedByPlayer > (vanilla)itemstack > (vanilla)fire > (vanilla)roof > (otab)globalkeys > (otab)biome > (otab)liquid
-
-                if (Plugin.Configs.RequireEggsDroppedByPlayer.Value == true)
+                var growStart = m_nview.GetZDO().GetFloat(ZDOVars.s_growStart);
+                if (growStart <= 0)
                 {
-                    if (m_itemDropTrait.IsDroppedByPlayer() == false)
-                    {
-                        return "";
-                    }
+                    return "";
                 }
 
-                if (m_itemDrop.m_itemData.m_stack > 1)
-                {
-                    return Localization.instance.Localize("$item_chicken_egg_stacked");
-                }
+                // show growing
 
-                var position = transform.position;
-
-                if (m_eggGrow.m_requireNearbyFire && !EffectArea.IsPointInsideArea(position, EffectArea.Type.Heat, 0.5f))
-                {
-                    return Localization.instance.Localize("$otab_egg_requires_heat");
-                }
-
-                if (m_eggGrow.m_requireUnderRoof)
-                {
-                    Cover.GetCoverForPoint(position, out var coverPercentage, out var underRoof, 0.1f);
-                    if (!underRoof || coverPercentage < m_eggGrow.m_requireCoverPercentige)
-                    {
-                        return Localization.instance.Localize("$otab_egg_requires_roof");
-                    }
-                }
-
-                if (!SolvesRequiredGlobalKeys())
-                {
-                    // just take first AND-list for now
-                    // todo: maybe display full list?
-                    var andList = m_requireAnyGlobalKeys[0].Where((key) => !ZoneSystem.instance.GetGlobalKey(key));
-                    var outList = String.Join(", ", andList.Select((k) => Localization.instance.Localize($"$OTAB_require_key_{k}")));
-                    return Localization.instance.Localize("$otab_egg_requires_key", outList);
-                }
-
-                if (InValidBiome(position) == false)
-                {
-                    var biomes = Utilities.EnvironmentUtils.UnMaskBiomes(m_requireBiome);
-                    var outList = String.Join(" / ", biomes.Select((b) => Localization.instance.Localize(biomeLangKeys[b])));
-                    return Localization.instance.Localize("$otab_egg_requires_biome", outList);
-                }
-
-                if (OnValidGround(position) == false)
-                {
-                    switch (m_requireLiquid)
-                    {
-                        case Utilities.EnvironmentUtils.LiquidTypeEx.Water:
-                            return Localization.instance.Localize("$otab_egg_requires_water");
-
-                        case Utilities.EnvironmentUtils.LiquidTypeEx.Tar:
-                            return Localization.instance.Localize("$otab_egg_requires_tar");
-
-                    }
-                }
-
-                // default message
-                return Localization.instance.Localize("$item_chicken_egg_cold");
+                var remainingTime = (float)(growStart + growTime - ZNet.instance.GetTimeSeconds());
+                var multiplier = Plugin.Configs.HudProgressMultiplier;
+                var percent = (float)(int)((1f - Mathf.Clamp01(remainingTime / growTime)) * 100f * multiplier) / multiplier;
+                var percentText = percent.ToString(Plugin.Configs.HudProgressFormat, System.Globalization.CultureInfo.InvariantCulture);
+                return $"({percentText}%)";
             }
-        }
 
-        public bool GrowUpdate()
-        {
-            if (!m_nview.IsOwner())
+            // cannot grow
+
+            if (!DataProcessingManager.IsDataLoaded)
             {
-                return true; // return as handled
+                // not in otab mode
+                return "";
             }
 
-            var zdo = m_nview.GetZDO();
+            if (Plugin.Configs.RequireEggsDroppedByPlayer.Value && !m_itemDropTrait.IsDroppedByPlayer())
+            {
+                return "";
+            }
 
-            var s_growStart = zdo.GetFloat(ZDOVars.s_growStart, 0f);
             if (m_itemDrop.m_itemData.m_stack > 1)
             {
+                return Localization.instance.Localize("$item_chicken_egg_stacked");
+            }
+
+            var position = transform.position;
+
+            if (m_eggGrow.m_requireNearbyFire && !EffectArea.IsPointInsideArea(position, EffectArea.Type.Heat, 0.5f))
+            {
+                return Localization.instance.Localize("$otab_egg_requires_heat");
+            }
+
+            if (m_eggGrow.m_requireUnderRoof)
+            {
+                Cover.GetCoverForPoint(position, out var coverPercentage, out var underRoof, 0.1f);
+                if (!underRoof || coverPercentage < m_eggGrow.m_requireCoverPercentige)
+                {
+                    return Localization.instance.Localize("$otab_egg_requires_roof");
+                }
+            }
+
+            if (!string.IsNullOrEmpty(m_requireGlobalKey) && !ZoneSystem.instance.GetGlobalKey(m_requireGlobalKey))
+            {
+                return Localization.instance.Localize("$otab_egg_requires_key", Localization.instance.Localize( $"$OTAB_key_{m_requireGlobalKey}"));
+            }
+
+            if (!IsInValidBiome(position))
+            {
+                var localization = Localization.instance;
+                var outList = string.Join(" / ", m_requireBiomes.Select(b => localization.Localize(biomeLangKeys[b])));
+            }
+
+            if (!IsOnValidGround(position))
+            {
+                switch (m_requireLiquid)
+                {
+                    case Utilities.EnvironmentUtils.LiquidTypeEx.Water:
+                        return Localization.instance.Localize("$otab_egg_requires_water");
+
+                    case Utilities.EnvironmentUtils.LiquidTypeEx.Tar:
+                        return Localization.instance.Localize("$otab_egg_requires_tar");
+                }
+            }
+
+            return Localization.instance.Localize("$item_chicken_egg_cold");
+        }
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        public void On_GrowUpdate()
+        {
+            var zdo = m_nview.GetZDO();
+            var s_growStart = zdo.GetFloat(ZDOVars.s_growStart, 0f);
+            if (!m_nview.IsValid() || !m_nview.IsOwner() || m_itemDrop.m_itemData.m_stack > 1)
+            {
                 m_eggGrow.UpdateEffects(s_growStart);
-                return true; // handled
+                return;
             }
 
             if (!m_eggGrow.CanGrow())
             {
                 s_growStart = ZDOUtils.SetFloat(zdo, ZDOVars.s_growStart, 0f, s_growStart);
-                m_nview.InvokeRPC(ZNetView.Everybody, "RPC_UpdateEffects", s_growStart);
-                return true; // handled
+                m_eggGrow.UpdateEffects(s_growStart);
+                return;
             }
 
             var prefabName = Utils.GetPrefabName(m_eggGrow.gameObject.name);
-
             var timeSeconds = (float)ZNet.instance.GetTimeSeconds();
-
-            if (s_growStart == 0f)
+            if (s_growStart == 0f) 
             {
                 s_growStart = ZDOUtils.SetFloat(zdo, ZDOVars.s_growStart, timeSeconds, s_growStart);
-                m_nview.InvokeRPC(ZNetView.Everybody, "RPC_UpdateEffects", s_growStart);
+                m_eggGrow.UpdateEffects(s_growStart);
             }
 
             bool readyToHatch = timeSeconds > (s_growStart + m_eggGrow.m_growTime);
             if (readyToHatch)
             {
-
 
                 GameObject grownPrefab = null;
                 bool spawnTamed = true;
@@ -386,7 +390,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
                 if (m_grownList != null && m_grownList.Length > 0)
                 {
-                    var foundRandom = Common.WeightedRandom.FindRandom(m_grownList, out var grownEntry, (entry) => {
+                    var foundRandom = WeightedRandom.FindRandom(m_grownList, out var grownEntry, (entry) => {
                         if (!string.IsNullOrEmpty(entry.RequireGlobalKey) && !ZoneSystem.instance.GetGlobalKey(entry.RequireGlobalKey))
                         {
                             // todo: add this feature also to procreation offsprings list
@@ -401,8 +405,6 @@ namespace OfTamingAndBreeding.Components.Traits
                         showHatchEffect = grownEntry.ShowHatchEffect;
                     }
                 }
-
-
 
                 var position = m_eggGrow.transform.position;
                 var rotation = m_eggGrow.transform.rotation;
@@ -471,11 +473,15 @@ namespace OfTamingAndBreeding.Components.Traits
                     // just let the item get destroyed
                 }
 
-                m_nview.InvokeRPC( ZNetView.Everybody, "RPC_HatchAndDestroy", showHatchEffect);
-                // object is beeing destroyed in RPC_HatchAndDestroy()
+                if (showHatchEffect)
+                {
+                    m_eggGrow.m_hatchEffect?.Create(m_eggGrow.transform.position, m_eggGrow.transform.rotation);
+                }
+                if (m_nview.IsOwner())
+                {
+                    m_nview.Destroy();
+                }
             }
-
-            return true; // handled
         }
 
     }

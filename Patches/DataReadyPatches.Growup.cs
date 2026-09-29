@@ -15,11 +15,12 @@ namespace OfTamingAndBreeding.Patches
                 return false;
             }
 
-            var trait = GrowupTrait.GetUnsafe(__instance.gameObject);
-            if (trait.GrowUpdate())
+            if (GrowupTrait.TryGet(__instance.gameObject, out var trait))
             {
+                trait.On_GrowUpdate();
                 return false;
             }
+
             return true;
         }
 

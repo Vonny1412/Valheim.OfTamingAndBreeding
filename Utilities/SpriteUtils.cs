@@ -1,5 +1,4 @@
-﻿using Jotunn.Managers;
-using System;
+﻿using System;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
@@ -9,16 +8,6 @@ namespace OfTamingAndBreeding.Utilities
     internal static class SpriteUtils
     {
         private const float DefaultPixelsPerUnit = 100f;
-
-        public static Sprite RenderGameObject(GameObject item)
-        {
-            var request = new RenderManager.RenderRequest(item)
-            {
-                Rotation = RenderManager.IsometricRotation,
-                UseCache = true
-            };
-            return RenderManager.Instance.Render(request);
-        }
 
         public static Sprite TextureToSprite(Texture2D texture, string name = null, float pixelsPerUnit = DefaultPixelsPerUnit)
         {

@@ -1,10 +1,5 @@
 ﻿using HarmonyLib;
-using OfTamingAndBreeding.Runtime;
-using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using UnityEngine;
 
 namespace OfTamingAndBreeding.Patches
 {
@@ -18,9 +13,9 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPrefix]
         private static bool ZNetScene_CreateObjects_Prefix(/* ZNetScene __instance, */ List<ZDO> currentNearObjects, List<ZDO> currentDistantObjects)
         {
-            if (ZNetSceneContext.IsBlocking())
+            if (Runtime.ZNetSceneContext.IsBlocking())
             {
-                ZNetSceneContext.Enqueue(new List<ZDO>(currentNearObjects), new List<ZDO>(currentDistantObjects));
+                Runtime.ZNetSceneContext.Enqueue(new List<ZDO>(currentNearObjects), new List<ZDO>(currentDistantObjects));
                 return false;
             }
             return true;
@@ -32,11 +27,6 @@ namespace OfTamingAndBreeding.Patches
         {
             Network.NetworkSessionManager.CloseSession();
         }
-
-
-
-
-
 
     }
 }

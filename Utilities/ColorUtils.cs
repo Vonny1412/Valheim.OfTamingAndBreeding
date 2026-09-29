@@ -1,19 +1,11 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace OfTamingAndBreeding.Utilities
 {
     internal static class ColorUtils
     {
 
-        public static string GetColorBetween(
-            string colorBad,
-            string colorNormal,
-            string colorGood,
-            string colorZero,
-            float factor,
-            float min,
-            float max)
+        public static string GetColorBetween(string colorBad, string colorNormal, string colorGood, string colorZero, float factor, float min, float max)
         {
             if (factor == 0f)
                 return colorZero;
@@ -60,7 +52,7 @@ namespace OfTamingAndBreeding.Utilities
             }
         }
 
-        public static string LerpHexFast(string a, string b, float t)
+        private static string LerpHexFast(string a, string b, float t)
         {
             int packedA = ParseHexPacked(a);
             int packedB = ParseHexPacked(b);
@@ -80,7 +72,7 @@ namespace OfTamingAndBreeding.Utilities
             return $"#{rr:X2}{rg:X2}{rb:X2}";
         }
 
-        public static int ParseHexPacked(string hex)
+        private static int ParseHexPacked(string hex)
         {
             int r = (HexVal(hex[1]) << 4) | HexVal(hex[2]);
             int g = (HexVal(hex[3]) << 4) | HexVal(hex[4]);
@@ -88,14 +80,14 @@ namespace OfTamingAndBreeding.Utilities
             return (r << 16) | (g << 8) | b;
         }
 
-        public static int HexVal(char c)
+        private static int HexVal(char c)
         {
             if (c >= '0' && c <= '9') return c - '0';
             if (c >= 'a' && c <= 'f') return 10 + (c - 'a');
             return 10 + (c - 'A');
         }
 
-        public static bool IsHexColor(string s)
+        private static bool IsHexColor(string s)
         {
             if (string.IsNullOrEmpty(s) || s.Length != 7 || s[0] != '#') return false;
             for (int i = 1; i < 7; i++)

@@ -1,7 +1,6 @@
 ﻿using OfTamingAndBreeding.Data.Cache;
 using OfTamingAndBreeding.Utilities;
 using OfTamingAndBreeding.Processing.Core;
-using System;
 using System.IO;
 using UnityEngine;
 
@@ -74,6 +73,11 @@ namespace OfTamingAndBreeding.Network
                                 if (dataLoaded)
                                 {
                                     Plugin.LogInfo($"Loaded data from existing cache");
+                                }
+                                else
+                                {
+                                    OnSessionError?.Invoke();
+                                    return true;
                                 }
                             }
                         }
@@ -149,6 +153,7 @@ namespace OfTamingAndBreeding.Network
                     Plugin.LogFatal("Failed loading or registering data from received cache");
                     OnSessionError?.Invoke();
                 }
+
                 return success;
             });
 
@@ -163,7 +168,7 @@ namespace OfTamingAndBreeding.Network
             }
             Plugin.LogInfo($"Requesting handshake RPC from server");
             HandshakeRPC.RequestFromServer();
-            StartClientTimeout(15f);
+            StartClientTimeout(Plugin.Constants.ClientHandshakeTimeout);
         }
 
         public static void StartClientTimeout(float seconds)
@@ -179,7 +184,7 @@ namespace OfTamingAndBreeding.Network
             float start = Time.time;
             while (Time.time - start < seconds)
             {
-                if (DataProcessingManager.IsDataLoaded())
+                if (DataProcessingManager.IsDataLoaded)
                 {
                     clientTimeoutRoutine = null;
                     yield break;

@@ -6,6 +6,7 @@ using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Integrations.Mods;
 using OfTamingAndBreeding.Processing.Core;
+using OfTamingAndBreeding.Processing.Registry;
 using System;
 using System.IO;
 
@@ -26,6 +27,7 @@ namespace OfTamingAndBreeding
     
     public sealed partial class Plugin : BaseUnityPlugin
     {
+
         private static readonly string[] toleratedMods = new string[] {
             "oldmankatan.mods.tamesfollow",
             "com.L3ca.Beyondthepen",
@@ -103,7 +105,7 @@ namespace OfTamingAndBreeding
             try
             {
                 Patches.AlwaysActivePatches.Install();
-                // because this way we can see if all signatures are valid
+                // this way we can see if all signatures are valid
                 Patches.DataReadyPatches.Install();
                 Patches.DataReadyPatches.Uninstall();
             }
@@ -117,16 +119,39 @@ namespace OfTamingAndBreeding
 
             Configs.Initialize(Config);
 
-            BaseAITrait.RegisterType(typeof(Character), typeof(BaseAI));
-            AnimalAITrait.RegisterType(typeof(AnimalAI));
-            //MonsterAITrait.RegisterType(typeof(MonsterAI));
-            CharacterTrait.RegisterType(typeof(Character), typeof(BaseAI));
-            EggGrowTrait.RegisterType(typeof(EggGrow));
-            GrowupTrait.RegisterType(typeof(Growup));
+
+            /*
+            
+            LogMessage($"z_fedDurationFactor: {ZDOVars.z_fedDurationFactor}");
+            LogMessage($"z_partnerPrefab: {ZDOVars.z_partnerPrefab}");
+            LogMessage($"z_confined: {ZDOVars.z_confined}");
+            LogMessage($"z_droppedByAnyPlayer: {ZDOVars.z_droppedByAnyPlayer}");
+            LogMessage($"z_CLLC_Infusion: {ZDOVars.z_CLLC_Infusion}");
+            LogMessage($"z_CLLC_Effect: {ZDOVars.z_CLLC_Effect}");
+            LogMessage($"z_growTimeLeft: {ZDOVars.z_growTimeLeft}");
+
+            [Message:Of Taming and Breeding] z_fedDurationFactor: 1191338377
+            [Message:Of Taming and Breeding] z_partnerPrefab: 479200733
+            [Message:Of Taming and Breeding] z_confined: -2083973897
+            [Message:Of Taming and Breeding] z_droppedByAnyPlayer: 770701559
+            [Message:Of Taming and Breeding] z_CLLC_Infusion: -1369819759
+            [Message:Of Taming and Breeding] z_CLLC_Effect: -776129839
+            [Message:Of Taming and Breeding] z_growTimeLeft: 1079401883
+            */
+
+
+            // we only allow real creatures - do not touch the stone!
+            BaseAITrait.RegisterType(typeof(BaseAI), typeof(Character));
+            AnimalAITrait.RegisterType(typeof(BaseAI), typeof(Character), typeof(AnimalAI));
+            //MonsterAITrait.RegisterType(typeof(BaseAI), typeof(MonsterAI));
+            CharacterTrait.RegisterType(typeof(BaseAI), typeof(Character));
+            GrowupTrait.RegisterType(typeof(BaseAI), typeof(Character), typeof(Growup));
+            TameableTrait.RegisterType(typeof(BaseAI), typeof(Character), typeof(Tameable));
+            ProcreationTrait.RegisterType(typeof(BaseAI), typeof(Character), typeof(Procreation));
+            PetTrait.RegisterType(typeof(BaseAI), typeof(Character), typeof(Pet));
+
             ItemDropTrait.RegisterType(typeof(ItemDrop));
-            TameableTrait.RegisterType(typeof(Tameable));
-            ProcreationTrait.RegisterType(typeof(Procreation));
-            PetTrait.RegisterType(typeof(Pet));
+            EggGrowTrait.RegisterType(typeof(ItemDrop), typeof(EggGrow));
 
             // Requiring itself prevents automatic addition, but still allows automatic removal.
             ScaledCreature.RegisterType(typeof(ScaledCreature));
@@ -149,7 +174,7 @@ namespace OfTamingAndBreeding
             {
                 if (Configs.DumpPrefabsToCache.Value == true)
                 {
-                    Registry.PrefabUtils.DumpPrefabs(Path.Combine(CacheDir, "prefabs"));
+                    PrefabUtils.DumpPrefabs(Path.Combine(CacheDir, "prefabs"));
                 }
             }
 
@@ -161,14 +186,13 @@ namespace OfTamingAndBreeding
         {
             OTABComponentTypeRegistry.AddComponentsToPrefabs();
 
-            if (DataProcessingManager.IsDataLoaded())
+            if (DataProcessingManager.IsDataLoaded)
             {
-                foreach (var p in DataProcessingManager.IterDataProcessors())
+                foreach (var p in DataProcessingManager.DataProcessors)
                 {
                     LogInfo($"Loaded {p.GetLoadedDataCount()} {p.ModelTypeName} entries");
                 }
                 Patches.DataReadyPatches.Install();
-                Features.LocalIdleAnimations.RemoveIdleEvents();
             }
             else
             {
@@ -232,7 +256,7 @@ namespace OfTamingAndBreeding
 
         public static bool IsOTABMode()
         {
-            return DataProcessingManager.IsDataLoaded();
+            return DataProcessingManager.IsDataLoaded;
         }
         
         public static void OnSessionStarted()

@@ -109,8 +109,10 @@ namespace OfTamingAndBreeding.Patches
 
             confined.SetActive(false);
 
-            BaseAITrait baseAITrait = BaseAITrait.GetUnsafe(c.gameObject);
-            baseAITrait.SetConfinedHud(confined, awareGate);
+            if (BaseAITrait.TryGet(c.gameObject, out var trait))
+            {
+                trait.SetConfinedHud(confined, awareGate);
+            }
         }
 
         private static Sprite m_confinedIconSprite;

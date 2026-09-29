@@ -1,8 +1,6 @@
 ﻿using HarmonyLib;
-using OfTamingAndBreeding.Components;
 using OfTamingAndBreeding.Components.Traits;
-using OfTamingAndBreeding.Utilities;
-using UnityEngine;
+using static UnityEngine.Networking.UnityWebRequest;
 
 namespace OfTamingAndBreeding.Patches
 {
@@ -13,18 +11,15 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPostfix]
         private static void EggGrow_CanGrow_Postfix(EggGrow __instance, ref bool __result)
         {
-            // postfix = less calls
             if (__result == false)
             {
                 // cannot grow afterall
                 return;
             }
 
-            //var trait = __instance.GetComponent<EggGrowTrait>();
-            var trait = EggGrowTrait.GetUnsafe(__instance.gameObject);
-            if (trait.CanGrow() == false)
+            if (EggGrowTrait.TryGet(__instance.gameObject, out var trait))
             {
-                __result = false;
+                __result = trait.On_CanGrow();
             }
         }
 
@@ -32,9 +27,9 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPostfix]
         private static void EggGrow_UpdateEffects_Postfix(EggGrow __instance, float grow)
         {
-            foreach (var r in __instance.GetComponentsInChildren<ParticleSystemRenderer>(true))
+            if (EggGrowTrait.TryGet(__instance.gameObject, out var trait))
             {
-                r.enabled = grow == 0;
+                trait.On_UpdateEffects(grow);
             }
         }
 
@@ -44,12 +39,13 @@ namespace OfTamingAndBreeding.Patches
         {
             if (!__runOriginal)
             {
+                // cannot grow (by other mod?)
                 return false;
             }
 
-            var trait = EggGrowTrait.GetUnsafe(__instance.gameObject);
-            if (trait.GrowUpdate())
+            if (EggGrowTrait.TryGet(__instance.gameObject, out var trait))
             {
+                trait.On_GrowUpdate();
                 return false;
             }
             return true;

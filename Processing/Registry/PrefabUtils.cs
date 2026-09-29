@@ -1,11 +1,12 @@
-﻿using System;
+﻿using OfTamingAndBreeding.Utilities;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
-namespace OfTamingAndBreeding.Registry
+namespace OfTamingAndBreeding.Processing.Registry
 {
     internal static partial class PrefabUtils
     {
@@ -307,20 +308,25 @@ namespace OfTamingAndBreeding.Registry
         
         public static void DumpPrefabs(string outputDir)
         {
+            const string typeCreatures = "Creatures";
+            const string typeItems = "Items";
+            const string typeOthers = "Others";
+
             foreach (var prefab in ZNetScene.instance.m_prefabs)
             {
-                string type = null;
+                string type;
                 if (prefab.GetComponent<ItemDrop>())
                 {
-                    type = "ItemDrop";
+                    type = typeItems;
                 }
                 else if (prefab.GetComponent<BaseAI>())
                 {
-                    type = "BaseAI";
+                    type = typeCreatures;
                 }
-                if (type == null)
+                else
                 {
-                    continue;
+                    //continue;
+                    type = typeOthers;
                 }
 
                 var file = Path.Combine(outputDir, type, $"{prefab.name}.txt");
@@ -333,7 +339,24 @@ namespace OfTamingAndBreeding.Registry
                 {
                     System.IO.File.Delete(file);
                 }
+
                 var appender = System.IO.File.AppendText(file);
+
+                if (type == typeCreatures)
+                {
+
+                    appender.WriteLine($"Removeable effects");
+                    VfxUtils.DebugVfx(prefab, appender);
+                    appender.WriteLine();
+
+                    appender.WriteLine($"Useable consume effects");
+                    AnimationUtils.DumpZSyncAnim(prefab, appender);
+                    appender.WriteLine();
+
+                }
+
+                // todo: list fields like consumeable items should also be displayed correctly
+
                 foreach (var component in prefab.GetComponents<Component>())
                 {
                     if (component == null)
@@ -355,7 +378,28 @@ namespace OfTamingAndBreeding.Registry
 
                             try
                             {
-                                value = f.GetValue(component);
+                                if (f.Name == "m_consumeItems")
+                                {
+                                    var consumeItems = (List<ItemDrop>)f.GetValue(component);
+                                    if (consumeItems == null)
+                                    {
+                                        value = "null";
+                                    }
+                                    else if (consumeItems.Count == 0)
+                                    {
+                                        value = "[]";
+                                    }
+                                    else
+                                    {
+                                        value = Environment.NewLine + string.Join(Environment.NewLine,
+                                            consumeItems.Select(item => $"    - {item.gameObject.name}")
+                                        );
+                                    }
+                                }
+                                else
+                                {
+                                    value = f.GetValue(component);
+                                }
                             }
                             catch (Exception ex)
                             {
@@ -370,9 +414,39 @@ namespace OfTamingAndBreeding.Registry
 
                     appender.WriteLine();
                 }
+
                 appender.Close();
             }
         }
+
+
+
+
+
+
+        public static void RestoreFields<T>(GameObject current, GameObject backup) where T : Component
+        {
+            var currentComponent = current.GetComponent<T>();
+            var backupComponent = backup.GetComponent<T>();
+            if (currentComponent && backupComponent)
+            {
+                new Common.FieldsSnapshot<T>(backupComponent).ApplyTo(currentComponent);
+            }
+        }
+
+        public static void RestoreFields<T>(T current, T backup) where T : Component
+        {
+            if (current && backup)
+            {
+                new Common.FieldsSnapshot<T>(backup).ApplyTo(current);
+            }
+        }
+
+
+
+
+
+
 
     }
 }

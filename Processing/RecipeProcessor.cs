@@ -20,10 +20,28 @@ namespace OfTamingAndBreeding.Processing
         //
         //
 
+        private readonly List<string> otabRecipeNames = new List<string>();
         private readonly Dictionary<string, Recipe> otabRecipes = new Dictionary<string, Recipe>();
 
-        public override void PrepareProcess()
+        public override bool PrepareProcess()
         {
+            return true;
+        }
+
+        // todo: is it possible to try to register an already existing recipe?
+        // tthat should be validated and blocked
+
+
+        public override bool ReservePrefabName(string recipeName)
+        {
+            if (otabRecipeNames.Contains(recipeName))
+            {
+                var model = $"{nameof(RecipeFile)}.{recipeName}";
+                Plugin.LogError($"{model}: Recipe is already reserved");
+                return false;
+            }
+            otabRecipeNames.Add(recipeName);
+            return true;
         }
 
         public override bool ValidateData(string recipeName, RecipeFile data)
@@ -39,8 +57,8 @@ namespace OfTamingAndBreeding.Processing
 
             if (data.Amount <= 0)
             {
-                Plugin.LogWarning($"{model}.{nameof(data.Amount)}: Value must be > 0 - Setting to 1");
-                data.Amount = 1;
+                Plugin.LogWarning($"{model}.{nameof(data.Amount)}: Value must be > 0");
+                valid = false;
             }
 
             if (string.IsNullOrEmpty(data.CraftingStation))
@@ -79,16 +97,16 @@ namespace OfTamingAndBreeding.Processing
                         valid = false;
                     }
 
-                    if (requirement.Amount <= 0)
+                    if (requirement.Amount < 0)
                     {
-                        Plugin.LogWarning($"{model}.{nameof(data.Requirements)}.{i}.{nameof(requirement.Amount)}: Value must be > 0 - Setting to 1");
-                        requirement.Amount = 1;
+                        Plugin.LogWarning($"{model}.{nameof(data.Requirements)}.{i}.{nameof(requirement.Amount)}: Value must be >= 0");
+                        valid = false;
                     }
 
                     if (requirement.AmountPerLevel < 0)
                     {
-                        Plugin.LogWarning($"{model}.{nameof(data.Requirements)}.{i}.{nameof(requirement.AmountPerLevel)}: Negative value not allowed - Setting to 0");
-                        requirement.AmountPerLevel = 0;
+                        Plugin.LogWarning($"{model}.{nameof(data.Requirements)}.{i}.{nameof(requirement.AmountPerLevel)}: Negative value not allowed");
+                        valid = false;
                     }
                 }
             }
@@ -96,19 +114,10 @@ namespace OfTamingAndBreeding.Processing
             return valid;
         }
 
-        public override bool ReservePrefab(string recipeName, RecipeFile data)
-        {
-            return true;
-        }
-
-        public override bool ValidatePrefab(string recipeName, RecipeFile data)
+        public override bool RegisterPrefab(string recipeName, RecipeFile data)
         {
             var model = $"{nameof(RecipeFile)}.{recipeName}";
             var valid = true;
-
-            //
-            // output item
-            //
 
             var itemPrefab = PrefabManager.Instance.GetPrefab(data.Item);
             if (!itemPrefab)
@@ -122,10 +131,6 @@ namespace OfTamingAndBreeding.Processing
                 valid = false;
             }
 
-            //
-            // crafting station
-            //
-
             var stationPrefab = PrefabManager.Instance.GetPrefab(data.CraftingStation);
             if (!stationPrefab)
             {
@@ -137,10 +142,6 @@ namespace OfTamingAndBreeding.Processing
                 Plugin.LogError($"{model}.{nameof(data.CraftingStation)}: Prefab '{data.CraftingStation}' has no CraftingStation");
                 valid = false;
             }
-
-            //
-            // requirements
-            //
 
             if (data.Requirements != null)
             {
@@ -169,7 +170,7 @@ namespace OfTamingAndBreeding.Processing
             return valid;
         }
 
-        public override void RegisterPrefab(string recipeName, RecipeFile data)
+        public override bool ProcessPrefab(string recipeName, RecipeFile data)
         {
             var itemPrefab = PrefabManager.Instance.GetPrefab(data.Item);
             var itemDrop = itemPrefab.GetComponent<ItemDrop>();
@@ -208,15 +209,15 @@ namespace OfTamingAndBreeding.Processing
             ObjectDB.instance.m_recipes.Add(recipe);
 
             otabRecipes[recipeName] = recipe;
-        }
 
-        public override bool ProcessPrefab(string recipeName, RecipeFile data)
-        {
+
             return true;
         }
 
-        public override void FinalizeProcess()
+        public override bool FinalizeProcess()
         {
+            otabRecipeNames.Clear();
+            return true;
         }
 
         public override void RestorePrefab(string recipeName)
@@ -231,10 +232,13 @@ namespace OfTamingAndBreeding.Processing
                 {
                     continue;
                 }
+
                 ObjectDB.instance.m_recipes.Remove(recipe);
                 UnityEngine.Object.Destroy(recipe);
             }
+
             otabRecipes.Clear();
+            otabRecipeNames.Clear();
         }
 
     }

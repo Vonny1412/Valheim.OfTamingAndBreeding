@@ -19,10 +19,8 @@ namespace OfTamingAndBreeding.ValheimAPI.Core.Invokers
                 BindingFlags.Public |
                 BindingFlags.NonPublic |
                 BindingFlags.DeclaredOnly;
-            member = type.GetProperty(name, bindingAttr);
+            member = type.GetProperty(name, bindingAttr) ?? throw new MissingFieldException(type.FullName, name);
 
-            if (member == null)
-                throw new MissingFieldException(type.FullName, name);
             if (member.CanRead)
                 _getter = CreateGetter(member);
             if (member.CanWrite)

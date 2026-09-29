@@ -1,6 +1,5 @@
 ﻿using Jotunn;
 using OfTamingAndBreeding.Processing.Core;
-using OfTamingAndBreeding.Runtime;
 using System;
 using UnityEngine;
 
@@ -61,7 +60,7 @@ namespace OfTamingAndBreeding.Network
             serverSession = null;
             clientSession = null;
 
-            ZNetSceneContext.Clear();
+            Runtime.ZNetSceneContext.Clear();
             CancelClientTimeout();
 
             Plugin.LogInfo($"Session closed");

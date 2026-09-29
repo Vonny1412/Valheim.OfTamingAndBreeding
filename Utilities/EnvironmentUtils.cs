@@ -67,62 +67,9 @@ public enum LiquidType
             return false;
         }
 
-        private static readonly IReadOnlyList<Heightmap.Biome> AllBiomes = new Heightmap.Biome[] {
-            Heightmap.Biome.Meadows,
-            Heightmap.Biome.Swamp,
-            Heightmap.Biome.Mountain,
-            Heightmap.Biome.BlackForest,
-            Heightmap.Biome.Plains,
-            Heightmap.Biome.AshLands,
-            Heightmap.Biome.DeepNorth,
-            Heightmap.Biome.Ocean,
-            Heightmap.Biome.Mistlands,
-        };
 
-        public static IReadOnlyList<Heightmap.Biome> UnMaskBiomes(Heightmap.Biome biome)
-        {
-            var ret = new List<Heightmap.Biome>();
-            foreach(var b in AllBiomes)
-            {
-                if ((b & biome) != 0)
-                {
-                    ret.Add(b);
-                }
-            }
-            return ret;
-        }
 
-        public static bool IsInAnyBiome(Vector3 pos, Heightmap.Biome[] biomes)
-        {
-            if (biomes == null || biomes.Length == 0)
-                return false;
 
-            var at = Heightmap.FindBiome(pos);
-
-            for (int i = 0; i < biomes.Length; ++i)
-            {
-                if ((at & biomes[i]) != 0)
-                    return true;
-            }
-
-            return false;
-        }
-
-        /* alternative
-public static bool IsInAnyBiome(Vector3 pos, Heightmap.Biome[] biomes)
-{
-    if (biomes == null || biomes.Length == 0)
-        return false;
-
-    var at = Heightmap.FindBiome(pos);
-    Heightmap.Biome mask = Heightmap.Biome.None;
-
-    for (int i = 0; i < biomes.Length; ++i)
-        mask |= biomes[i];
-
-    return (at & mask) != 0;
-}
-        */
 
 
 
@@ -164,27 +111,6 @@ public static bool IsInAnyBiome(Vector3 pos, Heightmap.Biome[] biomes)
             return null;
         }
 
-
-        public static List<string[]> ParseGlobalKeysList(string[] rawKeys)
-        {
-            if (rawKeys == null)
-            {
-                return null;
-            }
-            var orList = new List<string[]>();
-            foreach (var unsplitted in rawKeys)
-            {
-                var splitted = unsplitted.Split(',')
-                    .Select(ParseGlobalKey)
-                    .Where((key) => !string.IsNullOrEmpty(key))
-                    .ToArray();
-                if (splitted.Length > 0)
-                {
-                    orList.Add(splitted);
-                }
-            }
-            return orList;
-        }
 
 
 

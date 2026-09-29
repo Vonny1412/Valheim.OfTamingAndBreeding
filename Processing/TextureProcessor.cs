@@ -16,6 +16,26 @@ namespace OfTamingAndBreeding.Processing
 
         public override string GetDataKey(string filePath) => null;
 
+        //------------------------------------------------
+
+        private readonly List<string> otabTextureNames = new List<string>();
+        private static readonly Dictionary<string, Sprite> s_spriteCache = new Dictionary<string, Sprite>();
+
+        public static bool TryGetSprite(string name, out Sprite sprite)
+        {
+            if (s_spriteCache.TryGetValue(name, out sprite))
+            {
+                return true;
+            }
+            sprite = default;
+            return false;
+        }
+
+        //------------------------------------------------
+
+        // todo: check for any string key that would overwrite an existing translation
+
+
         public override bool LoadFromFile(string filePath)
         {
             var textureName = Path.GetFileNameWithoutExtension(filePath);
@@ -47,38 +67,21 @@ namespace OfTamingAndBreeding.Processing
             return LoadYamlData(textureName, textureData.Serialize());
         }
 
-        //
-        //
-        //
-
-        public override void PrepareProcess()
+        public override bool PrepareProcess()
         {
+            return true;
         }
 
-
-        internal class TextureData
+        public override bool ReservePrefabName(string textureName)
         {
-            public Texture2D Texture { get; }
-            public Sprite Sprite { get; }
-
-            public TextureData(Texture2D texture, Sprite sprite)
+            if (otabTextureNames.Contains(textureName))
             {
-                Texture = texture;
-                Sprite = sprite;
+                var model = $"{nameof(TextureFile)}.{textureName}";
+                Plugin.LogError($"{model}: Texture is already reserved");
+                return false;
             }
-        }
-
-
-        private static readonly Dictionary<string, TextureData> s_textureData = new Dictionary<string, TextureData>();
-        public static bool TryGetSprite(string name, out Sprite sprite)
-        {
-            if (s_textureData.TryGetValue(name, out var data))
-            {
-                sprite = data.Sprite;
-                return true;
-            }
-            sprite = default;
-            return false;
+            otabTextureNames.Add(textureName);
+            return true;
         }
 
         public override bool ValidateData(string textureName, TextureFile data)
@@ -89,7 +92,7 @@ namespace OfTamingAndBreeding.Processing
                 var sprite = SpriteUtils.TextureToSprite(texture);
                 if (sprite)
                 {
-                    s_textureData.Add(textureName, new TextureData(texture, sprite));
+                    s_spriteCache.Add(textureName, sprite);
                     return true;
                 }
                 UnityEngine.Object.Destroy(texture);
@@ -98,18 +101,9 @@ namespace OfTamingAndBreeding.Processing
             return false;
         }
 
-        public override bool ReservePrefab(string textureName, TextureFile data)
+        public override bool RegisterPrefab(string textureName, TextureFile data)
         {
             return true;
-        }
-
-        public override bool ValidatePrefab(string textureName, TextureFile data)
-        {
-            return true;
-        }
-
-        public override void RegisterPrefab(string textureName, TextureFile data)
-        {
         }
 
         public override bool ProcessPrefab(string textureName, TextureFile data)
@@ -117,8 +111,10 @@ namespace OfTamingAndBreeding.Processing
             return true;
         }
 
-        public override void FinalizeProcess()
+        public override bool FinalizeProcess()
         {
+            otabTextureNames.Clear();
+            return true;
         }
 
         public override void RestorePrefab(string textureName)
@@ -127,18 +123,21 @@ namespace OfTamingAndBreeding.Processing
 
         public override void CleanupProcess()
         {
-            foreach (var data in s_textureData.Values)
+            foreach (var sprite in s_spriteCache.Values)
             {
-                if (data.Sprite)
+                if (!sprite)
                 {
-                    UnityEngine.Object.Destroy(data.Sprite);
+                    continue;
                 }
-                if (data.Texture)
+                if (sprite.texture)
                 {
-                    UnityEngine.Object.Destroy(data.Texture);
+                    UnityEngine.Object.Destroy(sprite.texture);
                 }
+                UnityEngine.Object.Destroy(sprite);
             }
-            s_textureData.Clear();
+
+            s_spriteCache.Clear();
+            otabTextureNames.Clear();
         }
 
     }

@@ -9,17 +9,24 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPostfix]
         private static void ItemDrop_GetHoverText_Postfix(ItemDrop __instance, ref string __result)
         {
-            int nl = __result.IndexOf('\n');
-            if (nl <= 0) return;
-
-            if (__instance.TryGetComponent<EggGrowTrait>(out var eggGrowTrait))
+            if (!EggGrowTrait.TryGet(__instance.gameObject, out var eggGrowTrait))
             {
-                var text = eggGrowTrait.GetEggGrowProgress();
-                if (text.Length != 0)
-                {
-                    __result = __result[..nl] + " " + text + __result[nl..];
-                }
+                return;
             }
+
+            var text = eggGrowTrait.On_GetHoverText();
+            if (text.Length == 0)
+            {
+                return;
+            }
+
+            var newlineIndex = __result.IndexOf('\n');
+            if (newlineIndex <= 0)
+            {
+                return;
+            }
+
+            __result = __result[..newlineIndex] + " " + text + __result[newlineIndex..];
         }
         
     }

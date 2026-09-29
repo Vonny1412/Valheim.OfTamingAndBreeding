@@ -13,7 +13,7 @@ namespace OfTamingAndBreeding.Components
 
         private void Awake()
         {
-            Register(this);
+            Register();
         }
 
         private void Start()
@@ -48,7 +48,7 @@ namespace OfTamingAndBreeding.Components
             {
                 Destroy(m_visual);
             }
-            Unregister(this);
+            Unregister();
         }
 
         private void CreateRenderer()

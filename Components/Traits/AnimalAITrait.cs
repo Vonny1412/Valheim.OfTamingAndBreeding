@@ -18,8 +18,10 @@ namespace OfTamingAndBreeding.Components.Traits
         [SerializeField] public float m_consumeRange = 2f;
         [SerializeField] public float m_consumeSearchRange = 5f;
         [SerializeField] public float m_consumeSearchInterval = 10f;
+
         [SerializeField] public bool m_avoidLand = false;
         [SerializeField] public bool m_fleeInLava = true;
+
 
         // instance values
         [NonSerialized] private ZNetView m_nview = null;
@@ -42,13 +44,22 @@ namespace OfTamingAndBreeding.Components.Traits
             m_baseAITrait = GetComponent<BaseAITrait>();
             m_animator = GetComponent<ZSyncAnimation>();
 
-            Register(this);
+            Register();
         }
 
         private void OnDestroy()
         {
-            Unregister(this);
+            Unregister();
         }
+
+        public AnimalAI GetAnimalAI () {
+            return m_animalAI;
+        }
+
+
+
+
+
 
         public bool IsAlerted()
         {
@@ -81,7 +92,7 @@ namespace OfTamingAndBreeding.Components.Traits
             m_animalAI.SetAlerted(alert: false); // complex, sets zdo
         }
 
-        public bool OnUpdateAI(float dt)
+        public bool On_UpdateAI(float dt)
         {
             if (m_avoidLand && !m_character.IsSwimming())
             {
@@ -95,9 +106,9 @@ namespace OfTamingAndBreeding.Components.Traits
                 return true;
             }
 
-
             /*
-            // TODO: 
+            // the following is handled by: BaseAI.IdleMovement() -> BaseAI.RandomMovement()
+            // it already is part of baseai, not part of monsterai
             if ((m_afraidOfFire || m_avoidFire))
             {
                 m_animalAI.AvoidFire(dt, m_targetCreature, m_afraidOfFire)
@@ -106,11 +117,10 @@ namespace OfTamingAndBreeding.Components.Traits
             }
             */
 
-
             return false;
         }
 
-        public bool OnIdleMovement(float dt)
+        public bool On_IdleMovement(float dt)
         {
             if (!m_nview.IsValid())
             {

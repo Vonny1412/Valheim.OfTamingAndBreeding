@@ -3,6 +3,7 @@ using Jotunn.Extensions;
 using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Components.Traits;
 using System;
+using static OfTamingAndBreeding.Plugin;
 
 namespace OfTamingAndBreeding
 {
@@ -68,7 +69,11 @@ namespace OfTamingAndBreeding
             public static ConfigEntry<float> TamingSlowdownPerStar { get; private set; }
 
             public static ConfigEntry<bool> PreventProcreationWhileFollowing { get; private set; }
-            
+
+
+            private const string Section_Server_Misc = "Server - Miscellaneous";
+            // ...
+
 
             private const string Section_Server_CLLC = "Server - Creature Level & Loot Control";
 
@@ -119,6 +124,11 @@ namespace OfTamingAndBreeding
                 HudShowOffspringGrowProgress = Config.BindConfigInOrder<bool>(section, "ShowOffspringGrowProgress", true, "Shows offspring growth progress as a percentage next to the creature's name in the HUD (visible from distance).", synced: false);
 
                 HudProgressPrecision = Config.BindConfigInOrder<float>(section, "ProgressPrecision", 1f, "Controls hover progress rounding (lower = more precise). Example: 1 = 1%, 0.1 = 0.1%.", acceptableValues: new AcceptableValueList<float>(1f, 0.5f, 0.25f, 0.2f, 0.1f, 0.05f, 0.025f, 0.02f, 0.01f, 0.005f, 0.0025f, 0.002f, 0.001f), synced: false);
+                UpdateHudProgressPrecision();
+                HudProgressPrecision.SettingChanged += (sender, args) =>
+                {
+                    UpdateHudProgressPrecision();
+                };
 
 
                 section = Section_Server_Data;
@@ -157,7 +167,7 @@ namespace OfTamingAndBreeding
                 
                 GlobalBaseLevelUpChance = Config.BindConfigInOrder<float>(section, "GlobalBaseLevelUpChance", 0f, "Adds a global base chance to level up. This value is added to each creature's individual level up chance defined in the YAML files.", acceptableValues: new AcceptableValueRange<float>(0, 1), synced: true);
 
-                GlobalPregnancyDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalPregnancyDurationFactor", 1f, "Global multiplier for PregnancyDuration.  Applies immediately; lowering it can instantly finish ongoing pregnancy on the next update.", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
+                GlobalPregnancyDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalPregnancyDurationFactor", 1f, "Global multiplier for PregnancyDuration.  Applies immediately; lowering it can instantly finish ongoing pregnancy on the next update.", acceptableValues: new AcceptableValueRange<float>(0, 10), synced: true);
                 GlobalPregnancyDurationFactor.SettingChanged += (object sender, EventArgs args) => {
                     foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
                     {
@@ -166,7 +176,7 @@ namespace OfTamingAndBreeding
                     }
                 };
 
-                GlobalFedDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalFedDurationFactor", 1f, "Global multiplier for FedDuration. Applies immediately (may flip Hungry state).", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
+                GlobalFedDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalFedDurationFactor", 1f, "Global multiplier for FedDuration. Applies immediately (may flip Hungry state).", acceptableValues: new AcceptableValueRange<float>(0, 10), synced: true);
                 GlobalFedDurationFactor.SettingChanged += (object sender, EventArgs args) => {
                     foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
                     {
@@ -175,7 +185,7 @@ namespace OfTamingAndBreeding
                     }
                 };
 
-                GlobalTamingTimeFactor = Config.BindConfigInOrder<float>(section, "GlobalTamingTimeFactor", 1f, "Global multiplier for TamingTime. Applies immediately; lowering it can instantly finish ongoing taming on the next update.", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
+                GlobalTamingTimeFactor = Config.BindConfigInOrder<float>(section, "GlobalTamingTimeFactor", 1f, "Global multiplier for TamingTime. Applies immediately; lowering it can instantly finish ongoing taming on the next update.", acceptableValues: new AcceptableValueRange<float>(0, 10), synced: true);
                 GlobalTamingTimeFactor.SettingChanged += (object sender, EventArgs args) => {
                     foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
                     {
@@ -184,8 +194,9 @@ namespace OfTamingAndBreeding
                     }
                 };
 
-                GlobalGrowTimeFactor = Config.BindConfigInOrder<float>(section, "GlobalGrowTimeFactor", 1f, "Global multiplier for egg hatching and offspring grow-up time. Applies immediately; lowering it can trigger instant hatching/growing on next update.", acceptableValues: new AcceptableValueRange<float>(0, 1000), synced: true);
+                GlobalGrowTimeFactor = Config.BindConfigInOrder<float>(section, "GlobalGrowTimeFactor", 1f, "Global multiplier for egg hatching and offspring grow-up time. Applies immediately; lowering it can trigger instant hatching/growing on next update.", acceptableValues: new AcceptableValueRange<float>(0, 10), synced: true);
                 GlobalGrowTimeFactor.SettingChanged += (object sender, EventArgs args) => {
+                    // todo: make two seperate configs
                     foreach (var itemDrop in ItemDropExtensions.GetInstances().ToArray())
                     {
                         var eggGrowTrait = itemDrop.GetComponent<EggGrowTrait>();
@@ -207,7 +218,11 @@ namespace OfTamingAndBreeding
 
                 PreventProcreationWhileFollowing = Config.BindConfigInOrder<bool>(section, "PreventProcreationWhileFollowing", true, "Prevents tamed creatures from procreating while they are commanded to follow a player.", synced: true);
 
-                
+
+                section = Section_Server_Misc;
+                // ...
+
+
                 section = Section_Server_CLLC;
 
                 CLLC_Infusion_WeightDirectParent = Config.BindConfigInOrder<float>(section, "Infusion_WeightDirectParent", 60, "Weight for inheriting infusion from the direct parent creature.", synced: true);
@@ -227,6 +242,18 @@ namespace OfTamingAndBreeding
                 CLLC_Effect_SearchRange = Config.BindConfigInOrder<float>(section, "Effect_SearchRange", 10, "Maximum search radius (in meters) for nearby creatures considered when inheriting effects.", synced: true);
 
             }
+
+            public static float HudProgressMultiplier { get; private set; }
+            public static string HudProgressFormat { get; private set; }
+
+            private static void UpdateHudProgressPrecision()
+            {
+                var precision = HudProgressPrecision.Value;
+                HudProgressMultiplier = 1f / precision;
+                var decimals = Math.Max(0, (int)Math.Round(-Math.Log10(precision)));
+                HudProgressFormat = $"F{decimals}";
+            }
+
         }
     }
 }
