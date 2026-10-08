@@ -1,6 +1,6 @@
 ﻿using HarmonyLib;
+using OfTamingAndBreeding.Network;
 using System;
-using System.Linq;
 using System.Reflection;
 
 namespace OfTamingAndBreeding.Integrations.Mods
@@ -11,8 +11,7 @@ namespace OfTamingAndBreeding.Integrations.Mods
 
         public static bool IsRegistered { get; private set; }
 
-        private static Assembly assembly;
-        private static Harmony harmony;
+        private static Type configType;
 
         public class Registrator : ThirdPartyPluginRegistrator
         {
@@ -20,100 +19,50 @@ namespace OfTamingAndBreeding.Integrations.Mods
 
             public override void OnRegistered(string guid, Assembly asm)
             {
-                assembly = asm;
                 IsRegistered = true;
+                configType = asm.GetType("ValheimPlus.Configurations.Configuration");
+                NetworkSessionManager.OnSessionValidate += ValidateSession;
 
-                harmony = new Harmony($"{PluginGUID}.OTAB-compatibility");
-                harmony.PatchAll(typeof(ValheimPlusPatchAllPatch));
-                DisableConflictingPatches();
+                Harmony harmony = new Harmony($"{PluginGUID}.OTAB-compatibility");
+
+                // need to prepatch this one because they are using:
+                // var humanoid = __instance.m_grownPrefab.GetComponent<Humanoid>();
+                // and the field m_grownPrefab is null
+                Patches.PatchUniversalThirdPartyMethod(harmony, asm, "ValheimPlus.GameClasses.Growup_Start_Patch", "Prefix");
             }
         }
 
-        [HarmonyPatch]
-        private static class ValheimPlusPatchAllPatch
+        private static bool ValidateSession()
         {
-            private static MethodBase TargetMethod()
+            if (!NetworkSessionManager.IsServer())
             {
-                if (!IsRegistered)
-                    return null;
-                Type type = assembly.GetType("ValheimPlus.ValheimPlusPlugin");
-                return AccessTools.Method(type, "PatchAll");
+                return true;
             }
 
-            [HarmonyPostfix]
-            private static void Postfix()
+            object config = configType?.GetProperty("Current", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+            if (config == null)
             {
-                DisableConflictingPatches();
-            }
-        }
-
-        private static void DisableConflictingPatches()
-        {
-            Plugin.LogInfo("Valheim+ detected. Disabling conflicting patches.");
-
-            Unpatch("ValheimPlus.GameClasses.Tameable_GetHoverText_Patch");
-            Unpatch("ValheimPlus.GameClasses.Tameable_IsHungry_Patch");
-            Unpatch("ValheimPlus.GameClasses.Tameable_Awake_Patch");
-            Unpatch("ValheimPlus.GameClasses.Tameable_Alerted_Patches");
-
-            Unpatch("ValheimPlus.GameClasses.Procreation_Awake_Patch");
-            Unpatch("ValheimPlus.GameClasses.Procreation_Procreate_Patch");
-
-            Unpatch("ValheimPlus.GameClasses.Character_Damage_Patch");
-            Unpatch("ValheimPlus.GameClasses.Character_GetHoverText_Patch");
-
-            Unpatch("ValheimPlus.GameClasses.EggGrow_Start_Patch");
-            Unpatch("ValheimPlus.GameClasses.EggGrow_CanGrow_Transpiler");
-            Unpatch("ValheimPlus.GameClasses.EggGrow_GrowUpdate_Transpiler");
-            Unpatch("ValheimPlus.GameClasses.EggGrow_GetHoverText_Patch");
-
-            Unpatch("ValheimPlus.GameClasses.Growup_Start_Patch");
-
-            Unpatch("ValheimPlus.GameClasses.MonsterAI_UpdateAI_Transpiler");
-            Unpatch("ValheimPlus.GameClasses.MonsterAI_UpdateSleep_Patch");
-        }
-
-        private static void Unpatch(string patchTypeName)
-        {
-            Type patchType = assembly.GetType(patchTypeName);
-
-            if (patchType == null)
-            {
-                Plugin.LogWarning($"  Not found: {patchTypeName}");
-                return;
+                Plugin.LogFatal("ValheimPlus configuration could not be loaded.");
+                return false;
             }
 
-            int count = 0;
-
-            foreach (MethodBase original in Harmony.GetAllPatchedMethods())
+            foreach (string sectionName in new[] { "Tameable", "Procreation", "Egg" })
             {
-                HarmonyLib.Patches patchInfo = Harmony.GetPatchInfo(original);
-
-                if (patchInfo == null)
-                    continue;
-
-                Patch[] patches = patchInfo.Prefixes
-                    .Concat(patchInfo.Postfixes)
-                    .Concat(patchInfo.Transpilers)
-                    .Concat(patchInfo.Finalizers)
-                    .Where(p => p.PatchMethod?.DeclaringType == patchType)
-                    .ToArray();
-
-                foreach (Patch patch in patches)
+                object section = configType.GetProperty(sectionName)?.GetValue(config);
+                object enabled = section?.GetType().GetProperty("IsEnabled")?.GetValue(section);
+                if (!(enabled is bool isEnabled))
                 {
-                    harmony.Unpatch(original, patch.PatchMethod);
-                    count++;
+                    Plugin.LogFatal($"ValheimPlus configuration '{sectionName}' could not be validated.");
+                    return false;
+                }
+                if (isEnabled)
+                {
+                    Plugin.LogFatal($"ValheimPlus configuration '{sectionName}' conflicts with OTAB.");
+                    return false;
                 }
             }
 
-            if (count > 0)
-            {
-                Plugin.LogInfo($"  Unpatched: {patchTypeName} ({count})");
-            }
-            else
-            {
-                Plugin.LogWarning($"  No active patches found: {patchTypeName}");
-            }
+            return true;
         }
     }
 }

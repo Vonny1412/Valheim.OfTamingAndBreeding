@@ -2,6 +2,7 @@
 using Jotunn.Extensions;
 using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Components.Traits;
+using OfTamingAndBreeding.Runtime;
 using System;
 using static OfTamingAndBreeding.Plugin;
 
@@ -58,7 +59,6 @@ namespace OfTamingAndBreeding
             public static ConfigEntry<bool> EnableAntiExploitSystem { get; private set; }
             public static ConfigEntry<bool> EnableAntiExploitWhileTaming { get; private set; }
 
-            public static ConfigEntry<float> GlobalBaseLevelUpChance { get; private set; }
             public static ConfigEntry<float> GlobalPregnancyDurationFactor { get; private set; }
             public static ConfigEntry<float> GlobalFedDurationFactor { get; private set; }
             public static ConfigEntry<float> GlobalTamingTimeFactor { get; private set; }
@@ -70,6 +70,12 @@ namespace OfTamingAndBreeding
 
             public static ConfigEntry<bool> PreventProcreationWhileFollowing { get; private set; }
 
+            public static ConfigEntry<string> CommonFeedingContainers { get; private set; }
+            public static ConfigEntry<float> ContainerSearchRangeFactor { get; private set; }
+
+            public static ConfigEntry<float> TamedIdleSoundChanceFactor { get; private set; }
+
+            
 
             private const string Section_Server_Misc = "Server - Miscellaneous";
             // ...
@@ -101,7 +107,6 @@ namespace OfTamingAndBreeding
                 section = Section_UI_Hovertext;
 
                 HoverShowAdminInfo = Config.BindConfigInOrder<bool>(section, "ShowAdminInfo", true, "Allow showing admin/debug creature info in hover text for local admins or hosts only.", synced: false);
-                // todo: ShowAdminInfo needs wiki entry
 
                 HoverShowConsumeItems = Config.BindConfigInOrder<bool>(section, "ShowConsumeItems", true, "Allow showing consumable items in creature hover text.", synced: false);
                 HoverShowLovePoints = Config.BindConfigInOrder<bool>(section, "ShowLovePoints", true, "Allow showing love points in creature hover text.", synced: false);
@@ -145,6 +150,7 @@ namespace OfTamingAndBreeding
                 DumpPrefabsToCache = Config.BindConfigInOrder<bool>(section, "DumpPrefabsToCache", false, "", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
                 //todo: DumpPrefabsToCache need descr
 
+
                 section = Section_Server_Gameplay;
 
                 EnableAntiExploitSystem = Config.BindConfigInOrder<bool>(section, "EnableAntiExploitSystem", true, "Enables/disables OTAB's anti-exploit system. This actively tests creature movement and prevents confined animals without enough room to move from procreating.", synced: true);
@@ -164,8 +170,6 @@ namespace OfTamingAndBreeding
                         baseAITrait.ResetAntiExploitState();
                     }
                 };
-                
-                GlobalBaseLevelUpChance = Config.BindConfigInOrder<float>(section, "GlobalBaseLevelUpChance", 0f, "Adds a global base chance to level up. This value is added to each creature's individual level up chance defined in the YAML files.", acceptableValues: new AcceptableValueRange<float>(0, 1), synced: true);
 
                 GlobalPregnancyDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalPregnancyDurationFactor", 1f, "Global multiplier for PregnancyDuration.  Applies immediately; lowering it can instantly finish ongoing pregnancy on the next update.", acceptableValues: new AcceptableValueRange<float>(0, 10), synced: true);
                 GlobalPregnancyDurationFactor.SettingChanged += (object sender, EventArgs args) => {
@@ -217,6 +221,18 @@ namespace OfTamingAndBreeding
                     "Example (base time = 100s, value = 1.0): 0★ = 100s, 1★ = 200s, 2★ = 300s", synced: true);
 
                 PreventProcreationWhileFollowing = Config.BindConfigInOrder<bool>(section, "PreventProcreationWhileFollowing", true, "Prevents tamed creatures from procreating while they are commanded to follow a player.", synced: true);
+
+                CommonFeedingContainers = Config.BindConfigInOrder<string>(section, "CommonFeedingContainers", "", "Comma-separated prefab names of regular containers that should also be usable as feeding containers.", synced: true);
+                CommonFeedingContainers.SettingChanged += (object sender, EventArgs args) => {
+                    ContainerFeeding.RegisterConfigContainerPrefabs(CommonFeedingContainers.Value);
+                };
+                ContainerFeeding.RegisterConfigContainerPrefabs(CommonFeedingContainers.Value);
+                ContainerSearchRangeFactor = Config.BindConfigInOrder<float>(section, "ContainerSearchRangeFactor", 2f, "Multiplier applied to the consume search range of tamed creatures when searching for food in registered feeding containers.", acceptableValues: new AcceptableValueRange<float>(1f, 10f), synced: true);
+
+
+                TamedIdleSoundChanceFactor = Config.BindConfigInOrder<float>(section, "TamedIdleSoundChanceFactor", 0.1f, "Multiplier for the idle sound chance of tamed creatures. Range: 0 (disabled) to 1 (vanilla behavior).", acceptableValues: new AcceptableValueRange<float>(0f, 1f), synced: true);
+
+                
 
 
                 section = Section_Server_Misc;

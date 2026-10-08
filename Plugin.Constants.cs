@@ -7,6 +7,11 @@ namespace OfTamingAndBreeding
         public static class Constants
         {
             public const float ClientHandshakeTimeout = 20f;
+
+
+
+
+
         }
 
     }

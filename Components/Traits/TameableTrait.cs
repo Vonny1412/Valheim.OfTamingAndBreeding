@@ -246,15 +246,33 @@ namespace OfTamingAndBreeding.Components.Traits
                 return true;
             }
 
+
+
+
+
+
+            Runtime.ItemConsumeContext.ResolveExternalFeedItem(ref item);
+            if (!item)
+            {
+                return true; // or maybe false?
+            }
+
+
+
+
             if (Plugin.Configs.RequireFoodDroppedByPlayer.Value)
             {
-                if (Patches.DataReadyPatches.ItemConsumeContext.CheckItem(item, out bool droppedByPlayer) && droppedByPlayer == false)
+                if (Runtime.ItemConsumeContext.CheckItem(item, out bool droppedByPlayer) && droppedByPlayer == false)
                 {
                     // definitly not dropped by player
                     // prevent ResetFeedingTimer
                     return true;
                 }
             }
+
+
+
+
 
             // prevent catch-up regeneration after feeding
             // todo: add config for this? with true as default?

@@ -76,7 +76,7 @@ namespace OfTamingAndBreeding.Network
                                 }
                                 else
                                 {
-                                    OnSessionError?.Invoke();
+                                    OnSessionErrorCallback();
                                     return true;
                                 }
                             }
@@ -100,7 +100,7 @@ namespace OfTamingAndBreeding.Network
                 }
                 else
                 {
-                    OnSessionReady?.Invoke();
+                    OnSessionReadyCallback();
                 }
 
                 return true;
@@ -146,12 +146,12 @@ namespace OfTamingAndBreeding.Network
                 if (success)
                 {
                     Plugin.LogInfo("Loaded data from received cache");
-                    OnSessionReady?.Invoke();
+                    OnSessionReadyCallback();
                 }
                 else
                 {
                     Plugin.LogFatal("Failed loading or registering data from received cache");
-                    OnSessionError?.Invoke();
+                    OnSessionErrorCallback();
                 }
 
                 return success;
@@ -192,7 +192,7 @@ namespace OfTamingAndBreeding.Network
                 yield return null;
             }
             clientTimeoutRoutine = null;
-            OnSessionReady?.Invoke(); // no response from server -> server seems to be running without otab -> vanilla mode
+            OnSessionReadyCallback(); // no response from server -> server seems to be running without otab -> vanilla mode
         }
 
         private static void CancelClientTimeout()

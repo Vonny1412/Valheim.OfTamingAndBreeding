@@ -105,15 +105,12 @@ namespace OfTamingAndBreeding.Data.Models
             public string ConsumeAnimation { get; set; } = null;
             // todo: add "ConsumeAnimationAlt" for food with 0 fedduration factor
             public bool? TamedIdleNearSpawn { get; set; } = null;
-            public float? IdleSoundChanceWhenTamed { get; set; } = null; // todo: rename to TamedIdleSoundChance
         }
 
         [Serializable]
         [CanBeNull]
         public class CharacterData
         {
-            public int? MaxLevel { get; set; } = null;
-
             public string Group { get; set; } = null;
             public string GroupWhenTamed { get; set; } = null;
             public Character.Faction? FactionWhenTamed { get; set; } = null;
@@ -140,7 +137,6 @@ namespace OfTamingAndBreeding.Data.Models
             public bool? Commandable { get; set; } = null;
             public string PetCommandText { get; set; } = null;
             public string PetAnswerText { get; set; } = null;
-            public bool? ShowPetEffect { get; set; } = null;
             public string RequireGlobalKey { get; set; } = null;
         }
 
@@ -179,7 +175,6 @@ namespace OfTamingAndBreeding.Data.Models
                 public bool NeedPartner { get; set; } = true; // true = vanilla
                 public string NeedPartnerPrefab { get; set; } = null; // OTAB feature
 
-                public float? LevelUpChance { get; set; } = null; // OTAB feature
                 public bool InheritTame { get; set; } = true; // OTAB feature
             }
 

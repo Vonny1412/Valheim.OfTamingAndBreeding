@@ -26,7 +26,7 @@ namespace OfTamingAndBreeding.Network
             if (!dataLoaded)
             {
                 Plugin.LogFatal($"Error in Data files found - Aborting");
-                OnSessionError?.Invoke();
+                OnSessionErrorCallback();
                 return;
             }
 
@@ -51,7 +51,7 @@ namespace OfTamingAndBreeding.Network
             {
                 Plugin.LogFatal($"Cache #1 corrupted");
                 DataProcessingManager.ResetRegistry();
-                OnSessionError?.Invoke();
+                OnSessionErrorCallback();
                 return;
             }
             Plugin.LogInfo($"Building cache #2");
@@ -66,19 +66,19 @@ namespace OfTamingAndBreeding.Network
             {
                 Plugin.LogFatal($"Cache Hashes mismatch");
                 DataProcessingManager.ResetRegistry();
-                OnSessionError?.Invoke();
+                OnSessionErrorCallback();
                 return;
             }
 
             if (DataProcessingManager.ValidateDataAndRegisterPrefabs())
             {
                 Plugin.LogInfo($"Cache is ready");
-                OnSessionReady?.Invoke();
+                OnSessionReadyCallback();
             }
             else
             {
                 Plugin.LogFatal($"Error in cache data");
-                OnSessionError?.Invoke();
+                OnSessionErrorCallback();
             }
         }
 

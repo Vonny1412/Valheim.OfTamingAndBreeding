@@ -624,6 +624,15 @@ namespace OfTamingAndBreeding.Processing
 
                     baseAITrait.m_consumeItemsStoreIndex = BaseAITrait.s_consumeItemsStore.Add(consumeItems);
                 }
+                else
+                {
+                    if (monsterAI)
+                    {
+                        consumeItems = monsterAI.m_consumeItems
+                            .Select((ci, i) => new BaseAITrait.ConsumeItem { itemDrop = ci, fedDurationFactor = 1f })
+                            .ToArray();
+                    }
+                }
 
                 if (monsterAI != null)
                 {
@@ -635,7 +644,6 @@ namespace OfTamingAndBreeding.Processing
 
                     if (consumeItems != null)
                     {
-
                         monsterAI.m_consumeItems = new List<ItemDrop>();
                         foreach (var ci in consumeItems)
                         {
@@ -683,12 +691,6 @@ namespace OfTamingAndBreeding.Processing
                         Plugin.LogWarning($"{model}.{nameof(MonsterAI)}.{nameof(data_BaseAI.ConsumeAnimation)}: Animation '{customAnimation}' not found on prefab '{creatureName}'. Custom consume animation ignored.");
                     }
                 }
-
-                if (data_BaseAI.IdleSoundChanceWhenTamed.HasValue)
-                {
-                    // todo: validate and clamp 0-1
-                    baseAITrait.m_idleSoundChanceWhenTamed = data_BaseAI.IdleSoundChanceWhenTamed.Value;
-                }
             }
             else if (component_BaseAI == ComponentBehavior.Remove)
             {
@@ -704,12 +706,6 @@ namespace OfTamingAndBreeding.Processing
                 var character = creature.GetComponent<Character>();
                 var characterTrait = CharacterTrait.GetOrAddComponent(creature);
                 Plugin.LogDebug($"{model}.{nameof(data.Character)}: Setting Character values");
-
-                if (data.Character.MaxLevel != null)
-                {
-                    characterTrait.m_maxLevel = data.Character.MaxLevel.Value;
-                    //todo: validate for positive values?
-                }
 
                 if (data.Character.Group != null)
                 {
@@ -817,12 +813,6 @@ namespace OfTamingAndBreeding.Processing
 
                 }
 
-
-
-
-
-
-
                 Plugin.LogDebug($"{model}.{nameof(data.Tameable)}: Setting effects");
                 if (tameable.m_sootheEffect?.m_effectPrefabs == null || tameable.m_sootheEffect.m_effectPrefabs.Length == 0)
                 {
@@ -843,28 +833,41 @@ namespace OfTamingAndBreeding.Processing
                     };
                 }
 
-                if (data.Tameable.ShowPetEffect == false)
+                if (tameable.m_petEffect?.m_effectPrefabs == null || tameable.m_petEffect.m_effectPrefabs.Length == 0)
                 {
+                    var scaled = creature.GetComponent<ScaledCreature>();
+                    var collider = creature.GetComponent<CapsuleCollider>();
+                    var scale = scaled ? scaled.m_scale : 1f;
+                    var effectY = (collider.center.y + collider.height * 0.5f * scale) * 0.5f;
+
+                    var vfx = EffectUtils.GetVisualOnlyEffect("fx_boar_pet", $"{creatureName}_pet_vfx");
+
+                    var particleSystem = vfx.GetComponentInChildren<ParticleSystem>(true);
+                    if (particleSystem)
+                    {
+                        var position = particleSystem.transform.localPosition;
+                        position.y = effectY;
+                        particleSystem.transform.localPosition = position;
+
+                        var heightFactorToBoar = collider.height / 1.4f;
+                        var localScale = (heightFactorToBoar - 1) * 0.25f + 1f;
+
+                        particleSystem.transform.localScale *= localScale;
+
+                        var shape = particleSystem.shape;
+                        shape.radius *= heightFactorToBoar / localScale;
+                    }
+
                     tameable.m_petEffect = new EffectList
                     {
-                        m_effectPrefabs = Array.Empty<EffectList.EffectData>()
+                        m_effectPrefabs = EffectUtils.CreateEffectList(new GameObject[]
+                        {
+                            vfx,
+                            idleSoundPrefab,
+                        })
                     };
                 }
-                else
-                {
-                    if (tameable.m_petEffect?.m_effectPrefabs == null || tameable.m_petEffect.m_effectPrefabs.Length == 0)
-                    {
-                        tameable.m_petEffect = new EffectList
-                        {
-                            m_effectPrefabs = EffectUtils.CreateEffectList(new GameObject[]
-                            {
-                                EffectUtils.GetVisualOnlyEffect("fx_boar_pet", "otab_vfx_pet"),
-                                idleSoundPrefab,
-                            })
-                        };
-                    }
-                }
-
+                
                 if (data.Tameable.PetAnswerText != null)
                 {
                     if (data.Tameable.PetAnswerText.Length == 0)
@@ -881,6 +884,13 @@ namespace OfTamingAndBreeding.Processing
                 {
                     tameableTrait.m_petCommand = data.Tameable.PetCommandText;
                 }
+
+
+
+
+
+
+
             }
             else if (data.Components.Tameable == ComponentBehavior.Remove)
             {
@@ -900,7 +910,12 @@ namespace OfTamingAndBreeding.Processing
                 if (data.Growup.GrowTime.HasValue) creatureGrowup.m_growTime = data.Growup.GrowTime.Value;
                 if (data.Growup.InheritTame.HasValue) creatureGrowup.m_inheritTame = data.Growup.InheritTame.Value;
 
+
+
                 creatureGrowup.m_grownPrefab = null;
+                
+
+
                 creatureGrowup.m_altGrownPrefabs = new List<Growup.GrownEntry>();
                 foreach (var grownData in data.Growup.Grown)
                 {
@@ -951,7 +966,6 @@ namespace OfTamingAndBreeding.Processing
                             weight: o.Weight,
                             needPartner: o.NeedPartner,
                             needPartnerPrefab: o.NeedPartnerPrefab,
-                            levelUpChance: o.LevelUpChance ?? 0,
                             inheritTame: o.InheritTame
                         )).ToArray();
                         procreationTrait.m_offspringListStoreIndex = ProcreationTrait.s_offspringListStore.Add(offspringList);

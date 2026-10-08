@@ -26,11 +26,15 @@ namespace OfTamingAndBreeding.Processing
             var itemItemDataShared = itemItemData.m_shared;
 
             var baseIcon = itemItemDataShared.m_icons?.FirstOrDefault();
-            SaveIcon(baseIcon, $"{itemName} (original)");
+            SaveIcon(baseIcon, path_icons_original, itemName);
 
             if (OTABPrefabRegistry.IsCustomPrefab(itemName))
             {
                 PrepareClone(itemName, data, item);
+            }
+            else
+            {
+                SaveIcon(baseIcon, path_icons_final, itemName);
             }
 
             //
@@ -322,8 +326,12 @@ namespace OfTamingAndBreeding.Processing
             }
             if (customIcon != null)
             {
-                SaveIcon(customIcon, $"{itemName} (final)");
+                SaveIcon(customIcon, path_icons_final, itemName);
                 itemItemDataShared.m_icons = new[] { customIcon };
+            }
+            else
+            {
+                SaveIcon(baseIcon, path_icons_final, itemName);
             }
 
             if (data.Clone.AttachedSprite != null)
@@ -645,26 +653,23 @@ namespace OfTamingAndBreeding.Processing
 
         //------------------------------------------------
 
-        private void SaveIcon(Sprite sprite, string name)
+        private void SaveIcon(Sprite sprite, string dir, string name)
         {
-            if (ZNet.instance.IsServer() && Plugin.Configs.ExportIconsToCache.Value == true)
+            if (!sprite || !ZNet.instance.IsServer() || Plugin.Configs.ExportIconsToCache.Value == false)
             {
-                if (sprite != null)
-                {
-                    var outFilePath = System.IO.Path.Combine(Plugin.CacheDir, "Icons", $"{name}.png");
-                    var outDirPath = System.IO.Path.GetDirectoryName(outFilePath);
-                    if (System.IO.Directory.Exists(outDirPath) == false)
-                    {
-                        System.IO.Directory.CreateDirectory(outDirPath);
-                    }
-                    if (System.IO.File.Exists(outFilePath))
-                    {
-                        System.IO.File.Delete(outFilePath);
-                    }
-                    SpriteUtils.ExportSpriteToPng(sprite, outFilePath);
-                }
+                return;
             }
+
+            var outpath = System.IO.Path.Combine(Plugin.CacheDir, "_icons", dir, $"{name}.png");
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(outpath));
+            SpriteUtils.ExportSpriteToPng(sprite, outpath);
         }
+
+
+        // todo: put constants in constants file
+        // also for prefab dumps
+
+        // todo: move all methods for dumping/extracting of prefabs/icons into one class file 
 
     }
 }

@@ -5,6 +5,7 @@ using OfTamingAndBreeding.Data.Models.SubData;
 using OfTamingAndBreeding.Processing.Core;
 using OfTamingAndBreeding.Processing.Registry;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 
@@ -38,10 +39,22 @@ namespace OfTamingAndBreeding.Processing
             return eggSharedNameHashes.Contains(sharedName.GetStableHashCode());
         }
 
+        private static readonly string path_icons = "_icons";
+        private static readonly string path_icons_original = "original";
+        private static readonly string path_icons_final = "final";
+
         //------------------------------------------------
 
         public override bool PrepareProcess()
         {
+            if (ZNet.instance.IsServer() && Plugin.Configs.ExportIconsToCache.Value == true)
+            {
+                var icons_cache = Path.Combine(Plugin.CacheDir, path_icons);
+                if (Directory.Exists(icons_cache))
+                {
+                    Directory.Delete(icons_cache);
+                }
+            }
             return true;
         }
 

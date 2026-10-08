@@ -1,12 +1,46 @@
 ﻿using BepInEx;
 using BepInEx.Bootstrap;
+using HarmonyLib;
 using OfTamingAndBreeding.Integrations.Mods;
+using OfTamingAndBreeding.Processing.Core;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 
 namespace OfTamingAndBreeding.Integrations
 {
+
+    internal static class Patches
+    {
+        public static void PatchUniversalThirdPartyMethod(Harmony harmony, Assembly assembly, string typeName, string methodName)
+        {
+            Type type = assembly.GetType(typeName);
+            if (type == null)
+            {
+                return;
+            }
+            MethodInfo method = type.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            PatchUniversalThirdPartyMethod(harmony, method);
+        }
+
+
+        public static void PatchUniversalThirdPartyMethod(Harmony harmony, MethodInfo method)
+        {
+            if (method == null)
+            {
+                return;
+            }
+            harmony.Patch(method, prefix: new HarmonyMethod(typeof(Patches), nameof(OTAB_ThirdParty_Prefix)));
+            Plugin.LogInfo($"Patched third-party method: {method.DeclaringType?.FullName}.{method.Name}");
+        }
+
+        [HarmonyPrefix]
+        public static bool OTAB_ThirdParty_Prefix()
+        {
+            return !DataProcessingManager.IsDataLoaded;
+        }
+
+    }
 
     internal interface IThirdPartyPluginRegistrator
     {
@@ -53,6 +87,7 @@ namespace OfTamingAndBreeding.Integrations
             {
                 new CllCBridge.Registrator(),
                 new ValheimPlusCompatibility.Registrator(),
+                new CoreWoodExtrasCompatibility.Registrator(),
             };
             foreach (IThirdPartyPluginRegistrator reg in regs)
             {

@@ -39,40 +39,13 @@ namespace OfTamingAndBreeding.Patches
             }
         }
 
-        public static class ItemConsumeContext
-        {
-            [ThreadStatic] private static bool hasValue;
-            [ThreadStatic] private static bool lastItemDroppedByPlayer;
-            [ThreadStatic] private static int lastItemInstanceID;
 
-            public static void Clear()
-            {
-                hasValue = false;
-                lastItemDroppedByPlayer = false;
-                lastItemInstanceID = 0;
-            }
 
-            public static void SetItem(ItemDrop item)
-            {
-                if (ItemDropTrait.TryGet(item.gameObject, out var trait))
-                {
-                    hasValue = true;
-                    lastItemDroppedByPlayer = trait.IsDroppedByPlayer();
-                    lastItemInstanceID = item.GetInstanceID();
-                }
-            }
 
-            public static bool CheckItem(ItemDrop item, out bool droppedByPlayer)
-            {
-                droppedByPlayer = false;
-                if (item && hasValue && lastItemInstanceID == item.GetInstanceID())
-                {
-                    droppedByPlayer = lastItemDroppedByPlayer;
-                    return true;
-                }
-                return false;
-            }
-        }
+
+
+
+
 
         [HarmonyPatch(typeof(ItemDrop), "RemoveOne")]
         [HarmonyPrefix]
@@ -81,7 +54,7 @@ namespace OfTamingAndBreeding.Patches
             // used for RequireFoodDroppedByPlayer-feature
             // because when a creature eats food with a stack size of 1 that item would be destroyed
             // thats why we need to patch this one to pass the flags to Tameable_OnConsumedItem_Patch
-            ItemConsumeContext.SetItem(__instance);
+            Runtime.ItemConsumeContext.SetItem(__instance);
             // do return nothing (always call original method)
         }
 
@@ -89,7 +62,7 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyFinalizer]
         private static void Tameable_OnConsumedItem_Finalizer(Exception __exception)
         {
-            ItemConsumeContext.Clear();
+            Runtime.ItemConsumeContext.Clear();
         }
 
     }

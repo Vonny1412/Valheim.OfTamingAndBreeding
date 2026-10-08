@@ -40,7 +40,9 @@ namespace OfTamingAndBreeding.Network
             _rpcName = rpcName;
             _rpc = NetworkManager.Instance.AddRPC(_rpcName, RPCOnServerReceive, RPCOnClientReceive);
             if (_rpc == null)
+            {
                 throw new Exception($"[{_rpcName}] AddRPC returned null");
+            }
         }
 
         public void RequestFromServer()
@@ -59,6 +61,8 @@ namespace OfTamingAndBreeding.Network
 
         private bool AntiSpam(long sender)
         {
+            // todo: is this antispam even neccessary?
+
             long now = DateTime.UtcNow.Ticks;
             long window = TimeSpan.FromSeconds(2).Ticks;
 
@@ -93,7 +97,7 @@ namespace OfTamingAndBreeding.Network
                 yield break;
             }
 
-            int tries = 10;
+            int tries = 10; // todo: add to constant file
             while (!serverReady && tries-- > 0)
             {
                 yield return OneSecondWait;

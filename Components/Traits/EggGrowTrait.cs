@@ -428,36 +428,17 @@ namespace OfTamingAndBreeding.Components.Traits
                     if ((bool)spawnedCharacter)
                     {
                         spawnedCharacter.SetTamed(spawnTamed);
-
-                        var spawnedCharacterTrait = spawned.GetComponent<CharacterTrait>();
-                        if (spawnedCharacterTrait && spawnedCharacterTrait.m_maxLevel > 0)
-                        {
-                            if (level > spawnedCharacterTrait.m_maxLevel)
-                            {
-                                level = spawnedCharacterTrait.m_maxLevel;
-                            }
-                        }
-                        else
-                        {
-                            // important todo: warning, cannot varify level
-                            level = 1;
-                        }
                         spawnedCharacter.SetLevel(level);
                     }
                     else
                     {
 
-                        // we need to pass the flag!
                         var spawnedItemDropTrait = spawned.GetComponent<ItemDropTrait>();
                         spawnedItemDropTrait.SetDroppedByPlayer(m_itemDropTrait.IsDroppedByPlayer());
 
                         var spawnedItemDrop = spawned.GetComponent<ItemDrop>();
                         if (spawnedItemDrop)
                         {
-                            if (level > spawnedItemDrop.m_itemData.m_shared.m_maxQuality)
-                            {
-                                level = spawnedItemDrop.m_itemData.m_shared.m_maxQuality;
-                            }
                             spawnedItemDrop.SetQuality(level);
                         }
                         else

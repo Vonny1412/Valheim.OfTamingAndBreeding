@@ -80,7 +80,9 @@ namespace OfTamingAndBreeding.Processing
             var icon = RenderManager.Instance.Render(new RenderManager.RenderRequest(item)
             {
                 Rotation = RenderManager.IsometricRotation,
-                UseCache = true
+                UseCache = false,
+                Width = 64,
+                Height = 64,
             });
             customIcons.Add(icon);
             shared.m_icons = new[] { icon };

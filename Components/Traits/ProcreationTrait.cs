@@ -30,14 +30,12 @@ namespace OfTamingAndBreeding.Components.Traits
             public float Weight { get; }
             public bool NeedPartner { get; }
             public string NeedPartnerPrefab { get; }
-            public float LevelUpChance { get; }
             public bool SpawnTamed { get; }
             public ProcreationOffspring(
                 string prefab,
                 float weight,
                 bool needPartner,
                 string needPartnerPrefab,
-                float levelUpChance,
                 bool inheritTame
             )
             {
@@ -45,7 +43,6 @@ namespace OfTamingAndBreeding.Components.Traits
                 Weight = weight;
                 NeedPartner = needPartner;
                 NeedPartnerPrefab = needPartnerPrefab;
-                LevelUpChance = levelUpChance;
                 SpawnTamed = inheritTame;
             }
         }
@@ -109,7 +106,6 @@ namespace OfTamingAndBreeding.Components.Traits
         // used for procreation
         [NonSerialized] private GameObject _m_partnerPrefab = null;
         [NonSerialized] private GameObject _m_offspringPrefab = null;
-        [NonSerialized] private float _m_offspringLevelUpChance = 0;
         [NonSerialized] private bool _m_offspringNeedPartner = true;
         [NonSerialized] private bool _m_offspringTamed = true;
 
@@ -250,7 +246,6 @@ namespace OfTamingAndBreeding.Components.Traits
             text += "\n" + Localization.instance.Localize("$otab_hover_admin_info", "Total: " + totalInRange + " within " + m_totalCheckRange + " meters");
             text += "\n" + Localization.instance.Localize("$otab_hover_admin_info", "Offspring prefab: " + (_m_offspringPrefab?.gameObject.name ?? "null"));
             text += "\n" + Localization.instance.Localize("$otab_hover_admin_info", "Need Partner: " + (_m_offspringNeedPartner ? "true" : "false"));
-            text += "\n" + Localization.instance.Localize("$otab_hover_admin_info", "Offspring level up chance: " + (int)(_m_offspringLevelUpChance * 100));
             text += "\n" + Localization.instance.Localize("$otab_hover_admin_info", "Offspring tamed: " + (_m_offspringTamed ? "true" : "false"));
             return text;
         }
@@ -387,7 +382,6 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 _m_offspringTamed = true;
                 _m_offspringNeedPartner = true;
-                _m_offspringLevelUpChance = 0f;
 
                 var flag1 = (bool)_m_partnerPrefab;
                 var foundOffspring = WeightedRandom.FindRandom(m_offspringList, out var randomOffspring, entry =>
@@ -400,7 +394,6 @@ namespace OfTamingAndBreeding.Components.Traits
                     _m_offspringPrefab = c_zNetScene.GetPrefab(randomOffspring.Prefab);
                     _m_offspringTamed = randomOffspring.SpawnTamed;
                     _m_offspringNeedPartner = randomOffspring.NeedPartner;
-                    _m_offspringLevelUpChance = randomOffspring.LevelUpChance;
                 }
             }
 
@@ -498,29 +491,12 @@ namespace OfTamingAndBreeding.Components.Traits
                     c_myPosition - dir * offset,
                     Quaternion.LookRotation(-forward, Vector3.up));
 
-                var level = Mathf.Max(m_procreation.m_minOffspringLevel, m_character ? m_character.GetLevel() : m_procreation.m_minOffspringLevel);
-                var levelUp = UnityEngine.Random.value < (Plugin.Configs.GlobalBaseLevelUpChance.Value + _m_offspringLevelUpChance);
+                //var level = Mathf.Max(m_procreation.m_minOffspringLevel, m_character ? m_character.GetLevel() : m_procreation.m_minOffspringLevel);
+                var level = Mathf.Max(1, m_character ? m_character.GetLevel() : 1);
 
                 Character spawnedCharacter = spawned.GetComponent<Character>();
                 if (spawnedCharacter != null)
                 {
-
-                    if (levelUp)
-                    {
-                        var spawnedCharacterTrait = spawned.GetComponent<CharacterTrait>();
-                        if (spawnedCharacterTrait && spawnedCharacterTrait.m_maxLevel > 0)
-                        {
-                            if (level < spawnedCharacterTrait.m_maxLevel)
-                            {
-                                level += 1;
-                            }
-                        }
-                        else
-                        {
-                            // important todo: warning, cannot levelup
-                        }
-                    }
-
                     spawnedCharacter.SetTamed(_m_offspringTamed);
                     spawnedCharacter.SetLevel(level);
                 }
@@ -529,10 +505,6 @@ namespace OfTamingAndBreeding.Components.Traits
                     var spawnedItemDrop = spawned.GetComponent<ItemDrop>();
                     if (spawnedItemDrop)
                     {
-                        if (levelUp && level < spawnedItemDrop.m_itemData.m_shared.m_maxQuality)
-                        {
-                            level += 1;
-                        }
                         spawnedItemDrop.SetQuality(level);
                     }
                     else
@@ -563,7 +535,6 @@ namespace OfTamingAndBreeding.Components.Traits
                 _m_offspringPrefab = null;
                 _m_offspringNeedPartner = true;
                 _m_offspringTamed = true;
-                _m_offspringLevelUpChance = 0f;
                 z_partnerPrefab = ZDOUtils.SetString(zdo, Plugin.ZDOVars.z_partnerPrefab, "", z_partnerPrefab);
 
             }

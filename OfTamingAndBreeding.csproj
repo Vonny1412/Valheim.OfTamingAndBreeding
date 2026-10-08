@@ -10,7 +10,7 @@
 
 	<PropertyGroup>
 		<VersionMajor>0</VersionMajor>
-		<VersionMinor>11</VersionMinor>
+		<VersionMinor>12</VersionMinor>
 		<VersionPatch>2</VersionPatch>
 		<VersionSuffix>alpha</VersionSuffix>
 		<Authors>Yvonne Pautz</Authors>

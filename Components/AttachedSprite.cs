@@ -10,10 +10,14 @@ namespace OfTamingAndBreeding.Components
         [SerializeField] public Vector3 m_offset = new Vector3(0f, 0.02f, 0f);
 
         private GameObject m_visual;
+        private Rigidbody m_body;
+        private SpriteRenderer m_renderer;
 
         private void Awake()
         {
             Register();
+
+            m_body = GetComponent<Rigidbody>();
         }
 
         private void Start()
@@ -30,6 +34,17 @@ namespace OfTamingAndBreeding.Components
             {
                 return;
             }
+
+            bool visible = !m_body || m_body.IsSleeping();
+            if (m_renderer.enabled != visible)
+            {
+                m_renderer.enabled = visible;
+            }
+            if (!visible)
+            {
+                return;
+            }
+
 
             // Follow position, but NOT item rotation
             //m_visual.transform.position = transform.position + m_offset;
@@ -57,9 +72,12 @@ namespace OfTamingAndBreeding.Components
             {
                 return;
             }
+
             m_visual = new GameObject("OTAB_AttachedSprite");
-            var renderer = m_visual.AddComponent<SpriteRenderer>();
-            renderer.sprite = m_sprite;
+
+            m_renderer = m_visual.AddComponent<SpriteRenderer>();
+            m_renderer.sprite = m_sprite;
+
             m_visual.transform.localScale = Vector3.one * m_size;
         }
 

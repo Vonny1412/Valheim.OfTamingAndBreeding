@@ -1,6 +1,7 @@
 ﻿using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Data.Models.SubData;
+using OfTamingAndBreeding.Network;
 using OfTamingAndBreeding.Utilities;
 using System;
 using System.Collections.Generic;
@@ -53,7 +54,6 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private GrowupTrait m_growupTrait = null;
 
         // set in registration
-        [SerializeField] public int m_maxLevel = 0;
         [SerializeField] public bool m_changeGroupWhenTamed = false;
         [SerializeField] public string m_changeGroupWhenTamedTo = "";
         [SerializeField] public bool m_changeFactionWhenTamed = false;
@@ -195,10 +195,9 @@ namespace OfTamingAndBreeding.Components.Traits
                 m_character.m_faction = m_changeFactionWhenTamedTo;
             }
 
-            if (m_baseAITrait.m_idleSoundChanceWhenTamed >= 0)
-            {
-                m_baseAI.m_idleSoundChance = m_baseAITrait.m_idleSoundChanceWhenTamed;
-            }
+
+            m_baseAI.m_idleSoundChance *= Plugin.Configs.TamedIdleSoundChanceFactor.Value;
+
 
             m_baseAI.m_aggravatable = false;
             if (m_nview.IsOwner() && m_nview.IsValid())
@@ -344,7 +343,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 }
             }
 
-            if (Plugin.IsAdmin() && Plugin.Configs.HoverShowAdminInfo.Value)
+            if (NetworkSessionManager.IsAdmin() && Plugin.Configs.HoverShowAdminInfo.Value)
             {
                 text = AddAdminHoverText(text, isTamed);
             }

@@ -29,7 +29,7 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private Tameable m_tameable = null;
         [NonSerialized] private Character m_character = null;
         [NonSerialized] private BaseAITrait m_baseAITrait = null;
-        [NonSerialized] private ZSyncAnimation m_animator = null;
+        //[NonSerialized] private ZSyncAnimation m_animator = null;
         [NonSerialized] private ItemDrop m_consumeTarget = null;
         [NonSerialized] private float m_consumeSearchTimer = 0;
         [NonSerialized] public Action<ItemDrop> m_onConsumedItem = null;
@@ -42,7 +42,9 @@ namespace OfTamingAndBreeding.Components.Traits
             m_tameable = GetComponent<Tameable>();
             m_character = GetComponent<Character>();
             m_baseAITrait = GetComponent<BaseAITrait>();
-            m_animator = GetComponent<ZSyncAnimation>();
+
+            // randomize for mor immersion
+            m_consumeSearchTimer = UnityEngine.Random.Range(0, m_consumeSearchInterval);
 
             Register();
         }
@@ -120,19 +122,25 @@ namespace OfTamingAndBreeding.Components.Traits
             return false;
         }
 
+
+
+
+
+
+
+
+
         public bool On_IdleMovement(float dt)
         {
-            if (!m_nview.IsValid())
-            {
-                return false;
-            }
-
             if (m_animalAI.IsAlerted())
             {
                 return false;
             }
 
+            if (m_baseAITrait.UpdateContainerConsumeItem(dt)) return true;
             if (UpdateConsumeItem(dt)) return true;
+            if (!m_consumeTarget && m_baseAITrait.TryFindContainerConsumeTarget(dt)) return true;
+
             if (UpdateFollowTarget(dt)) return true;
 
             return false;
@@ -166,7 +174,7 @@ namespace OfTamingAndBreeding.Components.Traits
                     {
                         m_onConsumedItem?.Invoke(m_consumeTarget);
 
-                        m_animator.SetTrigger("consume");
+                        GetComponent<ZSyncAnimation>().SetTrigger("consume");
                         m_consumeTarget = null;
                     }
                 }

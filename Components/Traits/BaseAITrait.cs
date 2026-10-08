@@ -11,7 +11,6 @@ namespace OfTamingAndBreeding.Components.Traits
     {
 
         [SerializeField] internal bool m_tamedIdleNearSpawn = false;
-        [SerializeField] internal float m_idleSoundChanceWhenTamed = -1f;
 
         [NonSerialized] private ZNetView m_nview = null;
         [NonSerialized] private BaseAI m_baseAI = null;
@@ -34,6 +33,9 @@ namespace OfTamingAndBreeding.Components.Traits
             m_consumeClip = GetComponent<AnimationClipOverlay>();
             
             s_consumeItemsStore.TryGet(m_consumeItemsStoreIndex, out m_consumeItems);
+
+            // randomize for mor immersion
+            m_consumeSearchTimer = UnityEngine.Random.Range(0, GetConsumeSearchInterval());
 
             Register();
         }
@@ -60,9 +62,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
 
 
-
-
-
+        
 
 
 

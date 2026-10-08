@@ -11,7 +11,7 @@ namespace OfTamingAndBreeding.Processing.Registry
     internal static partial class PrefabUtils
     {
 
-        private static string GetPath(Transform t, Transform root)
+        public static string GetPath(Transform t, Transform root)
         {
             var parts = new Stack<string>();
             while (t != null && t != root)
@@ -228,6 +228,7 @@ namespace OfTamingAndBreeding.Processing.Registry
             }
         }
 
+        /*
         // unused
         public static void RestoreItemIcons(GameObject current, GameObject backup)
         {
@@ -305,12 +306,20 @@ namespace OfTamingAndBreeding.Processing.Registry
                 UnityEngine.Object.DestroyImmediate(s);
             }
         }
+
         
+        */
+
         public static void DumpPrefabs(string outputDir)
         {
-            const string typeCreatures = "Creatures";
-            const string typeItems = "Items";
-            const string typeOthers = "Others";
+            const string typeCreatures = "creatures";
+            const string typeItems = "items";
+            const string typeOthers = "others";
+
+            if (Directory.Exists(outputDir))
+            {
+                Directory.Delete(outputDir);
+            }
 
             foreach (var prefab in ZNetScene.instance.m_prefabs)
             {
@@ -330,21 +339,12 @@ namespace OfTamingAndBreeding.Processing.Registry
                 }
 
                 var file = Path.Combine(outputDir, type, $"{prefab.name}.txt");
-                var dir = Path.GetDirectoryName(file);
-                if (!Directory.Exists(dir))
-                {
-                    Directory.CreateDirectory(dir);
-                }
-                if (System.IO.File.Exists(file))
-                {
-                    System.IO.File.Delete(file);
-                }
+                Directory.CreateDirectory(Path.GetDirectoryName(file));
 
-                var appender = System.IO.File.AppendText(file);
+                var appender = File.AppendText(file);
 
                 if (type == typeCreatures)
                 {
-
                     appender.WriteLine($"Removeable effects");
                     VfxUtils.DebugVfx(prefab, appender);
                     appender.WriteLine();
@@ -352,7 +352,6 @@ namespace OfTamingAndBreeding.Processing.Registry
                     appender.WriteLine($"Useable consume effects");
                     AnimationUtils.DumpZSyncAnim(prefab, appender);
                     appender.WriteLine();
-
                 }
 
                 // todo: list fields like consumeable items should also be displayed correctly
@@ -418,7 +417,7 @@ namespace OfTamingAndBreeding.Processing.Registry
                 appender.Close();
             }
         }
-
+        
 
 
 

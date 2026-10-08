@@ -13,6 +13,8 @@ namespace OfTamingAndBreeding.ValheimAPI
         {
         }
 
+        /*
+         * 
         public static readonly Core.Invokers.TypedMethodInvoker<bool> __IAPI_UpdateConsumeItem_Invoker1 = new Core.Invokers.TypedMethodInvoker<bool>(typeof(MonsterAI_Alias), "UpdateConsumeItem", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(Humanoid_Alias), false), new Core.Signatures.NonGenericParamSig(typeof(float), false) });
 
         public static readonly Core.Invokers.TypedMethodInvoker<ItemDrop_Alias> __IAPI_FindClosestConsumableItem_Invoker1 = new Core.Invokers.TypedMethodInvoker<ItemDrop_Alias>(typeof(MonsterAI_Alias), "FindClosestConsumableItem", new Core.Signatures.ParamSig[] { new Core.Signatures.NonGenericParamSig(typeof(float), false) });
@@ -22,6 +24,13 @@ namespace OfTamingAndBreeding.ValheimAPI
         public static readonly Core.Invokers.FieldMutateInvoker<Character_Alias> __IAPI_m_targetCreature_Invoker = new Core.Invokers.FieldMutateInvoker<Character_Alias>(typeof(MonsterAI_Alias), "m_targetCreature");
 
         public static readonly Core.Invokers.FieldMutateInvoker<StaticTarget_Alias> __IAPI_m_targetStatic_Invoker = new Core.Invokers.FieldMutateInvoker<StaticTarget_Alias>(typeof(MonsterAI_Alias), "m_targetStatic");
+        
+         */
+
+        public static readonly Core.Invokers.FieldMutateInvoker<ItemDrop_Alias> __IAPI_m_consumeTarget_Invoker = new Core.Invokers.FieldMutateInvoker<ItemDrop_Alias>(typeof(MonsterAI_Alias), "m_consumeTarget");
+
+        public static readonly Core.Invokers.FieldMutateInvoker<float> __IAPI_m_consumeSearchTimer_Invoker = new Core.Invokers.FieldMutateInvoker<float>(typeof(MonsterAI_Alias), "m_consumeSearchTimer");
+
 
     }
 }

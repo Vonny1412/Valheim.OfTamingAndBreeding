@@ -1,7 +1,5 @@
 ﻿using HarmonyLib;
 using OfTamingAndBreeding.Components.Traits;
-using UnityEngine;
-using static Version;
 
 namespace OfTamingAndBreeding.Patches
 {

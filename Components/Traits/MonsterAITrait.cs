@@ -1,4 +1,6 @@
 ﻿using OfTamingAndBreeding.Components.Core;
+using OfTamingAndBreeding.Components.Extensions;
+using OfTamingAndBreeding.ValheimAPI;
 using System;
 
 // warning: MonsterAITrait is currently not registered in typeregistry because its currently not used
@@ -18,6 +20,9 @@ namespace OfTamingAndBreeding.Components.Traits
             m_nview = GetComponent<ZNetView>();
             m_monsterAI = GetComponent<MonsterAI>();
 
+            // randomize for mor immersion
+            m_monsterAI.SetConsumeSearchTimer(UnityEngine.Random.Range(0, m_monsterAI.m_consumeSearchInterval));
+
             Register();
         }
 
@@ -29,8 +34,6 @@ namespace OfTamingAndBreeding.Components.Traits
         public MonsterAI GetMonsterAI() {
             return m_monsterAI;
         }
-
-
 
         /*
         // handled in patch

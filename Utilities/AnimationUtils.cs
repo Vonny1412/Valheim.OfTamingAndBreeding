@@ -1,8 +1,6 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using UnityEngine;
-using YamlDotNet.Core.Tokens;
 
 namespace OfTamingAndBreeding.Utilities
 {
@@ -26,14 +24,6 @@ namespace OfTamingAndBreeding.Utilities
             }
 
             var ctrl = a.runtimeAnimatorController;
-
-            /*
-            Plugin.LogMessage($"{tag} Params:");
-            foreach (var p in a.parameters)
-                Plugin.LogMessage($"{tag}  - {p.name} [{p.type}]");
-            Plugin.LogMessage($"{tag} Clips:");
-                writer.WriteLine($"  '{c.name}' (length:{c.length:0.00}s loop:{(c.isLooping ? "yes" : "no")})");
-            */
 
             foreach (var c in ctrl.animationClips.Distinct())
             {
