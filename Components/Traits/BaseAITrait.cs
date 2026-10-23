@@ -89,7 +89,31 @@ namespace OfTamingAndBreeding.Components.Traits
 
         internal bool On_UpdateAI(float dt)
         {
+            // UpdateReactiveHostilities() is only getting called here, mask default is None
+            // so even right after awake a change would go from None to Attack and abort following
+            var tamedVersusPlayer = m_characterTrait.TamedVersusPlayerMask;
+
             m_characterTrait.UpdateReactiveHostilities();
+
+            if (tamedVersusPlayer != m_characterTrait.TamedVersusPlayerMask && m_characterTrait.TamedVersusPlayerMask == CharacterTrait.HostilityMask.Attack)
+            {
+                if (m_animalAITrait)
+                {
+                    if (m_animalAITrait.GetFollowTarget())
+                    {
+                        m_animalAITrait.SetFollowTarget(null);
+                        m_animalAITrait.SetPatrolPoint();
+                    }
+                }
+                else
+                {
+                    if (m_monsterAI.GetFollowTarget())
+                    {
+                        m_monsterAI.SetFollowTarget(null);
+                        m_monsterAI.SetPatrolPoint();
+                    }
+                }
+            }
 
             UpdateFrustratedHud();
 
