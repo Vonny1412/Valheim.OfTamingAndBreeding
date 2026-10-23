@@ -180,7 +180,7 @@ namespace OfTamingAndBreeding.Components.Traits
         {
             if (!m_nview.IsValid()) return;
 
-            var globalFactor = Plugin.Configs.GlobalGrowTimeFactor.Value;
+            var globalFactor = Plugin.Configs.EggGrowTimeFactor.Value;
             if (globalFactor >= 0) // yes, we do allow 0, too
             {
                 m_eggGrow.m_growTime = GetBaseGrowTime() * globalFactor;
@@ -251,7 +251,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public string GetHoverText()
         {
-            if (!m_eggGrow || !m_nview.IsValid())
+            if (!m_eggGrow || !m_nview || !m_nview.IsValid())
             {
                 return "";
             }
@@ -287,12 +287,12 @@ namespace OfTamingAndBreeding.Components.Traits
                 return "";
             }
 
-            if (Plugin.Configs.RequireEggsDroppedByPlayer.Value && !m_itemDropTrait.IsDroppedByPlayer())
+            if (Plugin.Configs.RequireEggsDroppedByPlayer.Value && m_itemDropTrait && !m_itemDropTrait.IsDroppedByPlayer())
             {
                 return "";
             }
 
-            if (m_itemDrop.m_itemData.m_stack > 1)
+            if (m_itemDrop && m_itemDrop.m_itemData != null && m_itemDrop.m_itemData.m_stack > 1)
             {
                 return Localization.instance.Localize("$item_chicken_egg_stacked");
             }
@@ -409,17 +409,27 @@ namespace OfTamingAndBreeding.Components.Traits
                 var position = m_eggGrow.transform.position;
                 var rotation = m_eggGrow.transform.rotation;
 
+                // just jiggle a lil bit
+                float jiggleYaw = UnityEngine.Random.Range(-10f, 10f);
+                rotation *= Quaternion.Euler(0f, jiggleYaw, 0f);
+
                 if (showHatchEffect)
                 {
-                    // just jiggle a lil bit
-                    //rotation = Quaternion.Slerp(rotation, UnityEngine.Random.rotation, 0.04f);
-                    //position += Vector3.up * 0.05f;
-                    float jiggleYaw = UnityEngine.Random.Range(-10f, 10f);
-                    rotation *= Quaternion.Euler(0f, jiggleYaw, 0f);
+                    m_eggGrow.m_hatchEffect?.Create(m_eggGrow.transform.position, m_eggGrow.transform.rotation);
                 }
 
                 if (grownPrefab)
                 {
+                    if (grownPrefab.name == Utils.GetPrefabName(gameObject))
+                    {
+                        s_growStart = ZDOUtils.SetFloat(zdo, ZDOVars.s_growStart, timeSeconds, s_growStart);
+                        if (AttachedSprite.TryGet(gameObject, out var sprite))
+                        {
+                            sprite.PreserveVisual(0.5f);
+                        }
+                        m_eggGrow.transform.rotation = rotation;
+                        return;
+                    }
 
                     GameObject spawned = UnityEngine.Object.Instantiate(grownPrefab, position, rotation);
                     Character spawnedCharacter = spawned.GetComponent<Character>();
@@ -443,7 +453,7 @@ namespace OfTamingAndBreeding.Components.Traits
                         }
                         else
                         {
-                            // important todo: warning, cannot set level
+                            // todo: warning, cannot set level
                         }
                     }
 
@@ -454,10 +464,6 @@ namespace OfTamingAndBreeding.Components.Traits
                     // just let the item get destroyed
                 }
 
-                if (showHatchEffect)
-                {
-                    m_eggGrow.m_hatchEffect?.Create(m_eggGrow.transform.position, m_eggGrow.transform.rotation);
-                }
                 if (m_nview.IsOwner())
                 {
                     m_nview.Destroy();

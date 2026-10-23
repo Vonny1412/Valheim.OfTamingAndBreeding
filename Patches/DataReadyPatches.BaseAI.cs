@@ -1,6 +1,7 @@
-﻿using HarmonyLib;
+﻿using System.Collections.Generic;
+using System.Reflection.Emit;
+using HarmonyLib;
 using OfTamingAndBreeding.Components.Traits;
-using static UnityEngine.Networking.UnityWebRequest;
 
 namespace OfTamingAndBreeding.Patches
 {
@@ -36,12 +37,9 @@ namespace OfTamingAndBreeding.Patches
                 return; // invalid afterall or blocked by other mod
             }
 
-            if (BaseAITrait.TryGet(__instance.gameObject, out var trait))
+            if (BaseAITrait.TryGet(__instance.gameObject, out var trait) && trait.On_UpdateAI(dt))
             {
-                if (trait.On_UpdateAI(dt))
-                {
-                    __result = false;
-                }
+                __result = false;
             }
         }
 
@@ -54,16 +52,51 @@ namespace OfTamingAndBreeding.Patches
                 return false;
             }
 
-            if (BaseAITrait.TryGet(__instance.gameObject, out var trait))
+            if (BaseAITrait.TryGet(__instance.gameObject, out var trait) && trait.On_IdleMovement(dt))
             {
-                if (trait.On_IdleMovement(dt))
-                {
-                    return false; // block original
-                }
+                return false;
             }
 
             return true;
         }
+
+        [HarmonyPatch(typeof(BaseAI), "IdleMovement")]
+        [HarmonyTranspiler]
+        private static IEnumerable<CodeInstruction> BaseAI_IdleMovement_Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            var original = AccessTools.Method(typeof(Character), nameof(Character.IsTamed));
+            var replacement = AccessTools.Method(typeof(DataReadyPatches), nameof(IsTamedForIdleMovement));
+            bool patched = false;
+
+            foreach (var instruction in instructions)
+            {
+                if ((instruction.opcode == OpCodes.Callvirt || instruction.opcode == OpCodes.Call) && instruction.operand is System.Reflection.MethodInfo method && method == original)
+                {
+                    instruction.opcode = OpCodes.Call;
+                    instruction.operand = replacement;
+                    patched = true;
+                }
+
+                yield return instruction;
+            }
+
+            if (!patched)
+            {
+                Plugin.LogWarning("Transpiler failed: BaseAI.IdleMovement - Character.IsTamed() not found");
+            }
+        }
+
+        private static bool IsTamedForIdleMovement(Character character)
+        {
+            return character.IsTamed() && (!BaseAITrait.TryGet(character.gameObject, out var trait) || !trait.m_tamedIdleNearSpawn);
+        }
+
+
+
+
+
+
+
 
     }
 }

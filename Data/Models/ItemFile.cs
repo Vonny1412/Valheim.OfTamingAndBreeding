@@ -1,5 +1,4 @@
 ﻿using JetBrains.Annotations;
-using OfTamingAndBreeding.Data.Models.SubData;
 using System;
 
 namespace OfTamingAndBreeding.Data.Models
@@ -11,8 +10,6 @@ namespace OfTamingAndBreeding.Data.Models
         public const string DirectoryName = "Items";
 
         public CloneData Clone = null;
-        public ComponentsData Components = new ComponentsData();
-
         public ItemData Item = null;
         public FloatingData Floating = null;
         public EggGrowData EggGrow = null;
@@ -59,15 +56,6 @@ namespace OfTamingAndBreeding.Data.Models
 
         [Serializable]
         [CanBeNull]
-        public class ComponentsData
-        {
-            public ComponentBehavior Item { get; set; } = ComponentBehavior.Inherit;
-            public ComponentBehavior Floating { get; set; } = ComponentBehavior.Inherit;
-            public ComponentBehavior EggGrow { get; set; } = ComponentBehavior.Patch;
-        }
-
-        [Serializable]
-        [CanBeNull]
         public class ItemData
         {
             public int? MaxStackSize { get; set; } = null;
@@ -98,9 +86,9 @@ namespace OfTamingAndBreeding.Data.Models
                 public bool Tamed { get; set; } = true;
                 public bool ShowHatchEffect { get; set; } = true;
             }
-
+            
             public float? GrowTime { get; set; } = null;
-            public float? UpdateInterval { get; set; } = null;
+            public float? UpdateInterval { get; set; } = null; // todo: remove this from yaml options
 
             public bool? RequireNearbyFire { get; set; } = null;
             public bool? RequireUnderRoof { get; set; } = null;

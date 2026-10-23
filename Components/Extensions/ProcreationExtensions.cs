@@ -23,14 +23,6 @@ namespace OfTamingAndBreeding.Components.Extensions
             => ValheimAPI.Procreation.__IAPI_IsDue_Invoker1.Invoke(that);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static GameObject GetOffspringPrefab(this Procreation that)
-            => ValheimAPI.Procreation.__IAPI_m_offspringPrefab_Invoker.Get(that);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetOffspringPrefab(this Procreation that, GameObject prefab)
-            => ValheimAPI.Procreation.__IAPI_m_offspringPrefab_Invoker.Set(that, prefab);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void MakePregnant(this Procreation that)
             => ValheimAPI.Procreation.__IAPI_MakePregnant_Invoker1.Invoke(that);
 
@@ -38,5 +30,16 @@ namespace OfTamingAndBreeding.Components.Extensions
         public static void ResetPregnancy(this Procreation that)
             => ValheimAPI.Procreation.__IAPI_ResetPregnancy_Invoker1.Invoke(that);
 
+        /*
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static GameObject GetOffspringPrefab(this Procreation that)
+            => ValheimAPI.Procreation.__IAPI_m_offspringPrefab_Invoker.Get(that);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SetOffspringPrefab(this Procreation that, GameObject prefab)
+            => ValheimAPI.Procreation.__IAPI_m_offspringPrefab_Invoker.Set(that, prefab);
+
+        */
     }
 }

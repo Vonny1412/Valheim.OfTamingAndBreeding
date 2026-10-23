@@ -79,7 +79,7 @@ namespace OfTamingAndBreeding.Components.Traits
         {
             if (!m_nview.IsValid()) return;
 
-            var globalFactor = Plugin.Configs.GlobalGrowTimeFactor.Value;
+            var globalFactor = Plugin.Configs.GrowupTimeFactor.Value;
             if (globalFactor < 0) return; // yes, we also allow == 0
 
             var oldGrowTime = m_growup.m_growTime;
@@ -215,6 +215,9 @@ namespace OfTamingAndBreeding.Components.Traits
                         ZDOUtils.SetString(zdo2, ZDOVars.s_tamedNameAuthor, nameAuthor1);
                     }
 
+                    /*
+                    // todo: add yaml bool option?
+
                     // pass fed time to spawned
                     var oldFedDuration = tameable1.m_fedDuration;
                     var newFedDuration = tameable2.m_fedDuration;
@@ -223,7 +226,7 @@ namespace OfTamingAndBreeding.Components.Traits
                         var lastFeeding = zdo.GetLong(ZDOVars.s_tameLastFeeding, 0L);
                         Utilities.ZDOUtils.SetLong(zdo2, ZDOVars.s_tameLastFeeding, lastFeeding);
                     }
-
+                    */
                 }
                 if (m_growup.m_inheritTame)
                 {

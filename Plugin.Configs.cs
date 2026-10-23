@@ -13,7 +13,9 @@ namespace OfTamingAndBreeding
         public class Configs
         {
 
+            // -----------------------------------------------------------------
             private const string Section_UI_Hovertext = "UI - Hovertext";
+            // -----------------------------------------------------------------
 
             public static ConfigEntry<bool> HoverShowAdminInfo { get; private set; }
 
@@ -31,7 +33,9 @@ namespace OfTamingAndBreeding
             public static ConfigEntry<string> HoverColorPassive { get; private set; }
 
 
+            // -----------------------------------------------------------------
             private const string Section_UI_Hud = "UI - Hud";
+            // -----------------------------------------------------------------
 
             public static ConfigEntry<bool> HudShowEggGrowProgress { get; private set; }
             public static ConfigEntry<bool> HudShowTamingProgress { get; private set; }
@@ -40,71 +44,102 @@ namespace OfTamingAndBreeding
             public static ConfigEntry<float> HudProgressPrecision { get; private set; }
 
 
+            // -----------------------------------------------------------------
             private const string Section_Server_Data = "Server - Data";
+            // -----------------------------------------------------------------
 
             public static ConfigEntry<string> DefaultWorldDirectory { get; private set; }
 
 
+            // -----------------------------------------------------------------
             private const string Section_Server_Cache = "Server - Cache";
+            // -----------------------------------------------------------------
 
             public static ConfigEntry<bool> WriteClientCacheFile { get; private set; }
             public static ConfigEntry<bool> WriteServerCacheFiles { get; private set; }
             public static ConfigEntry<string> CacheFileName { get; private set; }
             public static ConfigEntry<bool> ExportIconsToCache { get; private set; }
             public static ConfigEntry<bool> DumpPrefabsToCache { get; private set; }
+            
+
+            // -----------------------------------------------------------------
+            private const string Section_Server_Gameplay_GlobalTimeFactors = "Server - Gameplay - Global Time Factors";
+            // -----------------------------------------------------------------
+
+            public static ConfigEntry<float> TamingTimeFactor { get; private set; }
+            public static ConfigEntry<float> TamingSlowdownPerStar { get; private set; }
+            public static ConfigEntry<float> PregnancyDurationFactor { get; private set; }
+            public static ConfigEntry<float> EggGrowTimeFactor { get; private set; }
+            public static ConfigEntry<float> GrowupTimeFactor { get; private set; }
+            public static ConfigEntry<float> FedDurationFactor { get; private set; }
+            public static ConfigEntry<float> HostilityHungerFactor { get; private set; }
 
 
-            private const string Section_Server_Gameplay = "Server - Gameplay";
-
-            public static ConfigEntry<bool> EnableAntiExploitSystem { get; private set; }
-            public static ConfigEntry<bool> EnableAntiExploitWhileTaming { get; private set; }
-
-            public static ConfigEntry<float> GlobalPregnancyDurationFactor { get; private set; }
-            public static ConfigEntry<float> GlobalFedDurationFactor { get; private set; }
-            public static ConfigEntry<float> GlobalTamingTimeFactor { get; private set; }
-            public static ConfigEntry<float> GlobalGrowTimeFactor { get; private set; }
+            // -----------------------------------------------------------------
+            private const string Section_Server_Gameplay_Restrictions = "Server - Gameplay - Restrictions";
+            // -----------------------------------------------------------------
 
             public static ConfigEntry<bool> RequireEggsDroppedByPlayer { get; private set; }
             public static ConfigEntry<bool> RequireFoodDroppedByPlayer { get; private set; }
-            public static ConfigEntry<float> TamingSlowdownPerStar { get; private set; }
+            public static ConfigEntry<bool> PreventMatingWhileFollowing { get; private set; }
 
-            public static ConfigEntry<bool> PreventProcreationWhileFollowing { get; private set; }
+
+            // -----------------------------------------------------------------
+            private const string Section_Server_Gameplay_Following = "Server - Gameplay - Following";
+            // -----------------------------------------------------------------
+
+            public static ConfigEntry<float> FollowColliderRadiusFactor { get; private set; }
+            public static ConfigEntry<float> FollowMinDistanceMin { get; private set; }
+            public static ConfigEntry<float> FollowMinDistanceMax { get; private set; }
+            public static ConfigEntry<float> FollowRunDistanceFactor { get; private set; }
+
+
+            // -----------------------------------------------------------------
+            private const string Section_Server_Gameplay_TamedCharacteristics = "Server - Gameplay - Tamed Characteristics";
+            // -----------------------------------------------------------------
+
+            public static ConfigEntry<float> TamedIdleSoundChanceFactor { get; private set; }
+            public static ConfigEntry<bool> TamedSummonsUseSeparateLimit { get; private set; }
+
+
+            // -----------------------------------------------------------------
+            private const string Section_Server_Gameplay_Troughs = "Server - Gameplay - Troughs";
+            // -----------------------------------------------------------------
 
             public static ConfigEntry<string> CommonFeedingContainers { get; private set; }
             public static ConfigEntry<float> ContainerSearchRangeFactor { get; private set; }
 
-            public static ConfigEntry<float> TamedIdleSoundChanceFactor { get; private set; }
 
-            
-
+            // -----------------------------------------------------------------
             private const string Section_Server_Misc = "Server - Miscellaneous";
+            // -----------------------------------------------------------------
+
             // ...
 
 
+            // -----------------------------------------------------------------
             private const string Section_Server_CLLC = "Server - Creature Level & Loot Control";
+            // -----------------------------------------------------------------
 
-            public static ConfigEntry<float> CLLC_Infusion_WeightDirectParent { get; private set; }
-            public static ConfigEntry<float> CLLC_Infusion_WeightCurrentPartner { get; private set; }
-            public static ConfigEntry<float> CLLC_Infusion_WeightAnyNearby { get; private set; }
-            public static ConfigEntry<float> CLLC_Infusion_WeightRandomNew { get; private set; }
+            public static ConfigEntry<float> CLLC_Infusion_WeightParent { get; private set; }
+            public static ConfigEntry<float> CLLC_Infusion_WeightRandom { get; private set; }
             public static ConfigEntry<float> CLLC_Infusion_WeightNone { get; private set; }
 
-            public static ConfigEntry<float> CLLC_Infusion_SearchRange { get; private set; }
-
-            public static ConfigEntry<float> CLLC_Effect_WeightDirectParent { get; private set; }
-            public static ConfigEntry<float> CLLC_Effect_WeightCurrentPartner { get; private set; }
-            public static ConfigEntry<float> CLLC_Effect_WeightAnyNearby { get; private set; }
-            public static ConfigEntry<float> CLLC_Effect_WeightRandomNew { get; private set; }
+            public static ConfigEntry<float> CLLC_Effect_WeightParent { get; private set; }
+            public static ConfigEntry<float> CLLC_Effect_WeightRandom { get; private set; }
             public static ConfigEntry<float> CLLC_Effect_WeightNone { get; private set; }
 
-            public static ConfigEntry<float> CLLC_Effect_SearchRange { get; private set; }
+
+            // -----------------------------------------------------------------
 
             public static void Initialize(ConfigFile Config)
             {
                 string section = "";
 
 
+                // -----------------------------------------------------------------
                 section = Section_UI_Hovertext;
+                // -----------------------------------------------------------------
 
                 HoverShowAdminInfo = Config.BindConfigInOrder<bool>(section, "ShowAdminInfo", true, "Allow showing admin/debug creature info in hover text for local admins or hosts only.", synced: false);
 
@@ -122,7 +157,9 @@ namespace OfTamingAndBreeding
                 HoverColorPassive = Config.BindConfigInOrder<string>(section, "ColorPassive", "#AAAAAA", "Color used for passive hover states that have no active effect. (hex color/color name).", synced: false);
 
 
+                // -----------------------------------------------------------------
                 section = Section_UI_Hud;
+                // -----------------------------------------------------------------
 
                 HudShowEggGrowProgress = Config.BindConfigInOrder<bool>(section, "ShowEggGrowProgress", true, "Shows egg hatching progress as a percentage next to the egg's name in the HUD (visible from distance).", synced: false);
                 HudShowTamingProgress = Config.BindConfigInOrder<bool>(section, "ShowTamingProgress", true, "Shows taming progress as a percentage next to the creature's name in the HUD (visible from distance).", synced: false);
@@ -136,12 +173,16 @@ namespace OfTamingAndBreeding
                 };
 
 
+                // -----------------------------------------------------------------
                 section = Section_Server_Data;
+                // -----------------------------------------------------------------
 
-                DefaultWorldDirectory = Config.BindConfigInOrder<string>(section, "DefaultWorldDirectory", "default", "Fallback world data folder name used when no folder matches the current world name. Read on world/server start.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
+                DefaultWorldDirectory = Config.BindConfigInOrder<string>(section, "DefaultWorldDirectory", "default", "Fallback world data folder name used when no folder matches the current world name. Read on world/server start.", synced: false);
 
 
+                // -----------------------------------------------------------------
                 section = Section_Server_Cache;
+                // -----------------------------------------------------------------
 
                 WriteClientCacheFile = Config.BindConfigInOrder<bool>(section, "WriteClientCacheFile", true, "Allow clients to create and use a local OTAB cache file. This setting is read on world/server start and is not synchronized during runtime.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
                 WriteServerCacheFiles = Config.BindConfigInOrder<bool>(section, "WriteServerCacheFiles", true, "Write debug output on the server (cleaned YAML and an unencrypted cache file). This setting is read on world/server start and is not synchronized during runtime.", synced: false, configAttributes: new ConfigurationManagerAttributes() { IsAdvanced = true });
@@ -151,46 +192,12 @@ namespace OfTamingAndBreeding
                 //todo: DumpPrefabsToCache need descr
 
 
-                section = Section_Server_Gameplay;
+                // -----------------------------------------------------------------
+                section = Section_Server_Gameplay_GlobalTimeFactors;
+                // -----------------------------------------------------------------
 
-                EnableAntiExploitSystem = Config.BindConfigInOrder<bool>(section, "EnableAntiExploitSystem", true, "Enables/disables OTAB's anti-exploit system. This actively tests creature movement and prevents confined animals without enough room to move from procreating.", synced: true);
-                EnableAntiExploitSystem.SettingChanged += (object sender, EventArgs args) => {
-                    foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
-                    {
-                        var baseAITrait = baseAI.GetComponent<BaseAITrait>();
-                        baseAITrait.ResetAntiExploitState();
-                    }
-                };
-
-                EnableAntiExploitWhileTaming = Config.BindConfigInOrder<bool>(section, "EnableAntiExploitWhileTaming", false, "Extends the anti-exploit system to creatures currently being tamed, preventing taming progress while they are confined without enough room to move.", synced: true);
-                EnableAntiExploitWhileTaming.SettingChanged += (object sender, EventArgs args) => {
-                    foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
-                    {
-                        var baseAITrait = baseAI.GetComponent<BaseAITrait>();
-                        baseAITrait.ResetAntiExploitState();
-                    }
-                };
-
-                GlobalPregnancyDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalPregnancyDurationFactor", 1f, "Global multiplier for PregnancyDuration.  Applies immediately; lowering it can instantly finish ongoing pregnancy on the next update.", acceptableValues: new AcceptableValueRange<float>(0, 10), synced: true);
-                GlobalPregnancyDurationFactor.SettingChanged += (object sender, EventArgs args) => {
-                    foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
-                    {
-                        var procreationTrait = baseAI.GetComponent<ProcreationTrait>();
-                        procreationTrait?.UpdatePregnancyDuration();
-                    }
-                };
-
-                GlobalFedDurationFactor = Config.BindConfigInOrder<float>(section, "GlobalFedDurationFactor", 1f, "Global multiplier for FedDuration. Applies immediately (may flip Hungry state).", acceptableValues: new AcceptableValueRange<float>(0, 10), synced: true);
-                GlobalFedDurationFactor.SettingChanged += (object sender, EventArgs args) => {
-                    foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
-                    {
-                        var tameableTrait = baseAI.GetComponent<TameableTrait>();
-                        tameableTrait?.UpdateFedDuration();
-                    }
-                };
-
-                GlobalTamingTimeFactor = Config.BindConfigInOrder<float>(section, "GlobalTamingTimeFactor", 1f, "Global multiplier for TamingTime. Applies immediately; lowering it can instantly finish ongoing taming on the next update.", acceptableValues: new AcceptableValueRange<float>(0, 10), synced: true);
-                GlobalTamingTimeFactor.SettingChanged += (object sender, EventArgs args) => {
+                TamingTimeFactor = Config.BindConfigInOrder<float>(section, "TamingTimeFactor", 1f, "Global multiplier for TamingTime. Applies immediately; lowering it can instantly finish ongoing taming on the next update.", acceptableValues: new AcceptableValueRange<float>(0, 10), synced: true);
+                TamingTimeFactor.SettingChanged += (object sender, EventArgs args) => {
                     foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
                     {
                         var tameableTrait = baseAI.GetComponent<TameableTrait>();
@@ -198,14 +205,31 @@ namespace OfTamingAndBreeding
                     }
                 };
 
-                GlobalGrowTimeFactor = Config.BindConfigInOrder<float>(section, "GlobalGrowTimeFactor", 1f, "Global multiplier for egg hatching and offspring grow-up time. Applies immediately; lowering it can trigger instant hatching/growing on next update.", acceptableValues: new AcceptableValueRange<float>(0, 10), synced: true);
-                GlobalGrowTimeFactor.SettingChanged += (object sender, EventArgs args) => {
-                    // todo: make two seperate configs
+                TamingSlowdownPerStar = Config.BindConfigInOrder<float>(section, "TamingSlowdownPerStar", 0.5f, "Slows down taming progress per star by reducing how much progress is applied each update.\n" +
+                    "This does not change the base taming time itself — it only affects how fast taming progresses.\nA value of 0 disables this feature.\n" +
+                    "Formula: progress /= (1 + stars × value)\n" +
+                    "Example (base time = 100s, value = 0.5): 0★ = 100s, 1★ = 150s, 2★ = 200s", synced: true);
+
+                PregnancyDurationFactor = Config.BindConfigInOrder<float>(section, "PregnancyDurationFactor", 1f, "Global multiplier for PregnancyDuration.  Applies immediately; lowering it can instantly finish ongoing pregnancy on the next update.", acceptableValues: new AcceptableValueRange<float>(0, 10), synced: true);
+                PregnancyDurationFactor.SettingChanged += (object sender, EventArgs args) => {
+                    foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
+                    {
+                        var procreationTrait = baseAI.GetComponent<ProcreationTrait>();
+                        procreationTrait?.UpdatePregnancyDuration();
+                    }
+                };
+
+                EggGrowTimeFactor = Config.BindConfigInOrder<float>(section, "EggGrowTimeFactor", 1f, "Global multiplier for egg hatching time. Applies immediately; lowering it can trigger instant hatching on next update.", acceptableValues: new AcceptableValueRange<float>(0, 10), synced: true);
+                EggGrowTimeFactor.SettingChanged += (object sender, EventArgs args) => {
                     foreach (var itemDrop in ItemDropExtensions.GetInstances().ToArray())
                     {
                         var eggGrowTrait = itemDrop.GetComponent<EggGrowTrait>();
                         eggGrowTrait?.UpdateGrowTime();
                     }
+                };
+
+                GrowupTimeFactor = Config.BindConfigInOrder<float>(section, "GrowupTimeFactor", 1f, "Global multiplier for offspring grow-up time. Applies immediately; lowering it can trigger instant growing on next update.", acceptableValues: new AcceptableValueRange<float>(0, 10), synced: true);
+                GrowupTimeFactor.SettingChanged += (object sender, EventArgs args) => {
                     foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
                     {
                         var growupTrait = baseAI.GetComponent<GrowupTrait>();
@@ -213,14 +237,49 @@ namespace OfTamingAndBreeding
                     }
                 };
 
+                FedDurationFactor = Config.BindConfigInOrder<float>(section, "FedDurationFactor", 1f, "Global multiplier for FedDuration. Applies immediately (may flip Hungry state).", acceptableValues: new AcceptableValueRange<float>(0, 10), synced: true);
+                FedDurationFactor.SettingChanged += (object sender, EventArgs args) => {
+                    foreach (var baseAI in BaseAIExtensions.GetInstances().ToArray())
+                    {
+                        var tameableTrait = baseAI.GetComponent<TameableTrait>();
+                        tameableTrait?.UpdateFedDuration();
+                    }
+                };
+
+                HostilityHungerFactor = Config.BindConfigInOrder<float>(section, "HostilityHungerFactor", 3.0f, "Multiplier for the feeding duration used to determine the hunger state for reactive hostilities. Lower values result in a shorter delay, higher values in a longer delay. Does not affect the actual feeding duration.", acceptableValues: new AcceptableValueRange<float>(0f, 1000f), synced: true);
+
+
+                // -----------------------------------------------------------------
+                section = Section_Server_Gameplay_Restrictions;
+                // -----------------------------------------------------------------
+
                 RequireEggsDroppedByPlayer = Config.BindConfigInOrder<bool>(section, "RequireEggsDroppedByPlayer", true, "When enabled, only eggs dropped by players can grow or hatch. When disabled, eggs found in the world can also grow or hatch.", synced: true);
                 RequireFoodDroppedByPlayer = Config.BindConfigInOrder<bool>(section, "RequireFoodDroppedByPlayer", true, "When disabled, animals will also be tamed and stimulated to breed using food found in the world (not dropped by players).", synced: true);
-                TamingSlowdownPerStar = Config.BindConfigInOrder<float>(section, "TamingSlowdownPerStar", 1f, "Slows down taming progress per star by reducing how much progress is applied each update.\n" +
-                    "This does not change the base taming time itself — it only affects how fast taming progresses.\nA value of 0 disables this feature.\n" +
-                    "Formula: progress /= (1 + stars × value)\n" +
-                    "Example (base time = 100s, value = 1.0): 0★ = 100s, 1★ = 200s, 2★ = 300s", synced: true);
+                PreventMatingWhileFollowing = Config.BindConfigInOrder<bool>(section, "PreventMatingWhileFollowing", true, "Prevents tamed creatures from mating while they are commanded to follow a player.", synced: true);
 
-                PreventProcreationWhileFollowing = Config.BindConfigInOrder<bool>(section, "PreventProcreationWhileFollowing", true, "Prevents tamed creatures from procreating while they are commanded to follow a player.", synced: true);
+
+                // -----------------------------------------------------------------
+                section = Section_Server_Gameplay_Following;
+                // -----------------------------------------------------------------
+
+                FollowColliderRadiusFactor = Config.BindConfigInOrder<float>(section, "ColliderRadiusFactor", 5f, "Multiplier applied to a creature's collider radius to calculate its minimum follow distance.", acceptableValues: new AcceptableValueRange<float>(0f, 20f), synced: true);
+                FollowMinDistanceMin = Config.BindConfigInOrder<float>(section, "MinDistanceMin", 3f, "Lower limit for the minimum distance a creature maintains from its follow target.", acceptableValues: new AcceptableValueRange<float>(0f, 100f), synced: true);
+                FollowMinDistanceMax = Config.BindConfigInOrder<float>(section, "MinDistanceMax", 10f, "Upper limit for the minimum distance a creature maintains from its follow target.", acceptableValues: new AcceptableValueRange<float>(0f, 100f), synced: true);
+                FollowRunDistanceFactor = Config.BindConfigInOrder<float>(section, "RunDistanceFactor", 3f, "Multiplier applied to the minimum follow distance to determine when a creature starts running instead of walking.", acceptableValues: new AcceptableValueRange<float>(1f, 20f), synced: true);
+
+
+                // -----------------------------------------------------------------
+                section = Section_Server_Gameplay_TamedCharacteristics;
+                // -----------------------------------------------------------------
+
+                TamedIdleSoundChanceFactor = Config.BindConfigInOrder<float>(section, "IdleSoundChanceFactor", 0.1f, "Multiplier for the idle sound chance of tamed creatures. Range: 0 (disabled) to 1 (vanilla behavior).", acceptableValues: new AcceptableValueRange<float>(0f, 1f), synced: true);
+                TamedSummonsUseSeparateLimit = Config.BindConfigInOrder<bool>(section, "SeparateTamedSummonLimit", true, "Separates the summon limit for tamed and untamed creatures. Each group shares its own limit across all summoners.", synced: true);
+
+
+                // -----------------------------------------------------------------
+                section = Section_Server_Gameplay_Troughs;
+                // -----------------------------------------------------------------
+
 
                 CommonFeedingContainers = Config.BindConfigInOrder<string>(section, "CommonFeedingContainers", "", "Comma-separated prefab names of regular containers that should also be usable as feeding containers.", synced: true);
                 CommonFeedingContainers.SettingChanged += (object sender, EventArgs args) => {
@@ -230,32 +289,24 @@ namespace OfTamingAndBreeding
                 ContainerSearchRangeFactor = Config.BindConfigInOrder<float>(section, "ContainerSearchRangeFactor", 2f, "Multiplier applied to the consume search range of tamed creatures when searching for food in registered feeding containers.", acceptableValues: new AcceptableValueRange<float>(1f, 10f), synced: true);
 
 
-                TamedIdleSoundChanceFactor = Config.BindConfigInOrder<float>(section, "TamedIdleSoundChanceFactor", 0.1f, "Multiplier for the idle sound chance of tamed creatures. Range: 0 (disabled) to 1 (vanilla behavior).", acceptableValues: new AcceptableValueRange<float>(0f, 1f), synced: true);
-
-                
-
-
+                // -----------------------------------------------------------------
                 section = Section_Server_Misc;
+                // -----------------------------------------------------------------
+
                 // ...
 
 
+                // -----------------------------------------------------------------
                 section = Section_Server_CLLC;
+                // -----------------------------------------------------------------
 
-                CLLC_Infusion_WeightDirectParent = Config.BindConfigInOrder<float>(section, "Infusion_WeightDirectParent", 60, "Weight for inheriting infusion from the direct parent creature.", synced: true);
-                CLLC_Infusion_WeightCurrentPartner = Config.BindConfigInOrder<float>(section, "Infusion_WeightCurrentPartner", 20, "Weight for inheriting infusion from the current breeding partner.", synced: true);
-                CLLC_Infusion_WeightAnyNearby = Config.BindConfigInOrder<float>(section, "Infusion_WeightAnyNearby", 10, "Weight for inheriting infusion from any nearby eligible creature within search range.", synced: true);
-                CLLC_Infusion_WeightRandomNew = Config.BindConfigInOrder<float>(section, "Infusion_WeightRandomNew", 5, "Weight for assigning a completely new random infusion.", synced: true);
-                CLLC_Infusion_WeightNone = Config.BindConfigInOrder<float>(section, "Infusion_WeightNone", 5, "Weight for applying no infusion at all.", synced: true);
+                CLLC_Infusion_WeightParent = Config.BindConfigInOrder<float>(section, "Infusion_WeightParent", 66, "Weight for inheriting infusion from the parent creature.", synced: true);
+                CLLC_Infusion_WeightRandom = Config.BindConfigInOrder<float>(section, "Infusion_WeightRandom", 11, "Weight for assigning a completely new random infusion.", synced: true);
+                CLLC_Infusion_WeightNone = Config.BindConfigInOrder<float>(section, "Infusion_WeightNone", 22, "Weight for applying no infusion at all.", synced: true);
 
-                CLLC_Infusion_SearchRange = Config.BindConfigInOrder<float>(section, "Infusion_SearchRange", 10, "Maximum search radius (in meters) for nearby creatures considered when inheriting infusion.", synced: true);
-
-                CLLC_Effect_WeightDirectParent = Config.BindConfigInOrder<float>(section, "Effect_WeightDirectParent", 60, "Weight for inheriting effect from the direct parent creature.", synced: true);
-                CLLC_Effect_WeightCurrentPartner = Config.BindConfigInOrder<float>(section, "Effect_WeightCurrentPartner", 20, "Weight for inheriting effect from the current breeding partner.", synced: true);
-                CLLC_Effect_WeightAnyNearby = Config.BindConfigInOrder<float>(section, "Effect_WeightAnyNearby", 10, "Weight for inheriting effect from any nearby eligible creature within search range.", synced: true);
-                CLLC_Effect_WeightRandomNew = Config.BindConfigInOrder<float>(section, "Effect_WeightRandomNew", 5, "Weight for assigning a completely new random effect.", synced: true);
-                CLLC_Effect_WeightNone = Config.BindConfigInOrder<float>(section, "Effect_WeightNone", 5, "Weight for applying no effect at all.", synced: true);
-
-                CLLC_Effect_SearchRange = Config.BindConfigInOrder<float>(section, "Effect_SearchRange", 10, "Maximum search radius (in meters) for nearby creatures considered when inheriting effects.", synced: true);
+                CLLC_Effect_WeightParent = Config.BindConfigInOrder<float>(section, "Effect_WeightParent", 66, "Weight for inheriting effect from the parent creature.", synced: true);
+                CLLC_Effect_WeightRandom = Config.BindConfigInOrder<float>(section, "Effect_WeightRandom", 11, "Weight for assigning a completely new random effect.", synced: true);
+                CLLC_Effect_WeightNone = Config.BindConfigInOrder<float>(section, "Effect_WeightNone", 22, "Weight for applying no effect at all.", synced: true);
 
             }
 

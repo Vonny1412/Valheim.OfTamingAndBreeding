@@ -1,4 +1,5 @@
 ﻿using Jotunn.Managers;
+using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Data.Models;
 using OfTamingAndBreeding.Data.Models.SubData;
@@ -52,7 +53,7 @@ namespace OfTamingAndBreeding.Processing
                 var icons_cache = Path.Combine(Plugin.CacheDir, path_icons);
                 if (Directory.Exists(icons_cache))
                 {
-                    Directory.Delete(icons_cache);
+                    Directory.Delete(icons_cache, true);
                 }
             }
             return true;
@@ -173,73 +174,23 @@ namespace OfTamingAndBreeding.Processing
             // Item
             // ---------------------------
 
-            switch (data.Components.Item)
+            switch (data.Item != null)
             {
-                case ComponentBehavior.Remove:
-                    Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Item)}({nameof(ComponentBehavior.Remove)}): Component cannot be removed");
-                    break;
-                case ComponentBehavior.Patch:
-                    if (data.Item == null)
-                    {
-                        Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Item)}({nameof(ComponentBehavior.Patch)}): Missing component data");
-                        valid = false;
-                    }
-                    break;
-                case ComponentBehavior.Inherit:
-                    if (data.Item != null)
-                    {
-                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Item)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
-                    }
-                    break;
+                // ...
             }
 
             // ---------------------------
             // Floating
             // ---------------------------
 
-            switch (data.Components.Floating)
+            switch (data.Floating != null)
             {
-                case ComponentBehavior.Remove:
-                    // can be removed
-                    break;
-                case ComponentBehavior.Patch:
-                    if (data.Floating == null)
-                    {
-                        Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Floating)}({nameof(ComponentBehavior.Patch)}): Missing component data");
-                        valid = false;
-                    }
-                    break;
-                case ComponentBehavior.Inherit:
-                    if (data.Floating != null)
-                    {
-                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Floating)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
-                    }
-                    break;
+                // ...
             }
 
             // ---------------------------
             // EggGrow
             // ---------------------------
-
-            switch (data.Components.EggGrow)
-            {
-                case ComponentBehavior.Remove:
-                    // can be removed
-                    break;
-                case ComponentBehavior.Patch:
-                    if (data.EggGrow == null)
-                    {
-                        Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.EggGrow)}({nameof(ComponentBehavior.Patch)}): Missing component data");
-                        valid = false;
-                    }
-                    break;
-                case ComponentBehavior.Inherit:
-                    if (data.EggGrow != null)
-                    {
-                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.EggGrow)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
-                    }
-                    break;
-            }
 
             if (data.EggGrow != null)
             {
@@ -349,7 +300,6 @@ namespace OfTamingAndBreeding.Processing
 
                 var currentItemDrop = current.GetComponent<ItemDrop>();
                 var backupItemDrop = backup.GetComponent<ItemDrop>();
-
                 if (currentItemDrop && backupItemDrop)
                 {
                     var currentShared = currentItemDrop.m_itemData.m_shared;
@@ -371,7 +321,6 @@ namespace OfTamingAndBreeding.Processing
 
                 var currentFloating = current.GetComponent<Floating>();
                 var backupFloating = backup.GetComponent<Floating>();
-
                 if (currentFloating && backupFloating)
                 {
                     currentFloating.enabled = backupFloating.enabled;
@@ -379,9 +328,9 @@ namespace OfTamingAndBreeding.Processing
 
                 var currentEggGrow = current.GetComponent<EggGrow>();
                 var backupEggGrow = backup.GetComponent<EggGrow>();
-
                 if (currentEggGrow && backupEggGrow)
                 {
+                    currentEggGrow.enabled = backupEggGrow.enabled;
                     currentEggGrow.m_grownPrefab = backupEggGrow.m_grownPrefab;
                     currentEggGrow.m_hatchEffect = backupEggGrow.m_hatchEffect;
                     currentEggGrow.m_growingObject = backupEggGrow.m_growingObject;

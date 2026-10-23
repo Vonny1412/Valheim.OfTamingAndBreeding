@@ -42,7 +42,8 @@ namespace OfTamingAndBreeding.Patches
                 __result = true;
                 return false;
             }
-            return false;
+
+            return true;
         }
 
         [HarmonyPatch(typeof(MonsterAI), "UpdateConsumeItem")]

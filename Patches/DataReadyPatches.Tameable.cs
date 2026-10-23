@@ -10,17 +10,26 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPrefix]
         private static bool Tameable_OnConsumedItem_Prefix(Tameable __instance, ItemDrop item)
         {
-            if (TameableTrait.TryGet(__instance.gameObject, out var trait))
+            if (TameableTrait.TryGet(__instance.gameObject, out var trait) && trait.On_ConsumedItem(item))
             {
-                if (trait.On_ConsumedItem(item))
-                {
-                    return false;
-                }
+                return false;
             }
 
             return true;
         }
 
+        [HarmonyPatch(typeof(Tameable), "ResetFeedingTimer")]
+        [HarmonyPrefix]
+        private static bool Tameable_ResetFeedingTimer_Prefix(Tameable __instance)
+        {
+            if (TameableTrait.TryGet(__instance.gameObject, out var trait) && trait.On_ResetFeedingTimer())
+            {
+                return false;
+            }
+
+            return true;
+        }
+        
         [HarmonyPatch(typeof(Tameable), "TamingUpdate")]
         [HarmonyPrefix]
         [HarmonyPriority(Priority.Last)]
@@ -31,12 +40,9 @@ namespace OfTamingAndBreeding.Patches
                 return false;
             }
 
-            if (TameableTrait.TryGet(__instance.gameObject, out var trait))
+            if (TameableTrait.TryGet(__instance.gameObject, out var trait) && trait.On_TamingUpdate())
             {
-                if (trait.On_TamingUpdate())
-                {
-                    return false;
-                }
+                return false;
             }
 
             return true;

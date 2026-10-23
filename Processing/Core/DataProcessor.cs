@@ -43,31 +43,45 @@ namespace OfTamingAndBreeding.Processing.Core
             {
                 Plugin.LogDebug($"Loading {typeof(T).Name} '{prefabName}' from YAML");
                 var data = DataBase<T>.Deserialize(yamlText);
-                DataBase<T>.Store(prefabName, data);
+                if (data != null)
+                {
+                    DataBase<T>.Store(prefabName, data);
+                }
                 return true;
             }
             catch (YamlException e)
             {
-                Plugin.LogFatal(YamlUtils.FormatException(
-                    e,
-                    yamlText,
-                    $"Failed loading YAML for {typeof(T).Name} '{prefabName}'"
-                ));
+                Plugin.LogFatal(YamlUtils.FormatException(e, yamlText, $"Failed loading YAML for {typeof(T).Name} '{prefabName}'"));
             }
-
             return false;
         }
 
         public Dictionary<string, string> GetAllSerializedData()
         {
             var ret = new Dictionary<string, string>();
+
             foreach (var kv in DataBase<T>.GetAll())
             {
                 var prefabName = kv.Key;
                 var prefabData = kv.Value;
-                var prefabYaml = prefabData.Serialize();
-                ret.Add(prefabName, prefabYaml);
+
+                try
+                {
+                    if (prefabData == null)
+                    {
+                        throw new NullReferenceException("Data entry is null");
+                    }
+                    var prefabYaml = prefabData.Serialize();
+                    ret.Add(prefabName, prefabYaml);
+                }
+                catch (Exception e)
+                {
+                    Plugin.LogFatal($"{ModelTypeName}.GetAllSerializedData(): '{prefabName}' failed");
+                    Plugin.LogFatal(e);
+                    throw;
+                }
             }
+
             return ret;
         }
 

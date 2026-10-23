@@ -76,6 +76,7 @@ namespace OfTamingAndBreeding.Patches
                     Character.Faction.MountainMonsters =>   faction2 == Character.Faction.Boss,
                     Character.Faction.SeaMonsters =>        faction2 == Character.Faction.Boss,
                     Character.Faction.PlainsMonsters =>     faction2 == Character.Faction.Boss,
+                    Character.Faction.DeepNorth =>          faction2 == Character.Faction.AnimalsVeg || faction2 == Character.Faction.Boss,
                     Character.Faction.MistlandsMonsters =>  faction2 == Character.Faction.AnimalsVeg || faction2 == Character.Faction.Boss,
                     Character.Faction.Dverger =>            faction2 == Character.Faction.AnimalsVeg || faction2 == Character.Faction.Boss || faction2 == Character.Faction.Players,
                     Character.Faction.Boss =>               faction2 != Character.Faction.Players && faction2 != Character.Faction.PlayerSpawned,
@@ -92,19 +93,16 @@ namespace OfTamingAndBreeding.Patches
             }
 
             var skipVanilla = false;
-            var hostilityPlayer = CharacterTrait.HostilityMask.None;
-            var hostilityWild = CharacterTrait.HostilityMask.None;
-            var hostilityTamed = CharacterTrait.HostilityMask.None;
-            var hostilityGroup = CharacterTrait.HostilityMask.None;
-            var hostilityFaction = CharacterTrait.HostilityMask.None;
+            var hostilityPlayer = HostilityMask.None;
+            var hostilityWild = HostilityMask.None;
+            var hostilityTamed = HostilityMask.None;
+            var hostilityGroup = HostilityMask.None;
+            var hostilityFaction = HostilityMask.None;
 
-            // get traits only if needed
-            // actual players are never tamed
-            CharacterTrait.TryGet(a.gameObject, out CharacterTrait trait1);
-            CharacterTrait.TryGet(b.gameObject, out CharacterTrait trait2);
-
-            //if (isTamed1) trait1 = CharacterTrait.GetUnsafe(a.gameObject);
-            //if (isTamed2) trait2 = CharacterTrait.GetUnsafe(b.gameObject);
+            CharacterTrait trait1 = null;
+            CharacterTrait trait2 = null;
+            if (isTamed1) CharacterTrait.TryGet(a.gameObject, out trait1);
+            if (isTamed2) CharacterTrait.TryGet(b.gameObject, out trait2);
 
             //
             // build hostility bit masks

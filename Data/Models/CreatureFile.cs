@@ -16,24 +16,21 @@ namespace OfTamingAndBreeding.Data.Models
         public CloneData Clone = null;
 
         [YamlMember(Order = 2)]
-        public ComponentsData Components = new ComponentsData();
-
-        [YamlMember(Order = 3)]
         public CharacterData Character = null;
 
-        [YamlMember(Order = 4, DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        [YamlMember(Order = 3, DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public MonsterAIData MonsterAI { get; set; } = null;
 
-        [YamlMember(Order = 5, DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
+        [YamlMember(Order = 4, DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
         public AnimalAIData AnimalAI { get; set; } = null;
 
-        [YamlMember(Order = 6)]
+        [YamlMember(Order = 5)]
         public TameableData Tameable = null;
 
-        [YamlMember(Order = 7)]
+        [YamlMember(Order = 6)]
         public GrowupData Growup = null;
 
-        [YamlMember(Order = 8)]
+        [YamlMember(Order = 7)]
         public ProcreationData Procreation = null;
 
         [Serializable]
@@ -47,31 +44,6 @@ namespace OfTamingAndBreeding.Data.Models
 
             public float? Scale { get; set; } = null;
             public string[] RemoveEffects { get; set; } = null;
-        }
-
-        [Serializable]
-        [CanBeNull]
-        public class ComponentsData
-        {
-
-            [YamlMember(Order = 1)]
-            public ComponentBehavior Character { get; set; } = ComponentBehavior.Patch;
-
-            [YamlMember(Order = 2, DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
-            public ComponentBehavior? MonsterAI { get; set; } = null;
-
-            [YamlMember(Order = 3, DefaultValuesHandling = DefaultValuesHandling.OmitNull)]
-            public ComponentBehavior? AnimalAI { get; set; } = null;
-
-            [YamlMember(Order = 4)]
-            public ComponentBehavior Tameable { get; set; } = ComponentBehavior.Inherit;
-
-            [YamlMember(Order = 5)]
-            public ComponentBehavior Growup { get; set; } = ComponentBehavior.Inherit;
-
-            [YamlMember(Order = 6)]
-            public ComponentBehavior Procreation { get; set; } = ComponentBehavior.Inherit;
-
         }
 
         [Serializable]
@@ -99,6 +71,7 @@ namespace OfTamingAndBreeding.Data.Models
             }
 
             public ConsumItemData[] ConsumeItems { get; set; } = null;
+            public bool? ConsumeRandomItem { get; set; } = null;
             public float? ConsumeRange { get; set; } = null;
             public float? ConsumeSearchRange { get; set; } = null;
             public float? ConsumeSearchInterval { get; set; } = null;

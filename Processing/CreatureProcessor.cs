@@ -3,7 +3,6 @@ using OfTamingAndBreeding.Components;
 using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Data.Models;
-using OfTamingAndBreeding.Data.Models.SubData;
 using OfTamingAndBreeding.Processing.Core;
 using OfTamingAndBreeding.Processing.Registry;
 using OfTamingAndBreeding.Utilities;
@@ -132,46 +131,17 @@ namespace OfTamingAndBreeding.Processing
             // ---------------------------
 
             CreatureFile.BaseAIData data_BaseAI = null;
-            ComponentBehavior component_BaseAI = ComponentBehavior.Inherit;
             string data_BaseAI_name = "";
 
             if (hasMonsterAI)
             {
-                if (data.Components.AnimalAI.HasValue == true)
-                {
-                    Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.AnimalAI)}: Invalid field because MonsterAI is present");
-                    valid = false;
-                }
-                if (data.Components.MonsterAI.HasValue == false)
-                {
-                    Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}: Missing field");
-                    valid = false;
-                }
-                else
-                {
-                    data_BaseAI = data.MonsterAI;
-                    component_BaseAI = data.Components.MonsterAI.Value;
-                    data_BaseAI_name = nameof(data.MonsterAI);
-                }
+                data_BaseAI = data.MonsterAI;
+                data_BaseAI_name = nameof(data.MonsterAI);
             }
             else if (hasAnimalAI)
             {
-                if (data.Components.MonsterAI.HasValue == true)
-                {
-                    Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.MonsterAI)}: Invalid field because AnimalAI is present");
-                    valid = false;
-                }
-                if (data.Components.AnimalAI.HasValue == false)
-                {
-                    Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.AnimalAI)}: Missing field");
-                    valid = false;
-                }
-                else
-                {
-                    data_BaseAI = data.AnimalAI;
-                    component_BaseAI = data.Components.AnimalAI.Value;
-                    data_BaseAI_name = nameof(data.AnimalAI);
-                }
+                data_BaseAI = data.AnimalAI;
+                data_BaseAI_name = nameof(data.AnimalAI);
             }
             else
             {
@@ -184,51 +154,9 @@ namespace OfTamingAndBreeding.Processing
                 return false;
             }
 
-            switch (component_BaseAI)
-            {
-                case ComponentBehavior.Remove:
-                    Plugin.LogError($"{model}.{nameof(data.Components)}.{data_BaseAI_name}({nameof(ComponentBehavior.Remove)}): Component cannot be removed");
-                    valid = false;
-                    break;
-                case ComponentBehavior.Patch:
-                    if (data_BaseAI == null)
-                    {
-                        Plugin.LogError($"{model}.{nameof(data.Components)}.{data_BaseAI_name}({nameof(ComponentBehavior.Patch)}): Missing component data");
-                        valid = false;
-                    }
-                    break;
-                case ComponentBehavior.Inherit:
-                    if (data_BaseAI != null)
-                    {
-                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{data_BaseAI_name}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
-                    }
-                    break;
-            }
-
             // ---------------------------
             // Character
             // ---------------------------
-
-            switch (data.Components.Character)
-            {
-                case ComponentBehavior.Remove:
-                    Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Character)}({nameof(ComponentBehavior.Remove)}): Component cannot be removed");
-                    valid = false;
-                    break;
-                case ComponentBehavior.Patch:
-                    if (data.Character == null)
-                    {
-                        Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Character)}({nameof(ComponentBehavior.Patch)}): Missing component data");
-                        valid = false;
-                    }
-                    break;
-                case ComponentBehavior.Inherit:
-                    if (data.Character != null)
-                    {
-                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Character)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
-                    }
-                    break;
-            }
 
             if (data.Character != null)
             {
@@ -238,23 +166,6 @@ namespace OfTamingAndBreeding.Processing
             // ---------------------------
             // Tameable
             // ---------------------------
-
-            switch (data.Components.Tameable)
-            {
-                case ComponentBehavior.Patch:
-                    if (data.Tameable == null)
-                    {
-                        Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Tameable)}({nameof(ComponentBehavior.Patch)}): Missing component data");
-                        valid = false;
-                    }
-                    break;
-                case ComponentBehavior.Inherit:
-                    if (data.Tameable != null)
-                    {
-                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Tameable)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
-                    }
-                    break;
-            }
 
             if (data.Tameable != null)
             {
@@ -298,26 +209,6 @@ namespace OfTamingAndBreeding.Processing
             // Growup
             // ---------------------------
 
-            switch (data.Components.Growup)
-            {
-                case ComponentBehavior.Remove:
-                    // can be removed
-                    break;
-                case ComponentBehavior.Patch:
-                    if (data.Growup == null)
-                    {
-                        Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Growup)}({nameof(ComponentBehavior.Patch)}): Missing component data");
-                        valid = false;
-                    }
-                    break;
-                case ComponentBehavior.Inherit:
-                    if (data.Growup != null)
-                    {
-                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Growup)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
-                    }
-                    break;
-            }
-
             if (data.Growup != null)
             {
                 if (data.Growup.Grown == null || data.Growup.Grown.Length == 0)
@@ -345,7 +236,7 @@ namespace OfTamingAndBreeding.Processing
                     }
                 }
 
-                if (data.Growup.RequireFeeding != null && !hasTameable && data.Components.Tameable != ComponentBehavior.Patch)
+                if (data.Growup.RequireFeeding != null && !hasTameable && data.Tameable == null)
                 {
                     Plugin.LogError($"{model}.{nameof(data.Growup)}.{nameof(data.Growup.RequireFeeding)}: Field requires Tameable component");
                     valid = false;
@@ -357,27 +248,10 @@ namespace OfTamingAndBreeding.Processing
             // Procreation
             // ---------------------------
 
-            switch (data.Components.Procreation)
-            {
-                case ComponentBehavior.Patch:
-                    if (data.Procreation == null)
-                    {
-                        Plugin.LogError($"{model}.{nameof(data.Components)}.{nameof(data.Components.Procreation)}({nameof(ComponentBehavior.Patch)}): Missing component data");
-                        valid = false;
-                    }
-                    break;
-                case ComponentBehavior.Inherit:
-                    if (data.Procreation != null)
-                    {
-                        Plugin.LogWarning($"{model}.{nameof(data.Components)}.{nameof(data.Components.Procreation)}({nameof(ComponentBehavior.Inherit)}): Component data will be ignored");
-                    }
-                    break;
-            }
-
             if (data.Procreation != null)
             {
-                bool wantProcreationActive = data.Components.Procreation == ComponentBehavior.Patch || (hasProcreation && data.Components.Procreation != ComponentBehavior.Remove);
-                bool wantTameableActive = data.Components.Tameable != ComponentBehavior.Remove && (hasTameable || data.Components.Tameable == ComponentBehavior.Patch);
+                bool wantProcreationActive = hasProcreation || data.Procreation != null;
+                bool wantTameableActive = hasTameable || data.Tameable != null;
                 if (wantProcreationActive && !wantTameableActive)
                 {
                     Plugin.LogError($"{model}.{nameof(data.Procreation)}: Component requires {nameof(data.Tameable)}");
@@ -495,6 +369,7 @@ namespace OfTamingAndBreeding.Processing
 
                 if (creature)
                 {
+                    // its very important that we clone the prefab BEFORE the original gets modified
                     PrepareClone(creatureName, data, creature);
 
                     Plugin.LogDebug($"{model}: Registering custom prefab");
@@ -515,37 +390,6 @@ namespace OfTamingAndBreeding.Processing
             return true;
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         public override bool ProcessPrefab(string creatureName, CreatureFile data)
         {
             var model = $"{nameof(CreatureFile)}.{creatureName}";
@@ -563,19 +407,16 @@ namespace OfTamingAndBreeding.Processing
             var animalAI = creature.GetComponent<AnimalAI>();
 
             CreatureFile.BaseAIData data_BaseAI = null;
-            ComponentBehavior component_BaseAI = ComponentBehavior.Inherit;
             string data_BaseAI_name = "";
 
             if (monsterAI)
             {
                 data_BaseAI = data.MonsterAI;
-                component_BaseAI = data.Components.MonsterAI.Value;
                 data_BaseAI_name = nameof(data.MonsterAI);
             }
             else if (animalAI)
             {
                 data_BaseAI = data.AnimalAI;
-                component_BaseAI = data.Components.AnimalAI.Value;
                 data_BaseAI_name = nameof(data.AnimalAI);
             }
             else
@@ -584,7 +425,7 @@ namespace OfTamingAndBreeding.Processing
                 return false;
             }
 
-            if (component_BaseAI == ComponentBehavior.Patch)
+            if (data_BaseAI != null)
             {
                 var baseAITrait = BaseAITrait.GetOrAddComponent(creature);
 
@@ -691,17 +532,19 @@ namespace OfTamingAndBreeding.Processing
                         Plugin.LogWarning($"{model}.{nameof(MonsterAI)}.{nameof(data_BaseAI.ConsumeAnimation)}: Animation '{customAnimation}' not found on prefab '{creatureName}'. Custom consume animation ignored.");
                     }
                 }
-            }
-            else if (component_BaseAI == ComponentBehavior.Remove)
-            {
-                // ignore, cannot be removed
+
+                if (data_BaseAI.ConsumeRandomItem == true)
+                {
+                    baseAITrait.m_consumeRandomItem = true;
+                }
+
             }
 
             // ---------------------------
             // Character
             // ---------------------------
 
-            if (data.Components.Character == ComponentBehavior.Patch)
+            if (data.Character != null)
             {
                 var character = creature.GetComponent<Character>();
                 var characterTrait = CharacterTrait.GetOrAddComponent(creature);
@@ -735,22 +578,13 @@ namespace OfTamingAndBreeding.Processing
                 characterTrait.m_tamedVersusTamed = data.Character.TamedVersusTamed;
                 characterTrait.m_tamedVersusWild = data.Character.TamedVersusWild;
 
-
-
-
-
-
-            }
-            else if (data.Components.Character == ComponentBehavior.Remove)
-            {
-                // ignore, cannot be removed
             }
 
             // ---------------------------
             // Tameable
             // ---------------------------
 
-            if (data.Components.Tameable == ComponentBehavior.Patch)
+            if (data.Tameable != null)
             {
                 var tameable = OTABPrefabRegistry.Instance.GetOrAddComponent<Tameable>(creatureName, creature);
                 var tameableTrait = TameableTrait.GetOrAddComponent(creature);
@@ -885,24 +719,13 @@ namespace OfTamingAndBreeding.Processing
                     tameableTrait.m_petCommand = data.Tameable.PetCommandText;
                 }
 
-
-
-
-
-
-
-            }
-            else if (data.Components.Tameable == ComponentBehavior.Remove)
-            {
-                Plugin.LogDebug($"{model}.{nameof(Tameable)}: Removing Tameable component (if exist)");
-                OTABPrefabRegistry.Instance.DestroyComponentIfExists<Tameable>(creatureName, creature);
             }
 
             // ---------------------------
             // Growup
             // ---------------------------
 
-            if (data.Components.Growup == ComponentBehavior.Patch)
+            if (data.Growup != null)
             {
                 var creatureGrowup = OTABPrefabRegistry.Instance.GetOrAddComponent<Growup>(creatureName, creature);
                 Plugin.LogDebug($"{model}.{nameof(data.Growup)}: Setting Growup values");
@@ -910,12 +733,8 @@ namespace OfTamingAndBreeding.Processing
                 if (data.Growup.GrowTime.HasValue) creatureGrowup.m_growTime = data.Growup.GrowTime.Value;
                 if (data.Growup.InheritTame.HasValue) creatureGrowup.m_inheritTame = data.Growup.InheritTame.Value;
 
-
-
                 creatureGrowup.m_grownPrefab = null;
                 
-
-
                 creatureGrowup.m_altGrownPrefabs = new List<Growup.GrownEntry>();
                 foreach (var grownData in data.Growup.Grown)
                 {
@@ -931,17 +750,12 @@ namespace OfTamingAndBreeding.Processing
                 if (!string.IsNullOrEmpty(data.Growup.RequireGlobalKey)) growupTrait.m_requireGlobalKey = data.Growup.RequireGlobalKey;
 
             }
-            else if (data.Components.Growup == ComponentBehavior.Remove)
-            {
-                Plugin.LogDebug($"{model}.{nameof(Growup)}: Removing Growup component (if exist)");
-                OTABPrefabRegistry.Instance.DestroyComponentIfExists<Growup>(creatureName, creature);
-            }
 
             // ---------------------------
             // Procreation
             // ---------------------------
 
-            if (data.Components.Procreation == ComponentBehavior.Patch)
+            if (data.Procreation != null)
             {
                 if (data.Procreation != null)
                 {
@@ -1019,299 +833,9 @@ namespace OfTamingAndBreeding.Processing
 
                 }
             }
-            else if (data.Components.Procreation == ComponentBehavior.Remove)
-            {
-                Plugin.LogDebug($"{model}.{nameof(Procreation)}: Removing Procreation component (if exist)");
-                OTABPrefabRegistry.Instance.DestroyComponentIfExists<Procreation>(creatureName, creature);
-            }
 
             return valid;
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        private void PrepareClone(string creatureName, CreatureFile data, UnityEngine.GameObject creature)
-        {
-            var model = $"{nameof(CreatureFile)}.{creatureName}";
-
-            var creatureCharacter = creature.GetComponent<Character>();
-            var creatureBaseAI = creature.GetComponent<BaseAI>();
-            var creatureMonsterAI = creature.GetComponent<MonsterAI>();
-            var creatureAnimalAI = creature.GetComponent<AnimalAI>();
-
-
-            if (data.Clone.RemoveMonsterAI == true && creatureMonsterAI)
-            {
-                // BaseAI fields
-                var baseAISnapshot = new Common.FieldsSnapshot<BaseAI>(creatureMonsterAI);
-
-                // MonsterAI fields
-                var m_avoidLand = creatureMonsterAI.m_avoidLand;
-                var m_fleeInLava = creatureMonsterAI.m_fleeInLava;
-
-                OTABPrefabRegistry.Instance.DestroyComponentIfExists<MonsterAI>(creatureName, creature);
-                creatureAnimalAI = OTABPrefabRegistry.Instance.GetOrAddComponent<AnimalAI>(creatureName, creature);
-                creatureMonsterAI = null;
-
-                // BaseAI fields
-                baseAISnapshot.ApplyTo(creatureAnimalAI);
-
-                // MonsterAI fields
-                var animalAITrait = AnimalAITrait.GetOrAddComponent(creature);
-                animalAITrait.m_avoidLand = m_avoidLand;
-                animalAITrait.m_fleeInLava = m_fleeInLava;
-
-            }
-
-            if (creature.TryGetComponent<CharacterDrop>(out var charDrop))
-            {
-                var drops = new List<CharacterDrop.Drop>();
-                foreach (var source in charDrop.m_drops)
-                {
-                    var isSpecial =
-                        creatureCharacter.m_boss ||
-                        source.m_onePerPlayer ||
-                        source.m_prefab.name.StartsWith("trophy", StringComparison.OrdinalIgnoreCase);
-                    if (isSpecial)
-                    {
-                        continue;
-                    }
-                    drops.Add(new CharacterDrop.Drop
-                    {
-                        m_prefab = source.m_prefab,
-                        m_amountMin = 0,
-                        m_amountMax = source.m_amountMax > 1 ? (int)(source.m_amountMax / 2f + 0.5f) : source.m_amountMax,
-                        m_chance = source.m_chance / 2f,
-                        m_onePerPlayer = source.m_onePerPlayer,
-                        m_levelMultiplier = false,
-                        m_dontScale = true,
-                    });
-                }
-
-                charDrop.m_drops = drops;
-            }
-
-            // display higher level creatures always as level 1 creature
-            var levelFx = creature.GetComponentInChildren<LevelEffects>(true);
-            if (levelFx != null)
-            {
-                levelFx.enabled = false;
-            }
-
-            var footStep = creature.GetComponent<FootStep>();
-            if (footStep)
-            {
-                //footStep.enabled = false; this would result in NRE
-                footStep.m_effects = footStep.m_effects.Select(effect => new FootStep.StepEffect
-                {
-                    m_name = effect.m_name,
-                    m_motionType = effect.m_motionType,
-                    m_material = effect.m_material,
-                    m_effectPrefabs = Array.Empty<GameObject>(),
-                }).ToList();
-            }
-
-            if (data.Clone.RemoveEffects != null)
-            {
-                VfxUtils.DisableVfx(creature, data.Clone.RemoveEffects);
-            }
-
-            Plugin.LogDebug($"{model}.{nameof(data.Clone)}: Setting Character values");
-            if (data.Clone.Name != null) creatureCharacter.m_name = data.Clone.Name;
-
-
-            var comp1 = creature.GetComponent<MovementDamage>();
-            if (comp1)
-            {
-                // disable faders walk damage
-                comp1.enabled = false;
-                if (comp1.m_runDamageObject)
-                {
-                    comp1.m_runDamageObject.SetActive(false);
-                }
-            }
-
-            if (data.Clone.Scale.HasValue)
-            {
-                var setScale = data.Clone.Scale.Value;
-
-                Plugin.LogDebug($"{model}.{nameof(data.Clone)}: Setting custom scaling to {setScale}");
-
-                creature.transform.localScale *= setScale;
-
-                creatureCharacter.m_speed *= setScale;
-
-                creatureCharacter.m_crouchSpeed *= setScale;
-                creatureCharacter.m_walkSpeed *= setScale;
-                creatureCharacter.m_runSpeed *= setScale;
-                creatureCharacter.m_swimSpeed *= setScale;
-                creatureCharacter.m_flySlowSpeed *= setScale;
-                creatureCharacter.m_flyFastSpeed *= setScale;
-                creatureBaseAI.m_randomMoveRange *= setScale;
-
-                Plugin.LogDebug($"{model}.{nameof(data.Clone)}: Setting vfx scaling");
-                VfxUtils.ScaleVfx(creature, setScale); // scale model particles
-
-                Plugin.LogDebug($"{model}.{nameof(data.Clone)}: Setting death effects scaling");
-                creatureCharacter.m_deathEffects = EffectUtils.CloneEffectList(creatureCharacter.m_deathEffects);
-                foreach (var eff in creatureCharacter.m_deathEffects.m_effectPrefabs)
-                {
-                    var originalEffect = eff.m_prefab;
-
-                    var clonedEffectName = $"{creatureName}_{originalEffect.name}";
-                    var clonedEffect = PrefabManager.Instance.GetPrefab(clonedEffectName);
-
-                    if (clonedEffect == null)
-                    {
-                        clonedEffect = PrefabManager.Instance.CreateClonedPrefab(
-                            clonedEffectName,
-                            originalEffect.name
-                        );
-                    }
-                    else
-                    {
-                        VfxUtils.RestoreVfx(clonedEffect, originalEffect);
-                    }
-                    VfxUtils.ScaleVfx(clonedEffect, setScale);
-                    eff.m_prefab = clonedEffect;
-
-                    // ragdoll
-
-                    var ragdoll = clonedEffect.GetComponent<Ragdoll>();
-                    var originalRagdoll = originalEffect.GetComponent<Ragdoll>();
-
-                    if (ragdoll && originalRagdoll)
-                    {
-                        ragdoll.transform.localScale = originalRagdoll.transform.localScale * setScale;
-                        ragdoll.m_removeEffect = EffectUtils.CloneEffectList(originalRagdoll.m_removeEffect);
-
-                        foreach (var eff2 in ragdoll.m_removeEffect.m_effectPrefabs)
-                        {
-                            var originalRemoveEffect = eff2.m_prefab;
-
-                            var clonedRemoveEffectName = $"{creatureName}_{originalEffect.name}_{originalRemoveEffect.name}";
-                            var clonedRemoveEffect = PrefabManager.Instance.GetPrefab(clonedRemoveEffectName);
-                            if (clonedRemoveEffect == null)
-                            {
-                                clonedRemoveEffect = PrefabManager.Instance.CreateClonedPrefab(clonedRemoveEffectName, originalRemoveEffect.name);
-                            }
-                            else
-                            {
-                                VfxUtils.RestoreVfx(clonedRemoveEffect, originalRemoveEffect);
-                            }
-
-                            VfxUtils.ScaleVfx(clonedRemoveEffect, setScale);
-                            eff2.m_prefab = clonedRemoveEffect;
-                        }
-                    }
-                }
-
-                var scaledCreature = OTABPrefabRegistry.Instance.GetOrAddComponent<ScaledCreature>(creatureName, creature);
-                scaledCreature.m_scale = setScale;
-                scaledCreature.m_animationScale = 1 / setScale;
-
-                // do not hide the creature if we just go some steps away
-                var lodGroup = creatureCharacter.transform.Find("Visual")?.GetComponent<LODGroup>();
-                if (lodGroup)
-                {
-                    // todo: is this beeing restored correctly?
-                    lodGroup.size /= setScale;
-                }
-
-                // stats
-
-                var setHealthScale = setScale;
-                var setAttackScale = setScale;
-                creatureCharacter.m_health *= setHealthScale;
-                scaledCreature.m_attackScale = setAttackScale;
-
-
-
-
-
-
-
-
-
-            }
-
-
-            // additional stuff
-
-            creatureCharacter.m_boss = false;
-            creatureCharacter.m_bossEvent = "";
-            creatureCharacter.m_defeatSetGlobalKey = "";
-            creatureCharacter.m_killedForAchievements = Utils.AchievementInclusion.Excluded;
-            creatureBaseAI.m_spawnMessage = "";
-            creatureBaseAI.m_deathMessage = "";
-
-            if (creatureMonsterAI)
-            {
-                creatureMonsterAI.m_enableHuntPlayer = false;
-            }
-
-            /*
-             * just testing to make a creature pickable
-             * 
-             * do not remove, do not uncomment
-             * 
-            if (offspringName == "OTAB_Bat_pup")
-            {
-                var itemDrop = PrefabRegistry.Instance.GetOrAddComponent<ItemDrop>(
-                    offspringName,
-                    offspring
-                );
-
-                itemDrop.m_itemData = new ItemDrop.ItemData();
-                itemDrop.m_itemData.m_shared = new ItemDrop.ItemData.SharedData
-                {
-                    m_name = "$OTAB_enemy_bat_pup",
-                    m_description = ",
-                    m_itemType = ItemDrop.ItemData.ItemType.Misc,
-                    m_maxStackSize = 1,
-                    m_maxQuality = 1,
-                    m_weight = 2f,
-                    m_teleportable = true,
-                };
-
-                itemDrop.m_itemData.m_stack = 1;
-                itemDrop.m_itemData.m_quality = 1;
-                itemDrop.m_itemData.m_variant = 0;
-            }
-            */
-
-        }
-
-
-
-
-
-
-
 
         //------------------------------------------------
 

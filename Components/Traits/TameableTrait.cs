@@ -144,7 +144,7 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 return false;
             }
-            if (m_baseAITrait.IsConfined())
+            if (m_baseAITrait.IsFrustrated())
             {
                 return false;
             }
@@ -189,7 +189,7 @@ namespace OfTamingAndBreeding.Components.Traits
         {
             if (!m_nview || !m_nview.IsValid()) return;
 
-            var globalFactor = Plugin.Configs.GlobalFedDurationFactor.Value;
+            var globalFactor = Plugin.Configs.FedDurationFactor.Value;
             if (globalFactor < 0f)
             {
                 return;
@@ -211,7 +211,7 @@ namespace OfTamingAndBreeding.Components.Traits
         {
             if (!m_nview || !m_nview.IsValid()) return;
 
-            var globalFactor = Plugin.Configs.GlobalTamingTimeFactor.Value;
+            var globalFactor = Plugin.Configs.TamingTimeFactor.Value;
             if (globalFactor < 0f)
             {
                 return;
@@ -300,27 +300,24 @@ namespace OfTamingAndBreeding.Components.Traits
                 }
             }
 
-            var globalFactor = Plugin.Configs.GlobalFedDurationFactor.Value;
+            var globalFactor = Plugin.Configs.FedDurationFactor.Value;
             var totalFactor = customFactor * globalFactor;
             ZDOUtils.SetFloat(m_nview.GetZDO(), Plugin.ZDOVars.z_fedDurationFactor, customFactor);
             m_nview.InvokeRPC(ZNetView.Everybody, "RPC_UpdateFedDuration", totalFactor);
             UpdateFedDuration(totalFactor);
 
-            // not handled, let valheim handle
             return false;
         }
 
-
-
-
-
-
-
-
-
-
-
-
+        public bool On_ResetFeedingTimer()
+        {
+            if (m_tameable.m_fedDuration == 0f)
+            {
+                // do not reset if the creature gets not fed from eating
+                return true;
+            }
+            return false;
+        }
 
         public float GetFedTimeLeft()
         {
@@ -407,20 +404,16 @@ namespace OfTamingAndBreeding.Components.Traits
             return m_tameable.IsTamed();
         }
 
-        public bool IsHungry()
-        {
-            return m_tameable.IsHungry();
-        }
-
         public bool IsHungry(float delay)
         {
-            if (!m_character) return false;
-            if (m_nview == null) return false;
+            // todo: maybe add refresh delay?
 
-            ZDO zDO = m_nview.GetZDO();
-            if (zDO == null) return false;
-            
-            DateTime dateTime = new DateTime(zDO.GetLong(ZDOVars.s_tameLastFeeding, 0L));
+            //if (!m_character) return false;
+            //if (m_nview == null) return false;
+            //ZDO zDO = m_nview.GetZDO();
+            //if (zDO == null) return false;
+
+            DateTime dateTime = new DateTime(m_nview.GetZDO().GetLong(ZDOVars.s_tameLastFeeding, 0L));
             return (ZNet.instance.GetTime() - dateTime).TotalSeconds > m_tameable.m_fedDuration + delay;
         }
 

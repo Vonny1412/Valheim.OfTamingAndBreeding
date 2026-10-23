@@ -191,7 +191,7 @@ namespace OfTamingAndBreeding.Components.Traits
         {
             if (!m_nview || !m_nview.IsValid()) return;
 
-            var globalFactor = Plugin.Configs.GlobalPregnancyDurationFactor.Value;
+            var globalFactor = Plugin.Configs.PregnancyDurationFactor.Value;
             UpdatePregnancyDuration(globalFactor);
         }
 
@@ -298,7 +298,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 return;
             }
 
-            if (Plugin.Configs.PreventProcreationWhileFollowing.Value == true && m_baseAITrait.GetFollowTarget())
+            if (Plugin.Configs.PreventMatingWhileFollowing.Value == true && m_baseAITrait.GetFollowTarget())
             {
                 return;
             }
@@ -335,7 +335,7 @@ namespace OfTamingAndBreeding.Components.Traits
                     // Valheim uses inverted logic here
                     return;
                 }
-                if (m_baseAITrait.IsAlerted() || m_baseAITrait.IsConfined() || m_tameable.IsHungry() || m_baseAITrait.GetBaseAI().IsSleeping())
+                if (m_baseAITrait.IsAlerted() || m_baseAITrait.IsFrustrated() || m_tameable.IsHungry() || m_baseAITrait.GetBaseAI().IsSleeping())
                 {
                     return;
                 }
@@ -517,18 +517,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 m_procreation.m_birthEffects.Create(spawned.transform.position, Quaternion.identity);
 
                 // CLLC traits (it also takes care if the spawned object is an egg or growup)
-                Integrations.Mods.CllCBridge.BequeathTraits(m_nview.GetComponent<Character>(), _m_partnerPrefab, spawned);
-
-                // todo: problem:
-                // what happens when an egg gets stacked?
-                // Egg1 with trait1 gets stacked into Egg2 with trait2. Egg1 (and also trait1) gets destroyed
-                // Result: We now got to eggs (Egg2 with stacksize of 2) with trait2
-                // when does an item can get stacked?
-                // - user pick up item in invetory and drops on other item with same type
-                // - valheims auto stacking of dropped items
-                // - an other mod could just say: remove item 1 and set stacksize of item 2 to +1
-                // therefore: we cannot garuantee to pass correct traits over to eggs
-                // but wait... it that a problem otab should care about? cllc should handle it itself
+                Integrations.Mods.CllCBridge.BequeathTraits(m_nview.GetComponent<Character>(), spawned);
 
                 // reset
                 _m_partnerPrefab = null;

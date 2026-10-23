@@ -2,6 +2,7 @@
 using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -11,6 +12,7 @@ namespace OfTamingAndBreeding.Components.Traits
     {
 
         [SerializeField] internal bool m_tamedIdleNearSpawn = false;
+        [SerializeField] internal bool m_consumeRandomItem = false;
 
         [NonSerialized] private ZNetView m_nview = null;
         [NonSerialized] private BaseAI m_baseAI = null;
@@ -20,6 +22,9 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private AnimalAITrait m_animalAITrait = null;
         [NonSerialized] private CharacterTrait m_characterTrait = null;
         [NonSerialized] private AnimationClipOverlay m_consumeClip = null;
+
+
+
 
         private void Awake()
         {
@@ -31,8 +36,6 @@ namespace OfTamingAndBreeding.Components.Traits
             m_animalAITrait = GetComponent<AnimalAITrait>();
             m_characterTrait = GetComponent<CharacterTrait>();
             m_consumeClip = GetComponent<AnimationClipOverlay>();
-            
-            s_consumeItemsStore.TryGet(m_consumeItemsStoreIndex, out m_consumeItems);
 
             // randomize for mor immersion
             m_consumeSearchTimer = UnityEngine.Random.Range(0, GetConsumeSearchInterval());
@@ -42,11 +45,25 @@ namespace OfTamingAndBreeding.Components.Traits
 
         private void Start()
         {
-            if (!CanBecomeConfined())
+            s_consumeItemsStore.TryGet(m_consumeItemsStoreIndex, out m_consumeItems);
+
+            if (m_consumeRandomItem && m_consumeItems != null && m_consumeItems.Length > 1)
             {
-                if (m_nview.IsValid())
+                var zdo = m_nview.GetZDO();
+                long spawnTime = zdo.GetLong(ZDOVars.s_spawnTime, 0L);
+                if (spawnTime != 0L)
                 {
-                    ResetAntiExploitState();
+                    uint hash = unchecked((uint)(spawnTime ^ (spawnTime >> 32)));
+                    int index = (int)(hash % (uint)m_consumeItems.Length);
+                    m_consumeItems = new[] { m_consumeItems[index] };
+                    if (m_monsterAI)
+                    {
+                        m_monsterAI.m_consumeItems = new List<ItemDrop> { m_consumeItems[0].itemDrop };
+                    }
+                    else if (m_animalAITrait)
+                    {
+                        m_animalAITrait.m_consumeItems = new List<ItemDrop> { m_consumeItems[0].itemDrop };
+                    }
                 }
             }
         }
@@ -56,13 +73,14 @@ namespace OfTamingAndBreeding.Components.Traits
             Unregister();
         }
 
-        public BaseAI GetBaseAI() {
+        public BaseAI GetBaseAI()
+        {
             return m_baseAI;
         }
 
 
 
-        
+
 
 
 
@@ -71,9 +89,9 @@ namespace OfTamingAndBreeding.Components.Traits
 
         internal bool On_UpdateAI(float dt)
         {
-            m_characterTrait.UpdateHostilities();
+            m_characterTrait.UpdateReactiveHostilities();
 
-            UpdateConfinedHud();
+            UpdateFrustratedHud();
 
             if (m_animalAITrait && m_animalAITrait.On_UpdateAI(dt))
             {
@@ -92,49 +110,13 @@ namespace OfTamingAndBreeding.Components.Traits
                 return true;
             }
 
-            if (UpdateAntiExploit(dt))
-            {
-                return true;
-            }
-
             if (m_animalAITrait && m_animalAITrait.On_IdleMovement(dt))
             {
                 // used for animals that can consume food or follow the player
                 return true;
             }
-
-            if (RandomMovementNearSpawn(dt))
-            {
-                return true;
-            }
-
-            return false; // not handled
-        }
-
-        private bool RandomMovementNearSpawn(float dt)
-        {
-            if (!m_tamedIdleNearSpawn)
-            {
-                return false;
-            }
-
-            if (m_baseAI.GetRandomMoveUpdateTimer() > 0)
-            {
-                return false;
-            }
-
-            if (!m_characterTrait.IsTamed())
-            {
-                return false;
-            }
-
-            if (m_baseAI.GetPatrolPoint(out _))
-            {
-                return false;
-            }
             
-            m_baseAI.RandomMovement(dt, m_baseAI.GetSpawnPoint(), snapToGround: false);
-            return true;
+            return false; // not handled
         }
 
         public bool IsAlerted()
@@ -170,24 +152,7 @@ namespace OfTamingAndBreeding.Components.Traits
             return m_monsterAI.GetFollowTarget();
         }
 
-        public string GetAdminHoverInfoText()
-        {
-            if (!m_nview.IsValid())
-            {
-                return "";
-            }
 
-            var text = "";
-
-            var movedDist = (float)(int)(GetAntiExploitMovedDistance() * 10) / 10;
-            var movedParts = string.Join(" + ", m_antiExploitMoveDistances.Select((d) => (float)(int)(d * 10) / 10));
-            var movedText = $"Moved: {movedParts} = {movedDist} / {GetMinRequiredMoveDistance()}";
-            var jammedText = $"Confined: " + (m_confined ? "true" : "false") + (m_checkConfinement ? " (avoiding)" : "");
-            text += "\n" + Localization.instance.Localize("$otab_hover_admin_info", jammedText);
-            text += "\n" + Localization.instance.Localize("$otab_hover_admin_info", movedText);
-
-            return text;
-        }
 
     }
 }

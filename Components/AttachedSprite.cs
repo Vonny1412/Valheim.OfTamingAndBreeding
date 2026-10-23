@@ -1,4 +1,6 @@
 ﻿using OfTamingAndBreeding.Components.Core;
+using OfTamingAndBreeding.ValheimAPI;
+using System;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Components
@@ -12,6 +14,11 @@ namespace OfTamingAndBreeding.Components
         private GameObject m_visual;
         private Rigidbody m_body;
         private SpriteRenderer m_renderer;
+
+        private readonly Quaternion flat = Quaternion.Euler(90f, 0f, 0f);
+
+        private bool m_preserveVisual;
+        private float m_preserveVisualUntil;
 
         private void Awake()
         {
@@ -35,27 +42,33 @@ namespace OfTamingAndBreeding.Components
                 return;
             }
 
-            bool visible = !m_body || m_body.IsSleeping();
-            if (m_renderer.enabled != visible)
-            {
-                m_renderer.enabled = visible;
-            }
-            if (!visible)
+            // Ignore temporary physics reactions
+            if (Time.time < m_preserveVisualUntil)
             {
                 return;
             }
 
+            bool sleeping = !m_body || m_body.IsSleeping();
 
-            // Follow position, but NOT item rotation
-            //m_visual.transform.position = transform.position + m_offset;
-            //m_visual.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            if (!sleeping)
+            {
+                m_preserveVisual = false;
+            }
 
-            // Follow position and Y rotation, but always stay flat
-            m_visual.transform.position = transform.position + m_offset;
+            if (m_renderer.enabled != sleeping)
+            {
+                m_renderer.enabled = sleeping;
+            }
+
+            if (!sleeping || m_preserveVisual)
+            {
+                return;
+            }
+
             var yaw = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
+            m_visual.transform.position = transform.position + yaw * m_offset;
             m_visual.transform.rotation = yaw * flat;
         }
-        private readonly Quaternion flat = Quaternion.Euler(90f, 0f, 0f);
 
         private void OnDestroy()
         {
@@ -79,6 +92,12 @@ namespace OfTamingAndBreeding.Components
             m_renderer.sprite = m_sprite;
 
             m_visual.transform.localScale = Vector3.one * m_size;
+        }
+
+        public void PreserveVisual(float time)
+        {
+            m_preserveVisual = true;
+            m_preserveVisualUntil = Mathf.Max(m_preserveVisualUntil, Time.time + time);
         }
 
     }

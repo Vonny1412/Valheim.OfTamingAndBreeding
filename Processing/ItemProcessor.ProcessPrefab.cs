@@ -1,7 +1,6 @@
 ﻿using OfTamingAndBreeding.Components;
 using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Data.Models;
-using OfTamingAndBreeding.Data.Models.SubData;
 using OfTamingAndBreeding.Processing.Core;
 using OfTamingAndBreeding.Processing.Registry;
 using OfTamingAndBreeding.Utilities;
@@ -37,11 +36,16 @@ namespace OfTamingAndBreeding.Processing
                 SaveIcon(baseIcon, path_icons_final, itemName);
             }
 
+
+
+
+
+
             //
             // Item
             //
 
-            if (data.Components.Item == ComponentBehavior.Patch)
+            if (data.Item != null)
             {
                 if (data.Item.MaxStackSize.HasValue)
                 {
@@ -63,16 +67,12 @@ namespace OfTamingAndBreeding.Processing
                     itemItemDataShared.m_scaleWeightByQuality = data.Item.ScaleWeightByQuality.Value;
                 }
             }
-            else if (data.Components.Item == ComponentBehavior.Remove)
-            {
-                // ignore, cannot be removed
-            }
 
             //
             // Floating
             //
 
-            if (data.Components.Floating == ComponentBehavior.Patch)
+            if (data.Floating != null)
             {
                 var itemFloating = OTABPrefabRegistry.Instance.GetOrAddComponent<Floating>(itemName, item);
 
@@ -83,101 +83,87 @@ namespace OfTamingAndBreeding.Processing
                     itemFloating.m_waterLevelOffset = data.Floating.WaterLevelOffset.Value;
                 }
             }
-            else if (data.Components.Floating == ComponentBehavior.Remove)
-            {
-                //OTABPrefabRegistry.Instance.DestroyComponentIfExists<Floating>(itemName, item);
-                // do not destroy! we can just disable it
-                var itemFloating = item.GetComponent<Floating>();
-                if (itemFloating)
-                {
-                    itemFloating.enabled = false;
-                }
-            }
 
             //
             // EggGrow
             //
 
-            if (data.Components.EggGrow == ComponentBehavior.Patch)
+            if (data.EggGrow != null)
             {
                 var itemEggGrow = OTABPrefabRegistry.Instance.GetOrAddComponent<EggGrow>(itemName, item);
                 var itemEggGrowTrait = EggGrowTrait.GetOrAddComponent(item);
 
-                if (data.EggGrow != null)
+                Plugin.LogDebug($"{model}.{nameof(data.EggGrow)}: Setting values");
+
+                if (data.EggGrow.GrowTime.HasValue)
                 {
-                    Plugin.LogDebug($"{model}.{nameof(data.EggGrow)}: Setting values");
+                    itemEggGrow.m_growTime = data.EggGrow.GrowTime.Value;
+                }
 
-                    if (data.EggGrow.GrowTime.HasValue)
-                    {
-                        itemEggGrow.m_growTime = data.EggGrow.GrowTime.Value;
-                    }
+                if (data.EggGrow.UpdateInterval.HasValue)
+                {
+                    itemEggGrow.m_updateInterval = data.EggGrow.UpdateInterval.Value;
+                }
 
-                    if (data.EggGrow.UpdateInterval.HasValue)
-                    {
-                        itemEggGrow.m_updateInterval = data.EggGrow.UpdateInterval.Value;
-                    }
+                if (data.EggGrow.RequireNearbyFire.HasValue)
+                {
+                    itemEggGrow.m_requireNearbyFire = data.EggGrow.RequireNearbyFire.Value;
+                }
+                else
+                {
+                    itemEggGrow.m_requireNearbyFire = false;
+                }
 
-                    if (data.EggGrow.RequireNearbyFire.HasValue)
-                    {
-                        itemEggGrow.m_requireNearbyFire = data.EggGrow.RequireNearbyFire.Value;
-                    }
-                    else
-                    {
-                        itemEggGrow.m_requireNearbyFire = false;
-                    }
+                if (data.EggGrow.RequireUnderRoof.HasValue)
+                {
+                    itemEggGrow.m_requireUnderRoof = data.EggGrow.RequireUnderRoof.Value;
+                }
+                else
+                {
+                    itemEggGrow.m_requireUnderRoof = false;
+                }
 
-                    if (data.EggGrow.RequireUnderRoof.HasValue)
-                    {
-                        itemEggGrow.m_requireUnderRoof = data.EggGrow.RequireUnderRoof.Value;
-                    }
-                    else
-                    {
-                        itemEggGrow.m_requireUnderRoof = false;
-                    }
+                if (data.EggGrow.RequireCoverPercentige.HasValue)
+                {
+                    itemEggGrow.m_requireCoverPercentige = data.EggGrow.RequireCoverPercentige.Value;
+                }
+                else
+                {
+                    itemEggGrow.m_requireCoverPercentige = 0;
+                }
 
-                    if (data.EggGrow.RequireCoverPercentige.HasValue)
+                if (data.EggGrow.RequireAnyBiome != null)
+                {
+                    var biomes = data.EggGrow.RequireAnyBiome;
+                    var mask = Heightmap.Biome.None;
+                    foreach (var biome in biomes)
                     {
-                        itemEggGrow.m_requireCoverPercentige = data.EggGrow.RequireCoverPercentige.Value;
+                        mask |= biome;
                     }
-                    else
-                    {
-                        itemEggGrow.m_requireCoverPercentige = 0;
-                    }
+                    itemEggGrowTrait.m_requireBiome = mask;
+                    itemEggGrowTrait.m_requireBiomes = biomes;
+                }
 
-                    if (data.EggGrow.RequireAnyBiome != null)
-                    {
-                        var biomes = data.EggGrow.RequireAnyBiome;
-                        var mask = Heightmap.Biome.None;
-                        foreach (var biome in biomes)
-                        {
-                            mask |= biome;
-                        }
-                        itemEggGrowTrait.m_requireBiome = mask;
-                        itemEggGrowTrait.m_requireBiomes = biomes;
-                    }
+                if (data.EggGrow.RequireLiquid.HasValue)
+                {
+                    itemEggGrowTrait.m_requireLiquid = data.EggGrow.RequireLiquid.Value;
+                }
 
-                    if (data.EggGrow.RequireLiquid.HasValue)
-                    {
-                        itemEggGrowTrait.m_requireLiquid = data.EggGrow.RequireLiquid.Value;
-                    }
+                if (data.EggGrow.RequireGlobalKey != null)
+                {
+                    itemEggGrowTrait.m_requireGlobalKey = EnvironmentUtils.ParseGlobalKey(data.EggGrow.RequireGlobalKey);
+                }
 
-                    if (data.EggGrow.RequireGlobalKey != null)
-                    {
-                        itemEggGrowTrait.m_requireGlobalKey = EnvironmentUtils.ParseGlobalKey(data.EggGrow.RequireGlobalKey);
-                    }
-
-                    if (data.EggGrow.Grown != null)
-                    {
-                        var grownList = data.EggGrow.Grown.Select((g) => new EggGrowTrait.EggGrown(
-                            weight: g.Weight,
-                            requireGlobalKey: EnvironmentUtils.ParseGlobalKey(g.RequireGlobalKey),
-                            prefab: g.Prefab,
-                            tamed: g.Tamed,
-                            showHatchEffect: g.ShowHatchEffect
-                        )).ToArray();
-                        itemEggGrowTrait.m_grownListStoreIndex = EggGrowTrait.s_grownListStore.Add(grownList);
-                    }
-
+                if (data.EggGrow.Grown != null)
+                {
+                    var grownList = data.EggGrow.Grown.Select((g) => new EggGrowTrait.EggGrown(
+                        weight: g.Weight,
+                        requireGlobalKey: EnvironmentUtils.ParseGlobalKey(g.RequireGlobalKey),
+                        prefab: g.Prefab,
+                        tamed: g.Tamed,
+                        showHatchEffect: g.ShowHatchEffect
+                    )).ToArray();
+                    itemEggGrowTrait.m_grownListStoreIndex = EggGrowTrait.s_grownListStore.Add(grownList);
                 }
 
                 Plugin.LogDebug($"{model}: Setting effects");
@@ -196,11 +182,6 @@ namespace OfTamingAndBreeding.Processing
                 itemEggGrow.m_tamed = true;
 
             }
-            else if (data.Components.EggGrow == ComponentBehavior.Remove)
-            {
-                OTABPrefabRegistry.Instance.DestroyComponentIfExists<EggGrow>(itemName, item);
-                // seems we need to destroy. eggrow.start is using invokerepeating
-            }
 
             // set last remaining egg values
 
@@ -211,8 +192,15 @@ namespace OfTamingAndBreeding.Processing
                 itemItemDataShared.m_autoStack = false;
                 eggSharedNameHashes.Add(itemItemDataShared.m_name.GetStableHashCode());
             }
+            else
+            {
+                itemItemDrop.m_autoPickup = true;
+                itemItemDrop.m_autoDestroy = true;
+                itemItemDataShared.m_autoStack = true;
+            }
 
-            //eggItemDataShared.m_value = 0; // todo: maybe add yaml option for that
+            //eggItemDataShared.m_value = 0; // todo: add yaml option for that
+            // todo: prefab dumping is not writing item shared data
 
             return error == false;
         }

@@ -43,6 +43,7 @@ namespace OfTamingAndBreeding.Patches
             return character.GetTopPoint();
         }
 
+        private static Sprite m_frustratedIconSprite;
 
         [HarmonyPatch(typeof(EnemyHud), "ShowHud")]
         [HarmonyPrefix]
@@ -64,7 +65,7 @@ namespace OfTamingAndBreeding.Patches
         [HarmonyPostfix]
         private static void EnemyHud_ShowHud_Postfix(EnemyHud __instance, Character c, IDictionary __state)
         {
-            if (__state == null)
+            if (__state == null || !BaseAITrait.TryGet(c.gameObject, out var trait))
             {
                 return;
             }
@@ -74,18 +75,16 @@ namespace OfTamingAndBreeding.Patches
             GameObject gui = hudTraverse.Field("m_gui").GetValue<GameObject>();
             RectTransform aware = hudTraverse.Field("m_aware").GetValue<RectTransform>();
 
-            if (!aware || !gui)
+            if (!aware || !gui || gui.transform.Find("Frustrated"))
             {
                 return;
             }
 
-            if (gui.transform.Find("Confined"))
+            if (!m_frustratedIconSprite)
             {
-                return;
+                m_frustratedIconSprite = SpriteUtils.LoadSpriteFromResource("OfTamingAndBreeding.Resources.Icons.Frustrated.png", "OTAB_FrustratedIcon");
             }
-
-            Sprite sprite = GetConfinedIconSprite("OfTamingAndBreeding.Resources.Icons.Confined.png", "OTAB_ConfinedIcon");
-            if (!sprite)
+            if (!m_frustratedIconSprite)
             {
                 return;
             }
@@ -100,37 +99,16 @@ namespace OfTamingAndBreeding.Patches
             awareGateTransform.offsetMax = Vector2.zero;
             aware.SetParent(awareGateTransform, true);
 
-            GameObject confined = UnityEngine.Object.Instantiate(aware.gameObject, awareParent);
-            confined.name = "Confined";
+            GameObject frustrated = UnityEngine.Object.Instantiate(aware.gameObject, awareParent);
+            frustrated.name = "Frustrated";
 
-            UnityEngine.UI.Image image = confined.GetComponent<UnityEngine.UI.Image>();
-            image.sprite = sprite;
+            UnityEngine.UI.Image image = frustrated.GetComponent<UnityEngine.UI.Image>();
+            image.sprite = m_frustratedIconSprite;
             image.color = new Color(1f, 0.4f, 0.05f, 1f);
 
-            confined.SetActive(false);
+            frustrated.SetActive(false);
 
-            if (BaseAITrait.TryGet(c.gameObject, out var trait))
-            {
-                trait.SetConfinedHud(confined, awareGate);
-            }
-        }
-
-        private static Sprite m_confinedIconSprite;
-
-        private static Sprite GetConfinedIconSprite(string path, string name)
-        {
-            if (m_confinedIconSprite)
-            {
-                return m_confinedIconSprite;
-            }
-
-            m_confinedIconSprite = SpriteUtils.LoadSpriteFromResource(path, name);
-            if (!m_confinedIconSprite)
-            {
-                Plugin.LogError($"Could not load embedded icon '{path}'");
-            }
-
-            return m_confinedIconSprite;
+            trait.SetFrustratedHud(frustrated, awareGate);
         }
 
     }

@@ -2,6 +2,8 @@
 
 namespace OfTamingAndBreeding.Data.Models.SubData
 {
+    // todo: remove me!
+    /*
     [Serializable]
     internal enum ComponentBehavior
     {
@@ -9,4 +11,5 @@ namespace OfTamingAndBreeding.Data.Models.SubData
         Patch,
         Remove,
     }
+    */
 }

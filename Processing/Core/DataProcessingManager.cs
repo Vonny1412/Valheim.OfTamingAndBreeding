@@ -16,6 +16,7 @@ namespace OfTamingAndBreeding.Processing.Core
             new ItemProcessor(),
             new RecipeProcessor(),
             new CreatureProcessor(),
+            new MiscProcessor(),
         };
 
         public static IEnumerable<IDataProcessor> DataProcessors => dataProcessors;

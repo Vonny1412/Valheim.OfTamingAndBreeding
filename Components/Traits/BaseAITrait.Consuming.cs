@@ -32,7 +32,7 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 return true;
             }
-            return m_tameableTrait.IsHungry();
+            return m_tameableTrait.GetTameable().IsHungry();
         }
 
         private bool CheckConsumeTimer(float dt)
@@ -272,10 +272,10 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 return false;
             }
-            string itemName = data.m_shared.m_name;
+            string name = data.m_shared.m_name;
             foreach (ConsumeItem consumeItem in consumeList)
             {
-                if (consumeItem.itemDrop.m_itemData.m_shared.m_name == itemName)
+                if (consumeItem.itemDrop.m_itemData.m_shared.m_name == name)
                 {
                     return true;
                 }
@@ -290,10 +290,10 @@ namespace OfTamingAndBreeding.Components.Traits
             {
                 return false;
             }
-            string checkItemName = data.m_shared.m_name;
+            string name = data.m_shared.m_name;
             foreach (ItemDrop consumeItem in consumeList)
             {
-                if (consumeItem.m_itemData.m_shared.m_name == checkItemName)
+                if (consumeItem.m_itemData.m_shared.m_name == name)
                 {
                     return true;
                 }
@@ -303,7 +303,6 @@ namespace OfTamingAndBreeding.Components.Traits
 
         public ItemDrop FindClosestConsumableItem(float maxRange, IReadOnlyList<ItemDrop> consumeList)
         {
-
             var pos = m_baseAI.transform.position;
 
             int count = Physics.OverlapSphereNonAlloc(pos, maxRange, s_consumeColliders, s_consumeItemMask);
@@ -321,10 +320,16 @@ namespace OfTamingAndBreeding.Components.Traits
                 var rb = col.attachedRigidbody;
                 if (!rb)
                     continue;
+
+                /*
                 if (!rb.TryGetComponent<ItemDropTrait>(out var trait))
                     continue;
                 if (trait.TryGetValidItemDrop(out var item) == false)
                     continue;
+                */
+                if (!rb.TryGetComponent<ItemDrop>(out var item))
+                    continue;
+                
                 if (!CanConsume(consumeList, item))
                     continue;
 

@@ -20,33 +20,52 @@ namespace OfTamingAndBreeding.Components.Extensions
             => ValheimAPI.BaseAI.__IAPI_LookAt_Invoker1.Invoke(that, point);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsLookingAt(this BaseAI that, Vector3 point, float minAngle, bool inverted = false)
-            => ValheimAPI.BaseAI.__IAPI_IsLookingAt_Invoker1.Invoke(that, point, minAngle, inverted);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool HavePath(this BaseAI that, Vector3 target)
             => ValheimAPI.BaseAI.__IAPI_HavePath_Invoker1.Invoke(that, target);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetAlertedUnsafe(this BaseAI that, bool alerted)
-            => ValheimAPI.BaseAI.__IAPI_m_alerted_Invoker.Set(that, alerted);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetAlerted(this BaseAI that, bool alerted)
             => ValheimAPI.BaseAI.__IAPI_SetAlerted_Invoker1.Invoke(that, alerted);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void UpdateTakeoffLanding(this BaseAI that, float dt)
-            => ValheimAPI.BaseAI.__IAPI_UpdateTakeoffLanding_Invoker1.Invoke(that, dt);
+        public static List<BaseAI> GetInstances()
+            => ValheimAPI.BaseAI.__IAPI_m_instances_Invoker.Get(null);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float GetJumpTimer(this BaseAI that)
-            => ValheimAPI.BaseAI.__IAPI_m_jumpTimer_Invoker.Get(that);
+        public static void MoveToWater(this BaseAI that, float dt, float maxRange)
+            => ValheimAPI.BaseAI.__IAPI_MoveToWater_Invoker1.Invoke(that, dt, maxRange);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetJumpTimer(this BaseAI that, float value)
-            => ValheimAPI.BaseAI.__IAPI_m_jumpTimer_Invoker.Set(that, value);
+        public static void Flee(this BaseAI that, float dt, Vector3 from)
+            => ValheimAPI.BaseAI.__IAPI_Flee_Invoker1.Invoke(that, dt, from);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SetSpawnPoint(this BaseAI that, Vector3 point)
+            => ValheimAPI.BaseAI.__IAPI_m_spawnPoint_Invoker.Set(that, point);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void GetWorldTimeDelta(this BaseAI that)
+            => ValheimAPI.BaseAI.__IAPI_GetWorldTimeDelta_Invoker1.Invoke(that);
+
+        /*
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector3 GetSpawnPoint(this BaseAI that)
+            => ValheimAPI.BaseAI.__IAPI_m_spawnPoint_Invoker.Get(that);
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void RandomMovement(this BaseAI that, float dt, Vector3 centerPoint, bool snapToGround = false)
+            => ValheimAPI.BaseAI.__IAPI_RandomMovement_Invoker1.Invoke(that, dt, centerPoint, snapToGround);
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool GetPatrolPoint(this BaseAI that, out Vector3 point)
+        {
+            object[] args = new object[] { default(Vector3) };
+            var result = ValheimAPI.BaseAI.__IAPI_GetPatrolPoint_Invoker1.Invoke(that, args);
+            point = (Vector3)args[0];
+            return result;
+        }
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float GetRandomMoveUpdateTimer(this BaseAI that)
             => ValheimAPI.BaseAI.__IAPI_m_randomMoveUpdateTimer_Invoker.Get(that);
@@ -66,43 +85,28 @@ namespace OfTamingAndBreeding.Components.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void SetTimeSinceHurt(this BaseAI that, float value)
             => ValheimAPI.BaseAI.__IAPI_m_timeSinceHurt_Invoker.Set(that, value);
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void UpdateTakeoffLanding(this BaseAI that, float dt)
+            => ValheimAPI.BaseAI.__IAPI_UpdateTakeoffLanding_Invoker1.Invoke(that, dt);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static List<BaseAI> GetInstances()
-            => ValheimAPI.BaseAI.__IAPI_m_instances_Invoker.Get(null);
+        public static float GetJumpTimer(this BaseAI that)
+            => ValheimAPI.BaseAI.__IAPI_m_jumpTimer_Invoker.Get(that);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool GetPatrolPoint(this BaseAI that, out Vector3 point)
-        {
-            object[] args = new object[] { default(Vector3) };
-            var result = ValheimAPI.BaseAI.__IAPI_GetPatrolPoint_Invoker1.Invoke(that, args);
-            point = (Vector3)args[0];
-            return result;
-        }
-
+        public static void SetJumpTimer(this BaseAI that, float value)
+            => ValheimAPI.BaseAI.__IAPI_m_jumpTimer_Invoker.Set(that, value);
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void RandomMovement(this BaseAI that, float dt, Vector3 centerPoint, bool snapToGround = false)
-            => ValheimAPI.BaseAI.__IAPI_RandomMovement_Invoker1.Invoke(that, dt, centerPoint, snapToGround);
-
+        public static bool IsLookingAt(this BaseAI that, Vector3 point, float minAngle, bool inverted = false)
+            => ValheimAPI.BaseAI.__IAPI_IsLookingAt_Invoker1.Invoke(that, point, minAngle, inverted);
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Vector3 GetSpawnPoint(this BaseAI that)
-            => ValheimAPI.BaseAI.__IAPI_m_spawnPoint_Invoker.Get(that);
+        public static void SetAlertedUnsafe(this BaseAI that, bool alerted)
+            => ValheimAPI.BaseAI.__IAPI_m_alerted_Invoker.Set(that, alerted);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void MoveToWater(this BaseAI that, float dt, float maxRange)
-            => ValheimAPI.BaseAI.__IAPI_MoveToWater_Invoker1.Invoke(that, dt, maxRange);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Flee(this BaseAI that, float dt, Vector3 from)
-            => ValheimAPI.BaseAI.__IAPI_Flee_Invoker1.Invoke(that, dt, from);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void SetSpawnPoint(this BaseAI that, Vector3 point)
-            => ValheimAPI.BaseAI.__IAPI_m_spawnPoint_Invoker.Set(that, point);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void GetWorldTimeDelta(this BaseAI that)
-            => ValheimAPI.BaseAI.__IAPI_GetWorldTimeDelta_Invoker1.Invoke(that);
+        */
 
     }
 }

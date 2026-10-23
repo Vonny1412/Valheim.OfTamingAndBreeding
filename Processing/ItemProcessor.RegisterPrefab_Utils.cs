@@ -32,6 +32,23 @@ namespace OfTamingAndBreeding.Processing
                 return false;
             }
 
+            var anyFound = false;
+            foreach (Transform sourceChild in visualSource.transform)
+            {
+                if (ContainsForbiddenComponents(sourceChild))
+                {
+                    continue;
+                }
+                anyFound = true;
+            }
+            if (!anyFound)
+            {
+                Plugin.LogWarning($"{model}: No valid visual child found");
+                return false;
+            }
+
+
+
             //LogHierarchy(item.transform);
             //LogHierarchy(visualSource.transform);
 
@@ -118,7 +135,8 @@ namespace OfTamingAndBreeding.Processing
                 root.GetComponentInChildren<EggGrow>(true) ||
                 root.GetComponentInChildren<EggHatch>(true) ||
                 root.GetComponentInChildren<Destructible>(true) ||
-                root.GetComponentInChildren<DropOnDestroyed>(true);
+                root.GetComponentInChildren<DropOnDestroyed>(true) ||
+                root.GetComponentInChildren<CharacterAnimEvent>(true);
         }
 
         private static void EnsureVisualCollider(GameObject item, GameObject visualRoot, List<GameObject> oldVisuals)

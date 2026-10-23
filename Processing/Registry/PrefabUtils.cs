@@ -26,8 +26,7 @@ namespace OfTamingAndBreeding.Processing.Registry
         // single components
         //------------------------------
 
-        public static void RestoreComponent<T>(GameObject current, GameObject backup)
-            where T : Component
+        public static void RestoreComponent<T>(GameObject current, GameObject backup) where T : Component
         {
             RestoreComponent(typeof(T), current, backup);
         }
@@ -318,7 +317,7 @@ namespace OfTamingAndBreeding.Processing.Registry
 
             if (Directory.Exists(outputDir))
             {
-                Directory.Delete(outputDir);
+                Directory.Delete(outputDir, true);
             }
 
             foreach (var prefab in ZNetScene.instance.m_prefabs)

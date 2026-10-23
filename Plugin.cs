@@ -12,12 +12,12 @@ namespace OfTamingAndBreeding
     [BepInDependency(Jotunn.Main.ModGuid)]
     [BepInDependency("com.ValheimModding.YamlDotNetDetector")]
 
-    [BepInDependency(CllCBridge.PluginGUID, BepInDependency.DependencyFlags.SoftDependency)]
-    [BepInDependency(ValheimPlusCompatibility.PluginGUID, BepInDependency.DependencyFlags.SoftDependency)]
-    [BepInDependency(CoreWoodExtrasCompatibility.PluginGUID, BepInDependency.DependencyFlags.SoftDependency)]
-    [BepInDependency("Vonny1412.HoldToCommand",     BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(CllCBridge.PluginGUID,                     BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(ValheimPlusCompatibility.PluginGUID,       BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency(CoreWoodExtrasCompatibility.PluginGUID,    BepInDependency.DependencyFlags.SoftDependency)]
+    [BepInDependency("Vonny1412.HoldToCommand",                 BepInDependency.DependencyFlags.SoftDependency)]
 
-    [NetworkCompatibility(CompatibilityLevel.ClientMustHaveMod, VersionStrictness.Patch)] // ensure client has this mod with correct version
+    [NetworkCompatibility(CompatibilityLevel.ClientMustHaveMod, VersionStrictness.Patch)]
 
     public sealed partial class Plugin : BaseUnityPlugin
     {
@@ -94,6 +94,8 @@ namespace OfTamingAndBreeding
             }
             catch (Exception ex)
             {
+                // todo: in all transpilers: if patchhing failed, do not log warning, throw error instead
+
                 LogFatal("Patch validation failed. This OTAB build is broken.");
                 LogFatal(ex.ToString());
                 DisablePlugin();
@@ -131,23 +133,29 @@ namespace OfTamingAndBreeding
             
             LogMessage($"z_fedDurationFactor: {ZDOVars.z_fedDurationFactor}");
             LogMessage($"z_partnerPrefab: {ZDOVars.z_partnerPrefab}");
-            LogMessage($"z_confined: {ZDOVars.z_confined}");
             LogMessage($"z_droppedByAnyPlayer: {ZDOVars.z_droppedByAnyPlayer}");
             LogMessage($"z_CLLC_Infusion: {ZDOVars.z_CLLC_Infusion}");
             LogMessage($"z_CLLC_Effect: {ZDOVars.z_CLLC_Effect}");
             LogMessage($"z_growTimeLeft: {ZDOVars.z_growTimeLeft}");
+            LogMessage($"z_frustrated: {ZDOVars.z_frustrated}");
 
             [Message:Of Taming and Breeding] z_fedDurationFactor: 1191338377
             [Message:Of Taming and Breeding] z_partnerPrefab: 479200733
-            [Message:Of Taming and Breeding] z_confined: -2083973897
             [Message:Of Taming and Breeding] z_droppedByAnyPlayer: 770701559
             [Message:Of Taming and Breeding] z_CLLC_Infusion: -1369819759
             [Message:Of Taming and Breeding] z_CLLC_Effect: -776129839
             [Message:Of Taming and Breeding] z_growTimeLeft: 1079401883
+            [Message:Of Taming and Breeding] z_frustrated: 853307481
 
             */
+
+
+        }
+
+        private void Update()
+        {
+            //Plugin.Performance.Update();
         }
 
     }
-
 }

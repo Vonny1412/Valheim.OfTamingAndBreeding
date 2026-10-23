@@ -52,6 +52,7 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private ProcreationTrait m_procreationTrait = null;
         [NonSerialized] private BaseAITrait m_baseAITrait = null;
         [NonSerialized] private GrowupTrait m_growupTrait = null;
+        [NonSerialized] private bool m_hasReactiveHostilities = false;
 
         // set in registration
         [SerializeField] public bool m_changeGroupWhenTamed = false;
@@ -76,6 +77,8 @@ namespace OfTamingAndBreeding.Components.Traits
             m_procreationTrait = GetComponent<ProcreationTrait>();
             m_baseAITrait = GetComponent<BaseAITrait>();
             m_growupTrait = GetComponent<GrowupTrait>();
+
+            m_hasReactiveHostilities = UpdateConstantHostilities();
 
             Register();
         }
@@ -103,47 +106,80 @@ namespace OfTamingAndBreeding.Components.Traits
             return m_tameableTrait ? m_tameableTrait.IsTamed() : m_character.IsTamed();
         }
 
-        public void UpdateHostilities()
+        public bool UpdateConstantHostilities()
         {
-            bool isHungry = m_tameableTrait && m_tameableTrait.IsHungry(m_tameableTrait.GetBaseFedDuration() * 3); // todo: add conf for delay
+            bool hasReactive = false;
 
             switch (m_tamedVersusPlayer)
             {
                 case IsEnemyCondition.Default: TamedVersusPlayerMask = HostilityMask.None; break;
                 case IsEnemyCondition.Force: TamedVersusPlayerMask = HostilityMask.Attack; break;
                 case IsEnemyCondition.Never: TamedVersusPlayerMask = HostilityMask.Never; break;
-                case IsEnemyCondition.WhenFed: TamedVersusPlayerMask = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenHungry: TamedVersusPlayerMask = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                default: hasReactive = true; break;
             }
             switch (m_tamedVersusGroup)
             {
                 case IsEnemyCondition.Default: TamedVersusGroupMask = HostilityMask.None; break;
                 case IsEnemyCondition.Force: TamedVersusGroupMask = HostilityMask.Attack; break;
                 case IsEnemyCondition.Never: TamedVersusGroupMask = HostilityMask.Never; break;
-                case IsEnemyCondition.WhenFed: TamedVersusGroupMask = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenHungry: TamedVersusGroupMask = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                default: hasReactive = true; break;
             }
             switch (m_tamedVersusFaction)
             {
                 case IsEnemyCondition.Default: TamedVersusFactionMask = HostilityMask.None; break;
                 case IsEnemyCondition.Force: TamedVersusFactionMask = HostilityMask.Attack; break;
                 case IsEnemyCondition.Never: TamedVersusFactionMask = HostilityMask.Never; break;
-                case IsEnemyCondition.WhenFed: TamedVersusFactionMask = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenHungry: TamedVersusFactionMask = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                default: hasReactive = true; break;
             }
             switch (m_tamedVersusTamed)
             {
                 case IsEnemyCondition.Default: TamedVersusTamedMask = HostilityMask.None; break;
                 case IsEnemyCondition.Force: TamedVersusTamedMask = HostilityMask.Attack; break;
                 case IsEnemyCondition.Never: TamedVersusTamedMask = HostilityMask.Never; break;
-                case IsEnemyCondition.WhenFed: TamedVersusTamedMask = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
-                case IsEnemyCondition.WhenHungry: TamedVersusTamedMask = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                default: hasReactive = true; break;
             }
             switch (m_tamedVersusWild)
             {
                 case IsEnemyCondition.Default: TamedVersusWildMask = HostilityMask.None; break;
                 case IsEnemyCondition.Force: TamedVersusWildMask = HostilityMask.Attack; break;
                 case IsEnemyCondition.Never: TamedVersusWildMask = HostilityMask.Never; break;
+                default: hasReactive = true; break;
+            }
+
+            return hasReactive;
+        }
+
+        public void UpdateReactiveHostilities()
+        {
+            if (!m_hasReactiveHostilities)
+            {
+                return;
+            }
+
+            bool isHungry = m_tameableTrait && m_tameableTrait.IsHungry(m_tameableTrait.GetTameable().m_fedDuration * Plugin.Configs.HostilityHungerFactor.Value);
+
+            switch (m_tamedVersusPlayer)
+            {
+                case IsEnemyCondition.WhenFed: TamedVersusPlayerMask = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedVersusPlayerMask = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+            }
+            switch (m_tamedVersusGroup)
+            {
+                case IsEnemyCondition.WhenFed: TamedVersusGroupMask = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedVersusGroupMask = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+            }
+            switch (m_tamedVersusFaction)
+            {
+                case IsEnemyCondition.WhenFed: TamedVersusFactionMask = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedVersusFactionMask = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+            }
+            switch (m_tamedVersusTamed)
+            {
+                case IsEnemyCondition.WhenFed: TamedVersusTamedMask = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+                case IsEnemyCondition.WhenHungry: TamedVersusTamedMask = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
+            }
+            switch (m_tamedVersusWild)
+            {
                 case IsEnemyCondition.WhenFed: TamedVersusWildMask = !isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
                 case IsEnemyCondition.WhenHungry: TamedVersusWildMask = isHungry ? HostilityMask.Attack : HostilityMask.Skip; break;
             }
@@ -173,13 +209,6 @@ namespace OfTamingAndBreeding.Components.Traits
         
         public void SetTamedCharacteristics()
         {
-            var m_baseAI = GetComponent<BaseAI>();
-
-            m_baseAI.SetHuntPlayer(false);
-            m_character.m_boss = false;
-            m_character.m_bossEvent = "";
-            m_character.m_defeatSetGlobalKey = "";
-
             if (m_character.m_boss == true)
             {
                 EnemyHud.instance.RemoveCharacterHud(m_character);
@@ -195,16 +224,27 @@ namespace OfTamingAndBreeding.Components.Traits
                 m_character.m_faction = m_changeFactionWhenTamedTo;
             }
 
+            m_character.m_boss = false;
+            m_character.m_bossEvent = "";
+            m_character.m_defeatSetGlobalKey = "";
+            m_character.m_dreamCinematic = "";
+            m_character.m_killedForAchievements = Utils.AchievementInclusion.Excluded;
 
+            var m_baseAI = GetComponent<BaseAI>();
+            m_baseAI.SetHuntPlayer(false);
+            m_baseAI.m_spawnMessage = "";
+            m_baseAI.m_deathMessage = "";
             m_baseAI.m_idleSoundChance *= Plugin.Configs.TamedIdleSoundChanceFactor.Value;
-
-
             m_baseAI.m_aggravatable = false;
             if (m_nview.IsOwner() && m_nview.IsValid())
             {
                 ZDOUtils.SetInt(m_nview.GetZDO(), ZDOVars.s_aggravated, 0);
             }
 
+            if (m_monsterAI)
+            {
+                m_monsterAI.m_enableHuntPlayer = false;
+            }
         }
 
 
@@ -637,15 +677,6 @@ namespace OfTamingAndBreeding.Components.Traits
         private string AddAdminHoverText(string text, bool isTamed)
         {
             var adminText = Localization.instance.Localize("$otab_hover_admin_info", "Prefab: " + gameObject.name);
-
-            if (m_baseAITrait)
-            {
-                var info = m_baseAITrait.GetAdminHoverInfoText();
-                if (info.Length != 0)
-                {
-                    adminText += "<size=33%>\n\n</size>" + info.Trim();
-                }
-            }
 
             if (m_tameableTrait)
             {

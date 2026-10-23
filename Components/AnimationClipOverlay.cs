@@ -109,8 +109,16 @@ namespace OfTamingAndBreeding.Components
 
         private void Update()
         {
-            if (!_isPlaying) return;
-            if (!_graph.IsValid()) return;
+            if (!_isPlaying)
+            {
+                return;
+            }
+
+            if (!_graph.IsValid())
+            {
+                StopOverlay();
+                return;
+            }
 
             if (_bridgeActive)
             {
@@ -163,33 +171,34 @@ namespace OfTamingAndBreeding.Components
             float w = (_fadeLeft <= 0f) ? 0f : Mathf.Clamp01(_fadeLeft / Mathf.Max(0.0001f, m_endPoseFadeSeconds));
 
             if (_layerMixer.IsValid())
+            {
                 _layerMixer.SetInputWeight(2, w);
+            }
 
             if (w <= 0.0001f)
-                DestroyGraph();
-        }
-
-        private void DestroyGraph()
-        {
-            if (_graph.IsValid())
-                _graph.Destroy();
-
-            if (_animator)
-                _animator.Update(0f);
-
-            _isPlaying = false;
-            _endPosePrepared = false;
-            _bridgeActive = false;
-            _holdLeft = 0f;
-            _fadeLeft = 0f;
-            _duration = 0f;
-            _freezeAt = 0f;
+            {
+                if (_layerMixer.IsValid())
+                {
+                    _layerMixer.SetInputWeight(0, 1f);
+                    _layerMixer.SetInputWeight(1, 0f);
+                    _layerMixer.SetInputWeight(2, 0f);
+                }
+                _graph.Evaluate(0f);
+                StopOverlay();
+            }
         }
 
         internal void StopOverlay()
         {
             if (_graph.IsValid())
+            {
                 _graph.Destroy();
+            }
+
+            if (_animator)
+            {
+                _animator.Update(0f);
+            }
 
             _isPlaying = false;
             _endPosePrepared = false;
