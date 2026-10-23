@@ -13,4 +13,11 @@
 		<InformationalVersion>$(Version)$(VersionSuffix)-debug+build.$(VersionBuild)</InformationalVersion>
 	</PropertyGroup>
 
+  <ItemGroup>
+      <None Remove="$(MSBuildProjectDirectory)\.gitignore" />
+      <None Remove="$(MSBuildProjectDirectory)\.commit.bat" />
+      <None Remove="$(MSBuildProjectDirectory)\.publish.bat" />
+      <None Remove="$(MSBuildProjectDirectory)\.publish.ps1" />
+  </ItemGroup>
+
 </Project>

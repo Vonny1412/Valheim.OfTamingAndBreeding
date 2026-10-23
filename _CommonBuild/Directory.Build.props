@@ -23,11 +23,4 @@
 		<WarningLevel>4</WarningLevel>
 	</PropertyGroup>
 
-  <ItemGroup>
-      <None Remove=".gitignore" />
-      <None Remove=".commit.bat" />
-      <None Remove=".publish.bat" />
-      <None Remove=".publish.ps1" />
-  </ItemGroup>
-
 </Project>

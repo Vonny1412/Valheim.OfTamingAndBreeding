@@ -3,6 +3,7 @@
 /.publish.bat
 /.publish.ps1
 /.publish/
+/.dev/
 
 # Build Output
 bin/
@@ -11,7 +12,6 @@ obj/
 # IDE / Editor
 .vs/
 .vscode/
-.dev/
 
 # User / Solution Settings
 *.sln.docstates
