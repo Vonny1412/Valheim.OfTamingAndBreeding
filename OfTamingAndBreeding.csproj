@@ -28,11 +28,6 @@
 		<CopyToPluginsSubDirectory>OfTamingAndBreeding</CopyToPluginsSubDirectory>
 	</PropertyGroup>
 
-	<ItemGroup>
-	  <None Remove=".publish.bat" />
-	  <None Remove=".publish.ps1" />
-	</ItemGroup>
-  
   <ItemGroup>
     <EmbeddedResource Include="Resources\**\*" />
   </ItemGroup>

@@ -8,9 +8,17 @@
 		<StartWorkingDirectory>$(GamePath)</StartWorkingDirectory>
 	</PropertyGroup>
 
-	<!-- write BepInPlugin Info -->
-	<Target Name="WriteBepInPluginInfo"
-		BeforeTargets="CoreCompile">
+  <PropertyGroup>
+    <IsValheimMod Condition="
+        '$(PluginFile)' != '' AND
+        '$(PluginGUID)' != '' AND
+        '$(PluginName)' != '' AND
+        '$(PluginClass)' != ''">true</IsValheimMod>
+  </PropertyGroup>
+
+  <Target Name="WriteBepInPluginInfo"
+        BeforeTargets="CoreCompile"
+        Condition="'$(IsValheimMod)' == 'true'">
 
 		<PropertyGroup>
 			<GeneratedDir>$(ProjectDir)</GeneratedDir>
@@ -45,9 +53,9 @@ namespace $(RootNamespace)
 		
 	</Target>
 
-	<!-- write BepInPlugin Dependencies Template -->
-	<Target Name="WriteBepInPluginDependencies"
-		BeforeTargets="CoreCompile">
+  <Target Name="WriteBepInPluginDependencies"
+          BeforeTargets="CoreCompile"
+          Condition="'$(IsValheimMod)' == 'true'">
 
 		<PropertyGroup>
 			<GeneratedDir>$(ProjectDir)</GeneratedDir>

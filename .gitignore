@@ -1,11 +1,12 @@
 
-.publish.bat
-.publish.ps1
+/.commit.bat
+/.publish.bat
+/.publish.ps1
+/.publish/
 
 # Build Output
 bin/
 obj/
-.publish/
 
 # IDE / Editor
 .vs/
@@ -17,24 +18,14 @@ obj/
 *.suo
 *.user
 *.userosscache
+*.rsuser
+*.slnx.user
 
 # Debug / Temp / Cache
 *.cache
 *.pdb
 *.tmp
 .cache/
-
-# Local Runtime / Testing
-BepInEx/
-Thunderstore/
-
-# Packaging / Archives
-*.7z
-*.zip
-
-# Logs
-LogOutput.log
-output_log.txt
 
 # OS Generated Files
 .DS_Store
