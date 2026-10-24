@@ -1,8 +1,12 @@
 <Project>
 
 	<PropertyGroup>
-		<TargetFramework>netstandard2.1</TargetFramework>
-		<GenerateDependencyFile>false</GenerateDependencyFile>
+    <!-- Target .NET Framework 4.8 because Harmony's transpiler labels are incompatible with netstandard2.1. -->
+    <!-- <TargetFramework>netstandard2.1</TargetFramework> -->
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>9</LangVersion>
+    
+    <GenerateDependencyFile>false</GenerateDependencyFile>
 		<GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
 	</PropertyGroup>
 

@@ -36,7 +36,7 @@
 		-->
 	</ItemGroup>
 
-	<!-- Add valheim_data references -->
+  <!-- Add valheim_data references -->
 	<ItemGroup Label="Valheim_Data">
 		<Reference Include="assembly_valheim">
 			<SpecificVersion>False</SpecificVersion>
@@ -68,12 +68,26 @@
 			<HintPath>$(ManagedPath)\assembly_utils.dll</HintPath>
 			<Private>False</Private>
 		</Reference>
-		<Reference Include="gui_framework">
-			<SpecificVersion>False</SpecificVersion>
-			<HintPath>$(ManagedPath)\gui_framework.dll</HintPath>
-			<Private>False</Private>
-		</Reference>
-		<!-- 
+    <Reference Include="gui_framework">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(ManagedPath)\gui_framework.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+
+
+
+
+    <Reference Include="netstandard">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>$(ManagedPath)\netstandard.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+
+
+    
+
+
+    <!-- 
 		<Reference Include="assembly_steamworks">
 			<SpecificVersion>False</SpecificVersion>
 			<HintPath>$(ManagedPath)\assembly_steamworks.dll</HintPath>

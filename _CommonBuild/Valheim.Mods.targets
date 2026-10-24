@@ -89,7 +89,12 @@ namespace $(RootNamespace)
 
 	</Target>
 
-	<!-- Copy to plugins folder -->
+  <ItemGroup Condition="'$(IsValheimMod)' == 'true'">
+    <Compile Remove="$(ProjectDir)$(PluginFile).cs" />
+    <Compile Remove="$(ProjectDir)$(PluginFile).Info.cs" />
+  </ItemGroup>
+
+  <!-- Copy to plugins folder -->
 	<Target Name="ValheimPostBuild" AfterTargets="PostBuildEvent">
 		<ItemGroup>
 			<AllFiles Include="$(TargetDir)**\*.*" Exclude="$(TargetDir)**\*.pdb" />
