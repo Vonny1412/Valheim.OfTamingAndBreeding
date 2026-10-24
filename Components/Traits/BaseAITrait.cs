@@ -1,9 +1,7 @@
 ﻿using OfTamingAndBreeding.Components.Core;
 using OfTamingAndBreeding.Components.Extensions;
-using OfTamingAndBreeding.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace OfTamingAndBreeding.Components.Traits
@@ -37,7 +35,7 @@ namespace OfTamingAndBreeding.Components.Traits
             m_characterTrait = GetComponent<CharacterTrait>();
             m_consumeClip = GetComponent<AnimationClipOverlay>();
 
-            // randomize for mor immersion
+            // randomize for more immersion
             m_consumeSearchTimer = UnityEngine.Random.Range(0, GetConsumeSearchInterval());
 
             Register();
@@ -89,13 +87,18 @@ namespace OfTamingAndBreeding.Components.Traits
 
         internal bool On_UpdateAI(float dt)
         {
+            if (m_tameableTrait)
+            {
+                m_tameableTrait.On_UpdateAI(dt);
+            }
+
             // UpdateReactiveHostilities() is only getting called here, mask default is None
             // so even right after awake a change would go from None to Attack and abort following
-            var tamedVersusPlayer = m_characterTrait.TamedVersusPlayerMask;
-
+            var tamedVersusPlayer1 = m_characterTrait.TamedVersusPlayerMask;
             m_characterTrait.UpdateReactiveHostilities();
+            var tamedVersusPlayer2 = m_characterTrait.TamedVersusPlayerMask;
 
-            if (tamedVersusPlayer != m_characterTrait.TamedVersusPlayerMask && m_characterTrait.TamedVersusPlayerMask == CharacterTrait.HostilityMask.Attack)
+            if (tamedVersusPlayer1 != tamedVersusPlayer2 && tamedVersusPlayer2 == CharacterTrait.HostilityMask.Attack)
             {
                 if (m_animalAITrait)
                 {

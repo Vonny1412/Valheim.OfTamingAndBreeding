@@ -26,7 +26,8 @@ namespace OfTamingAndBreeding.Patches
                 return;
             }
 
-            __result = __result[..newlineIndex] + " " + text + __result[newlineIndex..];
+            //__result = __result[..newlineIndex] + " " + text + __result[newlineIndex..];
+            __result = __result.Substring(0, newlineIndex) + " " + text + __result.Substring(newlineIndex);
         }
         
     }

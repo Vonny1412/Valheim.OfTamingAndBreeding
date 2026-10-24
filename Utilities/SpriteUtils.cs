@@ -69,6 +69,9 @@ namespace OfTamingAndBreeding.Utilities
             return LoadTextureFromBytes(data, readable, filterMode);
         }
 
+        // The byte[] overload is available in netstandard2.1, but .NET Framework 4.8 has issues resolving the Span-based overloads.
+        private static readonly MethodInfo LoadImageMethod = typeof(ImageConversion).GetMethod("LoadImage", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Texture2D), typeof(byte[]), typeof(bool) }, null);
+
         public static Texture2D LoadTextureFromBytes(byte[] data, bool readable = true, FilterMode filterMode = FilterMode.Bilinear)
         {
             if (data == null || data.Length == 0)
@@ -78,7 +81,8 @@ namespace OfTamingAndBreeding.Utilities
             var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false, false);
             try
             {
-                if (!ImageConversion.LoadImage(texture, data, !readable))
+
+                if (!(bool)LoadImageMethod.Invoke(null, new object[] { texture, data, !readable }))
                 {
                     UnityEngine.Object.Destroy(texture);
                     return null;

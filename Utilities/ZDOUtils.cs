@@ -154,8 +154,10 @@ namespace OfTamingAndBreeding.Utilities
                     if (separator <= 0)
                         continue;
 
-                    string key = entry[..separator];
-                    string value = entry[(separator + 1)..];
+                    //string key = entry[..separator];
+                    //string value = entry[(separator + 1)..];
+                    string key = entry.Substring(0, separator);
+                    string value = entry.Substring(separator + 1);
 
                     values[key] = value;
                 }

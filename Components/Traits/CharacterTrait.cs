@@ -156,7 +156,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 return;
             }
 
-            bool isHungry = m_tameableTrait && m_tameableTrait.IsHungry(m_tameableTrait.GetTameable().m_fedDuration * Plugin.Configs.HostilityHungerFactor.Value);
+            bool isHungry = m_tameableTrait && m_tameableTrait.IsVeryHungry();
 
             switch (m_tamedVersusPlayer)
             {

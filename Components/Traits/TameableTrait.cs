@@ -29,6 +29,7 @@ namespace OfTamingAndBreeding.Components.Traits
         [NonSerialized] private BaseAITrait m_baseAITrait = null;
         [NonSerialized] private float m_baseFedDuration = 600;
         [NonSerialized] private float m_baseTamingTime = 1800;
+        [NonSerialized] private bool m_isVeryHungry = false;
 
         /*
 
@@ -127,16 +128,6 @@ namespace OfTamingAndBreeding.Components.Traits
             remainingTime = m_tameable.GetRemainingTime();
             return remainingTime < m_tameable.m_tamingTime;
         }
-
-
-
-
-
-
-
-
-
-
 
         public bool CanBeTamed()
         {
@@ -246,19 +237,11 @@ namespace OfTamingAndBreeding.Components.Traits
                 return true;
             }
 
-
-
-
-
-
             Runtime.ItemConsumeContext.ResolveExternalFeedItem(ref item);
             if (!item)
             {
                 return true; // or maybe false?
             }
-
-
-
 
             if (Plugin.Configs.RequireFoodDroppedByPlayer.Value)
             {
@@ -269,10 +252,6 @@ namespace OfTamingAndBreeding.Components.Traits
                     return true;
                 }
             }
-
-
-
-
 
             // prevent catch-up regeneration after feeding
             // todo: add config for this? with true as default?
@@ -336,20 +315,6 @@ namespace OfTamingAndBreeding.Components.Traits
             return (float)secLeft;
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         public float GetRemainingTimeDecreaseFactor()
         {
             int stars = Mathf.Max(0, m_character.GetLevel() - 1);
@@ -398,23 +363,9 @@ namespace OfTamingAndBreeding.Components.Traits
             return false;
         }
 
-
         public bool IsTamed()
         {
             return m_tameable.IsTamed();
-        }
-
-        public bool IsHungry(float delay)
-        {
-            // todo: maybe add refresh delay?
-
-            //if (!m_character) return false;
-            //if (m_nview == null) return false;
-            //ZDO zDO = m_nview.GetZDO();
-            //if (zDO == null) return false;
-
-            DateTime dateTime = new DateTime(m_nview.GetZDO().GetLong(ZDOVars.s_tameLastFeeding, 0L));
-            return (ZNet.instance.GetTime() - dateTime).TotalSeconds > m_tameable.m_fedDuration + delay;
         }
 
         public void On_Tame()
@@ -497,6 +448,23 @@ namespace OfTamingAndBreeding.Components.Traits
         }
 
 
+
+
+        internal void On_UpdateAI(float dt)
+        {
+            DateTime dateTime = new DateTime(m_nview.GetZDO().GetLong(ZDOVars.s_tameLastFeeding, 0L));
+            float delay = m_tameable.m_fedDuration * Plugin.Configs.HostilityHungerFactor.Value;
+            m_isVeryHungry = (ZNet.instance.GetTime() - dateTime).TotalSeconds > m_tameable.m_fedDuration + delay;
+        }
+
+        public bool IsVeryHungry()
+        {
+            return m_isVeryHungry;
+        }
+
+
+
+        
 
 
         public string GetTamingProgress(float precision, int decimals)

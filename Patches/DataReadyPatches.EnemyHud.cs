@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Reflection.Emit;
 using UnityEngine;
 
-
 namespace OfTamingAndBreeding.Patches
 {
     internal partial class DataReadyPatches
@@ -22,16 +21,16 @@ namespace OfTamingAndBreeding.Patches
         {
             var getTopPoint = AccessTools.Method(typeof(Character), nameof(Character.GetTopPoint));
             var getHudTopPoint = AccessTools.Method(typeof(DataReadyPatches), nameof(GetHudTopPoint));
+
             foreach (var instruction in instructions)
             {
                 if (instruction.Calls(getTopPoint))
                 {
-                    yield return new CodeInstruction(OpCodes.Call, getHudTopPoint);
+                    instruction.opcode = OpCodes.Call;
+                    instruction.operand = getHudTopPoint;
                 }
-                else
-                {
-                    yield return instruction;
-                }
+
+                yield return instruction;
             }
         }
         private static Vector3 GetHudTopPoint(Character character)

@@ -11,7 +11,7 @@
 	<PropertyGroup>
 		<VersionMajor>0</VersionMajor>
 		<VersionMinor>13</VersionMinor>
-		<VersionPatch>4</VersionPatch>
+		<VersionPatch>5</VersionPatch>
 		<VersionSuffix>alpha</VersionSuffix>
 		<Authors>Yvonne Pautz</Authors>
 		<Product>Of Taming and Breeding</Product>
@@ -43,7 +43,8 @@
 		</Reference>
 	</ItemGroup>
 
-	<Import Project="$(SolutionDir)\Valheim.Paths.props" />
+
+  <Import Project="$(SolutionDir)\Valheim.Paths.props" />
 	<Import Project="$(SolutionDir)\Valheim.Libraries.props" />
 	<Import Project="$(SolutionDir)\Valheim.Mods.targets" />
 	<ItemGroup>
@@ -52,4 +53,6 @@
 	  </Reference>
 	</ItemGroup>
 
+
+  
 </Project>
