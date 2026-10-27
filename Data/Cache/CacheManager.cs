@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using OfTamingAndBreeding.Utilities;
 using OfTamingAndBreeding.Processing.Core;
 
 namespace OfTamingAndBreeding.Data.Cache
@@ -18,19 +17,15 @@ namespace OfTamingAndBreeding.Data.Cache
         public static string GetCacheYamlFile(string serverName)
             => Path.Combine(Plugin.CacheDir, $"{serverName}.yml");
 
-        public static string GetCacheCryptedFile(string serverName)
-            => Path.Combine(Plugin.CacheDir, $"{serverName}.cache");
+        public static string BuildCache(string serverName, bool writeFiles)
+            => BuildCache(serverName, writeFiles, out string _);
 
-        public static string BuildCache(string serverName, string encryptKey, bool writeFiles)
-            => BuildCache(serverName, encryptKey, writeFiles, out string _);
-
-        public static string BuildCache(string serverName, string encryptKey, bool writeFiles, out string cacheContent)
+        public static string BuildCache(string serverName, bool writeFiles, out string cacheContent)
         {
             cacheContent = null;
 
             var cacheDebugFilesPath = GetCachePath(serverName);
             var cacheDebugYamlFile = GetCacheYamlFile(serverName);
-            var cacheCryptedFile = GetCacheCryptedFile(serverName);
 
             if (writeFiles)
             {
@@ -39,9 +34,6 @@ namespace OfTamingAndBreeding.Data.Cache
 
                 if (File.Exists(cacheDebugYamlFile))
                     File.Delete(cacheDebugYamlFile);
-
-                if (File.Exists(cacheCryptedFile))
-                    File.Delete(cacheCryptedFile);
             }
 
             var cacheFile = new CacheFile
@@ -74,32 +66,21 @@ namespace OfTamingAndBreeding.Data.Cache
             }
 
             string yamlCacheContent = cacheContent = SerializeableData.Serialize(cacheFile);
-            string cryptedCacheContent = null;
-            if (encryptKey != null)
-            {
-                cryptedCacheContent = cacheContent = DeterministicStringCrypto.EncryptToBase64(cacheContent, encryptKey);
-            }
 
             if (writeFiles)
             {
                 File.WriteAllText(cacheDebugYamlFile, yamlCacheContent);
-                if (cryptedCacheContent != null)
-                {
-                    File.WriteAllText(cacheCryptedFile, cryptedCacheContent);
-                }
             }
 
             var hash = ComputeSha256StringHash(cacheContent);
             return hash;
         }
 
-        public static bool LoadCacheFromCrypted(string crypted, string encryptKey)
+        public static bool LoadDataFromCache(string cacheText)
         {
             try
             {
-                DataProcessingManager.ResetRegistry();
-                var cacheFilePlain = encryptKey == null ? crypted : DeterministicStringCrypto.DecryptFromBase64(crypted, encryptKey);
-                var cacheFile = SerializeableData.Deserialize<CacheFile>(cacheFilePlain);
+                var cacheFile = SerializeableData.Deserialize<CacheFile>(cacheText);
                 var allokay = true;
                 foreach(var p in DataProcessingManager.DataProcessors)
                 {

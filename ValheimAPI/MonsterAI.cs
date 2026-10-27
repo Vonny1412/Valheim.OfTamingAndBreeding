@@ -32,5 +32,7 @@ namespace OfTamingAndBreeding.ValheimAPI
 
         public static readonly Core.Invokers.FieldMutateInvoker<float> __IAPI_m_consumeSearchTimer_Invoker = new Core.Invokers.FieldMutateInvoker<float>(typeof(MonsterAI_Alias), "m_consumeSearchTimer");
 
+        public static readonly Core.Invokers.VoidMethodInvoker __IAPI_Wakeup_Invoker1 = new Core.Invokers.VoidMethodInvoker(typeof(MonsterAI_Alias), "Wakeup", new Core.Signatures.ParamSig[] { });
+
     }
 }

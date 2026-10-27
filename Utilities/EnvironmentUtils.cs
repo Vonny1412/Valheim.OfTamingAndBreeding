@@ -25,7 +25,7 @@ public enum LiquidType
             Tar = 2,
         }
 
-        public const float LiquidEpsilon = 0.05f;
+        public const float LiquidEpsilon = 0.1f;
 
         public static bool IsInLiquid(UnityEngine.Vector3 pos, LiquidType type, float depth = 0f)
         {

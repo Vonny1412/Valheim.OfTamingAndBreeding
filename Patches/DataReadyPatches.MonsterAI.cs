@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Components.Traits;
+using System;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 
@@ -8,19 +9,21 @@ namespace OfTamingAndBreeding.Patches
 {
     internal partial class DataReadyPatches
     {
+
         [HarmonyPatch(typeof(MonsterAI), "FindClosestConsumableItem")]
         [HarmonyPrefix]
-        private static bool MonsterAI_FindClosestConsumableItem_Prefix(MonsterAI __instance, bool __runOriginal, ref ItemDrop __result)
+        private static bool MonsterAI_FindClosestConsumableItem_Prefix(MonsterAI __instance, bool __runOriginal, Character ___m_character, ref ItemDrop __result)
         {
             if (!__runOriginal)
             {
                 return false;
             }
 
-            // note: for animals the find-consume-item logic is handled here:
-            // BaseAI_IdleMovement_Prefix -> if (trait.IdleMovement(dt))
-            // -> BaseAITrait.IdleMovement() -> if (m_animalAITrait && m_animalAITrait.IdleMovement(dt))
-            // -> AnimalAITrait.IdleMovement() -> if (UpdateConsumeItem(dt)) return true;
+            if (Plugin.Configs.WakeUpForFood.Value && !___m_character.CanMove())
+            {
+                __result = null;
+                return false;
+            }
 
             if (BaseAITrait.TryGet(__instance.gameObject, out var trait))
             {
@@ -32,43 +35,20 @@ namespace OfTamingAndBreeding.Patches
         }
 
         [HarmonyPatch(typeof(MonsterAI), "UpdateConsumeItem")]
-        [HarmonyPrefix]
-        private static bool MonsterAI_UpdateConsumeItem_Prefix(MonsterAI __instance, float dt, ref bool __result)
-        {
-            if (!BaseAITrait.TryGet(__instance.gameObject, out var trait))
-            {
-                return true;
-            }
-            if (trait.UpdateContainerConsumeItem(dt))
-            {
-                __result = true;
-                return false;
-            }
-
-            return true;
-        }
-
-        [HarmonyPatch(typeof(MonsterAI), "UpdateConsumeItem")]
         [HarmonyPostfix]
-        private static void MonsterAI_UpdateConsumeItem_Postfix(MonsterAI __instance, float dt, ref bool __result)
+        private static void MonsterAI_UpdateConsumeItem_Postfix(MonsterAI __instance, float dt, Character ___m_character, ItemDrop ___m_consumeTarget, ref bool __result)
         {
-            if (__result || (bool)__instance.GetConsumeTarget() || __instance.IsAlerted() || __instance.GetTargetCreature() || __instance.GetStaticTarget())
+            if (__result || (bool)___m_consumeTarget || __instance.IsAlerted() || __instance.GetTargetCreature() || __instance.GetStaticTarget())
             {
                 return;
             }
-            if (!BaseAITrait.TryGet(__instance.gameObject, out var trait))
-            {
-                return;
-            }
-            if (trait.TryFindContainerConsumeTarget(dt))
+            if (BaseAITrait.TryGet(__instance.gameObject, out var trait) && trait.UpdateContainerConsumeItem(dt))
             {
                 __result = true;
             }
         }
 
-
-
-
+        //---------------------------------
 
         [HarmonyPatch(typeof(MonsterAI), nameof(MonsterAI.UpdateAI))]
         [HarmonyTranspiler]
@@ -76,6 +56,78 @@ namespace OfTamingAndBreeding.Patches
         {
             var codes = new List<CodeInstruction>(instructions);
 
+            PatchSleepingFood(codes);
+            PatchVeryHungry(codes, generator);
+
+            return codes;
+        }
+
+        //---------------------------------
+
+        private static void PatchSleepingFood(List<CodeInstruction> codes)
+        {
+            var matcher = new CodeMatcher(codes);
+            matcher.MatchForward(false, new CodeMatch(OpCodes.Call, AccessTools.Method(typeof(MonsterAI), "UpdateSleep")));
+            if (!matcher.IsValid)
+            {
+                throw new Exception("Could not find MonsterAI.UpdateSleep call.");
+            }
+
+            matcher.Advance(1).Insert(
+                new CodeInstruction(OpCodes.Ldarg_0),
+                new CodeInstruction(OpCodes.Ldarg_1),
+                new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(DataReadyPatches), nameof(UpdateSleepingFood)))
+            );
+
+            codes.Clear();
+            codes.AddRange(matcher.InstructionEnumeration());
+        }
+
+        private static readonly AccessTools.FieldRef<MonsterAI, float> ConsumeSearchTimer = AccessTools.FieldRefAccess<MonsterAI, float>("m_consumeSearchTimer");
+        private static readonly AccessTools.FieldRef<MonsterAI, Tameable> Tameable = AccessTools.FieldRefAccess<MonsterAI, Tameable>("m_tamable");
+
+        private static void UpdateSleepingFood(MonsterAI instance, float dt)
+        {
+            if (!instance.IsSleeping() || !Plugin.Configs.WakeUpForFood.Value)
+            {
+                return;
+            }
+
+            if (instance.m_consumeItems == null || instance.m_consumeItems.Count == 0)
+            {
+                return;
+            }
+
+            ref float consumeSearchTimer = ref ConsumeSearchTimer(instance);
+            consumeSearchTimer += dt;
+            if (consumeSearchTimer > instance.m_consumeSearchInterval)
+            {
+                consumeSearchTimer = 0f;
+
+                var tameable = Tameable(instance);
+                if (tameable && !tameable.IsHungry())
+                {
+                    return;
+                }
+
+                if (!BaseAITrait.TryGet(instance.gameObject, out var trait))
+                {
+                    return;
+                }
+
+                var itemDrop = trait.FindClosestConsumableItem(instance.m_consumeSearchRange, instance.m_consumeItems);
+                if (itemDrop)
+                {
+                    instance.SetConsumeTarget(itemDrop);
+                    instance.WakeUp();
+                }
+            }
+        }
+
+        //---------------------------------
+
+        private static void PatchVeryHungry(List<CodeInstruction> codes, ILGenerator generator)
+        {
             var targetField = AccessTools.Field( typeof(MonsterAI), "m_fleeIfHurtWhenTargetCantBeReached");
             var consumeMethod = AccessTools.Method(typeof(MonsterAI), "UpdateConsumeItem", new[] { typeof(Humanoid), typeof(float) });
             var helperMethod = AccessTools.Method(typeof(DataReadyPatches), nameof(MonsterAI_UpdateVeryHungry));
@@ -83,7 +135,7 @@ namespace OfTamingAndBreeding.Patches
             if (targetField == null || consumeMethod == null || helperMethod == null)
             {
                 Plugin.LogWarning("Transpiler failed: MonsterAI.UpdateAI - member not found");
-                return codes;
+                return;
             }
 
             // Find the Humanoid local used by the vanilla UpdateConsumeItem call.
@@ -103,7 +155,7 @@ namespace OfTamingAndBreeding.Patches
                         candidate.opcode != OpCodes.Ldloc_S)
                     {
                         Plugin.LogWarning("Transpiler failed: MonsterAI.UpdateAI - unexpected Humanoid load");
-                        return codes;
+                        return;
                     }
 
                     humanoidLoad = candidate.Clone();
@@ -116,7 +168,7 @@ namespace OfTamingAndBreeding.Patches
             if (humanoidLoad == null)
             {
                 Plugin.LogWarning("Transpiler failed: MonsterAI.UpdateAI - Humanoid local not found");
-                return codes;
+                return;
             }
 
             // Find the insertion point before the flee-if-hurt block.
@@ -147,11 +199,11 @@ namespace OfTamingAndBreeding.Patches
                 codes[insertIndex].labels.Add(continueLabel);
 
                 codes.InsertRange(insertIndex, injected);
-                return codes;
+                return;
             }
 
             Plugin.LogWarning("Transpiler failed: MonsterAI.UpdateAI - insertion point not found");
-            return codes;
+            return;
         }
 
         private static bool MonsterAI_UpdateVeryHungry(MonsterAI monsterAI, Humanoid humanoid, float dt)
@@ -169,9 +221,7 @@ namespace OfTamingAndBreeding.Patches
             return monsterAI.UpdateConsumeItem(humanoid, dt);
         }
 
-
-
-
+        //---------------------------------
 
     }
 }

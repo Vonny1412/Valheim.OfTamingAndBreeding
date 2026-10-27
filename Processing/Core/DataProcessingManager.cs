@@ -8,7 +8,7 @@ namespace OfTamingAndBreeding.Processing.Core
 {
     internal static class DataProcessingManager
     {
-        private static bool dataLoaded = false;
+        private static bool dataProcessed = false;
 
         private static readonly IDataProcessor[] dataProcessors = new IDataProcessor[] {
             new TextureProcessor(),
@@ -20,7 +20,7 @@ namespace OfTamingAndBreeding.Processing.Core
         };
 
         public static IEnumerable<IDataProcessor> DataProcessors => dataProcessors;
-        public static bool IsDataLoaded => dataLoaded;
+        public static bool IsDataProcessed => dataProcessed;
 
         // TODO: Distinguish expected processing failures from unexpected exceptions.
         //
@@ -89,7 +89,7 @@ namespace OfTamingAndBreeding.Processing.Core
 
         public static bool LoadDataFromLocalFiles()
         {
-            if (dataLoaded)
+            if (dataProcessed)
             {
                 // todo
             }
@@ -173,63 +173,45 @@ namespace OfTamingAndBreeding.Processing.Core
         // process routine
         //---------------------------
 
-        public static bool ValidateDataAndRegisterPrefabs()
+        public static bool ProcessData()
         {
-            if (dataLoaded)
+            if (dataProcessed)
             {
                 return true;
             }
 
             OTABPrefabRegistry.CreateInstance();
 
-            if (!RunForAllProcessors(p => p.PrepareProcess()))
+            if (!TryRunProcessingRoutine())
             {
+                ClearData();
                 ResetRegistry();
                 return false;
             }
 
-            if (!RunForAllProcessors(p => p.ReserveAllPrefabNames()))
-            {
-                ResetRegistry();
-                return false;
-            }
-
-            if (!RunForAllProcessors(p => p.ValidateAllData()))
-            {
-                ResetRegistry();
-                return false;
-            }
-
-            if (!RunForAllProcessors(p => p.RegisterAllPrefabs()))
-            {
-                ResetRegistry();
-                return false;
-            }
-
-            if (!RunForAllProcessors(p => p.ProcessAllPrefabs()))
-            {
-                ResetRegistry();
-                return false;
-            }
-
-            if (!RunForAllProcessors(p => p.FinalizeProcess()))
-            {
-                ResetRegistry();
-                return false;
-            }
-
-
-
-
-
-
-            dataLoaded = true;
+            dataProcessed = true;
             return true;
+        }
+
+        private static bool TryRunProcessingRoutine()
+        {
+            if (!RunForAllProcessors(p => p.PrepareProcess())) return false;
+            if (!RunForAllProcessors(p => p.ReserveAllPrefabNames())) return false;
+            if (!RunForAllProcessors(p => p.ValidateAllData())) return false;
+            if (!RunForAllProcessors(p => p.RegisterAllPrefabs())) return false;
+            if (!RunForAllProcessors(p => p.ProcessAllPrefabs())) return false;
+            if (!RunForAllProcessors(p => p.FinalizeProcess())) return false;
+            return true;
+        }
+
+        public static void ClearData()
+        {
+            RunForAllProcessorsReverse(p => p.ClearData());
         }
 
         public static void ResetRegistry()
         {
-            dataLoaded = false;
+            dataProcessed = false;
 
             if (OTABPrefabRegistry.Instance != null)
             {
@@ -237,7 +219,7 @@ namespace OfTamingAndBreeding.Processing.Core
             }
 
             RunForAllProcessorsReverse(p => p.CleanupProcess());
-            RunForAllProcessorsReverse(p => p.ResetData());
+            ClearData();
 
             OTABPrefabRegistry.DestroyInstance();
         }

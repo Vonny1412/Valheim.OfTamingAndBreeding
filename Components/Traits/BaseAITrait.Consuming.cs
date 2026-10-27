@@ -23,8 +23,8 @@ namespace OfTamingAndBreeding.Components.Traits
         [SerializeField] internal int m_consumeItemsStoreIndex = -1;
         [NonSerialized] public ConsumeItem[] m_consumeItems = null;
 
-        private float m_consumeSearchTimer = 0f;
-        private Container m_containerConsumeTarget = null;
+        internal float m_consumeSearchTimer = 0f;
+        internal Container m_containerConsumeTarget = null;
 
         public bool IsHungry()
         {
@@ -155,9 +155,15 @@ namespace OfTamingAndBreeding.Components.Traits
             return closest;
         }
 
-        public bool TryFindContainerConsumeTarget(float dt)
+        private bool TryFindContainerConsumeTarget(float dt)
         {
             if (!CheckConsumeTimer(dt) || !IsHungry())
+            {
+                return false;
+            }
+
+            // Prevent food detection while the creature cannot move.
+            if (Plugin.Configs.WakeUpForFood.Value && !m_characterTrait.GetCharacter().CanMove())
             {
                 return false;
             }
@@ -204,32 +210,19 @@ namespace OfTamingAndBreeding.Components.Traits
                 nearestDistanceSq = distanceSq;
             }
 
-            if (!nearestContainer)
-            {
-                return false;
-            }
-
             m_containerConsumeTarget = nearestContainer;
-            return UpdateContainerConsumeItem(dt);
+            return (bool)m_containerConsumeTarget;
         }
 
         public bool UpdateContainerConsumeItem(float dt)
         {
-            if (!m_containerConsumeTarget)
+            if (!TryFindContainerConsumeTarget(dt))
             {
-                return false;
-            }
-
-            ItemDrop.ItemData item = FindConsumableItem(m_containerConsumeTarget);
-            if (item == null)
-            {
-                m_containerConsumeTarget = null;
                 return false;
             }
 
             Vector3 position = m_containerConsumeTarget.transform.position;
-            float consumeRange = GetConsumeRange();
-            float distance = Vector3.Distance(transform.position, position);
+            float consumeRange = GetConsumeRange() + 1.0f; // todo: add config for extra range?
             bool moveToResult = m_baseAI.MoveTo(dt, position, consumeRange, run: false);
 
             if (moveToResult)
@@ -237,7 +230,15 @@ namespace OfTamingAndBreeding.Components.Traits
                 m_baseAI.LookAt(position);
                 if (m_baseAI.IsLookingAt(position, 20f))
                 {
+
                     if (!ContainerFeeding.IsRegisteredContainerInstance(m_containerConsumeTarget))
+                    {
+                        m_containerConsumeTarget = null;
+                        return false;
+                    }
+
+                    ItemDrop.ItemData item = FindConsumableItem(m_containerConsumeTarget);
+                    if (item == null)
                     {
                         m_containerConsumeTarget = null;
                         return false;
@@ -320,17 +321,7 @@ namespace OfTamingAndBreeding.Components.Traits
                 var rb = col.attachedRigidbody;
                 if (!rb)
                     continue;
-
-                /*
-                if (!rb.TryGetComponent<ItemDropTrait>(out var trait))
-                    continue;
-                if (trait.TryGetValidItemDrop(out var item) == false)
-                    continue;
-                */
-                if (!rb.TryGetComponent<ItemDrop>(out var item))
-                    continue;
-                
-                if (!CanConsume(consumeList, item))
+                if (!rb.TryGetComponent<ItemDrop>(out var item) || !CanConsume(consumeList, item))
                     continue;
 
                 float dist = (item.transform.position - pos).sqrMagnitude;
@@ -369,16 +360,10 @@ namespace OfTamingAndBreeding.Components.Traits
                 Collider col = s_consumeColliders[i];
                 if (!col)
                     continue;
-
                 var rb = col.attachedRigidbody;
                 if (!rb)
                     continue;
-
-                if (!rb.TryGetComponent<ItemDropTrait>(out var trait))
-                    continue;
-                if (trait.TryGetValidItemDrop(out var item) == false)
-                    continue;
-                if (!CanConsume(consumeList, item))
+                if (!rb.TryGetComponent<ItemDrop>(out var item) || !CanConsume(consumeList, item))
                     continue;
 
                 //float dist = Vector3.Distance(item.transform.position, pos);

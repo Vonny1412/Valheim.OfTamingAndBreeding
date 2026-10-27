@@ -33,6 +33,7 @@ namespace OfTamingAndBreeding.Patches
                 yield return instruction;
             }
         }
+
         private static Vector3 GetHudTopPoint(Character character)
         {
             if (ScaledCreature.TryGet(character.gameObject, out var scaledCreature))
@@ -53,6 +54,7 @@ namespace OfTamingAndBreeding.Patches
             {
                 return;
             }
+
             object huds = __instance.GetHuds();
             if (huds is IDictionary hudsDict && !hudsDict.Contains(c))
             {
@@ -85,6 +87,7 @@ namespace OfTamingAndBreeding.Patches
             }
             if (!m_frustratedIconSprite)
             {
+                Plugin.LogWarning("Frustrated icon resource not found");
                 return;
             }
 

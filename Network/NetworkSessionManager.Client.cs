@@ -15,7 +15,6 @@ namespace OfTamingAndBreeding.Network
             public bool UseCache = false;
             public string CacheFileName = null;
             public string CacheFileHash = null;
-            public string CacheCryptKey = null;
         }
 
         private static ClientSession clientSession = null;
@@ -51,25 +50,22 @@ namespace OfTamingAndBreeding.Network
                 clientSession.CacheFileName = CacheManager.GetSafeCacheFileName(inPkg.ReadString());
                 clientSession.CacheFileHash = inPkg.ReadString();
 
-                var obf = inPkg.ReadString();
-
-                clientSession.CacheCryptKey = SecurityUtils.Deobfuscate(obf, $"{clientSession.CacheFileName}|{Plugin.Version}");
-                Plugin.LogInfo($"Cache Info: useCache={clientSession.UseCache} file='{clientSession.CacheFileName}' hash='{clientSession.CacheFileHash}' obfLen={obf?.Length ?? -1} keyLen={clientSession.CacheCryptKey?.Length ?? -1} version='{Plugin.Version}'");
+                Plugin.LogInfo($"Cache Info: useCache={clientSession.UseCache} file='{clientSession.CacheFileName}' hash='{clientSession.CacheFileHash}' version='{Plugin.Version}'");
 
                 var requestCacheFile = true;
                 if (clientSession.UseCache)
                 {
 
-                    var cacheFilePath = CacheManager.GetCacheCryptedFile(clientSession.CacheFileName);
+                    var cacheFilePath = CacheManager.GetCacheYamlFile(clientSession.CacheFileName);
                     if (File.Exists(cacheFilePath))
                     {
                         var hash = CacheManager.ComputeSha256FileHash(cacheFilePath);
                         if (hash == clientSession.CacheFileHash)
                         {
-                            if (CacheManager.LoadCacheFromCrypted(File.ReadAllText(cacheFilePath), clientSession.CacheCryptKey))
+                            if (CacheManager.LoadDataFromCache(File.ReadAllText(cacheFilePath)))
                             {
                                 requestCacheFile = false;
-                                var dataLoaded = DataProcessingManager.ValidateDataAndRegisterPrefabs();
+                                var dataLoaded = DataProcessingManager.ProcessData();
                                 if (dataLoaded)
                                 {
                                     Plugin.LogInfo($"Loaded data from existing cache");
@@ -134,15 +130,12 @@ namespace OfTamingAndBreeding.Network
 
                 if (clientSession.UseCache)
                 {
-                    var cacheFile = CacheManager.GetCacheCryptedFile(clientSession.CacheFileName);
+                    var cacheFile = CacheManager.GetCacheYamlFile(clientSession.CacheFileName);
                     Plugin.LogInfo($"Writing cache file to: '{cacheFile}'");
                     File.WriteAllText(cacheFile, cacheContent);
                 }
 
-                var success =
-                    CacheManager.LoadCacheFromCrypted(cacheContent, clientSession.CacheCryptKey)
-                    && DataProcessingManager.ValidateDataAndRegisterPrefabs();
-
+                var success = CacheManager.LoadDataFromCache(cacheContent) && DataProcessingManager.ProcessData();
                 if (success)
                 {
                     Plugin.LogInfo("Loaded data from received cache");
@@ -184,7 +177,7 @@ namespace OfTamingAndBreeding.Network
             float start = Time.time;
             while (Time.time - start < seconds)
             {
-                if (DataProcessingManager.IsDataLoaded)
+                if (DataProcessingManager.IsDataProcessed)
                 {
                     clientTimeoutRoutine = null;
                     yield break;

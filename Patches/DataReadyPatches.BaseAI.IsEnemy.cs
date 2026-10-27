@@ -53,6 +53,19 @@ namespace OfTamingAndBreeding.Patches
                 return false;
             }
 
+            if (Plugin.Configs.ImprovedTrainingDummyBehavior.Value)
+            {
+                bool isDummy1 = faction1 == Character.Faction.TrainingDummy;
+                bool isDummy2 = faction2 == Character.Faction.TrainingDummy;
+                if (isDummy1 || isDummy2)
+                {
+                    // Training dummies are hostile towards players and wild creatures,
+                    // but friendly towards tamed creatures in both directions.
+                    __result = (isDummy1 && isPlayerFaction2) || (isDummy2 && isPlayerFaction1);
+                    return false;
+                }
+            }
+
             string group1 = a.GetGroup();
             var isSameGroup = group1.Length > 0 && group1 == b.GetGroup();
 

@@ -24,7 +24,7 @@ namespace OfTamingAndBreeding.Processing.Core
 
         void RestoreAllPrefabs();
         void CleanupProcess();
-        void ResetData();
+        void ClearData();
 
     }
 }

@@ -10,8 +10,8 @@
 
 	<PropertyGroup>
 		<VersionMajor>0</VersionMajor>
-		<VersionMinor>13</VersionMinor>
-		<VersionPatch>5</VersionPatch>
+		<VersionMinor>14</VersionMinor>
+		<VersionPatch>0</VersionPatch>
 		<VersionSuffix>alpha</VersionSuffix>
 		<Authors>Yvonne Pautz</Authors>
 		<Product>Of Taming and Breeding</Product>

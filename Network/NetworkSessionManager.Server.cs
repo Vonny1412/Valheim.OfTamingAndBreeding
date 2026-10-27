@@ -12,7 +12,6 @@ namespace OfTamingAndBreeding.Network
         {
             public string CacheFileName = null;
             public string CacheFileHash = null;
-            public string CacheCryptKey = null;
             public string CacheContent = null;
         }
 
@@ -39,15 +38,14 @@ namespace OfTamingAndBreeding.Network
             serverSession = new ServerSession
             {
                 CacheFileName = CacheManager.GetSafeCacheFileName(resolvedCacheFileName),
-                CacheCryptKey = SecurityUtils.GenerateCryptKey()
             };
 
-            Plugin.LogInfo($"WriteClientCacheFile={Plugin.Configs.WriteClientCacheFile.Value} CacheFileName='{serverSession.CacheFileName}' KeyLen={(serverSession.CacheCryptKey?.Length ?? -1)}");
+            Plugin.LogInfo($"WriteClientCacheFile={Plugin.Configs.WriteClientCacheFile.Value} CacheFileName='{serverSession.CacheFileName}'");
 
             Plugin.LogInfo($"Building cache #1");
-            var hash1 = CacheManager.BuildCache(serverSession.CacheFileName, serverSession.CacheCryptKey, false, out serverSession.CacheContent);
+            var hash1 = CacheManager.BuildCache(serverSession.CacheFileName, false, out serverSession.CacheContent);
             Plugin.LogInfo($"Test-loading cache #1");
-            if (!CacheManager.LoadCacheFromCrypted(serverSession.CacheContent, serverSession.CacheCryptKey))
+            if (!CacheManager.LoadDataFromCache(serverSession.CacheContent))
             {
                 Plugin.LogFatal($"Cache #1 corrupted");
                 DataProcessingManager.ResetRegistry();
@@ -55,7 +53,7 @@ namespace OfTamingAndBreeding.Network
                 return;
             }
             Plugin.LogInfo($"Building cache #2");
-            var hash2 = CacheManager.BuildCache(serverSession.CacheFileName, serverSession.CacheCryptKey, writeCacheFiles, out serverSession.CacheContent);
+            var hash2 = CacheManager.BuildCache(serverSession.CacheFileName, writeCacheFiles, out serverSession.CacheContent);
             Plugin.LogInfo($"Cache hash1={hash1} hash2={hash2} match={hash1 == hash2}");
 
             if (hash1 == hash2)
@@ -70,7 +68,7 @@ namespace OfTamingAndBreeding.Network
                 return;
             }
 
-            if (DataProcessingManager.ValidateDataAndRegisterPrefabs())
+            if (DataProcessingManager.ProcessData())
             {
                 Plugin.LogInfo($"Cache is ready");
                 OnSessionReadyCallback();
@@ -105,10 +103,7 @@ namespace OfTamingAndBreeding.Network
                     outPkg.Write(serverSession.CacheFileName);
                     outPkg.Write(serverSession.CacheFileHash);
 
-                    string obf = SecurityUtils.Obfuscate(serverSession.CacheCryptKey, $"{serverSession.CacheFileName}|{Plugin.Version}");
-                    Plugin.LogInfo($"Handshaking: UseCache={Plugin.Configs.WriteClientCacheFile.Value} File='{serverSession.CacheFileName}' Hash='{serverSession.CacheFileHash}' ObfLen={obf?.Length ?? -1}");
-                    outPkg.Write(obf);
-
+                    Plugin.LogInfo($"Handshaking: UseCache={Plugin.Configs.WriteClientCacheFile.Value} File='{serverSession.CacheFileName}' Hash='{serverSession.CacheFileHash}'");
                 }
                 return true;
             });

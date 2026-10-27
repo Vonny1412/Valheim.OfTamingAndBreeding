@@ -35,13 +35,5 @@ namespace OfTamingAndBreeding.Components.Traits
             return m_monsterAI;
         }
 
-        /*
-        // handled in patch
-        public ItemDrop FindConsumeableItem()
-        {
-            return m_baseAITrait.FindClosestConsumableItem(m_monsterAI.m_consumeSearchRange, m_monsterAI.m_consumeItems);
-        }
-        */
-
     }
 }

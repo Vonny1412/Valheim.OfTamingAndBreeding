@@ -194,7 +194,7 @@ namespace OfTamingAndBreeding.Processing.Core
             CallForAllData((prefabName) => RestorePrefab(prefabName), nameof(RestorePrefab));
         }
 
-        public void ResetData()
+        public void ClearData()
         {
             DataBase<T>.DropAll();
         }

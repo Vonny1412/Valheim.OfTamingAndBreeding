@@ -58,24 +58,19 @@ namespace OfTamingAndBreeding.Components.Traits
             return m_animalAI;
         }
 
-
-
-
-
-
         public bool IsAlerted()
         {
-            return m_animalAI.IsAlerted(); // direct field return
+            return m_animalAI.IsAlerted();
         }
         
         public void SetPatrolPoint()
         {
-            m_animalAI.SetPatrolPoint(); // direct field setter, sets zdo, BaseAI
+            m_animalAI.SetPatrolPoint();
         }
 
         public void ResetPatrolPoint()
         {
-            m_animalAI.ResetPatrolPoint(); // direct field setter, sets zdo, BaseAI
+            m_animalAI.ResetPatrolPoint();
         }
 
         public GameObject GetFollowTarget()
@@ -122,26 +117,25 @@ namespace OfTamingAndBreeding.Components.Traits
             return false;
         }
 
-
-
-
-
-
-
-
-
         public bool On_IdleMovement(float dt)
         {
-            if (m_animalAI.IsAlerted())
+
+            if (!m_animalAI.IsAlerted())
             {
-                return false;
+                if (UpdateConsumeItem(dt))
+                {
+                    return true;
+                }
+                if (!m_consumeTarget && m_baseAITrait.UpdateContainerConsumeItem(dt))
+                {
+                    return true;
+                }
             }
 
-            if (m_baseAITrait.UpdateContainerConsumeItem(dt)) return true;
-            if (UpdateConsumeItem(dt)) return true;
-            if (!m_consumeTarget && m_baseAITrait.TryFindContainerConsumeTarget(dt)) return true;
-
-            if (UpdateFollowTarget(dt)) return true;
+            if (UpdateFollowTarget(dt))
+            {
+                return true;
+            }
 
             return false;
         }

@@ -37,7 +37,7 @@ namespace OfTamingAndBreeding.Integrations
         [HarmonyPrefix]
         public static bool OTAB_ThirdParty_Prefix()
         {
-            return !DataProcessingManager.IsDataLoaded;
+            return !DataProcessingManager.IsDataProcessed;
         }
 
     }

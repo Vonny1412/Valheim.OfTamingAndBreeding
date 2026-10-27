@@ -4,7 +4,6 @@ using OfTamingAndBreeding.Components.Extensions;
 using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Runtime;
 using System;
-using static OfTamingAndBreeding.Plugin;
 
 namespace OfTamingAndBreeding
 {
@@ -111,6 +110,14 @@ namespace OfTamingAndBreeding
 
 
             // -----------------------------------------------------------------
+            private const string Section_Server_Gameplay_Tweaks = "Server - Gameplay - Tweaks";
+            // -----------------------------------------------------------------
+
+            public static ConfigEntry<bool> ImprovedTrainingDummyBehavior { get; private set; }
+            public static ConfigEntry<bool> WakeUpForFood { get; private set; }
+
+
+            // -----------------------------------------------------------------
             private const string Section_Server_Misc = "Server - Miscellaneous";
             // -----------------------------------------------------------------
 
@@ -141,7 +148,7 @@ namespace OfTamingAndBreeding
                 section = Section_UI_Hovertext;
                 // -----------------------------------------------------------------
 
-                HoverShowAdminInfo = Config.BindConfigInOrder<bool>(section, "ShowAdminInfo", true, "Allow showing admin/debug creature info in hover text for local admins or hosts only.", synced: false);
+                HoverShowAdminInfo = Config.BindConfigInOrder<bool>(section, "ShowAdminInfo", false, "Allow showing admin/debug creature info in hover text for local admins or hosts only.", synced: false);
 
                 HoverShowConsumeItems = Config.BindConfigInOrder<bool>(section, "ShowConsumeItems", true, "Allow showing consumable items in creature hover text.", synced: false);
                 HoverShowLovePoints = Config.BindConfigInOrder<bool>(section, "ShowLovePoints", true, "Allow showing love points in creature hover text.", synced: false);
@@ -280,7 +287,6 @@ namespace OfTamingAndBreeding
                 section = Section_Server_Gameplay_Troughs;
                 // -----------------------------------------------------------------
 
-
                 CommonFeedingContainers = Config.BindConfigInOrder<string>(section, "CommonFeedingContainers", "", "Comma-separated prefab names of regular containers that should also be usable as feeding containers.", synced: true);
                 CommonFeedingContainers.SettingChanged += (object sender, EventArgs args) => {
                     ContainerFeeding.RegisterConfigContainerPrefabs(CommonFeedingContainers.Value);
@@ -288,6 +294,13 @@ namespace OfTamingAndBreeding
                 ContainerFeeding.RegisterConfigContainerPrefabs(CommonFeedingContainers.Value);
                 ContainerSearchRangeFactor = Config.BindConfigInOrder<float>(section, "ContainerSearchRangeFactor", 2f, "Multiplier applied to the consume search range of tamed creatures when searching for food in registered feeding containers.", acceptableValues: new AcceptableValueRange<float>(1f, 10f), synced: true);
 
+
+                // -----------------------------------------------------------------
+                section = Section_Server_Gameplay_Tweaks;
+                // -----------------------------------------------------------------
+
+                ImprovedTrainingDummyBehavior = Config.BindConfigInOrder<bool>(section, "TrainingDummyBehavior", true, "Changes Training Dummy hostility so that it is hostile towards players and friendly towards everything else and vice versa.", synced: true);
+                WakeUpForFood = Config.BindConfigInOrder<bool>(section, "WakeUpForFood", true, "Allows sleeping creatures to wake up when suitable food is nearby.", synced: true);
 
                 // -----------------------------------------------------------------
                 section = Section_Server_Misc;

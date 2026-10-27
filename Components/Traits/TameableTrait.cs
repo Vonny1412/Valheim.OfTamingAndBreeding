@@ -452,9 +452,16 @@ namespace OfTamingAndBreeding.Components.Traits
 
         internal void On_UpdateAI(float dt)
         {
-            DateTime dateTime = new DateTime(m_nview.GetZDO().GetLong(ZDOVars.s_tameLastFeeding, 0L));
-            float delay = m_tameable.m_fedDuration * Plugin.Configs.HostilityHungerFactor.Value;
-            m_isVeryHungry = (ZNet.instance.GetTime() - dateTime).TotalSeconds > m_tameable.m_fedDuration + delay;
+            if (m_tameable.IsTamed())
+            {
+                DateTime dateTime = new DateTime(m_nview.GetZDO().GetLong(ZDOVars.s_tameLastFeeding, 0L));
+                float delay = m_tameable.m_fedDuration * Plugin.Configs.HostilityHungerFactor.Value;
+                m_isVeryHungry = (ZNet.instance.GetTime() - dateTime).TotalSeconds > m_tameable.m_fedDuration + delay;
+            }
+            else
+            {
+                m_isVeryHungry = false;
+            }
         }
 
         public bool IsVeryHungry()

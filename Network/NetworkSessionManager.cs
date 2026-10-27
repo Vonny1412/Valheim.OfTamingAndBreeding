@@ -23,7 +23,22 @@ namespace OfTamingAndBreeding.Network
         public static event Action OnSessionError;
         public static event Action OnSessionClosed;
 
-
+        private static void SaveInvokeEvent(Action action)
+        {
+            if (action != null)
+            {
+                foreach (Action handler in action.GetInvocationList())
+                {
+                    try
+                    {
+                        handler();
+                    }
+                    catch (Exception ex)
+                    {
+                    }
+                }
+            }
+        }
 
 
 
@@ -54,14 +69,14 @@ namespace OfTamingAndBreeding.Network
             {
                 PrefabUtils.DumpPrefabs(Path.Combine(Plugin.CacheDir, "_prefabs"));
             }
-            OnSessionStarted?.Invoke();
+            SaveInvokeEvent(OnSessionStarted);
         }
 
         private static void OnSessionReadyCallback()
         {
             OTABComponentTypeRegistry.AddComponentsToPrefabs();
 
-            if (DataProcessingManager.IsDataLoaded)
+            if (DataProcessingManager.IsDataProcessed)
             {
                 foreach (var p in DataProcessingManager.DataProcessors)
                 {
@@ -75,7 +90,8 @@ namespace OfTamingAndBreeding.Network
             }
 
             Runtime.ZNetSceneContext.Unblock();
-            OnSessionReady?.Invoke();
+            SaveInvokeEvent(OnSessionReady);
+            DataProcessingManager.ClearData(); // data loaded, validated and prefabs registered. yaml data no longer neccessary, free up memory
         }
 
         private static void OnSessionErrorCallback()
@@ -101,14 +117,14 @@ namespace OfTamingAndBreeding.Network
             {
                 Logout();
             }
-            OnSessionError?.Invoke();
+            SaveInvokeEvent(OnSessionError);
         }
 
         private static void OnSessionClosedCallback()
         {
             Patches.DataReadyPatches.Uninstall();
             OTABComponentTypeRegistry.RemoveComponentsFromPrefabs();
-            OnSessionClosed?.Invoke();
+            SaveInvokeEvent(OnSessionClosed);
         }
 
 

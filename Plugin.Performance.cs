@@ -11,9 +11,11 @@ namespace OfTamingAndBreeding
             private static float s_timer;
             private static int s_frames;
 
-            
-            public static int s_updateHostilities;
-            
+
+            public static int s_GetHudTopPoint;
+            public static int s_ShowHudPrefix;
+            public static int s_ShowHudPostfix;
+
 
             public static void Update()
             {
@@ -27,7 +29,9 @@ namespace OfTamingAndBreeding
 
                 var entries = new[]
                 {
-                    ("CharacterTrait.UpdateHostilities", s_updateHostilities),
+                    ("s_GetHudTopPoint", s_GetHudTopPoint),
+                    ("s_ShowHudPrefix", s_ShowHudPrefix),
+                    ("s_ShowHudPostfix", s_ShowHudPostfix),
                 };
 
                 var fps = s_frames / s_timer;
@@ -35,14 +39,16 @@ namespace OfTamingAndBreeding
 
                 foreach (var entry in entries)
                 {
-                    var callsPerSecond = entry.Item2 / s_timer;
-                    Plugin.LogMessage($"[Performance] {entry.Item1}: {callsPerSecond:F1}/s ({entry.Item2} calls)");
+                    var callsPerFrame = entry.Item2 / fps;
+                    Plugin.LogMessage($"[Performance] {entry.Item1}: {callsPerFrame:F1}/f ({entry.Item2} calls)");
                 }
 
                 s_timer = 0f;
                 s_frames = 0;
 
-                s_updateHostilities = 0;
+                s_GetHudTopPoint = 0;
+                s_ShowHudPrefix = 0;
+                s_ShowHudPostfix = 0;
             }
         }
 

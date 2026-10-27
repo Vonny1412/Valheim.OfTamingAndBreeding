@@ -281,7 +281,7 @@ namespace OfTamingAndBreeding.Components.Traits
 
             // cannot grow
 
-            if (!DataProcessingManager.IsDataLoaded)
+            if (!DataProcessingManager.IsDataProcessed)
             {
                 // not in otab mode
                 return "";

@@ -6,6 +6,9 @@ using OfTamingAndBreeding.Components.Traits;
 using OfTamingAndBreeding.Integrations.Mods;
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("OfTamingAndBreeding.WikiDataGenerator")]
 
 namespace OfTamingAndBreeding
 {
@@ -128,6 +131,7 @@ namespace OfTamingAndBreeding
 
             Integrations.ThirdPartyManager.RegisterBridges();
             Network.NetworkSessionManager.RegisterRPCs();
+
 
             /*
             
